@@ -7,6 +7,7 @@ export type PaymentMethodType =
   | "other";
 export type WorkspaceRole = "owner" | "admin" | "member";
 export type SavingsRateMode = "manual" | "percentage";
+export type BudgetPeriodStatus = "draft" | "active" | "closed";
 
 export interface Database {
   public: {
@@ -174,6 +175,56 @@ export interface Database {
           is_active?: boolean;
           closing_day?: number | null;
           due_day?: number | null;
+          updated_at?: string;
+        };
+      };
+      budget_periods: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          year: number;
+          month: number;
+          status: BudgetPeriodStatus;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          year: number;
+          month: number;
+          status?: BudgetPeriodStatus;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          year?: number;
+          month?: number;
+          status?: BudgetPeriodStatus;
+          updated_at?: string;
+        };
+      };
+      budget_items: {
+        Row: {
+          id: string;
+          budget_period_id: string;
+          category_id: string;
+          amount: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          budget_period_id: string;
+          category_id: string;
+          amount: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          amount?: number;
           updated_at?: string;
         };
       };

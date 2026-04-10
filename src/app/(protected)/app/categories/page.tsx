@@ -37,6 +37,12 @@ const categoryTypeLabels: Record<TransactionType, string> = {
   saving: "Ahorro",
 };
 
+const categoryTypeColors: Record<TransactionType, string> = {
+  income: "teal",
+  expense: "pink",
+  saving: "indigo",
+};
+
 const categoryTypeSelectData = [
   { value: "income", label: "Ingreso" },
   { value: "expense", label: "Gasto" },
@@ -290,7 +296,9 @@ export default function CategoriesPage() {
                   <Table.Tr key={row.id}>
                     <Table.Td>{row.name}</Table.Td>
                     <Table.Td>
-                      <Badge variant="light">{categoryTypeLabels[row.type]}</Badge>
+                      <Badge variant="light" color={categoryTypeColors[row.type]}>
+                        {categoryTypeLabels[row.type]}
+                      </Badge>
                     </Table.Td>
                     <Table.Td>{row.sort_order ?? "-"}</Table.Td>
                     <Table.Td>

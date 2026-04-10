@@ -20,6 +20,7 @@ import { useWorkspace } from "@/features/workspace/workspace-provider";
 
 const navItems = [
   { href: "/app", label: "Dashboard" },
+  { href: "/app/budget", label: "Presupuesto" },
   { href: "/app/categories", label: "Categorías" },
   { href: "/app/payment-methods", label: "Medios de pago" },
   { href: "/app/settings", label: "Settings" },

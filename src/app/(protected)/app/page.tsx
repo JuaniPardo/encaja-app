@@ -9,10 +9,22 @@ export default function DashboardPage() {
       <Title order={2}>Dashboard</Title>
       <Text c="dimmed" maw={720}>
         Este espacio es el punto de partida del MVP1. Desde acá podés gestionar tus
-        categorías, medios de pago y configuración general del workspace.
+        categorías, presupuesto mensual, medios de pago y configuración general del workspace.
       </Text>
 
       <Group align="stretch">
+        <Card withBorder radius="md" miw={240}>
+          <Stack gap="sm">
+            <Title order={4}>Presupuesto mensual</Title>
+            <Text size="sm" c="dimmed">
+              Planificá montos por categoría para cada mes.
+            </Text>
+            <Button component={Link} href="/app/budget" variant="light">
+              Ir a presupuesto
+            </Button>
+          </Stack>
+        </Card>
+
         <Card withBorder radius="md" miw={240}>
           <Stack gap="sm">
             <Title order={4}>Categorías</Title>
