@@ -29,6 +29,10 @@ import type { Database, TransactionType } from "@/types/database";
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
 type WorkspaceSettingsRow = Database["public"]["Tables"]["workspace_settings"]["Row"];
 type BudgetPeriodIdRow = Pick<Database["public"]["Tables"]["budget_periods"]["Row"], "id">;
+type BudgetItemLiteRow = Pick<
+  Database["public"]["Tables"]["budget_items"]["Row"],
+  "category_id" | "amount"
+>;
 
 type CategorizedItem = {
   category: CategoryRow;
@@ -326,8 +330,9 @@ export default function BudgetPage() {
       return;
     }
 
+    const periodItems = (itemsResponse.data ?? []) as BudgetItemLiteRow[];
     const amountByCategoryId = new Map(
-      itemsResponse.data.map((item) => [item.category_id, parseAmountValue(item.amount)]),
+      periodItems.map((item) => [item.category_id, parseAmountValue(item.amount)]),
     );
 
     reset({
@@ -338,7 +343,7 @@ export default function BudgetPage() {
     });
 
     setPeriodId(periodRow.id);
-    setPeriodHasItems(itemsResponse.data.length > 0);
+    setPeriodHasItems(periodItems.length > 0);
     setIsPeriodLoading(false);
   }, [categories, reset, selectedMonth, selectedYear, supabase, workspace.id]);
 
@@ -516,7 +521,8 @@ export default function BudgetPage() {
       }
 
       const activeCategoryIds = new Set(categories.map((category) => category.id));
-      const copyRowsSource = previousItemsResponse.data.filter((item) =>
+      const previousItems = (previousItemsResponse.data ?? []) as BudgetItemLiteRow[];
+      const copyRowsSource = previousItems.filter((item) =>
         activeCategoryIds.has(item.category_id),
       );
 
