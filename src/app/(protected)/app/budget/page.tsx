@@ -237,7 +237,8 @@ export default function BudgetPage() {
       });
       setCategories([]);
     } else {
-      const sortedCategories = [...categoriesResponse.data].sort((a, b) => {
+      const categoryRows = (categoriesResponse.data ?? []) as CategoryRow[];
+      const sortedCategories = [...categoryRows].sort((a: CategoryRow, b: CategoryRow) => {
         const typeDiff = typeOrder[a.type] - typeOrder[b.type];
         if (typeDiff !== 0) {
           return typeDiff;
