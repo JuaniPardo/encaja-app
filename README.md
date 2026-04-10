@@ -1,64 +1,28 @@
 # Encaja App
 
-Aplicación web de **presupuesto y control financiero personal** basada en una planilla de Excel existente, diseñada para evolucionar a un producto multiusuario (SaaS) en el futuro.
+Aplicación web de presupuesto y control financiero familiar.
 
----
+## Estado actual
 
-## 🧭 Objetivo
+Implementado: **MVP1 — Base operativa inicial**
 
-- Definir presupuestos por período y categoría
-- Registrar ingresos, gastos y ahorro
-- Comparar ejecución real vs presupuesto
-- Visualizar indicadores y balances
-- Escalar a múltiples usuarios mediante workspaces
+- autenticación (registro/login/logout)
+- sesión persistida
+- bootstrap automático de `profile + workspace + workspace_members + workspace_settings`
+- shell protegida para rutas `/app/*`
+- módulo Categorías (listar/crear/editar/activar/desactivar)
+- módulo Medios de pago (listar/crear/editar/activar/desactivar)
+- módulo Settings del workspace
 
----
+## Stack
 
-## 🧱 Stack Tecnológico
-
-### Frontend
-- Next.js (App Router)
+- Next.js 16 (App Router)
 - TypeScript
-- Mantine (UI + hooks)
+- Mantine
+- Supabase (Auth + Postgres + RLS)
+- React Hook Form + Zod
 
-### Backend / Plataforma
-- Supabase
-  - Postgres
-  - Auth
-  - Row Level Security (RLS)
-
-### Formularios
-- React Hook Form
-- Zod
-
----
-
-## 🏗️ Arquitectura (Resumen)
-
-- Modelo **multi-tenant por workspace**
-- Cada dato pertenece a un `workspace_id`
-- Un usuario puede pertenecer a múltiples workspaces
-- RLS en Supabase para aislar datos
-
-> En el MVP inicial, la experiencia es single-workspace, pero el modelo ya es escalable.
-
----
-
-## 📦 Estructura del Proyecto (inicial)
-
-```
-src/
-  app/
-  components/
-  features/
-  lib/
-  hooks/
-  types/
-```
-
----
-
-## 🚀 Getting Started
+## Setup
 
 ### 1. Instalar dependencias
 
@@ -66,93 +30,40 @@ src/
 npm install
 ```
 
-### 2. Variables de entorno
+### 2. Configurar entorno
 
-Crear un archivo `.env.local`:
+Copiar `.env.example` a `.env.local` y completar:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 ```
 
----
+Si todavía usás key legacy, podés usar `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 
-### 3. Correr el proyecto
+### 3. Aplicar migración SQL
+
+Crear las tablas/policies del MVP1 en Supabase con:
+
+- [`supabase/migrations/20260410130000_mvp1_base_operativa.sql`](supabase/migrations/20260410130000_mvp1_base_operativa.sql)
+
+### 4. Ejecutar
 
 ```bash
 npm run dev
 ```
 
-Abrir en:
+Abrir [http://localhost:3000](http://localhost:3000).
 
-👉 http://localhost:3000
+## Estructura principal
 
----
+- `src/app/(auth)` login y registro
+- `src/app/(protected)/app` área autenticada
+- `src/lib/supabase` cliente y utilidades de sesión
+- `src/lib/workspace/bootstrap.ts` bootstrap idempotente del workspace
+- `src/proxy.ts` protección de rutas en Next 16
+- `supabase/migrations` SQL del modelo y RLS
 
-## 📌 Estado del Proyecto
+## Próximo hito
 
-Actualmente en fase:
-
-👉 Definición de arquitectura + construcción incremental (Vibe Coding)
-
----
-
-## 🧩 Roadmap (alto nivel)
-
-### MVP 0
-- Setup base
-- Layout
-
-### MVP 1
-- Categorías
-- Settings
-
-### MVP 2
-- Presupuesto mensual
-
-### MVP 3
-- Registro de movimientos
-
-### MVP 4
-- Resumen mensual
-
-### MVP 5
-- Dashboard
-
----
-
-## ⚠️ Principios de Desarrollo
-
-- Simplicidad primero
-- Iteración incremental
-- Arquitectura escalable
-- Reglas de negocio explícitas
-- Evitar sobreingeniería
-
----
-
-## 🧠 Notas
-
-- No usar React Compiler en esta etapa
-- No optimizar prematuramente
-- Mantener foco en MVPs pequeños y funcionales
-
----
-
-## 📄 Próximos documentos
-
-- Modelo de datos v1
-- Reglas de negocio v1
-- Definición de MVPs detallados
-
----
-
-## 🧑‍💻 Autor
-
-Proyecto en desarrollo por Juan Pardo
-
----
-
-## 📜 Licencia
-
-Pendiente
+MVP2: presupuesto mensual (`budget_periods` + `budget_items`).
