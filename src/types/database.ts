@@ -32,6 +32,7 @@ export interface Database {
           full_name?: string | null;
           updated_at?: string;
         };
+        Relationships: [];
       };
       workspaces: {
         Row: {
@@ -55,6 +56,7 @@ export interface Database {
           slug?: string | null;
           updated_at?: string;
         };
+        Relationships: [];
       };
       workspace_members: {
         Row: {
@@ -74,6 +76,7 @@ export interface Database {
         Update: {
           role?: WorkspaceRole;
         };
+        Relationships: [];
       };
       workspace_settings: {
         Row: {
@@ -106,6 +109,7 @@ export interface Database {
           currency_code?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       categories: {
         Row: {
@@ -143,6 +147,7 @@ export interface Database {
           icon?: string | null;
           updated_at?: string;
         };
+        Relationships: [];
       };
       payment_methods: {
         Row: {
@@ -177,6 +182,7 @@ export interface Database {
           due_day?: number | null;
           updated_at?: string;
         };
+        Relationships: [];
       };
       budget_periods: {
         Row: {
@@ -205,6 +211,7 @@ export interface Database {
           status?: BudgetPeriodStatus;
           updated_at?: string;
         };
+        Relationships: [];
       };
       budget_items: {
         Row: {
@@ -227,7 +234,20 @@ export interface Database {
           amount?: number;
           updated_at?: string;
         };
+        Relationships: [];
       };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
     };
   };
 }
