@@ -47,4 +47,5 @@ export const settingsFormSchema = z
     }
   });
 
-export type SettingsFormValues = z.infer<typeof settingsFormSchema>;
+export type SettingsFormInputValues = z.input<typeof settingsFormSchema>;
+export type SettingsFormValues = z.output<typeof settingsFormSchema>;

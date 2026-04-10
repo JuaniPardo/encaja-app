@@ -19,6 +19,7 @@ import { Controller, useForm } from "react-hook-form";
 
 import {
   settingsFormSchema,
+  type SettingsFormInputValues,
   type SettingsFormValues,
 } from "@/features/settings/schema";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
@@ -40,7 +41,7 @@ export default function SettingsPage() {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<SettingsFormValues>({
+  } = useForm<SettingsFormInputValues, unknown, SettingsFormValues>({
     resolver: zodResolver(settingsFormSchema),
     defaultValues: {
       startYear: new Date().getFullYear(),

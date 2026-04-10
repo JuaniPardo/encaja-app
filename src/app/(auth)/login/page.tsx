@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,6 +29,14 @@ function getSafeNextPath(pathname: string | null) {
 }
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginPageFallback />}>
+      <LoginPageContent />
+    </Suspense>
+  );
+}
+
+function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = getSupabaseBrowserClient();
@@ -106,6 +115,19 @@ export default function LoginPage() {
           <Anchor component={Link} href="/register">
             Registrate
           </Anchor>
+        </Text>
+      </Stack>
+    </Paper>
+  );
+}
+
+function LoginPageFallback() {
+  return (
+    <Paper radius="lg" p="xl" withBorder shadow="sm">
+      <Stack gap="md">
+        <Title order={2}>Ingresar</Title>
+        <Text c="dimmed" size="sm">
+          Cargando formulario...
         </Text>
       </Stack>
     </Paper>

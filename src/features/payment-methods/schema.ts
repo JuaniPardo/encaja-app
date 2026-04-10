@@ -35,4 +35,5 @@ export const paymentMethodFormSchema = z.object({
   dueDay: optionalDay,
 });
 
-export type PaymentMethodFormValues = z.infer<typeof paymentMethodFormSchema>;
+export type PaymentMethodFormInputValues = z.input<typeof paymentMethodFormSchema>;
+export type PaymentMethodFormValues = z.output<typeof paymentMethodFormSchema>;

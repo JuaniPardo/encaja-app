@@ -23,4 +23,5 @@ export const categoryFormSchema = z.object({
   sortOrder: optionalSortOrder,
 });
 
-export type CategoryFormValues = z.infer<typeof categoryFormSchema>;
+export type CategoryFormInputValues = z.input<typeof categoryFormSchema>;
+export type CategoryFormValues = z.output<typeof categoryFormSchema>;

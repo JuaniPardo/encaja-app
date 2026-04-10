@@ -21,6 +21,7 @@ import { useForm } from "react-hook-form";
 
 import {
   paymentMethodFormSchema,
+  type PaymentMethodFormInputValues,
   type PaymentMethodFormValues,
 } from "@/features/payment-methods/schema";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
@@ -78,7 +79,7 @@ export default function PaymentMethodsPage() {
     reset,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<PaymentMethodFormValues>({
+  } = useForm<PaymentMethodFormInputValues, unknown, PaymentMethodFormValues>({
     resolver: zodResolver(paymentMethodFormSchema),
     defaultValues: toDefaults(),
   });

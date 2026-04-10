@@ -21,6 +21,7 @@ import { useForm } from "react-hook-form";
 
 import {
   categoryFormSchema,
+  type CategoryFormInputValues,
   type CategoryFormValues,
 } from "@/features/categories/schema";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
@@ -79,7 +80,7 @@ export default function CategoriesPage() {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<CategoryFormValues>({
+  } = useForm<CategoryFormInputValues, unknown, CategoryFormValues>({
     resolver: zodResolver(categoryFormSchema),
     defaultValues: toCategoryDefaults(),
   });
