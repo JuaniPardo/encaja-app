@@ -224,7 +224,7 @@ export default function BudgetPage() {
         .order("created_at", { ascending: true }),
       supabase
         .from("workspace_settings")
-        .select("start_year, currency_code")
+        .select("*")
         .eq("workspace_id", workspace.id)
         .maybeSingle(),
     ]);
@@ -265,8 +265,9 @@ export default function BudgetPage() {
       setStartYear(new Date().getFullYear());
       setCurrencyCode("ARS");
     } else {
-      setStartYear(settingsResponse.data?.start_year ?? new Date().getFullYear());
-      setCurrencyCode(settingsResponse.data?.currency_code ?? "ARS");
+      const settingsRow = settingsResponse.data;
+      setStartYear(settingsRow?.start_year ?? new Date().getFullYear());
+      setCurrencyCode(settingsRow?.currency_code ?? "ARS");
     }
 
     setIsBootstrapping(false);
