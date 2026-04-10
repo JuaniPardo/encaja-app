@@ -1,36 +1,158 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Encaja App
 
-## Getting Started
+Aplicación web de **presupuesto y control financiero personal** basada en una planilla de Excel existente, diseñada para evolucionar a un producto multiusuario (SaaS) en el futuro.
 
-First, run the development server:
+---
+
+## 🧭 Objetivo
+
+- Definir presupuestos por período y categoría
+- Registrar ingresos, gastos y ahorro
+- Comparar ejecución real vs presupuesto
+- Visualizar indicadores y balances
+- Escalar a múltiples usuarios mediante workspaces
+
+---
+
+## 🧱 Stack Tecnológico
+
+### Frontend
+- Next.js (App Router)
+- TypeScript
+- Mantine (UI + hooks)
+
+### Backend / Plataforma
+- Supabase
+  - Postgres
+  - Auth
+  - Row Level Security (RLS)
+
+### Formularios
+- React Hook Form
+- Zod
+
+---
+
+## 🏗️ Arquitectura (Resumen)
+
+- Modelo **multi-tenant por workspace**
+- Cada dato pertenece a un `workspace_id`
+- Un usuario puede pertenecer a múltiples workspaces
+- RLS en Supabase para aislar datos
+
+> En el MVP inicial, la experiencia es single-workspace, pero el modelo ya es escalable.
+
+---
+
+## 📦 Estructura del Proyecto (inicial)
+
+```
+src/
+  app/
+  components/
+  features/
+  lib/
+  hooks/
+  types/
+```
+
+---
+
+## 🚀 Getting Started
+
+### 1. Instalar dependencias
+
+```bash
+npm install
+```
+
+### 2. Variables de entorno
+
+Crear un archivo `.env.local`:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+```
+
+---
+
+### 3. Correr el proyecto
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abrir en:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+👉 http://localhost:3000
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 📌 Estado del Proyecto
 
-To learn more about Next.js, take a look at the following resources:
+Actualmente en fase:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+👉 Definición de arquitectura + construcción incremental (Vibe Coding)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 🧩 Roadmap (alto nivel)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### MVP 0
+- Setup base
+- Layout
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### MVP 1
+- Categorías
+- Settings
+
+### MVP 2
+- Presupuesto mensual
+
+### MVP 3
+- Registro de movimientos
+
+### MVP 4
+- Resumen mensual
+
+### MVP 5
+- Dashboard
+
+---
+
+## ⚠️ Principios de Desarrollo
+
+- Simplicidad primero
+- Iteración incremental
+- Arquitectura escalable
+- Reglas de negocio explícitas
+- Evitar sobreingeniería
+
+---
+
+## 🧠 Notas
+
+- No usar React Compiler en esta etapa
+- No optimizar prematuramente
+- Mantener foco en MVPs pequeños y funcionales
+
+---
+
+## 📄 Próximos documentos
+
+- Modelo de datos v1
+- Reglas de negocio v1
+- Definición de MVPs detallados
+
+---
+
+## 🧑‍💻 Autor
+
+Proyecto en desarrollo por Juan Pardo
+
+---
+
+## 📜 Licencia
+
+Pendiente
