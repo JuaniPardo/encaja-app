@@ -24,4 +24,5 @@ export const budgetFormSchema = z.object({
   ),
 });
 
-export type BudgetFormValues = z.infer<typeof budgetFormSchema>;
+export type BudgetFormInputValues = z.input<typeof budgetFormSchema>;
+export type BudgetFormValues = z.output<typeof budgetFormSchema>;

@@ -18,7 +18,11 @@ import {
 import { notifications } from "@mantine/notifications";
 import { useForm, useWatch } from "react-hook-form";
 
-import { budgetFormSchema, type BudgetFormValues } from "@/features/budget/schema";
+import {
+  budgetFormSchema,
+  type BudgetFormInputValues,
+  type BudgetFormValues,
+} from "@/features/budget/schema";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { Database, TransactionType } from "@/types/database";
 
@@ -115,7 +119,7 @@ export default function BudgetPage() {
     control,
     reset,
     formState: { errors },
-  } = useForm<BudgetFormValues>({
+  } = useForm<BudgetFormInputValues, unknown, BudgetFormValues>({
     resolver: zodResolver(budgetFormSchema),
     defaultValues: {
       items: [],
