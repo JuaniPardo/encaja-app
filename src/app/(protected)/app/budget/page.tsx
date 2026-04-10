@@ -27,6 +27,7 @@ import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { Database, TransactionType } from "@/types/database";
 
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
+type WorkspaceSettingsRow = Database["public"]["Tables"]["workspace_settings"]["Row"];
 
 type CategorizedItem = {
   category: CategoryRow;
@@ -265,7 +266,7 @@ export default function BudgetPage() {
       setStartYear(new Date().getFullYear());
       setCurrencyCode("ARS");
     } else {
-      const settingsRow = settingsResponse.data;
+      const settingsRow = settingsResponse.data as WorkspaceSettingsRow | null;
       setStartYear(settingsRow?.start_year ?? new Date().getFullYear());
       setCurrencyCode(settingsRow?.currency_code ?? "ARS");
     }
