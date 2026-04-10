@@ -28,6 +28,7 @@ import type { Database, TransactionType } from "@/types/database";
 
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
 type WorkspaceSettingsRow = Database["public"]["Tables"]["workspace_settings"]["Row"];
+type BudgetPeriodIdRow = Pick<Database["public"]["Tables"]["budget_periods"]["Row"], "id">;
 
 type CategorizedItem = {
   category: CategoryRow;
@@ -295,7 +296,9 @@ export default function BudgetPage() {
       return;
     }
 
-    if (!periodResponse.data) {
+    const periodRow = periodResponse.data as BudgetPeriodIdRow | null;
+
+    if (!periodRow) {
       setPeriodId(null);
       setPeriodHasItems(false);
       reset({
@@ -311,7 +314,7 @@ export default function BudgetPage() {
     const itemsResponse = await supabase
       .from("budget_items")
       .select("category_id, amount")
-      .eq("budget_period_id", periodResponse.data.id);
+      .eq("budget_period_id", periodRow.id);
 
     if (itemsResponse.error) {
       setIsPeriodLoading(false);
@@ -334,7 +337,7 @@ export default function BudgetPage() {
       })),
     });
 
-    setPeriodId(periodResponse.data.id);
+    setPeriodId(periodRow.id);
     setPeriodHasItems(itemsResponse.data.length > 0);
     setIsPeriodLoading(false);
   }, [categories, reset, selectedMonth, selectedYear, supabase, workspace.id]);
@@ -369,8 +372,9 @@ export default function BudgetPage() {
       .single();
 
     if (!insertResponse.error) {
-      setPeriodId(insertResponse.data.id);
-      return insertResponse.data.id;
+      const insertedPeriod = insertResponse.data as BudgetPeriodIdRow;
+      setPeriodId(insertedPeriod.id);
+      return insertedPeriod.id;
     }
 
     if (insertResponse.error.code !== "23505") {
@@ -389,8 +393,9 @@ export default function BudgetPage() {
       throw existingPeriod.error;
     }
 
-    setPeriodId(existingPeriod.data.id);
-    return existingPeriod.data.id;
+    const existingPeriodRow = existingPeriod.data as BudgetPeriodIdRow;
+    setPeriodId(existingPeriodRow.id);
+    return existingPeriodRow.id;
   }, [periodId, selectedMonth, selectedYear, supabase, user.id, workspace.id]);
 
   const onSubmit = handleSubmit(async (values) => {
@@ -490,7 +495,9 @@ export default function BudgetPage() {
         throw previousPeriodResponse.error;
       }
 
-      if (!previousPeriodResponse.data) {
+      const previousPeriodRow = previousPeriodResponse.data as BudgetPeriodIdRow | null;
+
+      if (!previousPeriodRow) {
         notifications.show({
           color: "yellow",
           title: "No hay presupuesto previo",
@@ -502,7 +509,7 @@ export default function BudgetPage() {
       const previousItemsResponse = await supabase
         .from("budget_items")
         .select("category_id, amount")
-        .eq("budget_period_id", previousPeriodResponse.data.id);
+        .eq("budget_period_id", previousPeriodRow.id);
 
       if (previousItemsResponse.error) {
         throw previousItemsResponse.error;
