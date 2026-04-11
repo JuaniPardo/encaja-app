@@ -285,6 +285,12 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
               </Group>
             </UnstyledButton>
           </Tooltip>
+
+          {!desktopCollapsed || isMobile ? (
+            <Text size="10px" c="#98a2b3" mt="sm" ta={isMobile ? "center" : "left"}>
+              Desarrollado por Juan Pardo
+            </Text>
+          ) : null}
         </Box>
       </AppShell.Navbar>
 

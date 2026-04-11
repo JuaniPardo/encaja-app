@@ -67,3 +67,11 @@ Abrir [http://localhost:3000](http://localhost:3000).
 ## Próximo hito
 
 MVP2: presupuesto mensual (`budget_periods` + `budget_items`).
+
+## Autoría
+
+Desarrollado por Juan Pardo.
+
+## Licencia
+
+Este proyecto está bajo licencia MIT. Ver [LICENSE](./LICENSE).
