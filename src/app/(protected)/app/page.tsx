@@ -15,6 +15,7 @@ import {
   Stack,
   Table,
   Text,
+  Tooltip,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
@@ -70,6 +71,16 @@ type DonutDataByType = Record<
     slices: DonutSlice[];
   }
 >;
+
+type ComparisonBarKey = "income" | "expense" | "saving" | "balance";
+
+type ComparisonBarRow = {
+  key: ComparisonBarKey;
+  label: string;
+  budget: number;
+  real: number;
+  realColor: string;
+};
 
 const monthOptions = [
   { value: "1", label: "Enero" },
@@ -245,6 +256,34 @@ function getDeviationColor(type: TransactionType, deviation: number) {
 
   const isPositive = type === "income" ? deviation > 0 : deviation < 0;
   return isPositive ? "#087f5b" : "#c92a2a";
+}
+
+function getComparisonRealColor(key: ComparisonBarKey, real: number, budget: number) {
+  if (key === "income") {
+    return real >= 0 ? "#0f766e" : "#dc2626";
+  }
+
+  if (key === "expense") {
+    return real > budget + 0.005 ? "#be123c" : "#e11d48";
+  }
+
+  if (key === "saving") {
+    return real >= 0 ? "#4f46e5" : "#dc2626";
+  }
+
+  return real >= 0 ? "#0f766e" : "#dc2626";
+}
+
+function getComparisonDeltaColor(key: ComparisonBarKey, delta: number) {
+  if (Math.abs(delta) < 0.005) {
+    return "#64748b";
+  }
+
+  if (key === "expense") {
+    return delta <= 0 ? "#087f5b" : "#c92a2a";
+  }
+
+  return delta >= 0 ? "#087f5b" : "#c92a2a";
 }
 
 export default function DashboardPage() {
@@ -594,35 +633,47 @@ export default function DashboardPage() {
     }));
   }, [metrics.groupedRows]);
 
-  const comparisonBars = useMemo(() => {
+  const comparisonBars = useMemo<ComparisonBarRow[]>(() => {
     return [
       {
         key: "income",
         label: "Ingreso",
         budget: metrics.totalsByType.income.budget,
         real: metrics.totalsByType.income.real,
-        color: typeTheme.income.main,
+        realColor: getComparisonRealColor(
+          "income",
+          metrics.totalsByType.income.real,
+          metrics.totalsByType.income.budget,
+        ),
       },
       {
         key: "expense",
         label: "Gasto",
         budget: metrics.totalsByType.expense.budget,
         real: metrics.totalsByType.expense.real,
-        color: typeTheme.expense.main,
+        realColor: getComparisonRealColor(
+          "expense",
+          metrics.totalsByType.expense.real,
+          metrics.totalsByType.expense.budget,
+        ),
       },
       {
         key: "saving",
         label: "Ahorro",
         budget: metrics.totalsByType.saving.budget,
         real: metrics.totalsByType.saving.real,
-        color: typeTheme.saving.main,
+        realColor: getComparisonRealColor(
+          "saving",
+          metrics.totalsByType.saving.real,
+          metrics.totalsByType.saving.budget,
+        ),
       },
       {
         key: "balance",
         label: "Balance",
-        budget: Math.max(0, metrics.balanceBudget),
-        real: Math.max(0, metrics.balanceReal),
-        color: "#cdd3dc",
+        budget: metrics.balanceBudget,
+        real: metrics.balanceReal,
+        realColor: getComparisonRealColor("balance", metrics.balanceReal, metrics.balanceBudget),
       },
     ];
   }, [
@@ -638,7 +689,7 @@ export default function DashboardPage() {
 
   const maxComparisonValue = useMemo(() => {
     const maxValue = comparisonBars.reduce((max, item) => {
-      return Math.max(max, item.budget, item.real);
+      return Math.max(max, Math.abs(item.budget), Math.abs(item.real));
     }, 0);
 
     return maxValue <= 0 ? 1 : maxValue;
@@ -688,7 +739,8 @@ export default function DashboardPage() {
   const donutSize = isMobile ? 76 : isTablet ? 84 : 96;
   const donutThickness = isMobile ? 9 : 11;
   const comparisonHeight = isMobile ? 64 : isTablet ? 74 : 86;
-  const comparisonBarWidth = isMobile ? 8 : 10;
+  const comparisonSlotWidth = isMobile ? 46 : isTablet ? 52 : 58;
+  const comparisonOverlayWidth = isMobile ? 14 : isTablet ? 16 : 18;
   const tableColumnWidths = isMobile
     ? {
         category: "30%",
@@ -1150,46 +1202,103 @@ export default function DashboardPage() {
                 </Text>
 
                 <Group align="end" gap={isMobile ? "xs" : "sm"} wrap="nowrap">
-                  {comparisonBars.map((item) => (
-                    <Stack key={item.key} gap={4} align="center" style={{ flex: 1 }}>
-                      <Group gap={4} align="end" justify="center" wrap="nowrap" h={comparisonHeight}>
-                        <Box
-                          style={{
-                            width: comparisonBarWidth,
-                            height: `${(item.budget / maxComparisonValue) * 100}%`,
-                            minHeight: 4,
-                            backgroundColor: "#98a2b3",
-                            borderRadius: 3,
-                          }}
-                        />
-                        <Box
-                          style={{
-                            width: comparisonBarWidth,
-                            height: `${(item.real / maxComparisonValue) * 100}%`,
-                            minHeight: 4,
-                            backgroundColor: item.color,
-                            borderRadius: 3,
-                          }}
-                        />
-                      </Group>
-                      <Text size="xs" c="#344054">
-                        {item.label}
-                      </Text>
-                    </Stack>
-                  ))}
+                  {comparisonBars.map((item) => {
+                    const budgetHeight =
+                      Math.abs(item.budget) < 0.005
+                        ? 0
+                        : Math.max(4, (Math.abs(item.budget) / maxComparisonValue) * comparisonHeight);
+                    const realHeight =
+                      Math.abs(item.real) < 0.005
+                        ? 0
+                        : Math.max(4, (Math.abs(item.real) / maxComparisonValue) * comparisonHeight);
+                    const delta = roundMoney(item.real - item.budget);
+                    const deltaColor = getComparisonDeltaColor(item.key, delta);
+
+                    return (
+                      <Tooltip
+                        key={item.key}
+                        withArrow
+                        position="top"
+                        label={
+                          <Stack gap={2}>
+                            <Text size="xs" fw={700}>
+                              {item.label}
+                            </Text>
+                            <Text size="xs">Presupuesto: {currencyFormatter.format(item.budget)}</Text>
+                            <Text size="xs">Registro: {currencyFormatter.format(item.real)}</Text>
+                            <Text size="xs" c={deltaColor}>
+                              Diferencia: {formatSignedCurrency(delta, currencyFormatter)}
+                            </Text>
+                          </Stack>
+                        }
+                      >
+                        <Stack gap={4} align="center" style={{ flex: 1, minWidth: comparisonSlotWidth }}>
+                          <Text size="10px" c={item.realColor} fw={700} lineClamp={1}>
+                            {compactFormatter.format(item.real)}
+                          </Text>
+
+                          <Box
+                            style={{
+                              width: comparisonSlotWidth,
+                              height: comparisonHeight,
+                              position: "relative",
+                              borderBottom: "1px solid #d0d5dd",
+                            }}
+                          >
+                            <Box
+                              style={{
+                                width: comparisonOverlayWidth,
+                                height: budgetHeight,
+                                position: "absolute",
+                                left: "50%",
+                                bottom: 0,
+                                transform: "translateX(-50%)",
+                                backgroundColor: "#d0d5dd",
+                                borderRadius: 4,
+                              }}
+                            />
+                            <Box
+                              style={{
+                                width: comparisonOverlayWidth,
+                                height: realHeight,
+                                position: "absolute",
+                                left: "50%",
+                                bottom: 0,
+                                transform: "translateX(-50%)",
+                                backgroundColor: item.realColor,
+                                borderRadius: 4,
+                                opacity: 0.98,
+                              }}
+                            />
+                          </Box>
+
+                          <Text size="xs" c="#344054">
+                            {item.label}
+                          </Text>
+                        </Stack>
+                      </Tooltip>
+                    );
+                  })}
                 </Group>
 
                 <Group gap={isMobile ? "sm" : "md"} wrap={isMobile ? "wrap" : "nowrap"}>
                   <Group gap={6}>
-                    <Box h={8} w={8} style={{ backgroundColor: "#98a2b3", borderRadius: 2 }} />
+                    <Box h={8} w={8} style={{ backgroundColor: "#d0d5dd", borderRadius: 2 }} />
                     <Text size="xs" c="#475467">
                       Presupuesto
                     </Text>
                   </Group>
                   <Group gap={6}>
-                    <Box h={8} w={8} style={{ backgroundColor: "#344054", borderRadius: 2 }} />
+                    <Box
+                      h={8}
+                      w={8}
+                      style={{
+                        background: "linear-gradient(180deg, #0f766e 0%, #e11d48 55%, #4f46e5 100%)",
+                        borderRadius: 2,
+                      }}
+                    />
                     <Text size="xs" c="#475467">
-                      Registro
+                      Registro (según categoría)
                     </Text>
                   </Group>
                 </Group>
