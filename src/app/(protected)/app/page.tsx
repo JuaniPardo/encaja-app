@@ -191,7 +191,32 @@ function clampToPercent(value: number) {
   return value;
 }
 
-function getExecutionScale(value: number | null) {
+const executionPaletteByType: Record<
+  TransactionType,
+  {
+    muted: { bar: string; track: string; text: string };
+    target: { bar: string; track: string; text: string };
+    over: { bar: string; track: string; text: string };
+  }
+> = {
+  income: {
+    muted: { bar: "#5eead4", track: "#ccfbf1", text: "#0f766e" },
+    target: { bar: "#0d9488", track: "#ccfbf1", text: "#115e59" },
+    over: { bar: "#0f766e", track: "#99f6e4", text: "#115e59" },
+  },
+  expense: {
+    muted: { bar: "#f9a8d4", track: "#fce7f3", text: "#9d174d" },
+    target: { bar: "#db2777", track: "#fce7f3", text: "#9d174d" },
+    over: { bar: "#be185d", track: "#fbcfe8", text: "#831843" },
+  },
+  saving: {
+    muted: { bar: "#a5b4fc", track: "#e0e7ff", text: "#4338ca" },
+    target: { bar: "#6366f1", track: "#e0e7ff", text: "#4338ca" },
+    over: { bar: "#4f46e5", track: "#c7d2fe", text: "#3730a3" },
+  },
+};
+
+function getExecutionScale(type: TransactionType, value: number | null) {
   if (value === null) {
     return {
       bar: "#cbd5e1",
@@ -200,27 +225,17 @@ function getExecutionScale(value: number | null) {
     };
   }
 
+  const palette = executionPaletteByType[type];
+
   if (value > 100) {
-    return {
-      bar: "#e03131",
-      track: "#ffe3e3",
-      text: "#c92a2a",
-    };
+    return palette.over;
   }
 
   if (value >= 80) {
-    return {
-      bar: "#0ca678",
-      track: "#d3f9d8",
-      text: "#087f5b",
-    };
+    return palette.target;
   }
 
-  return {
-    bar: "#94a3b8",
-    track: "#e2e8f0",
-    text: "#475569",
-  };
+  return palette.muted;
 }
 
 function getDeviationColor(type: TransactionType, deviation: number) {
@@ -667,7 +682,8 @@ export default function DashboardPage() {
   const cardPadding = isMobile ? "xs" : "sm";
   const tableHorizontalSpacing = isMobile ? "xs" : "sm";
   const tableVerticalSpacing = isMobile ? 5 : 6;
-  const progressBarSize = isMobile ? 6 : 8;
+  const monthProgressSize = isMobile ? 6 : 8;
+  const executionProgressSize = isMobile ? 9 : 11;
   const executionBarWidth = isMobile ? "100%" : isTablet ? 88 : 96;
   const donutSize = isMobile ? 76 : isTablet ? 84 : 96;
   const donutThickness = isMobile ? 9 : 11;
@@ -826,7 +842,7 @@ export default function DashboardPage() {
                   value={monthProgress}
                   color="#0ea5e9"
                   radius="xl"
-                  size={progressBarSize}
+                  size={monthProgressSize}
                 />
               </Stack>
             </Paper>
@@ -841,7 +857,7 @@ export default function DashboardPage() {
               const totals = metrics.totalsByType[type];
               const totalExecutionPercent =
                 Math.abs(totals.budget) < 0.005 ? null : (totals.real / totals.budget) * 100;
-              const totalExecutionScale = getExecutionScale(totalExecutionPercent);
+              const totalExecutionScale = getExecutionScale(type, totalExecutionPercent);
 
               return (
                 <Paper
@@ -923,7 +939,7 @@ export default function DashboardPage() {
                         </Table.Tr>
                       ) : (
                         rows.map((row) => {
-                          const executionScale = getExecutionScale(row.executionPercent);
+                          const executionScale = getExecutionScale(type, row.executionPercent);
                           const deviationColor = getDeviationColor(type, row.deviation);
 
                           return (
@@ -964,7 +980,7 @@ export default function DashboardPage() {
                                       value={clampToPercent(row.executionPercent)}
                                       color={executionScale.bar}
                                       radius="xl"
-                                      size={progressBarSize}
+                                      size={executionProgressSize}
                                       style={{ width: executionBarWidth }}
                                       styles={{ root: { backgroundColor: executionScale.track } }}
                                     />
@@ -1016,7 +1032,7 @@ export default function DashboardPage() {
                                 value={clampToPercent(totalExecutionPercent)}
                                 color={totalExecutionScale.bar}
                                 radius="xl"
-                                size={progressBarSize}
+                                size={executionProgressSize}
                                 style={{ width: executionBarWidth }}
                                 styles={{ root: { backgroundColor: totalExecutionScale.track } }}
                               />
