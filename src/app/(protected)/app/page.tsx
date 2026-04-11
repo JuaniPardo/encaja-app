@@ -219,6 +219,13 @@ export default function DashboardPage() {
     });
   }, []);
 
+  const compactFormatter = useMemo(() => {
+    return new Intl.NumberFormat("es-AR", {
+      notation: "compact",
+      maximumFractionDigits: 1,
+    });
+  }, []);
+
   const yearOptions = useMemo(() => {
     const currentYear = new Date().getFullYear();
     const initialYear = Math.min(startYear, selectedYear, currentYear - 1);
@@ -587,8 +594,8 @@ export default function DashboardPage() {
         radius="sm"
         p="sm"
         style={{
-          border: "1px solid #1f252d",
-          backgroundColor: "#0a0d11",
+          border: "1px solid #d6dde7",
+          backgroundColor: "#f5f7fa",
         }}
       >
         <Stack gap="sm">
@@ -596,19 +603,19 @@ export default function DashboardPage() {
             px="sm"
             py={6}
             style={{
-              backgroundColor: "#00863f",
-              border: "1px solid #00a552",
+              backgroundColor: "#00a552",
+              border: "1px solid #00863f",
             }}
           >
-            <Text fw={800} c="#e8fff1" size="sm">
+            <Text fw={800} c="#ffffff" size="sm">
               TABLERO
             </Text>
           </Box>
 
           <SimpleGrid cols={{ base: 1, sm: 2, lg: 5 }} spacing="sm">
-            <Paper withBorder radius="sm" p="xs" bg="#151a20" c="#e6e9ef">
+            <Paper withBorder radius="sm" p="xs" bg="#ffffff" c="#1f2937">
               <Stack gap={6}>
-                <Text size="xs" fw={700} c="#c8ced8">
+                <Text size="xs" fw={700} c="#475467">
                   Año y Mes Seleccionado
                 </Text>
                 <Group grow>
@@ -634,27 +641,27 @@ export default function DashboardPage() {
               </Stack>
             </Paper>
 
-            <Paper withBorder radius="sm" p="xs" bg="#151a20">
+            <Paper withBorder radius="sm" p="xs" bg="#ffffff">
               <Stack gap={6}>
-                <Text size="xs" fw={700} c="#c8ced8">
+                <Text size="xs" fw={700} c="#475467">
                   Transcurrido
                 </Text>
-                <Text fw={700} c="#f6f7f9">
+                <Text fw={700} c="#1f2937">
                   {percentageFormatter.format(monthProgress)}%
                 </Text>
                 <Progress value={monthProgress} color="#00b8f2" radius="xs" />
               </Stack>
             </Paper>
 
-            <Paper withBorder radius="sm" p="xs" bg="#151a20">
+            <Paper withBorder radius="sm" p="xs" bg="#ffffff">
               <Stack gap={4}>
-                <Text size="xs" fw={700} c="#c8ced8">
+                <Text size="xs" fw={700} c="#475467">
                   Balance período
                 </Text>
                 <Text fw={800} c={metrics.balanceReal >= 0 ? "#5de08f" : "#ff6f9f"}>
                   {currencyFormatter.format(metrics.balanceReal)}
                 </Text>
-                <Text size="xs" c="#b7bdc7">
+                <Text size="xs" c="#667085">
                   Presup: {currencyFormatter.format(metrics.balanceBudget)}
                 </Text>
                 <Text size="xs" c={metrics.balanceDelta >= 0 ? "#8de7b0" : "#ff9dbc"}>
@@ -663,18 +670,18 @@ export default function DashboardPage() {
               </Stack>
             </Paper>
 
-            <Paper withBorder radius="sm" p="xs" bg="#151a20">
+            <Paper withBorder radius="sm" p="xs" bg="#ffffff">
               <Stack gap={4}>
-                <Text size="xs" fw={700} c="#c8ced8">
+                <Text size="xs" fw={700} c="#475467">
                   Ahorro período
                 </Text>
                 <Text fw={800} c="#5cc8ee">
                   {currencyFormatter.format(metrics.totalsByType.saving.real)}
                 </Text>
-                <Text size="xs" c="#b7bdc7">
+                <Text size="xs" c="#667085">
                   Presup: {currencyFormatter.format(metrics.totalsByType.saving.budget)}
                 </Text>
-                <Text size="xs" c="#b7bdc7">
+                <Text size="xs" c="#667085">
                   Ratio:{" "}
                   {savingsVsIncome === null
                     ? "N/A"
@@ -683,18 +690,18 @@ export default function DashboardPage() {
               </Stack>
             </Paper>
 
-            <Paper withBorder radius="sm" p="xs" bg="#151a20">
+            <Paper withBorder radius="sm" p="xs" bg="#ffffff">
               <Stack gap={4}>
-                <Text size="xs" fw={700} c="#c8ced8">
+                <Text size="xs" fw={700} c="#475467">
                   Período
                 </Text>
-                <Text fw={700} c="#f6f7f9">
+                <Text fw={700} c="#1f2937">
                   {monthLabel(selectedMonth)} {selectedYear}
                 </Text>
-                <Text size="xs" c="#b7bdc7">
+                <Text size="xs" c="#667085">
                   Moneda: {currencyCode}
                 </Text>
-                <Text size="xs" c="#b7bdc7">
+                <Text size="xs" c="#667085">
                   Workspace: {workspace.name}
                 </Text>
               </Stack>
@@ -705,26 +712,26 @@ export default function DashboardPage() {
             px="sm"
             py={6}
             style={{
-              borderTop: "1px solid #202730",
-              borderBottom: "1px solid #202730",
-              backgroundColor: "#11161d",
+              borderTop: "1px solid #d6dde7",
+              borderBottom: "1px solid #d6dde7",
+              backgroundColor: "#e9edf3",
             }}
           >
-            <Text size="xs" c="#c8ced8" fw={700}>
+            <Text size="xs" c="#334155" fw={700}>
               Datos - {monthLabel(selectedMonth)} {selectedYear}
             </Text>
           </Box>
 
           <Grid gap="sm">
-            <Grid.Col span={{ base: 12, lg: 5 }}>
+            <Grid.Col span={{ base: 12, lg: 7 }}>
               <Stack gap="sm">
                 {summaryRows.map(({ type, rows }) => (
                   <Paper
                     key={type}
                     radius="sm"
                     style={{
-                      border: "1px solid #232a34",
-                      backgroundColor: "#11161d",
+                      border: "1px solid #d6dde7",
+                      backgroundColor: "#ffffff",
                     }}
                   >
                     <Box
@@ -732,36 +739,35 @@ export default function DashboardPage() {
                       py={6}
                       style={{
                         backgroundColor: typeTheme[type].header,
-                        borderBottom: "1px solid #232a34",
+                        borderBottom: "1px solid #d6dde7",
                       }}
                     >
-                      <Text size="xs" fw={800} c="#f6f8fb">
+                      <Text size="xs" fw={800} c="#ffffff">
                         {typeLabels[type]}
                       </Text>
                     </Box>
 
-                    <Table.ScrollContainer minWidth={560}>
-                      <Table
-                        horizontalSpacing="sm"
-                        verticalSpacing={7}
-                        style={{ color: "#e6ebf2" }}
-                      >
+                    <Table
+                      horizontalSpacing={6}
+                      verticalSpacing={5}
+                      style={{ color: "#1f2937", tableLayout: "fixed", width: "100%" }}
+                    >
                         <Table.Thead>
                           <Table.Tr>
-                            <Table.Th style={{ color: "#aeb5c0" }}>Categoría</Table.Th>
-                            <Table.Th style={{ color: "#aeb5c0", textAlign: "right" }}>
+                            <Table.Th style={{ color: "#475467", width: "29%" }}>Categoría</Table.Th>
+                            <Table.Th style={{ color: "#475467", textAlign: "right", width: "14%" }}>
                               Registro
                             </Table.Th>
-                            <Table.Th style={{ color: "#aeb5c0", textAlign: "right" }}>
+                            <Table.Th style={{ color: "#475467", textAlign: "right", width: "14%" }}>
                               Presup.
                             </Table.Th>
-                            <Table.Th style={{ color: "#aeb5c0", textAlign: "right" }}>
+                            <Table.Th style={{ color: "#475467", textAlign: "right", width: "14%" }}>
                               % Compl.
                             </Table.Th>
-                            <Table.Th style={{ color: "#aeb5c0", textAlign: "right" }}>
+                            <Table.Th style={{ color: "#475467", textAlign: "right", width: "14%" }}>
                               Resta
                             </Table.Th>
-                            <Table.Th style={{ color: "#aeb5c0", textAlign: "right" }}>
+                            <Table.Th style={{ color: "#475467", textAlign: "right", width: "15%" }}>
                               Excede
                             </Table.Th>
                           </Table.Tr>
@@ -770,7 +776,7 @@ export default function DashboardPage() {
                           {rows.length === 0 ? (
                             <Table.Tr>
                               <Table.Td colSpan={6}>
-                                <Text size="xs" c="#8d96a3">
+                                <Text size="xs" c="#98a2b3">
                                   Sin categorías con datos para este tipo.
                                 </Text>
                               </Table.Td>
@@ -784,35 +790,35 @@ export default function DashboardPage() {
                                 <Table.Tr key={row.categoryId}>
                                   <Table.Td>
                                     <Group gap={6} wrap="nowrap">
-                                      <Text size="sm" c="#e9edf4">
+                                      <Text size="xs" c="#1f2937" lineClamp={1}>
                                         {row.categoryName}
                                       </Text>
                                       {!row.categoryIsActive ? (
-                                        <Text size="xs" c="#9099a6">
+                                        <Text size="xs" c="#98a2b3">
                                           inactiva
                                         </Text>
                                       ) : null}
                                     </Group>
                                   </Table.Td>
-                                  <Table.Td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                                    <Text size="sm" c="#e9edf4">
-                                      {currencyFormatter.format(row.realAmount)}
+                                  <Table.Td style={{ textAlign: "right" }}>
+                                    <Text size="xs" c="#1f2937">
+                                      {compactFormatter.format(row.realAmount)}
                                     </Text>
                                   </Table.Td>
-                                  <Table.Td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                                    <Text size="sm" c="#cfd6e1">
-                                      {currencyFormatter.format(row.budgetAmount)}
+                                  <Table.Td style={{ textAlign: "right" }}>
+                                    <Text size="xs" c="#475467">
+                                      {compactFormatter.format(row.budgetAmount)}
                                     </Text>
                                   </Table.Td>
-                                  <Table.Td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                                  <Table.Td style={{ textAlign: "right" }}>
                                     <Text
-                                      size="sm"
+                                      size="xs"
                                       c={
                                         row.executionPercent === null
-                                          ? "#9099a6"
+                                          ? "#98a2b3"
                                           : row.executionPercent > 100
-                                            ? "#ff97be"
-                                            : "#7ee8a8"
+                                            ? "#c10052"
+                                            : "#00863f"
                                       }
                                     >
                                       {row.executionPercent === null
@@ -820,22 +826,22 @@ export default function DashboardPage() {
                                         : `${percentageFormatter.format(row.executionPercent)}%`}
                                     </Text>
                                   </Table.Td>
-                                  <Table.Td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                                    <Text size="sm" c="#cfd6e1">
+                                  <Table.Td style={{ textAlign: "right" }}>
+                                    <Text size="xs" c="#475467">
                                       {remaining > 0
-                                        ? currencyFormatter.format(remaining)
-                                        : currencyFormatter.format(0)}
+                                        ? compactFormatter.format(remaining)
+                                        : compactFormatter.format(0)}
                                     </Text>
                                   </Table.Td>
-                                  <Table.Td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                                  <Table.Td style={{ textAlign: "right" }}>
                                     <Text
-                                      size="sm"
-                                      c={excess > 0 ? "#ff97be" : "#8d96a3"}
+                                      size="xs"
+                                      c={excess > 0 ? "#c10052" : "#98a2b3"}
                                       fw={excess > 0 ? 700 : 400}
                                     >
                                       {excess > 0
-                                        ? currencyFormatter.format(excess)
-                                        : currencyFormatter.format(0)}
+                                        ? compactFormatter.format(excess)
+                                        : compactFormatter.format(0)}
                                     </Text>
                                   </Table.Td>
                                 </Table.Tr>
@@ -843,14 +849,13 @@ export default function DashboardPage() {
                             })
                           )}
                         </Table.Tbody>
-                      </Table>
-                    </Table.ScrollContainer>
+                    </Table>
                   </Paper>
                 ))}
               </Stack>
             </Grid.Col>
 
-            <Grid.Col span={{ base: 12, lg: 7 }}>
+            <Grid.Col span={{ base: 12, lg: 5 }}>
               <Grid gap="sm">
                 {(Object.keys(typeLabels) as TransactionType[]).map((type) => {
                   const donut = donutData[type];
@@ -862,8 +867,8 @@ export default function DashboardPage() {
                         p="sm"
                         radius="sm"
                         style={{
-                          border: "1px solid #232a34",
-                          backgroundColor: "#11161d",
+                          border: "1px solid #d6dde7",
+                          backgroundColor: "#ffffff",
                         }}
                       >
                         <Stack gap="xs">
@@ -878,14 +883,14 @@ export default function DashboardPage() {
                               roundCaps
                               sections={
                                 donut.slices.length === 0
-                                  ? [{ value: 100, color: "#2a313d" }]
+                                  ? [{ value: 100, color: "#e4e7ec" }]
                                   : donut.slices.map((slice) => ({
                                       value: clampToPercent(slice.value),
                                       color: slice.color,
                                     }))
                               }
                               label={
-                                <Text size="xs" c="#f2f4f7" ta="center" fw={700}>
+                                <Text size="xs" c="#334155" ta="center" fw={700}>
                                   {currencyFormatter.format(donut.total)}
                                 </Text>
                               }
@@ -893,7 +898,7 @@ export default function DashboardPage() {
 
                             <Stack gap={6} style={{ flex: 1 }}>
                               {donut.slices.length === 0 ? (
-                                <Text size="xs" c="#8d96a3">
+                                <Text size="xs" c="#98a2b3">
                                   Sin datos reales en el período.
                                 </Text>
                               ) : (
@@ -905,11 +910,11 @@ export default function DashboardPage() {
                                         w={8}
                                         style={{ borderRadius: 2, backgroundColor: slice.color }}
                                       />
-                                      <Text size="xs" c="#d9dee7">
+                                      <Text size="xs" c="#344054" lineClamp={1}>
                                         {slice.label}
                                       </Text>
                                     </Group>
-                                    <Text size="xs" c="#d9dee7">
+                                    <Text size="xs" c="#344054">
                                       {percentageFormatter.format(slice.value)}%
                                     </Text>
                                   </Group>
@@ -928,12 +933,12 @@ export default function DashboardPage() {
                     p="sm"
                     radius="sm"
                     style={{
-                      border: "1px solid #232a34",
-                      backgroundColor: "#11161d",
+                      border: "1px solid #d6dde7",
+                      backgroundColor: "#ffffff",
                     }}
                   >
                     <Stack gap="sm">
-                      <Text size="xs" fw={800} c="#cfd6e1">
+                      <Text size="xs" fw={800} c="#344054">
                         Registro vs Presupuesto
                       </Text>
 
@@ -953,7 +958,7 @@ export default function DashboardPage() {
                                   width: 14,
                                   height: `${(item.budget / maxComparisonValue) * 100}%`,
                                   minHeight: 4,
-                                  backgroundColor: "#8c93a0",
+                                  backgroundColor: "#98a2b3",
                                 }}
                               />
                               <Box
@@ -965,7 +970,7 @@ export default function DashboardPage() {
                                 }}
                               />
                             </Group>
-                            <Text size="xs" c="#d9dee7">
+                            <Text size="xs" c="#344054">
                               {item.label}
                             </Text>
                           </Stack>
@@ -974,14 +979,14 @@ export default function DashboardPage() {
 
                       <Group gap="md">
                         <Group gap={6}>
-                          <Box h={8} w={8} style={{ backgroundColor: "#8c93a0", borderRadius: 2 }} />
-                          <Text size="xs" c="#c8ced8">
+                          <Box h={8} w={8} style={{ backgroundColor: "#98a2b3", borderRadius: 2 }} />
+                          <Text size="xs" c="#475467">
                             Presupuesto
                           </Text>
                         </Group>
                         <Group gap={6}>
-                          <Box h={8} w={8} style={{ backgroundColor: "#d9dee7", borderRadius: 2 }} />
-                          <Text size="xs" c="#c8ced8">
+                          <Box h={8} w={8} style={{ backgroundColor: "#344054", borderRadius: 2 }} />
+                          <Text size="xs" c="#475467">
                             Registro
                           </Text>
                         </Group>
