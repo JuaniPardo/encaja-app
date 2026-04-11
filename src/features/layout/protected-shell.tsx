@@ -16,8 +16,8 @@ import {
   Title,
   UnstyledButton,
 } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
-import { useState } from "react";
+import { useDisclosure, useMediaQuery } from "@mantine/hooks";
+import { useEffect, useState } from "react";
 
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 
@@ -116,19 +116,24 @@ function ShellIcon({ children }: { children: React.ReactNode }) {
 
 export function ProtectedShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [opened, { toggle }] = useDisclosure(false);
+  const [opened, { toggle, close }] = useDisclosure(false);
   const [desktopCollapsed, setDesktopCollapsed] = useState(false);
+  const isMobile = useMediaQuery("(max-width: 47.99em)");
   const { workspace, user, signOut } = useWorkspace();
+
+  useEffect(() => {
+    close();
+  }, [pathname, close]);
 
   return (
     <AppShell
-      header={{ height: 66 }}
+      header={{ height: { base: 58, sm: 66 } }}
       navbar={{
-        width: desktopCollapsed ? 74 : 272,
+        width: { base: 236, sm: desktopCollapsed ? 74 : 256 },
         breakpoint: "sm",
         collapsed: { mobile: !opened },
       }}
-      padding="md"
+      padding={{ base: "xs", sm: "md" }}
     >
       <AppShell.Header
         style={{
@@ -137,7 +142,7 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
           backdropFilter: "blur(6px)",
         }}
       >
-        <Group h="100%" px="md" justify="space-between">
+        <Group h="100%" px={isMobile ? "xs" : "md"} justify="space-between">
           <Group>
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
             <ActionIcon
@@ -153,7 +158,7 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
               </Text>
             </ActionIcon>
             <Box>
-              <Title order={3}>Encaja</Title>
+              <Title order={isMobile ? 4 : 3}>Encaja</Title>
               <Text size="xs" c="dimmed">
                 {workspace.name}
               </Text>
@@ -172,13 +177,13 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
       </AppShell.Header>
 
       <AppShell.Navbar
-        p="sm"
+        p={isMobile ? "xs" : "sm"}
         style={{
           borderRight: "1px solid #e4e7ec",
           backgroundColor: "#f9fbfa",
         }}
       >
-        <Stack gap={4}>
+        <Stack gap={isMobile ? 3 : 4}>
           {navItems.map((item) => {
             const isActive = isActivePath(pathname, item.href);
 
@@ -195,17 +200,18 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
                   href={item.href}
                   onClick={() => {
                     if (opened) {
-                      toggle();
+                      close();
                     }
                   }}
                   style={{
                     width: "100%",
-                    padding: desktopCollapsed ? "11px 0" : "11px 12px",
-                    borderRadius: 10,
+                    padding: desktopCollapsed ? "10px 0" : isMobile ? "10px 10px" : "11px 12px",
+                    borderRadius: 8,
                     display: "block",
-                    backgroundColor: isActive ? "#e7f6ef" : "transparent",
-                    border: `1px solid ${isActive ? "#b7e4d2" : "transparent"}`,
+                    backgroundColor: isActive ? "#dff3ea" : "transparent",
+                    border: `1px solid ${isActive ? "#9fd7bf" : "transparent"}`,
                     color: isActive ? "#087f5b" : "#475467",
+                    boxShadow: isActive ? "inset 3px 0 0 #0ca678" : "none",
                   }}
                 >
                   <Group
@@ -230,7 +236,7 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
                       ) : null}
                     </Box>
                     {!desktopCollapsed ? (
-                      <Text size="sm" fw={isActive ? 700 : 600}>
+                      <Text size={isMobile ? "xs" : "sm"} fw={isActive ? 700 : 600}>
                         {item.label}
                       </Text>
                     ) : null}
@@ -241,11 +247,12 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
           })}
         </Stack>
 
-        <Box mt="xl">
+        <Box mt="auto" pt="lg">
           <Button
             variant="subtle"
             color="gray"
             hiddenFrom="sm"
+            size="xs"
             onClick={() => void signOut()}
             fullWidth
           >
@@ -259,7 +266,7 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
               style={{
                 width: "100%",
                 padding: desktopCollapsed ? "11px 0" : "11px 12px",
-                borderRadius: 10,
+                borderRadius: 8,
                 color: "#475467",
                 border: "1px solid transparent",
               }}
@@ -282,7 +289,7 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
       </AppShell.Navbar>
 
       <AppShell.Main>
-        <Container size="xl" py="md">
+        <Container size="xl" py={isMobile ? "xs" : "md"}>
           {children}
         </Container>
       </AppShell.Main>

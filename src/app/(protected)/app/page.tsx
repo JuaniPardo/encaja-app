@@ -16,6 +16,7 @@ import {
   Table,
   Text,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 
 import { useWorkspace } from "@/features/workspace/workspace-provider";
@@ -658,20 +659,57 @@ export default function DashboardPage() {
   }, [metrics.groupedRows]);
 
   const selectedPeriodLabel = `${monthLabel(selectedMonth)} ${selectedYear}`;
+  const isMobile = useMediaQuery("(max-width: 47.99em)");
+  const isNarrowMobile = useMediaQuery("(max-width: 33.99em)");
+  const isTablet = useMediaQuery("(min-width: 48em) and (max-width: 74.99em)");
+
+  const kpiColumns = isMobile ? (isNarrowMobile ? 1 : 2) : isTablet ? 2 : 3;
+  const cardPadding = isMobile ? "xs" : "sm";
+  const tableHorizontalSpacing = isMobile ? "xs" : "sm";
+  const tableVerticalSpacing = isMobile ? 5 : 6;
+  const progressBarSize = isMobile ? 6 : 8;
+  const executionBarWidth = isMobile ? "100%" : isTablet ? 88 : 96;
+  const donutSize = isMobile ? 76 : isTablet ? 84 : 96;
+  const donutThickness = isMobile ? 9 : 11;
+  const comparisonHeight = isMobile ? 64 : isTablet ? 74 : 86;
+  const comparisonBarWidth = isMobile ? 8 : 10;
+  const tableColumnWidths = isMobile
+    ? {
+        category: "30%",
+        real: "15%",
+        budget: "15%",
+        execution: "24%",
+        deviation: "16%",
+      }
+    : isTablet
+      ? {
+          category: "33%",
+          real: "17%",
+          budget: "17%",
+          execution: "20%",
+          deviation: "13%",
+        }
+      : {
+          category: "35%",
+          real: "17%",
+          budget: "17%",
+          execution: "18%",
+          deviation: "13%",
+        };
 
   return (
-    <Stack gap="sm" pos="relative">
+    <Stack gap={isMobile ? "xs" : "sm"} pos="relative">
       <LoadingOverlay visible={isBootstrapping || isLoadingSummary} />
 
       <Paper
         radius="sm"
-        p="sm"
+        p={isMobile ? "xs" : "sm"}
         style={{
           border: "1px solid #d6dde7",
           backgroundColor: "#ffffff",
         }}
       >
-        <Group justify="space-between" align="end" wrap="wrap" gap="xs">
+        <Group justify="space-between" align={isMobile ? "flex-start" : "end"} wrap="wrap" gap="xs">
           <Stack gap={1}>
             <Text size="xs" fw={700} c="#667085" style={{ textTransform: "uppercase" }}>
               Tablero financiero
@@ -683,17 +721,19 @@ export default function DashboardPage() {
               Workspace: {workspace.name} · Moneda: {currencyCode}
             </Text>
           </Stack>
-          <Badge variant="light" color="gray">
-            Lectura rápida
-          </Badge>
+          {!isMobile ? (
+            <Badge variant="light" color="gray">
+              Lectura rápida
+            </Badge>
+          ) : null}
         </Group>
       </Paper>
 
       <Grid gap="sm" align="stretch">
-        <Grid.Col span={{ base: 12, md: 4 }}>
+        <Grid.Col span={{ base: 12, sm: 5, lg: 4 }}>
           <Paper
             radius="sm"
-            p="sm"
+            p={isMobile ? "xs" : "sm"}
             style={{
               border: "1px solid #d6dde7",
               backgroundColor: "#f7f9fc",
@@ -703,10 +743,10 @@ export default function DashboardPage() {
               <Text size="xs" fw={700} c="#475467" style={{ textTransform: "uppercase" }}>
                 Controles
               </Text>
-              <Group grow gap="xs">
+              <Group grow gap="xs" wrap={isMobile ? "wrap" : "nowrap"}>
                 <NativeSelect
                   label="Año"
-                  size="xs"
+                  size={isMobile ? "xs" : "sm"}
                   data={yearOptions}
                   value={String(selectedYear)}
                   onChange={(event) => {
@@ -716,7 +756,7 @@ export default function DashboardPage() {
                 />
                 <NativeSelect
                   label="Mes"
-                  size="xs"
+                  size={isMobile ? "xs" : "sm"}
                   data={monthOptions}
                   value={String(selectedMonth)}
                   onChange={(event) => {
@@ -732,9 +772,9 @@ export default function DashboardPage() {
           </Paper>
         </Grid.Col>
 
-        <Grid.Col span={{ base: 12, md: 8 }}>
-          <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm">
-            <Paper withBorder radius="sm" p="xs" bg="#ffffff">
+        <Grid.Col span={{ base: 12, sm: 7, lg: 8 }}>
+          <SimpleGrid cols={kpiColumns} spacing={isMobile ? "xs" : "sm"}>
+            <Paper withBorder radius="sm" p="xs" bg="#ffffff" style={{ order: isMobile ? 2 : 1 }}>
               <Stack gap={4}>
                 <Text size="xs" fw={700} c="#475467">
                   Balance período
@@ -751,7 +791,7 @@ export default function DashboardPage() {
               </Stack>
             </Paper>
 
-            <Paper withBorder radius="sm" p="xs" bg="#ffffff">
+            <Paper withBorder radius="sm" p="xs" bg="#ffffff" style={{ order: isMobile ? 3 : 2 }}>
               <Stack gap={4}>
                 <Text size="xs" fw={700} c="#475467">
                   Ahorro período
@@ -771,7 +811,7 @@ export default function DashboardPage() {
               </Stack>
             </Paper>
 
-            <Paper withBorder radius="sm" p="xs" bg="#ffffff">
+            <Paper withBorder radius="sm" p="xs" bg="#ffffff" style={{ order: isMobile ? 1 : 3 }}>
               <Stack gap={4}>
                 <Text size="xs" fw={700} c="#475467">
                   Estado operativo
@@ -782,7 +822,12 @@ export default function DashboardPage() {
                 <Text size="xs" c="#667085">
                   Transcurrido: {percentageFormatter.format(monthProgress)}%
                 </Text>
-                <Progress value={monthProgress} color="#0ea5e9" radius="xl" size={8} />
+                <Progress
+                  value={monthProgress}
+                  color="#0ea5e9"
+                  radius="xl"
+                  size={progressBarSize}
+                />
               </Stack>
             </Paper>
           </SimpleGrid>
@@ -790,8 +835,8 @@ export default function DashboardPage() {
       </Grid>
 
       <Grid gap="sm" align="start">
-        <Grid.Col span={{ base: 12, xl: 8 }}>
-          <Stack gap="sm">
+        <Grid.Col span={{ base: 12, lg: 8 }}>
+          <Stack gap={isMobile ? "xs" : "sm"}>
             {summaryRows.map(({ type, rows }) => {
               const totals = metrics.totalsByType[type];
               const totalExecutionPercent =
@@ -808,42 +853,61 @@ export default function DashboardPage() {
                   }}
                 >
                   <Box
-                    px="sm"
+                    px={isMobile ? "xs" : "sm"}
                     py={6}
                     style={{
                       backgroundColor: "#f8fafc",
                       borderBottom: "1px solid #d6dde7",
                     }}
                   >
-                    <Group justify="space-between" wrap="nowrap">
+                    <Group justify="space-between" wrap={isMobile ? "wrap" : "nowrap"} gap={6}>
                       <Text size="xs" fw={800} c={typeTheme[type].header}>
                         {typeLabels[type]}
                       </Text>
                       <Text size="xs" c="#667085">
-                        Real: {currencyFormatter.format(totals.real)} · Presup:{" "}
-                        {currencyFormatter.format(totals.budget)}
+                        {isMobile
+                          ? `Real ${compactFormatter.format(totals.real)} · Presup ${compactFormatter.format(totals.budget)}`
+                          : `Real: ${currencyFormatter.format(totals.real)} · Presup: ${currencyFormatter.format(totals.budget)}`}
                       </Text>
                     </Group>
                   </Box>
 
                   <Table
-                    horizontalSpacing="sm"
-                    verticalSpacing={6}
+                    horizontalSpacing={tableHorizontalSpacing}
+                    verticalSpacing={tableVerticalSpacing}
                     style={{ color: "#1f2937", tableLayout: "fixed", width: "100%" }}
                   >
                     <Table.Thead>
                       <Table.Tr>
-                        <Table.Th style={{ color: "#475467", width: "35%" }}>Categoría</Table.Th>
-                        <Table.Th style={{ color: "#475467", textAlign: "right", width: "17%" }}>
+                        <Table.Th style={{ color: "#475467", width: tableColumnWidths.category }}>
+                          Categoría
+                        </Table.Th>
+                        <Table.Th
+                          style={{ color: "#475467", textAlign: "right", width: tableColumnWidths.real }}
+                        >
                           Real
                         </Table.Th>
-                        <Table.Th style={{ color: "#475467", textAlign: "right", width: "17%" }}>
+                        <Table.Th
+                          style={{ color: "#475467", textAlign: "right", width: tableColumnWidths.budget }}
+                        >
                           Presup.
                         </Table.Th>
-                        <Table.Th style={{ color: "#475467", textAlign: "right", width: "18%" }}>
+                        <Table.Th
+                          style={{
+                            color: "#475467",
+                            textAlign: isMobile ? "left" : "right",
+                            width: tableColumnWidths.execution,
+                          }}
+                        >
                           % Compl.
                         </Table.Th>
-                        <Table.Th style={{ color: "#475467", textAlign: "right", width: "13%" }}>
+                        <Table.Th
+                          style={{
+                            color: "#475467",
+                            textAlign: "right",
+                            width: tableColumnWidths.deviation,
+                          }}
+                        >
                           Desvío
                         </Table.Th>
                       </Table.Tr>
@@ -866,17 +930,17 @@ export default function DashboardPage() {
                             <Table.Tr key={row.categoryId}>
                               <Table.Td>
                                 <Group gap={6} wrap="nowrap">
-                                  <Text size="xs" c="#1f2937" lineClamp={1}>
+                                  <Text size="xs" c="#1f2937" lineClamp={isMobile ? 2 : 1}>
                                     {row.categoryName}
                                   </Text>
-                                  {!row.categoryIsActive ? (
+                                  {!isMobile && !row.categoryIsActive ? (
                                     <Text size="xs" c="#98a2b3">
                                       inactiva
                                     </Text>
                                   ) : null}
                                 </Group>
                               </Table.Td>
-                              <Table.Td style={{ textAlign: "right" }}>
+                              <Table.Td style={{ textAlign: isMobile ? "left" : "right" }}>
                                 <Text size="xs" c="#1f2937">
                                   {compactFormatter.format(row.realAmount)}
                                 </Text>
@@ -892,7 +956,7 @@ export default function DashboardPage() {
                                     N/A
                                   </Text>
                                 ) : (
-                                  <Stack gap={3} align="flex-end">
+                                  <Stack gap={3} align={isMobile ? "stretch" : "flex-end"}>
                                     <Text size="xs" fw={700} c={executionScale.text}>
                                       {percentageFormatter.format(row.executionPercent)}%
                                     </Text>
@@ -900,8 +964,8 @@ export default function DashboardPage() {
                                       value={clampToPercent(row.executionPercent)}
                                       color={executionScale.bar}
                                       radius="xl"
-                                      size={8}
-                                      style={{ width: 96 }}
+                                      size={progressBarSize}
+                                      style={{ width: executionBarWidth }}
                                       styles={{ root: { backgroundColor: executionScale.track } }}
                                     />
                                   </Stack>
@@ -928,7 +992,7 @@ export default function DashboardPage() {
                             TOTAL
                           </Text>
                         </Table.Td>
-                        <Table.Td style={{ textAlign: "right" }}>
+                        <Table.Td style={{ textAlign: isMobile ? "left" : "right" }}>
                           <Text size="xs" fw={800} c="#344054">
                             {compactFormatter.format(totals.real)}
                           </Text>
@@ -944,7 +1008,7 @@ export default function DashboardPage() {
                               N/A
                             </Text>
                           ) : (
-                            <Stack gap={3} align="flex-end">
+                            <Stack gap={3} align={isMobile ? "stretch" : "flex-end"}>
                               <Text size="xs" fw={800} c={totalExecutionScale.text}>
                                 {percentageFormatter.format(totalExecutionPercent)}%
                               </Text>
@@ -952,8 +1016,8 @@ export default function DashboardPage() {
                                 value={clampToPercent(totalExecutionPercent)}
                                 color={totalExecutionScale.bar}
                                 radius="xl"
-                                size={8}
-                                style={{ width: 96 }}
+                                size={progressBarSize}
+                                style={{ width: executionBarWidth }}
                                 styles={{ root: { backgroundColor: totalExecutionScale.track } }}
                               />
                             </Stack>
@@ -973,17 +1037,17 @@ export default function DashboardPage() {
           </Stack>
         </Grid.Col>
 
-        <Grid.Col span={{ base: 12, xl: 4 }}>
-          <Stack gap="sm">
+        <Grid.Col span={{ base: 12, lg: 4 }}>
+          <Stack gap={isMobile ? "xs" : "sm"}>
             <Paper
-              p="sm"
+              p={cardPadding}
               radius="sm"
               style={{
                 border: "1px solid #d6dde7",
                 backgroundColor: "#ffffff",
               }}
             >
-              <Stack gap="xs">
+              <Stack gap={isMobile ? 6 : "xs"}>
                 <Text size="xs" fw={800} c="#344054">
                   Distribución real por tipo
                 </Text>
@@ -994,7 +1058,7 @@ export default function DashboardPage() {
                   return (
                     <Paper
                       key={type}
-                      p="xs"
+                      p={isMobile ? 6 : "xs"}
                       radius="sm"
                       style={{
                         border: "1px solid #e4e7ec",
@@ -1003,8 +1067,8 @@ export default function DashboardPage() {
                     >
                       <Group gap="xs" align="center" wrap="nowrap">
                         <RingProgress
-                          size={96}
-                          thickness={11}
+                          size={donutSize}
+                          thickness={donutThickness}
                           roundCaps
                           sections={
                             donut.slices.length === 0
@@ -1015,7 +1079,7 @@ export default function DashboardPage() {
                                 }))
                           }
                           label={
-                            <Text size="10px" c="#344054" ta="center" fw={700}>
+                            <Text size={isMobile ? "9px" : "10px"} c="#344054" ta="center" fw={700}>
                               {compactFormatter.format(donut.total)}
                             </Text>
                           }
@@ -1026,7 +1090,7 @@ export default function DashboardPage() {
                             {typeLabels[type]}
                           </Text>
                           {donut.slices.length === 0 ? (
-                            <Text size="xs" c="#98a2b3">
+                            <Text size={isMobile ? "11px" : "xs"} c="#98a2b3">
                               Sin datos reales en el período.
                             </Text>
                           ) : (
@@ -1038,11 +1102,11 @@ export default function DashboardPage() {
                                     w={8}
                                     style={{ borderRadius: 2, backgroundColor: slice.color }}
                                   />
-                                  <Text size="xs" c="#344054" lineClamp={1}>
+                                  <Text size={isMobile ? "11px" : "xs"} c="#344054" lineClamp={1}>
                                     {slice.label}
                                   </Text>
                                 </Group>
-                                <Text size="xs" c="#344054" fw={600}>
+                                <Text size={isMobile ? "11px" : "xs"} c="#344054" fw={600}>
                                   {percentageFormatter.format(slice.value)}%
                                 </Text>
                               </Group>
@@ -1057,7 +1121,7 @@ export default function DashboardPage() {
             </Paper>
 
             <Paper
-              p="sm"
+              p={cardPadding}
               radius="sm"
               style={{
                 border: "1px solid #d6dde7",
@@ -1069,13 +1133,13 @@ export default function DashboardPage() {
                   Registro vs Presupuesto
                 </Text>
 
-                <Group align="end" gap="sm" wrap="nowrap">
+                <Group align="end" gap={isMobile ? "xs" : "sm"} wrap="nowrap">
                   {comparisonBars.map((item) => (
                     <Stack key={item.key} gap={4} align="center" style={{ flex: 1 }}>
-                      <Group gap={4} align="end" justify="center" wrap="nowrap" h={86}>
+                      <Group gap={4} align="end" justify="center" wrap="nowrap" h={comparisonHeight}>
                         <Box
                           style={{
-                            width: 10,
+                            width: comparisonBarWidth,
                             height: `${(item.budget / maxComparisonValue) * 100}%`,
                             minHeight: 4,
                             backgroundColor: "#98a2b3",
@@ -1084,7 +1148,7 @@ export default function DashboardPage() {
                         />
                         <Box
                           style={{
-                            width: 10,
+                            width: comparisonBarWidth,
                             height: `${(item.real / maxComparisonValue) * 100}%`,
                             minHeight: 4,
                             backgroundColor: item.color,
@@ -1099,7 +1163,7 @@ export default function DashboardPage() {
                   ))}
                 </Group>
 
-                <Group gap="md">
+                <Group gap={isMobile ? "sm" : "md"} wrap={isMobile ? "wrap" : "nowrap"}>
                   <Group gap={6}>
                     <Box h={8} w={8} style={{ backgroundColor: "#98a2b3", borderRadius: 2 }} />
                     <Text size="xs" c="#475467">
@@ -1117,7 +1181,7 @@ export default function DashboardPage() {
             </Paper>
 
             <Paper
-              p="sm"
+              p={cardPadding}
               radius="sm"
               style={{
                 border: "1px solid #d6dde7",
