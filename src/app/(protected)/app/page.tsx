@@ -785,6 +785,29 @@ export default function DashboardPage() {
                             rows.map((row) => {
                               const remaining = Math.max(0, row.budgetAmount - row.realAmount);
                               const excess = Math.max(0, row.realAmount - row.budgetAmount);
+                              const isIncomeType = type === "income";
+                              const executionColor =
+                                row.executionPercent === null
+                                  ? "#98a2b3"
+                                  : row.executionPercent > 100
+                                    ? isIncomeType
+                                      ? "#00863f"
+                                      : "#c10052"
+                                    : "#00863f";
+                              const executionBarColor =
+                                row.executionPercent === null
+                                  ? "#d0d5dd"
+                                  : row.executionPercent > 100
+                                    ? isIncomeType
+                                      ? "#00a552"
+                                      : "#e60062"
+                                    : "#00a552";
+                              const excessColor =
+                                excess > 0
+                                  ? isIncomeType
+                                    ? "#00863f"
+                                    : "#c10052"
+                                  : "#98a2b3";
 
                               return (
                                 <Table.Tr key={row.categoryId}>
@@ -811,20 +834,23 @@ export default function DashboardPage() {
                                     </Text>
                                   </Table.Td>
                                   <Table.Td style={{ textAlign: "right" }}>
-                                    <Text
-                                      size="xs"
-                                      c={
-                                        row.executionPercent === null
-                                          ? "#98a2b3"
-                                          : row.executionPercent > 100
-                                            ? "#c10052"
-                                            : "#00863f"
-                                      }
-                                    >
-                                      {row.executionPercent === null
-                                        ? "N/A"
-                                        : `${percentageFormatter.format(row.executionPercent)}%`}
-                                    </Text>
+                                    <Stack gap={2}>
+                                      <Text size="xs" c={executionColor}>
+                                        {row.executionPercent === null
+                                          ? "N/A"
+                                          : `${percentageFormatter.format(row.executionPercent)}%`}
+                                      </Text>
+                                      {row.executionPercent === null ? null : (
+                                        <Box maw={84} ml="auto">
+                                          <Progress
+                                            value={clampToPercent(row.executionPercent)}
+                                            color={executionBarColor}
+                                            radius="xs"
+                                            size="xs"
+                                          />
+                                        </Box>
+                                      )}
+                                    </Stack>
                                   </Table.Td>
                                   <Table.Td style={{ textAlign: "right" }}>
                                     <Text size="xs" c="#475467">
@@ -836,7 +862,7 @@ export default function DashboardPage() {
                                   <Table.Td style={{ textAlign: "right" }}>
                                     <Text
                                       size="xs"
-                                      c={excess > 0 ? "#c10052" : "#98a2b3"}
+                                      c={excessColor}
                                       fw={excess > 0 ? 700 : 400}
                                     >
                                       {excess > 0
