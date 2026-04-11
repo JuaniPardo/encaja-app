@@ -236,6 +236,53 @@ export interface Database {
         };
         Relationships: [];
       };
+      transactions: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          transaction_date: string;
+          effective_date: string | null;
+          type: TransactionType;
+          category_id: string;
+          payment_method_id: string | null;
+          amount: number;
+          description: string | null;
+          notes: string | null;
+          is_recurring: boolean;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          transaction_date: string;
+          effective_date?: string | null;
+          type: TransactionType;
+          category_id: string;
+          payment_method_id?: string | null;
+          amount: number;
+          description?: string | null;
+          notes?: string | null;
+          is_recurring?: boolean;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          transaction_date?: string;
+          effective_date?: string | null;
+          type?: TransactionType;
+          category_id?: string;
+          payment_method_id?: string | null;
+          amount?: number;
+          description?: string | null;
+          notes?: string | null;
+          is_recurring?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
