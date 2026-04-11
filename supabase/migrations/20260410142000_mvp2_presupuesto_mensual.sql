@@ -60,16 +60,19 @@ begin
 end;
 $$;
 
+drop trigger if exists ensure_budget_item_workspace_match on public.budget_items;
 create trigger ensure_budget_item_workspace_match
 before insert or update on public.budget_items
 for each row
 execute function public.budget_item_belongs_to_period_workspace();
 
+drop trigger if exists set_budget_periods_updated_at on public.budget_periods;
 create trigger set_budget_periods_updated_at
 before update on public.budget_periods
 for each row
 execute function public.set_current_timestamp_updated_at();
 
+drop trigger if exists set_budget_items_updated_at on public.budget_items;
 create trigger set_budget_items_updated_at
 before update on public.budget_items
 for each row
@@ -78,11 +81,13 @@ execute function public.set_current_timestamp_updated_at();
 alter table public.budget_periods enable row level security;
 alter table public.budget_items enable row level security;
 
+drop policy if exists "budget_periods_select_member" on public.budget_periods;
 create policy "budget_periods_select_member"
 on public.budget_periods
 for select
 using (public.is_workspace_member(workspace_id));
 
+drop policy if exists "budget_periods_insert_owner_admin" on public.budget_periods;
 create policy "budget_periods_insert_owner_admin"
 on public.budget_periods
 for insert
@@ -91,12 +96,14 @@ with check (
   and created_by = auth.uid()
 );
 
+drop policy if exists "budget_periods_update_owner_admin" on public.budget_periods;
 create policy "budget_periods_update_owner_admin"
 on public.budget_periods
 for update
 using (public.is_workspace_owner_or_admin(workspace_id))
 with check (public.is_workspace_owner_or_admin(workspace_id));
 
+drop policy if exists "budget_items_select_member" on public.budget_items;
 create policy "budget_items_select_member"
 on public.budget_items
 for select
@@ -109,6 +116,7 @@ using (
   )
 );
 
+drop policy if exists "budget_items_insert_owner_admin" on public.budget_items;
 create policy "budget_items_insert_owner_admin"
 on public.budget_items
 for insert
@@ -123,6 +131,7 @@ with check (
   )
 );
 
+drop policy if exists "budget_items_update_owner_admin" on public.budget_items;
 create policy "budget_items_update_owner_admin"
 on public.budget_items
 for update
