@@ -15,7 +15,6 @@ import {
   Stack,
   Table,
   Text,
-  Tooltip,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
@@ -72,16 +71,6 @@ type DonutDataByType = Record<
     slices: DonutSlice[];
   }
 >;
-
-type ComparisonBarKey = "income" | "expense" | "saving" | "balance";
-
-type ComparisonBarRow = {
-  key: ComparisonBarKey;
-  label: string;
-  budget: number;
-  real: number;
-  realColor: string;
-};
 
 type SemanticStatus = "problem" | "positive" | "neutral";
 
@@ -302,18 +291,6 @@ function getSemanticColor(status: SemanticStatus) {
   return "#64748b";
 }
 
-function getSemanticBadgeColor(status: SemanticStatus) {
-  if (status === "problem") {
-    return "red";
-  }
-
-  if (status === "positive") {
-    return "teal";
-  }
-
-  return "gray";
-}
-
 function getProblemTypePriority(type: TransactionType) {
   if (type === "expense") {
     return 3;
@@ -340,30 +317,6 @@ function getPositiveTypePriority(type: TransactionType) {
 
 function getDeviationColor(type: TransactionType, deviation: number) {
   return getSemanticColor(getCategorySemantic(type, deviation).status);
-}
-
-function getComparisonRealColor(key: ComparisonBarKey, real: number, budget: number) {
-  if (key === "balance") {
-    if (Math.abs(real) < deviationTolerance) {
-      return "#64748b";
-    }
-
-    return real >= 0 ? "#0f766e" : "#dc2626";
-  }
-
-  return getSemanticColor(getCategorySemantic(key, roundMoney(real - budget)).status);
-}
-
-function getComparisonDeltaColor(key: ComparisonBarKey, delta: number) {
-  if (Math.abs(delta) < deviationTolerance) {
-    return "#64748b";
-  }
-
-  if (key === "balance") {
-    return delta >= 0 ? "#087f5b" : "#c92a2a";
-  }
-
-  return getSemanticColor(getCategorySemantic(key, delta).status);
 }
 
 export default function DashboardPage() {
@@ -713,72 +666,9 @@ export default function DashboardPage() {
     }));
   }, [metrics.groupedRows]);
 
-  const comparisonBars = useMemo<ComparisonBarRow[]>(() => {
-    return [
-      {
-        key: "income",
-        label: "Ingreso",
-        budget: metrics.totalsByType.income.budget,
-        real: metrics.totalsByType.income.real,
-        realColor: getComparisonRealColor(
-          "income",
-          metrics.totalsByType.income.real,
-          metrics.totalsByType.income.budget,
-        ),
-      },
-      {
-        key: "expense",
-        label: "Gasto",
-        budget: metrics.totalsByType.expense.budget,
-        real: metrics.totalsByType.expense.real,
-        realColor: getComparisonRealColor(
-          "expense",
-          metrics.totalsByType.expense.real,
-          metrics.totalsByType.expense.budget,
-        ),
-      },
-      {
-        key: "saving",
-        label: "Ahorro",
-        budget: metrics.totalsByType.saving.budget,
-        real: metrics.totalsByType.saving.real,
-        realColor: getComparisonRealColor(
-          "saving",
-          metrics.totalsByType.saving.real,
-          metrics.totalsByType.saving.budget,
-        ),
-      },
-      {
-        key: "balance",
-        label: "Balance",
-        budget: metrics.balanceBudget,
-        real: metrics.balanceReal,
-        realColor: getComparisonRealColor("balance", metrics.balanceReal, metrics.balanceBudget),
-      },
-    ];
-  }, [
-    metrics.balanceBudget,
-    metrics.balanceReal,
-    metrics.totalsByType.expense.budget,
-    metrics.totalsByType.expense.real,
-    metrics.totalsByType.income.budget,
-    metrics.totalsByType.income.real,
-    metrics.totalsByType.saving.budget,
-    metrics.totalsByType.saving.real,
-  ]);
-
-  const maxComparisonValue = useMemo(() => {
-    const maxValue = comparisonBars.reduce((max, item) => {
-      return Math.max(max, Math.abs(item.budget), Math.abs(item.real));
-    }, 0);
-
-    return maxValue <= 0 ? 1 : maxValue;
-  }, [comparisonBars]);
-
   const operationalInsights = useMemo(() => {
     const problemRows: OperationalInsightRow[] = [];
     const positiveRows: OperationalInsightRow[] = [];
-    let neutralCount = 0;
 
     for (const type of Object.keys(metrics.groupedRows) as TransactionType[]) {
       for (const row of metrics.groupedRows[type]) {
@@ -807,8 +697,6 @@ export default function DashboardPage() {
           positiveRows.push(insight);
           continue;
         }
-
-        neutralCount += 1;
       }
     }
 
@@ -833,7 +721,6 @@ export default function DashboardPage() {
     return {
       problemRows,
       positiveRows,
-      neutralCount,
     };
   }, [metrics.groupedRows]);
 
@@ -848,14 +735,14 @@ export default function DashboardPage() {
     }
 
     if (problemCount > 0 && positiveCount > 0) {
-      return `${problemCount} ${pluralize(problemCount, "problema", "problemas")} · ${positiveCount} ${pluralize(positiveCount, "destacado", "destacados")}`;
+      return `${problemCount} ${pluralize(problemCount, "problema", "problemas")} · ${positiveCount} en buen desempeño`;
     }
 
     if (problemCount > 0) {
       return `${problemCount} ${pluralize(problemCount, "problema detectado", "problemas detectados")}`;
     }
 
-    return `${positiveCount} ${pluralize(positiveCount, "categoría destacada", "categorías destacadas")}`;
+    return `${positiveCount} en buen desempeño`;
   }, [positiveCount, problemCount]);
 
   const operationalHeadlineColor =
@@ -866,7 +753,7 @@ export default function DashboardPage() {
   const isNarrowMobile = useMediaQuery("(max-width: 33.99em)");
   const isTablet = useMediaQuery("(min-width: 48em) and (max-width: 74.99em)");
 
-  const kpiColumns = isMobile ? (isNarrowMobile ? 1 : 2) : isTablet ? 2 : 3;
+  const kpiColumns = isMobile ? (isNarrowMobile ? 1 : 2) : 2;
   const cardPadding = isMobile ? "xs" : "sm";
   const tableHorizontalSpacing = isMobile ? "xs" : "sm";
   const tableVerticalSpacing = isMobile ? 5 : 6;
@@ -874,9 +761,6 @@ export default function DashboardPage() {
   const executionBarWidth = isMobile ? "100%" : isTablet ? 88 : 96;
   const donutSize = isMobile ? 76 : isTablet ? 84 : 96;
   const donutThickness = isMobile ? 9 : 11;
-  const comparisonHeight = isMobile ? 64 : isTablet ? 74 : 86;
-  const comparisonSlotWidth = isMobile ? 46 : isTablet ? 52 : 58;
-  const comparisonOverlayWidth = isMobile ? 14 : isTablet ? 16 : 18;
   const tableColumnWidths = isMobile
     ? {
         category: "30%",
@@ -933,618 +817,488 @@ export default function DashboardPage() {
         </Group>
       </Paper>
 
+      <Paper
+        radius="sm"
+        p={isMobile ? "xs" : "sm"}
+        style={{
+          border: "1px solid #d6dde7",
+          backgroundColor: "#f7f9fc",
+        }}
+      >
+        <Stack gap="xs">
+          <Text size="xs" fw={700} c="#475467" style={{ textTransform: "uppercase" }}>
+            Controles
+          </Text>
+          <Group grow gap="xs" wrap={isMobile ? "wrap" : "nowrap"}>
+            <NativeSelect
+              label="Año"
+              size={isMobile ? "xs" : "sm"}
+              data={yearOptions}
+              value={String(selectedYear)}
+              onChange={(event) => {
+                setIsLoadingSummary(true);
+                setSelectedYear(Number(event.currentTarget.value));
+              }}
+            />
+            <NativeSelect
+              label="Mes"
+              size={isMobile ? "xs" : "sm"}
+              data={monthOptions}
+              value={String(selectedMonth)}
+              onChange={(event) => {
+                setIsLoadingSummary(true);
+                setSelectedMonth(Number(event.currentTarget.value));
+              }}
+            />
+          </Group>
+          <Text size="xs" c="#667085">
+            Analizando: {selectedPeriodLabel}
+          </Text>
+        </Stack>
+      </Paper>
+
+      <Paper
+        withBorder
+        radius="sm"
+        p={isMobile ? "xs" : "sm"}
+        bg="#ffffff"
+        style={{ borderColor: "#d6dde7" }}
+      >
+        <Stack gap={6}>
+          <Text size="xs" fw={700} c="#475467">
+            Estado operativo
+          </Text>
+          <Text fw={800} c={operationalHeadlineColor}>
+            {operationalHeadline}
+          </Text>
+          <Group gap={6} wrap="wrap">
+            <Badge color="red" variant={problemCount > 0 ? "light" : "outline"} size="sm">
+              {problemCount} {pluralize(problemCount, "problema", "problemas")}
+            </Badge>
+            <Badge color="teal" variant={positiveCount > 0 ? "light" : "outline"} size="sm">
+              {positiveCount} en buen desempeño
+            </Badge>
+          </Group>
+          <Text size="xs" c="#667085">
+            Transcurrido: {percentageFormatter.format(monthProgress)}%
+          </Text>
+          <Progress value={monthProgress} color="#0ea5e9" radius="xl" size={monthProgressSize} />
+        </Stack>
+      </Paper>
+
       <Grid gap="sm" align="stretch">
-        <Grid.Col span={{ base: 12, sm: 5, lg: 4 }}>
+        <Grid.Col span={{ base: 12, lg: 6 }}>
           <Paper
+            p={isMobile ? "sm" : "md"}
             radius="sm"
-            p={isMobile ? "xs" : "sm"}
             style={{
               border: "1px solid #d6dde7",
-              backgroundColor: "#f7f9fc",
+              backgroundColor: problemCount > 0 ? "#fff5f5" : "#f8fafc",
             }}
           >
-            <Stack gap="xs">
-              <Text size="xs" fw={700} c="#475467" style={{ textTransform: "uppercase" }}>
-                Controles
+            <Stack gap={isMobile ? "sm" : "md"}>
+              <Text size="xs" fw={800} c="#344054">
+                Problemas detectados
               </Text>
-              <Group grow gap="xs" wrap={isMobile ? "wrap" : "nowrap"}>
-                <NativeSelect
-                  label="Año"
-                  size={isMobile ? "xs" : "sm"}
-                  data={yearOptions}
-                  value={String(selectedYear)}
-                  onChange={(event) => {
-                    setIsLoadingSummary(true);
-                    setSelectedYear(Number(event.currentTarget.value));
-                  }}
-                />
-                <NativeSelect
-                  label="Mes"
-                  size={isMobile ? "xs" : "sm"}
-                  data={monthOptions}
-                  value={String(selectedMonth)}
-                  onChange={(event) => {
-                    setIsLoadingSummary(true);
-                    setSelectedMonth(Number(event.currentTarget.value));
-                  }}
-                />
-              </Group>
-              <Text size="xs" c="#667085">
-                Analizando: {selectedPeriodLabel}
+              <Text size="sm" fw={800} c={problemCount > 0 ? "#c92a2a" : "#475467"}>
+                {problemCount === 0
+                  ? "Sin problemas críticos"
+                  : `${problemCount} ${pluralize(problemCount, "categoría en alerta", "categorías en alerta")}`}
               </Text>
+              {topProblemRows.length === 0 ? (
+                <Text size="xs" c="#667085">
+                  No hay desvíos operativos que requieran atención en este período.
+                </Text>
+              ) : (
+                <Stack gap="xs">
+                  {topProblemRows.map((row, index) => (
+                    <Box
+                      key={`${row.type}-${row.categoryName}-${index}`}
+                      className="dashboard-clickable-item"
+                      p={isMobile ? "xs" : "sm"}
+                      style={{
+                        border: "1px solid #ffd9d9",
+                        backgroundColor: "#fffafa",
+                        borderRadius: 8,
+                      }}
+                    >
+                      <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
+                        <Stack gap={1} style={{ flex: 1 }}>
+                          <Text size="xs" fw={700} c="#344054">
+                            {row.semantic.detail}
+                          </Text>
+                          <Text size="xs" c="#667085">
+                            {typeLabels[row.type]} · {row.categoryName}
+                          </Text>
+                        </Stack>
+                        <Text size={isMobile ? "sm" : "md"} fw={900} c="#c92a2a">
+                          {formatSignedCurrency(row.deviation, currencyFormatter)}
+                        </Text>
+                      </Group>
+                    </Box>
+                  ))}
+                </Stack>
+              )}
             </Stack>
           </Paper>
         </Grid.Col>
 
-        <Grid.Col span={{ base: 12, sm: 7, lg: 8 }}>
-          <SimpleGrid cols={kpiColumns} spacing={isMobile ? "xs" : "sm"}>
-            <Paper withBorder radius="sm" p="xs" bg="#ffffff" style={{ order: isMobile ? 2 : 1 }}>
-              <Stack gap={4}>
-                <Text size="xs" fw={700} c="#475467">
-                  Balance período
-                </Text>
-                <Text fw={800} c={metrics.balanceReal >= 0 ? "#0ca678" : "#e03131"}>
-                  {currencyFormatter.format(metrics.balanceReal)}
-                </Text>
+        <Grid.Col span={{ base: 12, lg: 6 }}>
+          <Paper
+            p={isMobile ? "sm" : "md"}
+            radius="sm"
+            style={{
+              border: "1px solid #d6dde7",
+              backgroundColor: positiveCount > 0 ? "#f1fff6" : "#f8fafc",
+            }}
+          >
+            <Stack gap={isMobile ? "sm" : "md"}>
+              <Text size="xs" fw={800} c="#344054">
+                Buen desempeño
+              </Text>
+              <Text size="sm" fw={800} c={positiveCount > 0 ? "#087f5b" : "#475467"}>
+                {positiveCount === 0
+                  ? "Sin destacados por ahora"
+                  : `${positiveCount} ${pluralize(positiveCount, "categoría destacada", "categorías destacadas")}`}
+              </Text>
+              {topPositiveRows.length === 0 ? (
                 <Text size="xs" c="#667085">
-                  Presup: {currencyFormatter.format(metrics.balanceBudget)}
+                  Todavía no hay señales positivas por encima del plan para destacar.
                 </Text>
-                <Text size="xs" c={metrics.balanceDelta >= 0 ? "#087f5b" : "#c92a2a"}>
-                  Delta: {formatSignedCurrency(metrics.balanceDelta, currencyFormatter)}
-                </Text>
-              </Stack>
-            </Paper>
-
-            <Paper withBorder radius="sm" p="xs" bg="#ffffff" style={{ order: isMobile ? 3 : 2 }}>
-              <Stack gap={4}>
-                <Text size="xs" fw={700} c="#475467">
-                  Ahorro período
-                </Text>
-                <Text fw={800} c="#2b8aaf">
-                  {currencyFormatter.format(metrics.totalsByType.saving.real)}
-                </Text>
-                <Text size="xs" c="#667085">
-                  Presup: {currencyFormatter.format(metrics.totalsByType.saving.budget)}
-                </Text>
-                <Text size="xs" c="#667085">
-                  Ratio:{" "}
-                  {savingsVsIncome === null
-                    ? "N/A"
-                    : `${percentageFormatter.format(savingsVsIncome)}% de ingresos`}
-                </Text>
-              </Stack>
-            </Paper>
-
-            <Paper withBorder radius="sm" p="xs" bg="#ffffff" style={{ order: isMobile ? 1 : 3 }}>
-              <Stack gap={4}>
-                <Text size="xs" fw={700} c="#475467">
-                  Estado operativo
-                </Text>
-                <Text fw={800} c={operationalHeadlineColor}>
-                  {operationalHeadline}
-                </Text>
-                <Group gap={6} wrap="wrap">
-                  <Badge color="red" variant={problemCount > 0 ? "light" : "outline"} size="xs">
-                    {problemCount} {pluralize(problemCount, "problema", "problemas")}
-                  </Badge>
-                  <Badge color="teal" variant={positiveCount > 0 ? "light" : "outline"} size="xs">
-                    {positiveCount} {pluralize(positiveCount, "destacado", "destacados")}
-                  </Badge>
-                  <Badge color="gray" variant="outline" size="xs">
-                    {operationalInsights.neutralCount} en objetivo
-                  </Badge>
-                </Group>
-                <Text size="xs" c="#667085">
-                  Transcurrido: {percentageFormatter.format(monthProgress)}%
-                </Text>
-                <Progress
-                  value={monthProgress}
-                  color="#0ea5e9"
-                  radius="xl"
-                  size={monthProgressSize}
-                />
-              </Stack>
-            </Paper>
-          </SimpleGrid>
+              ) : (
+                <Stack gap="xs">
+                  {topPositiveRows.map((row, index) => (
+                    <Box
+                      key={`${row.type}-${row.categoryName}-${index}`}
+                      className="dashboard-clickable-item"
+                      p={isMobile ? "xs" : "sm"}
+                      style={{
+                        border: "1px solid #cceede",
+                        backgroundColor: "#f6fffa",
+                        borderRadius: 8,
+                      }}
+                    >
+                      <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
+                        <Stack gap={1} style={{ flex: 1 }}>
+                          <Text size="xs" fw={700} c="#344054">
+                            {row.semantic.detail}
+                          </Text>
+                          <Text size="xs" c="#667085">
+                            {typeLabels[row.type]} · {row.categoryName}
+                          </Text>
+                        </Stack>
+                        <Text size={isMobile ? "sm" : "md"} fw={900} c="#087f5b">
+                          {formatSignedCurrency(row.deviation, currencyFormatter)}
+                        </Text>
+                      </Group>
+                    </Box>
+                  ))}
+                </Stack>
+              )}
+            </Stack>
+          </Paper>
         </Grid.Col>
       </Grid>
 
-      <Grid gap="sm" align="start">
-        <Grid.Col span={{ base: 12, lg: 8 }}>
-          <Stack gap={isMobile ? "xs" : "sm"}>
-            {summaryRows.map(({ type, rows }) => {
-              const totals = metrics.totalsByType[type];
-              const totalExecutionPercent =
-                Math.abs(totals.budget) < 0.005 ? null : (totals.real / totals.budget) * 100;
+      <SimpleGrid cols={kpiColumns} spacing={isMobile ? "xs" : "sm"}>
+        <Paper withBorder radius="sm" p="xs" bg="#ffffff">
+          <Stack gap={4}>
+            <Text size="xs" fw={700} c="#475467">
+              Balance período
+            </Text>
+            <Text fw={800} c={metrics.balanceReal >= 0 ? "#0ca678" : "#e03131"}>
+              {currencyFormatter.format(metrics.balanceReal)}
+            </Text>
+            <Text size="xs" c="#667085">
+              Presup: {currencyFormatter.format(metrics.balanceBudget)}
+            </Text>
+            <Text size="xs" c={metrics.balanceDelta >= 0 ? "#087f5b" : "#c92a2a"}>
+              Delta: {formatSignedCurrency(metrics.balanceDelta, currencyFormatter)}
+            </Text>
+          </Stack>
+        </Paper>
 
-              return (
-                <Paper
-                  key={type}
-                  radius="sm"
-                  style={{
-                    border: "1px solid #d6dde7",
-                    backgroundColor: "#ffffff",
-                  }}
-                >
-                  <Box
-                    px={isMobile ? "xs" : "sm"}
-                    py={6}
-                    style={{
-                      backgroundColor: "#f8fafc",
-                      borderBottom: "1px solid #d6dde7",
-                    }}
-                  >
-                    <Group justify="space-between" wrap={isMobile ? "wrap" : "nowrap"} gap={6}>
-                      <Text size="xs" fw={800} c={typeTheme[type].header}>
-                        {typeLabels[type]}
-                      </Text>
-                      <Text size="xs" c="#667085">
-                        {isMobile
-                          ? `Real ${compactFormatter.format(totals.real)} · Presup ${compactFormatter.format(totals.budget)}`
-                          : `Real: ${currencyFormatter.format(totals.real)} · Presup: ${currencyFormatter.format(totals.budget)}`}
-                      </Text>
-                    </Group>
-                  </Box>
+        <Paper withBorder radius="sm" p="xs" bg="#ffffff">
+          <Stack gap={4}>
+            <Text size="xs" fw={700} c="#475467">
+              Ahorro período
+            </Text>
+            <Text fw={800} c="#2b8aaf">
+              {currencyFormatter.format(metrics.totalsByType.saving.real)}
+            </Text>
+            <Text size="xs" c="#667085">
+              Presup: {currencyFormatter.format(metrics.totalsByType.saving.budget)}
+            </Text>
+            <Text size="xs" c="#667085">
+              Ratio:{" "}
+              {savingsVsIncome === null
+                ? "N/A"
+                : `${percentageFormatter.format(savingsVsIncome)}% de ingresos`}
+            </Text>
+          </Stack>
+        </Paper>
+      </SimpleGrid>
 
-                  <Table
-                    horizontalSpacing={tableHorizontalSpacing}
-                    verticalSpacing={tableVerticalSpacing}
-                    style={{ color: "#1f2937", tableLayout: "fixed", width: "100%" }}
-                  >
-                    <Table.Thead>
-                      <Table.Tr>
-                        <Table.Th style={{ color: "#475467", width: tableColumnWidths.category }}>
-                          Categoría
-                        </Table.Th>
-                        <Table.Th
-                          style={{ color: "#475467", textAlign: "right", width: tableColumnWidths.real }}
-                        >
-                          Real
-                        </Table.Th>
-                        <Table.Th
-                          style={{ color: "#475467", textAlign: "right", width: tableColumnWidths.budget }}
-                        >
-                          Presup.
-                        </Table.Th>
-                        <Table.Th
-                          style={{
-                            color: "#475467",
-                            textAlign: isMobile ? "left" : "right",
-                            width: tableColumnWidths.execution,
-                          }}
-                        >
-                          % Compl.
-                        </Table.Th>
-                        <Table.Th
-                          style={{
-                            color: "#475467",
-                            textAlign: "right",
-                            width: tableColumnWidths.deviation,
-                          }}
-                        >
-                          Desvío
-                        </Table.Th>
-                      </Table.Tr>
-                    </Table.Thead>
-                    <Table.Tbody>
-                      {rows.length === 0 ? (
-                        <Table.Tr>
-                          <Table.Td colSpan={5}>
-                            <Text size="xs" c="#98a2b3">
-                              Sin categorías con datos para este tipo.
+      <Stack gap={isMobile ? "xs" : "sm"}>
+        {summaryRows.map(({ type, rows }) => {
+          const totals = metrics.totalsByType[type];
+          const totalExecutionPercent =
+            Math.abs(totals.budget) < 0.005 ? null : (totals.real / totals.budget) * 100;
+
+          return (
+            <Paper
+              key={type}
+              radius="sm"
+              style={{
+                border: "1px solid #d6dde7",
+                backgroundColor: "#ffffff",
+              }}
+            >
+              <Box
+                px={isMobile ? "xs" : "sm"}
+                py={6}
+                style={{
+                  backgroundColor: "#f8fafc",
+                  borderBottom: "1px solid #d6dde7",
+                }}
+              >
+                <Group justify="space-between" wrap={isMobile ? "wrap" : "nowrap"} gap={6}>
+                  <Text size="xs" fw={800} c={typeTheme[type].header}>
+                    {typeLabels[type]}
+                  </Text>
+                  <Text size="xs" c="#667085">
+                    {isMobile
+                      ? `Real ${compactFormatter.format(totals.real)} · Presup ${compactFormatter.format(totals.budget)}`
+                      : `Real: ${currencyFormatter.format(totals.real)} · Presup: ${currencyFormatter.format(totals.budget)}`}
+                  </Text>
+                </Group>
+              </Box>
+
+              <Table
+                horizontalSpacing={tableHorizontalSpacing}
+                verticalSpacing={tableVerticalSpacing}
+                style={{ color: "#1f2937", tableLayout: "fixed", width: "100%" }}
+              >
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th style={{ color: "#475467", width: tableColumnWidths.category }}>
+                      Categoría
+                    </Table.Th>
+                    <Table.Th style={{ color: "#475467", textAlign: "right", width: tableColumnWidths.real }}>
+                      Real
+                    </Table.Th>
+                    <Table.Th
+                      style={{ color: "#475467", textAlign: "right", width: tableColumnWidths.budget }}
+                    >
+                      Presup.
+                    </Table.Th>
+                    <Table.Th
+                      style={{
+                        color: "#475467",
+                        textAlign: isMobile ? "left" : "right",
+                        width: tableColumnWidths.execution,
+                      }}
+                    >
+                      % Compl.
+                    </Table.Th>
+                    <Table.Th
+                      style={{
+                        color: "#475467",
+                        textAlign: "right",
+                        width: tableColumnWidths.deviation,
+                      }}
+                    >
+                      Desvío
+                    </Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {rows.length === 0 ? (
+                    <Table.Tr>
+                      <Table.Td colSpan={5}>
+                        <Text size="xs" c="#98a2b3">
+                          Sin categorías con datos para este tipo.
+                        </Text>
+                      </Table.Td>
+                    </Table.Tr>
+                  ) : (
+                    rows.map((row) => {
+                      const deviationColor = getDeviationColor(type, row.deviation);
+
+                      return (
+                        <Table.Tr key={row.categoryId} className="dashboard-clickable-row">
+                          <Table.Td>
+                            <Group gap={6} wrap={isMobile ? "wrap" : "nowrap"}>
+                              <Text size="xs" c="#1f2937" lineClamp={isMobile ? 2 : 1}>
+                                {row.categoryName}
+                              </Text>
+                              {!isMobile && !row.categoryIsActive ? (
+                                <Text size="xs" c="#98a2b3">
+                                  inactiva
+                                </Text>
+                              ) : null}
+                            </Group>
+                          </Table.Td>
+                          <Table.Td style={{ textAlign: isMobile ? "left" : "right" }}>
+                            <Text size="xs" c="#1f2937">
+                              {compactFormatter.format(row.realAmount)}
+                            </Text>
+                          </Table.Td>
+                          <Table.Td style={{ textAlign: "right" }}>
+                            <Text size="xs" c="#475467">
+                              {compactFormatter.format(row.budgetAmount)}
+                            </Text>
+                          </Table.Td>
+                          <Table.Td style={{ textAlign: "right" }}>
+                            <Box
+                              style={{
+                                width: executionBarWidth,
+                                marginLeft: isMobile ? 0 : "auto",
+                              }}
+                            >
+                              <ProgressCell
+                                type={type}
+                                value={row.executionPercent}
+                                percentageFormatter={percentageFormatter}
+                                compact={isMobile}
+                              />
+                            </Box>
+                          </Table.Td>
+                          <Table.Td style={{ textAlign: "right" }}>
+                            <Text size="xs" c={deviationColor} fw={700}>
+                              {formatSignedCurrency(row.deviation, compactFormatter)}
                             </Text>
                           </Table.Td>
                         </Table.Tr>
-                      ) : (
-                        rows.map((row) => {
-                          const deviationColor = getDeviationColor(type, row.deviation);
-                          const rowSemantic = getCategorySemantic(type, row.deviation);
-                          const semanticBadgeColor = getSemanticBadgeColor(rowSemantic.status);
+                      );
+                    })
+                  )}
 
-                          return (
-                            <Table.Tr key={row.categoryId}>
-                              <Table.Td>
-                                <Group gap={6} wrap={isMobile ? "wrap" : "nowrap"}>
-                                  <Text size="xs" c="#1f2937" lineClamp={isMobile ? 2 : 1}>
-                                    {row.categoryName}
-                                  </Text>
-                                  <Badge
-                                    size="xs"
-                                    color={semanticBadgeColor}
-                                    variant={rowSemantic.status === "neutral" ? "outline" : "light"}
-                                  >
-                                    {rowSemantic.shortLabel}
-                                  </Badge>
-                                  {!isMobile && !row.categoryIsActive ? (
-                                    <Text size="xs" c="#98a2b3">
-                                      inactiva
-                                    </Text>
-                                  ) : null}
-                                </Group>
-                              </Table.Td>
-                              <Table.Td style={{ textAlign: isMobile ? "left" : "right" }}>
-                                <Text size="xs" c="#1f2937">
-                                  {compactFormatter.format(row.realAmount)}
-                                </Text>
-                              </Table.Td>
-                              <Table.Td style={{ textAlign: "right" }}>
-                                <Text size="xs" c="#475467">
-                                  {compactFormatter.format(row.budgetAmount)}
-                                </Text>
-                              </Table.Td>
-                              <Table.Td style={{ textAlign: "right" }}>
-                                <Box
-                                  style={{
-                                    width: executionBarWidth,
-                                    marginLeft: isMobile ? 0 : "auto",
-                                  }}
-                                >
-                                  <ProgressCell
-                                    type={type}
-                                    value={row.executionPercent}
-                                    percentageFormatter={percentageFormatter}
-                                    compact={isMobile}
-                                  />
-                                </Box>
-                              </Table.Td>
-                              <Table.Td style={{ textAlign: "right" }}>
-                                <Text size="xs" c={deviationColor} fw={700}>
-                                  {formatSignedCurrency(row.deviation, compactFormatter)}
-                                </Text>
-                              </Table.Td>
-                            </Table.Tr>
-                          );
-                        })
-                      )}
-
-                      <Table.Tr
+                  <Table.Tr
+                    style={{
+                      backgroundColor: "#f3f7ff",
+                      borderTop: "1px solid #d0d9e7",
+                    }}
+                  >
+                    <Table.Td>
+                      <Text size="xs" fw={800} c="#344054">
+                        TOTAL
+                      </Text>
+                    </Table.Td>
+                    <Table.Td style={{ textAlign: isMobile ? "left" : "right" }}>
+                      <Text size="xs" fw={800} c="#344054">
+                        {compactFormatter.format(totals.real)}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td style={{ textAlign: "right" }}>
+                      <Text size="xs" fw={800} c="#344054">
+                        {compactFormatter.format(totals.budget)}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td style={{ textAlign: "right" }}>
+                      <Box
                         style={{
-                          backgroundColor: "#f3f7ff",
-                          borderTop: "1px solid #d0d9e7",
+                          width: executionBarWidth,
+                          marginLeft: isMobile ? 0 : "auto",
                         }}
                       >
-                        <Table.Td>
-                          <Text size="xs" fw={800} c="#344054">
-                            TOTAL
-                          </Text>
-                        </Table.Td>
-                        <Table.Td style={{ textAlign: isMobile ? "left" : "right" }}>
-                          <Text size="xs" fw={800} c="#344054">
-                            {compactFormatter.format(totals.real)}
-                          </Text>
-                        </Table.Td>
-                        <Table.Td style={{ textAlign: "right" }}>
-                          <Text size="xs" fw={800} c="#344054">
-                            {compactFormatter.format(totals.budget)}
-                          </Text>
-                        </Table.Td>
-                        <Table.Td style={{ textAlign: "right" }}>
-                          <Box
-                            style={{
-                              width: executionBarWidth,
-                              marginLeft: isMobile ? 0 : "auto",
-                            }}
-                          >
-                            <ProgressCell
-                              type={type}
-                              value={totalExecutionPercent}
-                              percentageFormatter={percentageFormatter}
-                              compact={isMobile}
-                            />
-                          </Box>
-                        </Table.Td>
-                        <Table.Td style={{ textAlign: "right" }}>
-                          <Text size="xs" fw={800} c={getDeviationColor(type, totals.deviation)}>
-                            {formatSignedCurrency(totals.deviation, compactFormatter)}
-                          </Text>
-                        </Table.Td>
-                      </Table.Tr>
-                    </Table.Tbody>
-                  </Table>
-                </Paper>
-              );
-            })}
-          </Stack>
-        </Grid.Col>
-
-        <Grid.Col span={{ base: 12, lg: 4 }}>
-          <Stack gap={isMobile ? "xs" : "sm"}>
-            <Paper
-              p={cardPadding}
-              radius="sm"
-              style={{
-                border: "1px solid #d6dde7",
-                backgroundColor: "#ffffff",
-              }}
-            >
-              <Stack gap={isMobile ? 6 : "xs"}>
-                <Text size="xs" fw={800} c="#344054">
-                  Distribución real por tipo
-                </Text>
-
-                {(Object.keys(typeLabels) as TransactionType[]).map((type) => {
-                  const donut = donutData[type];
-
-                  return (
-                    <Paper
-                      key={type}
-                      p={isMobile ? 6 : "xs"}
-                      radius="sm"
-                      style={{
-                        border: "1px solid #e4e7ec",
-                        backgroundColor: "#fbfcff",
-                      }}
-                    >
-                      <Group gap="xs" align="center" wrap="nowrap">
-                        <RingProgress
-                          size={donutSize}
-                          thickness={donutThickness}
-                          roundCaps
-                          sections={
-                            donut.slices.length === 0
-                              ? [{ value: 100, color: "#e4e7ec" }]
-                              : donut.slices.map((slice) => ({
-                                  value: clampToPercent(slice.value),
-                                  color: slice.color,
-                                }))
-                          }
-                          label={
-                            <Text size={isMobile ? "9px" : "10px"} c="#344054" ta="center" fw={700}>
-                              {compactFormatter.format(donut.total)}
-                            </Text>
-                          }
+                        <ProgressCell
+                          type={type}
+                          value={totalExecutionPercent}
+                          percentageFormatter={percentageFormatter}
+                          compact={isMobile}
                         />
-
-                        <Stack gap={4} style={{ flex: 1 }}>
-                          <Text size="xs" fw={700} c={typeTheme[type].main}>
-                            {typeLabels[type]}
-                          </Text>
-                          {donut.slices.length === 0 ? (
-                            <Text size={isMobile ? "11px" : "xs"} c="#98a2b3">
-                              Sin datos reales en el período.
-                            </Text>
-                          ) : (
-                            donut.slices.map((slice) => (
-                              <Group key={`${type}-${slice.label}`} justify="space-between" gap={6}>
-                                <Group gap={6} wrap="nowrap">
-                                  <Box
-                                    h={8}
-                                    w={8}
-                                    style={{ borderRadius: 2, backgroundColor: slice.color }}
-                                  />
-                                  <Text size={isMobile ? "11px" : "xs"} c="#344054" lineClamp={1}>
-                                    {slice.label}
-                                  </Text>
-                                </Group>
-                                <Text size={isMobile ? "11px" : "xs"} c="#344054" fw={600}>
-                                  {percentageFormatter.format(slice.value)}%
-                                </Text>
-                              </Group>
-                            ))
-                          )}
-                        </Stack>
-                      </Group>
-                    </Paper>
-                  );
-                })}
-              </Stack>
+                      </Box>
+                    </Table.Td>
+                    <Table.Td style={{ textAlign: "right" }}>
+                      <Text size="xs" fw={800} c={getDeviationColor(type, totals.deviation)}>
+                        {formatSignedCurrency(totals.deviation, compactFormatter)}
+                      </Text>
+                    </Table.Td>
+                  </Table.Tr>
+                </Table.Tbody>
+              </Table>
             </Paper>
+          );
+        })}
+      </Stack>
 
-            <Paper
-              p={cardPadding}
-              radius="sm"
-              style={{
-                border: "1px solid #d6dde7",
-                backgroundColor: "#ffffff",
-              }}
-            >
-              <Stack gap="xs">
-                <Text size="xs" fw={800} c="#344054">
-                  Registro vs Presupuesto
-                </Text>
+      <Paper
+        p={cardPadding}
+        radius="sm"
+        style={{
+          border: "1px solid #d6dde7",
+          backgroundColor: "#ffffff",
+        }}
+      >
+        <Stack gap={isMobile ? 6 : "xs"}>
+          <Text size="xs" fw={800} c="#344054">
+            Distribución real por tipo
+          </Text>
 
-                <Group align="end" gap={isMobile ? "xs" : "sm"} wrap="nowrap">
-                  {comparisonBars.map((item) => {
-                    const budgetHeight =
-                      Math.abs(item.budget) < 0.005
-                        ? 0
-                        : Math.max(4, (Math.abs(item.budget) / maxComparisonValue) * comparisonHeight);
-                    const realHeight =
-                      Math.abs(item.real) < 0.005
-                        ? 0
-                        : Math.max(4, (Math.abs(item.real) / maxComparisonValue) * comparisonHeight);
-                    const delta = roundMoney(item.real - item.budget);
-                    const deltaColor = getComparisonDeltaColor(item.key, delta);
+          {(Object.keys(typeLabels) as TransactionType[]).map((type) => {
+            const donut = donutData[type];
 
-                    return (
-                      <Tooltip
-                        key={item.key}
-                        withArrow
-                        position="top"
-                        label={
-                          <Stack gap={2}>
-                            <Text size="xs" fw={700}>
-                              {item.label}
-                            </Text>
-                            <Text size="xs">Presupuesto: {currencyFormatter.format(item.budget)}</Text>
-                            <Text size="xs">Registro: {currencyFormatter.format(item.real)}</Text>
-                            <Text size="xs" c={deltaColor}>
-                              Diferencia: {formatSignedCurrency(delta, currencyFormatter)}
-                            </Text>
-                          </Stack>
-                        }
-                      >
-                        <Stack gap={4} align="center" style={{ flex: 1, minWidth: comparisonSlotWidth }}>
-                          <Text size="10px" c={item.realColor} fw={700} lineClamp={1}>
-                            {compactFormatter.format(item.real)}
-                          </Text>
+            return (
+              <Paper
+                key={type}
+                p={isMobile ? 6 : "xs"}
+                radius="sm"
+                style={{
+                  border: "1px solid #e4e7ec",
+                  backgroundColor: "#fbfcff",
+                }}
+              >
+                <Group gap="xs" align="center" wrap="nowrap">
+                  <RingProgress
+                    size={donutSize}
+                    thickness={donutThickness}
+                    roundCaps
+                    sections={
+                      donut.slices.length === 0
+                        ? [{ value: 100, color: "#e4e7ec" }]
+                        : donut.slices.map((slice) => ({
+                            value: clampToPercent(slice.value),
+                            color: slice.color,
+                          }))
+                    }
+                    label={
+                      <Text size={isMobile ? "9px" : "10px"} c="#344054" ta="center" fw={700}>
+                        {compactFormatter.format(donut.total)}
+                      </Text>
+                    }
+                  />
 
-                          <Box
-                            style={{
-                              width: comparisonSlotWidth,
-                              height: comparisonHeight,
-                              position: "relative",
-                              borderBottom: "1px solid #d0d5dd",
-                            }}
-                          >
-                            <Box
-                              style={{
-                                width: comparisonOverlayWidth,
-                                height: budgetHeight,
-                                position: "absolute",
-                                left: "50%",
-                                bottom: 0,
-                                transform: "translateX(-50%)",
-                                backgroundColor: "#d0d5dd",
-                                borderRadius: 4,
-                              }}
-                            />
-                            <Box
-                              style={{
-                                width: comparisonOverlayWidth,
-                                height: realHeight,
-                                position: "absolute",
-                                left: "50%",
-                                bottom: 0,
-                                transform: "translateX(-50%)",
-                                backgroundColor: item.realColor,
-                                borderRadius: 4,
-                                opacity: 0.98,
-                              }}
-                            />
-                          </Box>
-
-                          <Text size="xs" c="#344054">
-                            {item.label}
-                          </Text>
-                        </Stack>
-                      </Tooltip>
-                    );
-                  })}
-                </Group>
-
-                <Group gap={isMobile ? "sm" : "md"} wrap={isMobile ? "wrap" : "nowrap"}>
-                  <Group gap={6}>
-                    <Box h={8} w={8} style={{ backgroundColor: "#d0d5dd", borderRadius: 2 }} />
-                    <Text size="xs" c="#475467">
-                      Presupuesto
+                  <Stack gap={4} style={{ flex: 1 }}>
+                    <Text size="xs" fw={700} c={typeTheme[type].main}>
+                      {typeLabels[type]}
                     </Text>
-                  </Group>
-                  <Group gap={6}>
-                    <Box
-                      h={8}
-                      w={8}
-                      style={{
-                        background: "linear-gradient(180deg, #087f5b 0%, #64748b 50%, #c92a2a 100%)",
-                        borderRadius: 2,
-                      }}
-                    />
-                    <Text size="xs" c="#475467">
-                      Registro (según desempeño)
-                    </Text>
-                  </Group>
+                    {donut.slices.length === 0 ? (
+                      <Text size={isMobile ? "11px" : "xs"} c="#98a2b3">
+                        Sin datos reales en el período.
+                      </Text>
+                    ) : (
+                      donut.slices.map((slice) => (
+                        <Group key={`${type}-${slice.label}`} justify="space-between" gap={6}>
+                          <Group gap={6} wrap="nowrap">
+                            <Box h={8} w={8} style={{ borderRadius: 2, backgroundColor: slice.color }} />
+                            <Text size={isMobile ? "11px" : "xs"} c="#344054" lineClamp={1}>
+                              {slice.label}
+                            </Text>
+                          </Group>
+                          <Text size={isMobile ? "11px" : "xs"} c="#344054" fw={600}>
+                            {percentageFormatter.format(slice.value)}%
+                          </Text>
+                        </Group>
+                      ))
+                    )}
+                  </Stack>
                 </Group>
-              </Stack>
-            </Paper>
-
-            <Paper
-              p={cardPadding}
-              radius="sm"
-              style={{
-                border: "1px solid #d6dde7",
-                backgroundColor: problemCount > 0 ? "#fff5f5" : "#f8fafc",
-              }}
-            >
-              <Stack gap={6}>
-                <Text size="xs" fw={800} c="#344054">
-                  Problemas detectados
-                </Text>
-                <Text size="sm" fw={800} c={problemCount > 0 ? "#c92a2a" : "#475467"}>
-                  {problemCount === 0
-                    ? "Sin problemas críticos"
-                    : `${problemCount} ${pluralize(problemCount, "categoría en alerta", "categorías en alerta")}`}
-                </Text>
-                {topProblemRows.length === 0 ? (
-                  <Text size="xs" c="#667085">
-                    No hay desvíos operativos que requieran atención en este período.
-                  </Text>
-                ) : (
-                  <Stack gap={6}>
-                    {topProblemRows.map((row, index) => (
-                      <Group
-                        key={`${row.type}-${row.categoryName}-${index}`}
-                        justify="space-between"
-                        align="flex-start"
-                        wrap="nowrap"
-                      >
-                        <Stack gap={1} style={{ flex: 1 }}>
-                          <Text size="xs" fw={700} c="#344054">
-                            {row.semantic.detail}
-                          </Text>
-                          <Text size="xs" c="#667085">
-                            {typeLabels[row.type]} · {row.categoryName}
-                          </Text>
-                        </Stack>
-                        <Text size="xs" fw={700} c="#c92a2a">
-                          {formatSignedCurrency(row.deviation, currencyFormatter)}
-                        </Text>
-                      </Group>
-                    ))}
-                  </Stack>
-                )}
-              </Stack>
-            </Paper>
-
-            <Paper
-              p={cardPadding}
-              radius="sm"
-              style={{
-                border: "1px solid #d6dde7",
-                backgroundColor: positiveCount > 0 ? "#f1fff6" : "#f8fafc",
-              }}
-            >
-              <Stack gap={6}>
-                <Text size="xs" fw={800} c="#344054">
-                  Buen desempeño
-                </Text>
-                <Text size="sm" fw={800} c={positiveCount > 0 ? "#087f5b" : "#475467"}>
-                  {positiveCount === 0
-                    ? "Sin destacados por ahora"
-                    : `${positiveCount} ${pluralize(positiveCount, "categoría destacada", "categorías destacadas")}`}
-                </Text>
-                {topPositiveRows.length === 0 ? (
-                  <Text size="xs" c="#667085">
-                    Todavía no hay señales positivas por encima del plan para destacar.
-                  </Text>
-                ) : (
-                  <Stack gap={6}>
-                    {topPositiveRows.map((row, index) => (
-                      <Group
-                        key={`${row.type}-${row.categoryName}-${index}`}
-                        justify="space-between"
-                        align="flex-start"
-                        wrap="nowrap"
-                      >
-                        <Stack gap={1} style={{ flex: 1 }}>
-                          <Text size="xs" fw={700} c="#344054">
-                            {row.semantic.detail}
-                          </Text>
-                          <Text size="xs" c="#667085">
-                            {typeLabels[row.type]} · {row.categoryName}
-                          </Text>
-                        </Stack>
-                        <Text size="xs" fw={700} c="#087f5b">
-                          {formatSignedCurrency(row.deviation, currencyFormatter)}
-                        </Text>
-                      </Group>
-                    ))}
-                  </Stack>
-                )}
-              </Stack>
-            </Paper>
-          </Stack>
-        </Grid.Col>
-      </Grid>
+              </Paper>
+            );
+          })}
+        </Stack>
+      </Paper>
     </Stack>
   );
 }

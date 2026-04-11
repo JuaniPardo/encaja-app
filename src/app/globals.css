@@ -26,3 +26,25 @@ body {
 a {
   color: inherit;
 }
+
+.dashboard-clickable-row {
+  cursor: pointer;
+  transition: background-color 140ms ease;
+}
+
+.dashboard-clickable-row:hover {
+  background-color: #f8fafc;
+}
+
+.dashboard-clickable-item {
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease,
+    border-color 140ms ease;
+}
+
+.dashboard-clickable-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08);
+}
