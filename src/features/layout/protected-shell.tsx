@@ -19,7 +19,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 
 const navItems = [
-  { href: "/app", label: "Dashboard" },
+  { href: "/app", label: "Resumen" },
   { href: "/app/budget", label: "Presupuesto" },
   { href: "/app/transactions", label: "Transacciones" },
   { href: "/app/categories", label: "Categorías" },

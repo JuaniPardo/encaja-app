@@ -86,7 +86,6 @@ export default function CategoriesPage() {
   });
 
   const loadRows = useCallback(async () => {
-    setIsLoading(true);
     const response = await supabase
       .from("categories")
       .select("*")
@@ -114,6 +113,7 @@ export default function CategoriesPage() {
   }, [supabase, workspace.id]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadRows();
   }, [loadRows]);
 
@@ -204,6 +204,7 @@ export default function CategoriesPage() {
     setIsModalOpen(false);
     setEditingRow(null);
     reset(toCategoryDefaults());
+    setIsLoading(true);
     await loadRows();
   });
 
@@ -232,6 +233,7 @@ export default function CategoriesPage() {
       message: "Estado actualizado correctamente.",
     });
 
+    setIsLoading(true);
     await loadRows();
   }
 

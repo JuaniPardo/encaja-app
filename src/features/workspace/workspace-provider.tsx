@@ -40,9 +40,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     workspace: null,
   });
 
-  const refreshWorkspace = useCallback(async () => {
-    setState((prev) => ({ ...prev, isLoading: true, errorMessage: null }));
-
+  const loadWorkspace = useCallback(async () => {
     const userResponse = await supabase.auth.getUser();
     if (userResponse.error || !userResponse.data.user) {
       await supabase.auth.signOut();
@@ -88,6 +86,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     }
   }, [router, supabase]);
 
+  const refreshWorkspace = useCallback(async () => {
+    setState((prev) => ({ ...prev, isLoading: true, errorMessage: null }));
+    await loadWorkspace();
+  }, [loadWorkspace]);
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setState({
@@ -100,7 +103,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   }, [router, supabase]);
 
   useEffect(() => {
-    void refreshWorkspace();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadWorkspace();
 
     const authListener = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session?.user) {
@@ -120,7 +124,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     return () => {
       authListener.data.subscription.unsubscribe();
     };
-  }, [refreshWorkspace, router, supabase.auth]);
+  }, [loadWorkspace, refreshWorkspace, router, supabase.auth]);
 
   if (state.isLoading) {
     return (
