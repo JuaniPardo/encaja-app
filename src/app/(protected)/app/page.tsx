@@ -7,7 +7,7 @@ import {
   Grid,
   Group,
   LoadingOverlay,
-  NativeSelect,
+  Menu,
   Paper,
   Progress,
   RingProgress,
@@ -15,6 +15,7 @@ import {
   Stack,
   Table,
   Text,
+  UnstyledButton,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
@@ -76,7 +77,6 @@ type SemanticStatus = "problem" | "positive" | "neutral";
 
 type CategorySemantic = {
   status: SemanticStatus;
-  shortLabel: string;
   detail: string;
 };
 
@@ -218,7 +218,6 @@ function getCategorySemantic(type: TransactionType, deviation: number): Category
     if (type === "expense") {
       return {
         status: "neutral",
-        shortLabel: "En control",
         detail: "Gasto en presupuesto",
       };
     }
@@ -226,14 +225,12 @@ function getCategorySemantic(type: TransactionType, deviation: number): Category
     if (type === "saving") {
       return {
         status: "neutral",
-        shortLabel: "En objetivo",
         detail: "Ahorro en objetivo",
       };
     }
 
     return {
       status: "neutral",
-      shortLabel: "En objetivo",
       detail: "Ingreso en presupuesto",
     };
   }
@@ -242,12 +239,10 @@ function getCategorySemantic(type: TransactionType, deviation: number): Category
     return deviation > 0
       ? {
           status: "positive",
-          shortLabel: "Destacado",
           detail: "Ingreso por encima del presupuesto",
         }
       : {
           status: "problem",
-          shortLabel: "Atención",
           detail: "Ingreso por debajo del presupuesto",
         };
   }
@@ -256,12 +251,10 @@ function getCategorySemantic(type: TransactionType, deviation: number): Category
     return deviation > 0
       ? {
           status: "problem",
-          shortLabel: "Alerta",
           detail: "Gasto por encima del presupuesto",
         }
       : {
           status: "positive",
-          shortLabel: "Favorable",
           detail: "Gasto por debajo del presupuesto",
         };
   }
@@ -269,12 +262,10 @@ function getCategorySemantic(type: TransactionType, deviation: number): Category
   return deviation > 0
     ? {
         status: "positive",
-        shortLabel: "Destacado",
         detail: "Ahorro por encima del objetivo",
       }
     : {
         status: "problem",
-        shortLabel: "Atención",
         detail: "Ahorro por debajo del objetivo",
       };
 }
@@ -688,12 +679,14 @@ export default function DashboardPage() {
           semantic,
         };
 
-        if (semantic.status === "problem") {
+        const isProblem = type === "expense" && row.deviation > deviationTolerance;
+        if (isProblem) {
           problemRows.push(insight);
           continue;
         }
 
-        if (semantic.status === "positive") {
+        const isPositive = type === "income" && row.deviation > deviationTolerance;
+        if (isPositive) {
           positiveRows.push(insight);
           continue;
         }
@@ -735,14 +728,14 @@ export default function DashboardPage() {
     }
 
     if (problemCount > 0 && positiveCount > 0) {
-      return `${problemCount} ${pluralize(problemCount, "problema", "problemas")} · ${positiveCount} en buen desempeño`;
+      return `${problemCount} ${pluralize(problemCount, "problema", "problemas")} · ${positiveCount} ${pluralize(positiveCount, "destacado", "destacados")}`;
     }
 
     if (problemCount > 0) {
       return `${problemCount} ${pluralize(problemCount, "problema detectado", "problemas detectados")}`;
     }
 
-    return `${positiveCount} en buen desempeño`;
+    return `${positiveCount} ${pluralize(positiveCount, "destacado", "destacados")}`;
   }, [positiveCount, problemCount]);
 
   const operationalHeadlineColor =
@@ -809,52 +802,88 @@ export default function DashboardPage() {
               Workspace: {workspace.name} · Moneda: {currencyCode}
             </Text>
           </Stack>
-          {!isMobile ? (
-            <Badge variant="light" color="gray">
-              Lectura rápida
-            </Badge>
-          ) : null}
-        </Group>
-      </Paper>
+          <Group gap={6} align="center" wrap="wrap">
+            <Menu shadow="md" width={220} position="bottom-end">
+              <Menu.Target>
+                <UnstyledButton
+                  style={{
+                    padding: "4px 10px",
+                    borderRadius: 999,
+                    border: "1px solid #d0d5dd",
+                    backgroundColor: "#f8fafc",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: "#344054",
+                    cursor: "pointer",
+                  }}
+                >
+                  {selectedPeriodLabel}
+                </UnstyledButton>
+              </Menu.Target>
 
-      <Paper
-        radius="sm"
-        p={isMobile ? "xs" : "sm"}
-        style={{
-          border: "1px solid #d6dde7",
-          backgroundColor: "#f7f9fc",
-        }}
-      >
-        <Stack gap="xs">
-          <Text size="xs" fw={700} c="#475467" style={{ textTransform: "uppercase" }}>
-            Controles
-          </Text>
-          <Group grow gap="xs" wrap={isMobile ? "wrap" : "nowrap"}>
-            <NativeSelect
-              label="Año"
-              size={isMobile ? "xs" : "sm"}
-              data={yearOptions}
-              value={String(selectedYear)}
-              onChange={(event) => {
-                setIsLoadingSummary(true);
-                setSelectedYear(Number(event.currentTarget.value));
-              }}
-            />
-            <NativeSelect
-              label="Mes"
-              size={isMobile ? "xs" : "sm"}
-              data={monthOptions}
-              value={String(selectedMonth)}
-              onChange={(event) => {
-                setIsLoadingSummary(true);
-                setSelectedMonth(Number(event.currentTarget.value));
-              }}
-            />
+              <Menu.Dropdown>
+                <Menu.Label>Mes</Menu.Label>
+                {monthOptions.map((option) => {
+                  const monthValue = Number(option.value);
+                  const isSelected = monthValue === selectedMonth;
+
+                  return (
+                    <Menu.Item
+                      key={`month-${option.value}`}
+                      onClick={() => {
+                        if (isSelected) {
+                          return;
+                        }
+
+                        setIsLoadingSummary(true);
+                        setSelectedMonth(monthValue);
+                      }}
+                    >
+                      <Group justify="space-between" wrap="nowrap">
+                        <Text size="xs">{option.label}</Text>
+                        {isSelected ? (
+                          <Badge variant="light" color="blue" size="xs">
+                            Actual
+                          </Badge>
+                        ) : null}
+                      </Group>
+                    </Menu.Item>
+                  );
+                })}
+
+                <Menu.Divider />
+                <Menu.Label>Año</Menu.Label>
+                {yearOptions.map((option) => {
+                  const yearValue = Number(option.value);
+                  const isSelected = yearValue === selectedYear;
+
+                  return (
+                    <Menu.Item
+                      key={`year-${option.value}`}
+                      onClick={() => {
+                        if (isSelected) {
+                          return;
+                        }
+
+                        setIsLoadingSummary(true);
+                        setSelectedYear(yearValue);
+                      }}
+                    >
+                      <Group justify="space-between" wrap="nowrap">
+                        <Text size="xs">{option.label}</Text>
+                        {isSelected ? (
+                          <Badge variant="light" color="blue" size="xs">
+                            Actual
+                          </Badge>
+                        ) : null}
+                      </Group>
+                    </Menu.Item>
+                  );
+                })}
+              </Menu.Dropdown>
+            </Menu>
           </Group>
-          <Text size="xs" c="#667085">
-            Analizando: {selectedPeriodLabel}
-          </Text>
-        </Stack>
+        </Group>
       </Paper>
 
       <Paper

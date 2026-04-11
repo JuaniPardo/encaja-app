@@ -35,92 +35,41 @@ function clampToPercent(value: number) {
 }
 
 function getProgressVisualScale(type: TransactionType, value: number): ProgressVisualScale {
-  if (type === "income") {
-    if (value > 100) {
-      return {
-        fill: "#0f766e",
-        track: "#ccfbf1",
-        border: "#99f6e4",
-        text: "#ffffff",
-      };
-    }
-
-    if (value === 100) {
-      return {
-        fill: "#94a3b8",
-        track: "#f1f5f9",
-        border: "#e2e8f0",
-        text: "#334155",
-      };
-    }
-
+  if (value < 100) {
     return {
-      fill: "#fb7185",
-      track: "#fff1f2",
-      border: "#fecdd3",
-      text: value < 35 ? "#9f1239" : "#ffffff",
+      fill: "#64748b",
+      track: "#e2e8f0",
+      border: "#cbd5e1",
+      text: value < 40 ? "#0f172a" : "#ffffff",
     };
   }
 
-  if (type === "expense") {
-    if (value > 100) {
-      return {
-        fill: "#be185d",
-        track: "#fce7f3",
-        border: "#f9a8d4",
-        text: "#ffffff",
-      };
+  const targetColors: Record<
+    TransactionType,
+    {
+      reached: string;
+      exceeded: string;
     }
-
-    if (value === 100) {
-      return {
-        fill: "#94a3b8",
-        track: "#f1f5f9",
-        border: "#e2e8f0",
-        text: "#334155",
-      };
-    }
-
-    if (value >= 80) {
-      return {
-        fill: "#5eead4",
-        track: "#ccfbf1",
-        border: "#99f6e4",
-        text: "#ffffff",
-      };
-    }
-
-    return {
-      fill: "#14b8a6",
-      track: "#ccfbf1",
-      border: "#99f6e4",
-      text: value < 35 ? "#134e4a" : "#ffffff",
-    };
-  }
-
-  if (value > 100) {
-    return {
-      fill: "#4338ca",
-      track: "#e0e7ff",
-      border: "#c7d2fe",
-      text: "#ffffff",
-    };
-  }
-
-  if (value === 100) {
-    return {
-      fill: "#94a3b8",
-      track: "#f1f5f9",
-      border: "#e2e8f0",
-      text: "#334155",
-    };
-  }
+  > = {
+    income: {
+      reached: "#22c55e",
+      exceeded: "#15803d",
+    },
+    expense: {
+      reached: "#ec4899",
+      exceeded: "#be185d",
+    },
+    saving: {
+      reached: "#6366f1",
+      exceeded: "#4338ca",
+    },
+  };
 
   return {
-    fill: "#fb7185",
-    track: "#fff1f2",
-    border: "#fecdd3",
-    text: value < 35 ? "#9f1239" : "#ffffff",
+    fill: value > 100 ? targetColors[type].exceeded : targetColors[type].reached,
+    track: "#e2e8f0",
+    border: "#cbd5e1",
+    text: "#ffffff",
   };
 }
 
