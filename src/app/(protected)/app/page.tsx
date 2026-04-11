@@ -347,6 +347,15 @@ export default function DashboardPage() {
     });
   }, []);
 
+  const compactCurrencyFormatter = useMemo(() => {
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: currencyCode || "ARS",
+      notation: "compact",
+      maximumFractionDigits: 1,
+    });
+  }, [currencyCode]);
+
   const yearOptions = useMemo(() => {
     const currentYear = new Date().getFullYear();
     const initialYear = Math.min(startYear, selectedYear, currentYear - 1);
@@ -747,6 +756,7 @@ export default function DashboardPage() {
   const isTablet = useMediaQuery("(min-width: 48em) and (max-width: 74.99em)");
 
   const kpiColumns = isMobile ? (isNarrowMobile ? 1 : 2) : 2;
+  const distributionColumns = isMobile ? 1 : isTablet ? 1 : 3;
   const cardPadding = isMobile ? "xs" : "sm";
   const tableHorizontalSpacing = isMobile ? "xs" : "sm";
   const tableVerticalSpacing = isMobile ? 5 : 6;
@@ -1265,67 +1275,91 @@ export default function DashboardPage() {
             Distribución real por tipo
           </Text>
 
-          {(Object.keys(typeLabels) as TransactionType[]).map((type) => {
-            const donut = donutData[type];
+          <SimpleGrid cols={distributionColumns} spacing={isMobile ? 6 : "xs"}>
+            {(Object.keys(typeLabels) as TransactionType[]).map((type) => {
+              const donut = donutData[type];
+              const hasData = donut.slices.length > 0;
 
-            return (
-              <Paper
-                key={type}
-                p={isMobile ? 6 : "xs"}
-                radius="sm"
-                style={{
-                  border: "1px solid #e4e7ec",
-                  backgroundColor: "#fbfcff",
-                }}
-              >
-                <Group gap="xs" align="center" wrap="nowrap">
-                  <RingProgress
-                    size={donutSize}
-                    thickness={donutThickness}
-                    roundCaps
-                    sections={
-                      donut.slices.length === 0
-                        ? [{ value: 100, color: "#e4e7ec" }]
-                        : donut.slices.map((slice) => ({
-                            value: clampToPercent(slice.value),
-                            color: slice.color,
-                          }))
-                    }
-                    label={
-                      <Text size={isMobile ? "9px" : "10px"} c="#344054" ta="center" fw={700}>
-                        {compactFormatter.format(donut.total)}
-                      </Text>
-                    }
-                  />
+              return (
+                <Paper
+                  key={type}
+                  p={isMobile ? 6 : "xs"}
+                  radius="sm"
+                  style={{
+                    border: "1px solid #e4e7ec",
+                    backgroundColor: "#fbfcff",
+                    minHeight: hasData ? (isMobile ? 96 : 86) : isMobile ? 76 : 64,
+                  }}
+                >
+                  <Box
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: isMobile ? "1fr" : "120px minmax(0, 1fr)",
+                      gap: isMobile ? 8 : 10,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Box
+                      style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                    >
+                      <RingProgress
+                        size={isMobile ? donutSize : 86}
+                        thickness={donutThickness}
+                        roundCaps
+                        sections={
+                          hasData
+                            ? donut.slices.map((slice) => ({
+                                value: clampToPercent(slice.value),
+                                color: slice.color,
+                              }))
+                            : [{ value: 100, color: "#e4e7ec" }]
+                        }
+                        label={
+                          <Text size={isMobile ? "9px" : "10px"} c="#344054" ta="center" fw={700}>
+                            {compactCurrencyFormatter.format(donut.total)}
+                          </Text>
+                        }
+                      />
+                    </Box>
 
-                  <Stack gap={4} style={{ flex: 1 }}>
-                    <Text size="xs" fw={700} c={typeTheme[type].main}>
-                      {typeLabels[type]}
-                    </Text>
-                    {donut.slices.length === 0 ? (
-                      <Text size={isMobile ? "11px" : "xs"} c="#98a2b3">
-                        Sin datos reales en el período.
+                    <Stack gap={4} style={{ minWidth: 0 }}>
+                      <Text size="xs" fw={700} c={typeTheme[type].main}>
+                        {typeLabels[type]}
                       </Text>
-                    ) : (
-                      donut.slices.map((slice) => (
-                        <Group key={`${type}-${slice.label}`} justify="space-between" gap={6}>
-                          <Group gap={6} wrap="nowrap">
-                            <Box h={8} w={8} style={{ borderRadius: 2, backgroundColor: slice.color }} />
-                            <Text size={isMobile ? "11px" : "xs"} c="#344054" lineClamp={1}>
-                              {slice.label}
+                      {!hasData ? (
+                        <Text size={isMobile ? "11px" : "xs"} c="#98a2b3">
+                          Sin datos reales en el período.
+                        </Text>
+                      ) : (
+                        donut.slices.map((slice) => (
+                          <Group key={`${type}-${slice.label}`} justify="space-between" gap={6} wrap="nowrap">
+                            <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
+                              <Box h={8} w={8} style={{ borderRadius: 2, backgroundColor: slice.color }} />
+                              <Text size={isMobile ? "11px" : "xs"} c="#344054" lineClamp={1}>
+                                {slice.label}
+                              </Text>
+                            </Group>
+                            <Text
+                              size={isMobile ? "11px" : "xs"}
+                              c="#344054"
+                              fw={700}
+                              style={{ textAlign: "right", whiteSpace: "nowrap" }}
+                            >
+                              {compactCurrencyFormatter.format(slice.amount)}
                             </Text>
                           </Group>
-                          <Text size={isMobile ? "11px" : "xs"} c="#344054" fw={600}>
-                            {percentageFormatter.format(slice.value)}%
-                          </Text>
-                        </Group>
-                      ))
-                    )}
-                  </Stack>
-                </Group>
-              </Paper>
-            );
-          })}
+                        ))
+                      )}
+                    </Stack>
+                  </Box>
+                </Paper>
+              );
+            })}
+          </SimpleGrid>
         </Stack>
       </Paper>
     </Stack>
