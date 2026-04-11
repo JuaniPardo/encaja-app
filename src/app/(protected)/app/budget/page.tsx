@@ -18,8 +18,13 @@ import {
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { useForm, useWatch } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 
+import {
+  formatBudgetAmount,
+  parseBudgetAmount,
+  sanitizeBudgetTypingValue,
+} from "@/features/budget/amount-format";
 import {
   budgetFormSchema,
   type BudgetFormInputValues,
@@ -75,19 +80,6 @@ const monthOptions = [
   { value: "11", label: "Noviembre" },
   { value: "12", label: "Diciembre" },
 ] as const;
-
-function parseAmountValue(value: unknown) {
-  if (value === null || value === undefined || value === "") {
-    return null;
-  }
-
-  const parsed = typeof value === "number" ? value : Number(value);
-  if (!Number.isFinite(parsed)) {
-    return null;
-  }
-
-  return parsed;
-}
 
 function roundMoney(value: number) {
   return Math.round(value * 100) / 100;
@@ -185,7 +177,7 @@ export default function BudgetPage() {
         continue;
       }
 
-      const parsedAmount = parseAmountValue(item.amount);
+      const parsedAmount = parseBudgetAmount(item.amount);
       if (parsedAmount === null) {
         continue;
       }
@@ -209,6 +201,7 @@ export default function BudgetPage() {
     : roundedBalance > 0
       ? "remaining"
       : "overassigned";
+  const formattedBalanceAbsolute = `$${formatBudgetAmount(Math.abs(roundedBalance))}`;
 
   const yearOptions = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -340,7 +333,7 @@ export default function BudgetPage() {
 
     const periodItems = (itemsResponse.data ?? []) as BudgetItemLiteRow[];
     const amountByCategoryId = new Map(
-      periodItems.map((item) => [item.category_id, parseAmountValue(item.amount)]),
+      periodItems.map((item) => [item.category_id, parseBudgetAmount(item.amount)]),
     );
 
     reset({
@@ -552,7 +545,7 @@ export default function BudgetPage() {
           amount: number;
         }>
       >((accumulator, item) => {
-        const parsedAmount = parseAmountValue(item.amount);
+        const parsedAmount = parseBudgetAmount(item.amount);
         if (parsedAmount === null) {
           return accumulator;
         }
@@ -716,31 +709,55 @@ export default function BudgetPage() {
                               type="hidden"
                               {...register(`items.${index}.categoryId` as const)}
                             />
-                            <TextInput
-                              aria-label={`Monto de ${category.name}`}
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              size="sm"
-                              placeholder="0"
-                              error={errors.items?.[index]?.amount?.message}
-                              rightSection={
-                                <Text size="10px" c="dimmed" fw={500}>
-                                  {currencyCode}
-                                </Text>
-                              }
-                              rightSectionWidth={40}
-                              rightSectionPointerEvents="none"
-                              styles={{
-                                input: {
-                                  textAlign: "right",
-                                  fontVariantNumeric: "tabular-nums",
-                                  paddingTop: "0.3rem",
-                                  paddingBottom: "0.3rem",
-                                },
-                              }}
-                              style={{ width: isMobile ? 132 : 164 }}
-                              {...register(`items.${index}.amount` as const)}
+                            <Controller
+                              name={`items.${index}.amount` as const}
+                              control={control}
+                              render={({ field }) => (
+                                <TextInput
+                                  aria-label={`Monto de ${category.name}`}
+                                  type="text"
+                                  inputMode="decimal"
+                                  size="sm"
+                                  placeholder="0"
+                                  value={
+                                    typeof field.value === "string"
+                                      ? field.value
+                                      : typeof field.value === "number"
+                                        ? formatBudgetAmount(field.value)
+                                        : ""
+                                  }
+                                  onChange={(event) => {
+                                    field.onChange(
+                                      sanitizeBudgetTypingValue(event.currentTarget.value),
+                                    );
+                                  }}
+                                  onBlur={(event) => {
+                                    const parsed = parseBudgetAmount(event.currentTarget.value);
+                                    field.onChange(formatBudgetAmount(parsed ?? 0));
+                                    field.onBlur();
+                                  }}
+                                  onFocus={(event) => {
+                                    event.currentTarget.select();
+                                  }}
+                                  error={errors.items?.[index]?.amount?.message}
+                                  rightSection={
+                                    <Text size="10px" c="dimmed" fw={500}>
+                                      $
+                                    </Text>
+                                  }
+                                  rightSectionWidth={26}
+                                  rightSectionPointerEvents="none"
+                                  styles={{
+                                    input: {
+                                      textAlign: "right",
+                                      fontVariantNumeric: "tabular-nums",
+                                      paddingTop: "0.3rem",
+                                      paddingBottom: "0.3rem",
+                                    },
+                                  }}
+                                  style={{ width: isMobile ? 132 : 164 }}
+                                />
+                              )}
                             />
                           </Group>
                         </Paper>
@@ -847,8 +864,8 @@ export default function BudgetPage() {
                       Balance final
                     </Text>
                     <Text
-                      fw={800}
-                      size={isMobile ? "sm" : "lg"}
+                      fw={900}
+                      size={isMobile ? "lg" : "xl"}
                       c={
                         balanceStatus === "balanced"
                           ? "teal.7"
@@ -879,14 +896,30 @@ export default function BudgetPage() {
                     {isBalanced
                       ? "Presupuesto balanceado."
                       : roundedBalance > 0
-                        ? `Falta asignar ${currencyFormatter.format(roundedBalance)}.`
-                        : `Sobreasignación de ${currencyFormatter.format(Math.abs(roundedBalance))}.`}
+                        ? `Falta asignar ${formattedBalanceAbsolute} de tus ingresos.`
+                        : `Asignaste ${formattedBalanceAbsolute} por encima de tus ingresos.`}
                   </Text>
                 </Alert>
               </Stack>
             </Paper>
 
-            <Paper withBorder radius="md" p="sm">
+            <Paper
+              withBorder
+              radius="md"
+              p="sm"
+              style={
+                isMobile
+                  ? {
+                      position: "sticky",
+                      bottom: 0,
+                      zIndex: 20,
+                      backgroundColor: "var(--mantine-color-body)",
+                      boxShadow: "0 -8px 18px rgba(0, 0, 0, 0.06)",
+                      paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 0.5rem)",
+                    }
+                  : undefined
+              }
+            >
               <Stack gap="xs">
                 <Text size="xs" c="dimmed">
                   Confirmá cambios del período actual.

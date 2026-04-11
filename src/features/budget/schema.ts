@@ -1,12 +1,23 @@
 import { z } from "zod";
 
+import { parseBudgetAmount } from "@/features/budget/amount-format";
+
 const optionalBudgetAmount = z.preprocess(
   (value) => {
-    if (value === "" || value === null || value === undefined) {
+    if (value === "") {
+      return 0;
+    }
+
+    if (value === null || value === undefined) {
       return null;
     }
 
-    return Number(value);
+    const parsed = parseBudgetAmount(value);
+    if (parsed === null) {
+      return Number.NaN;
+    }
+
+    return parsed;
   },
   z
     .number()
