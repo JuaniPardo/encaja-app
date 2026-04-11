@@ -83,6 +83,23 @@ type ComparisonBarRow = {
   realColor: string;
 };
 
+type SemanticStatus = "problem" | "positive" | "neutral";
+
+type CategorySemantic = {
+  status: SemanticStatus;
+  shortLabel: string;
+  detail: string;
+};
+
+type OperationalInsightRow = {
+  type: TransactionType;
+  categoryName: string;
+  deviation: number;
+  semantic: CategorySemantic;
+};
+
+const deviationTolerance = 0.005;
+
 const monthOptions = [
   { value: "1", label: "Enero" },
   { value: "2", label: "Febrero" },
@@ -164,7 +181,7 @@ function monthLabel(month: number) {
 
 function formatSignedCurrency(value: number, formatter: Intl.NumberFormat) {
   const roundedValue = roundMoney(value);
-  if (Math.abs(roundedValue) < 0.005) {
+  if (Math.abs(roundedValue) < deviationTolerance) {
     return formatter.format(0);
   }
 
@@ -203,41 +220,150 @@ function clampToPercent(value: number) {
   return value;
 }
 
-function getDeviationColor(type: TransactionType, deviation: number) {
-  if (Math.abs(deviation) < 0.005) {
-    return "#64748b";
+function pluralize(value: number, singular: string, plural: string) {
+  return value === 1 ? singular : plural;
+}
+
+function getCategorySemantic(type: TransactionType, deviation: number): CategorySemantic {
+  if (Math.abs(deviation) < deviationTolerance) {
+    if (type === "expense") {
+      return {
+        status: "neutral",
+        shortLabel: "En control",
+        detail: "Gasto en presupuesto",
+      };
+    }
+
+    if (type === "saving") {
+      return {
+        status: "neutral",
+        shortLabel: "En objetivo",
+        detail: "Ahorro en objetivo",
+      };
+    }
+
+    return {
+      status: "neutral",
+      shortLabel: "En objetivo",
+      detail: "Ingreso en presupuesto",
+    };
   }
 
-  const isPositive = type === "income" ? deviation > 0 : deviation < 0;
-  return isPositive ? "#087f5b" : "#c92a2a";
+  if (type === "income") {
+    return deviation > 0
+      ? {
+          status: "positive",
+          shortLabel: "Destacado",
+          detail: "Ingreso por encima del presupuesto",
+        }
+      : {
+          status: "problem",
+          shortLabel: "Atención",
+          detail: "Ingreso por debajo del presupuesto",
+        };
+  }
+
+  if (type === "expense") {
+    return deviation > 0
+      ? {
+          status: "problem",
+          shortLabel: "Alerta",
+          detail: "Gasto por encima del presupuesto",
+        }
+      : {
+          status: "positive",
+          shortLabel: "Favorable",
+          detail: "Gasto por debajo del presupuesto",
+        };
+  }
+
+  return deviation > 0
+    ? {
+        status: "positive",
+        shortLabel: "Destacado",
+        detail: "Ahorro por encima del objetivo",
+      }
+    : {
+        status: "problem",
+        shortLabel: "Atención",
+        detail: "Ahorro por debajo del objetivo",
+      };
+}
+
+function getSemanticColor(status: SemanticStatus) {
+  if (status === "problem") {
+    return "#c92a2a";
+  }
+
+  if (status === "positive") {
+    return "#087f5b";
+  }
+
+  return "#64748b";
+}
+
+function getSemanticBadgeColor(status: SemanticStatus) {
+  if (status === "problem") {
+    return "red";
+  }
+
+  if (status === "positive") {
+    return "teal";
+  }
+
+  return "gray";
+}
+
+function getProblemTypePriority(type: TransactionType) {
+  if (type === "expense") {
+    return 3;
+  }
+
+  if (type === "saving") {
+    return 2;
+  }
+
+  return 1;
+}
+
+function getPositiveTypePriority(type: TransactionType) {
+  if (type === "income") {
+    return 3;
+  }
+
+  if (type === "saving") {
+    return 2;
+  }
+
+  return 1;
+}
+
+function getDeviationColor(type: TransactionType, deviation: number) {
+  return getSemanticColor(getCategorySemantic(type, deviation).status);
 }
 
 function getComparisonRealColor(key: ComparisonBarKey, real: number, budget: number) {
-  if (key === "income") {
+  if (key === "balance") {
+    if (Math.abs(real) < deviationTolerance) {
+      return "#64748b";
+    }
+
     return real >= 0 ? "#0f766e" : "#dc2626";
   }
 
-  if (key === "expense") {
-    return real > budget + 0.005 ? "#be123c" : "#e11d48";
-  }
-
-  if (key === "saving") {
-    return real >= 0 ? "#4f46e5" : "#dc2626";
-  }
-
-  return real >= 0 ? "#0f766e" : "#dc2626";
+  return getSemanticColor(getCategorySemantic(key, roundMoney(real - budget)).status);
 }
 
 function getComparisonDeltaColor(key: ComparisonBarKey, delta: number) {
-  if (Math.abs(delta) < 0.005) {
+  if (Math.abs(delta) < deviationTolerance) {
     return "#64748b";
   }
 
-  if (key === "expense") {
-    return delta <= 0 ? "#087f5b" : "#c92a2a";
+  if (key === "balance") {
+    return delta >= 0 ? "#087f5b" : "#c92a2a";
   }
 
-  return delta >= 0 ? "#087f5b" : "#c92a2a";
+  return getSemanticColor(getCategorySemantic(key, delta).status);
 }
 
 export default function DashboardPage() {
@@ -649,34 +775,91 @@ export default function DashboardPage() {
     return maxValue <= 0 ? 1 : maxValue;
   }, [comparisonBars]);
 
-  const issueRows = useMemo(() => {
-    const rows: Array<{
-      type: TransactionType;
-      categoryName: string;
-      deviation: number;
-      executionPercent: number | null;
-    }> = [];
+  const operationalInsights = useMemo(() => {
+    const problemRows: OperationalInsightRow[] = [];
+    const positiveRows: OperationalInsightRow[] = [];
+    let neutralCount = 0;
 
     for (const type of Object.keys(metrics.groupedRows) as TransactionType[]) {
       for (const row of metrics.groupedRows[type]) {
-        const hasExecutionAlert = row.executionPercent !== null && row.executionPercent > 100;
-        const hasDeviationAlert = type === "income" ? row.deviation < 0 : row.deviation > 0;
+        const hasOperationalSignal =
+          Math.abs(row.budgetAmount) >= deviationTolerance ||
+          Math.abs(row.realAmount) >= deviationTolerance;
 
-        if (!hasExecutionAlert && !hasDeviationAlert) {
+        if (!hasOperationalSignal) {
           continue;
         }
 
-        rows.push({
+        const semantic = getCategorySemantic(type, row.deviation);
+        const insight: OperationalInsightRow = {
           type,
           categoryName: row.categoryName,
           deviation: row.deviation,
-          executionPercent: row.executionPercent,
-        });
+          semantic,
+        };
+
+        if (semantic.status === "problem") {
+          problemRows.push(insight);
+          continue;
+        }
+
+        if (semantic.status === "positive") {
+          positiveRows.push(insight);
+          continue;
+        }
+
+        neutralCount += 1;
       }
     }
 
-    return rows.sort((a, b) => Math.abs(b.deviation) - Math.abs(a.deviation));
+    problemRows.sort((a, b) => {
+      const priorityDiff = getProblemTypePriority(b.type) - getProblemTypePriority(a.type);
+      if (priorityDiff !== 0) {
+        return priorityDiff;
+      }
+
+      return Math.abs(b.deviation) - Math.abs(a.deviation);
+    });
+
+    positiveRows.sort((a, b) => {
+      const priorityDiff = getPositiveTypePriority(b.type) - getPositiveTypePriority(a.type);
+      if (priorityDiff !== 0) {
+        return priorityDiff;
+      }
+
+      return Math.abs(b.deviation) - Math.abs(a.deviation);
+    });
+
+    return {
+      problemRows,
+      positiveRows,
+      neutralCount,
+    };
   }, [metrics.groupedRows]);
+
+  const problemCount = operationalInsights.problemRows.length;
+  const positiveCount = operationalInsights.positiveRows.length;
+  const topProblemRows = operationalInsights.problemRows.slice(0, 3);
+  const topPositiveRows = operationalInsights.positiveRows.slice(0, 3);
+
+  const operationalHeadline = useMemo(() => {
+    if (problemCount === 0 && positiveCount === 0) {
+      return "Sin desvíos relevantes";
+    }
+
+    if (problemCount > 0 && positiveCount > 0) {
+      return `${problemCount} ${pluralize(problemCount, "problema", "problemas")} · ${positiveCount} ${pluralize(positiveCount, "destacado", "destacados")}`;
+    }
+
+    if (problemCount > 0) {
+      return `${problemCount} ${pluralize(problemCount, "problema detectado", "problemas detectados")}`;
+    }
+
+    return `${positiveCount} ${pluralize(positiveCount, "categoría destacada", "categorías destacadas")}`;
+  }, [positiveCount, problemCount]);
+
+  const operationalHeadlineColor =
+    problemCount > 0 ? "#c92a2a" : positiveCount > 0 ? "#087f5b" : "#475467";
 
   const selectedPeriodLabel = `${monthLabel(selectedMonth)} ${selectedYear}`;
   const isMobile = useMediaQuery("(max-width: 47.99em)");
@@ -837,9 +1020,20 @@ export default function DashboardPage() {
                 <Text size="xs" fw={700} c="#475467">
                   Estado operativo
                 </Text>
-                <Text fw={800} c={issueRows.length > 0 ? "#c92a2a" : "#087f5b"}>
-                  {issueRows.length} categoría{issueRows.length === 1 ? "" : "s"} en alerta
+                <Text fw={800} c={operationalHeadlineColor}>
+                  {operationalHeadline}
                 </Text>
+                <Group gap={6} wrap="wrap">
+                  <Badge color="red" variant={problemCount > 0 ? "light" : "outline"} size="xs">
+                    {problemCount} {pluralize(problemCount, "problema", "problemas")}
+                  </Badge>
+                  <Badge color="teal" variant={positiveCount > 0 ? "light" : "outline"} size="xs">
+                    {positiveCount} {pluralize(positiveCount, "destacado", "destacados")}
+                  </Badge>
+                  <Badge color="gray" variant="outline" size="xs">
+                    {operationalInsights.neutralCount} en objetivo
+                  </Badge>
+                </Group>
                 <Text size="xs" c="#667085">
                   Transcurrido: {percentageFormatter.format(monthProgress)}%
                 </Text>
@@ -944,14 +1138,23 @@ export default function DashboardPage() {
                       ) : (
                         rows.map((row) => {
                           const deviationColor = getDeviationColor(type, row.deviation);
+                          const rowSemantic = getCategorySemantic(type, row.deviation);
+                          const semanticBadgeColor = getSemanticBadgeColor(rowSemantic.status);
 
                           return (
                             <Table.Tr key={row.categoryId}>
                               <Table.Td>
-                                <Group gap={6} wrap="nowrap">
+                                <Group gap={6} wrap={isMobile ? "wrap" : "nowrap"}>
                                   <Text size="xs" c="#1f2937" lineClamp={isMobile ? 2 : 1}>
                                     {row.categoryName}
                                   </Text>
+                                  <Badge
+                                    size="xs"
+                                    color={semanticBadgeColor}
+                                    variant={rowSemantic.status === "neutral" ? "outline" : "light"}
+                                  >
+                                    {rowSemantic.shortLabel}
+                                  </Badge>
                                   {!isMobile && !row.categoryIsActive ? (
                                     <Text size="xs" c="#98a2b3">
                                       inactiva
@@ -1232,12 +1435,12 @@ export default function DashboardPage() {
                       h={8}
                       w={8}
                       style={{
-                        background: "linear-gradient(180deg, #0f766e 0%, #e11d48 55%, #4f46e5 100%)",
+                        background: "linear-gradient(180deg, #087f5b 0%, #64748b 50%, #c92a2a 100%)",
                         borderRadius: 2,
                       }}
                     />
                     <Text size="xs" c="#475467">
-                      Registro (según categoría)
+                      Registro (según desempeño)
                     </Text>
                   </Group>
                 </Group>
@@ -1249,21 +1452,94 @@ export default function DashboardPage() {
               radius="sm"
               style={{
                 border: "1px solid #d6dde7",
-                backgroundColor: issueRows.length > 0 ? "#fff5f5" : "#f4fef8",
+                backgroundColor: problemCount > 0 ? "#fff5f5" : "#f8fafc",
               }}
             >
-              <Stack gap={4}>
+              <Stack gap={6}>
                 <Text size="xs" fw={800} c="#344054">
                   Problemas detectados
                 </Text>
-                <Text size="sm" fw={800} c={issueRows.length > 0 ? "#c92a2a" : "#087f5b"}>
-                  {issueRows.length === 0 ? "Sin alertas críticas" : `${issueRows.length} alertas`}
+                <Text size="sm" fw={800} c={problemCount > 0 ? "#c92a2a" : "#475467"}>
+                  {problemCount === 0
+                    ? "Sin problemas críticos"
+                    : `${problemCount} ${pluralize(problemCount, "categoría en alerta", "categorías en alerta")}`}
                 </Text>
-                <Text size="xs" c="#667085">
-                  {issueRows.length === 0
-                    ? "No hay categorías fuera de rango para este período."
-                    : `${typeLabels[issueRows[0].type]} · ${issueRows[0].categoryName} · ${formatSignedCurrency(issueRows[0].deviation, currencyFormatter)}`}
+                {topProblemRows.length === 0 ? (
+                  <Text size="xs" c="#667085">
+                    No hay desvíos operativos que requieran atención en este período.
+                  </Text>
+                ) : (
+                  <Stack gap={6}>
+                    {topProblemRows.map((row, index) => (
+                      <Group
+                        key={`${row.type}-${row.categoryName}-${index}`}
+                        justify="space-between"
+                        align="flex-start"
+                        wrap="nowrap"
+                      >
+                        <Stack gap={1} style={{ flex: 1 }}>
+                          <Text size="xs" fw={700} c="#344054">
+                            {row.semantic.detail}
+                          </Text>
+                          <Text size="xs" c="#667085">
+                            {typeLabels[row.type]} · {row.categoryName}
+                          </Text>
+                        </Stack>
+                        <Text size="xs" fw={700} c="#c92a2a">
+                          {formatSignedCurrency(row.deviation, currencyFormatter)}
+                        </Text>
+                      </Group>
+                    ))}
+                  </Stack>
+                )}
+              </Stack>
+            </Paper>
+
+            <Paper
+              p={cardPadding}
+              radius="sm"
+              style={{
+                border: "1px solid #d6dde7",
+                backgroundColor: positiveCount > 0 ? "#f1fff6" : "#f8fafc",
+              }}
+            >
+              <Stack gap={6}>
+                <Text size="xs" fw={800} c="#344054">
+                  Buen desempeño
                 </Text>
+                <Text size="sm" fw={800} c={positiveCount > 0 ? "#087f5b" : "#475467"}>
+                  {positiveCount === 0
+                    ? "Sin destacados por ahora"
+                    : `${positiveCount} ${pluralize(positiveCount, "categoría destacada", "categorías destacadas")}`}
+                </Text>
+                {topPositiveRows.length === 0 ? (
+                  <Text size="xs" c="#667085">
+                    Todavía no hay señales positivas por encima del plan para destacar.
+                  </Text>
+                ) : (
+                  <Stack gap={6}>
+                    {topPositiveRows.map((row, index) => (
+                      <Group
+                        key={`${row.type}-${row.categoryName}-${index}`}
+                        justify="space-between"
+                        align="flex-start"
+                        wrap="nowrap"
+                      >
+                        <Stack gap={1} style={{ flex: 1 }}>
+                          <Text size="xs" fw={700} c="#344054">
+                            {row.semantic.detail}
+                          </Text>
+                          <Text size="xs" c="#667085">
+                            {typeLabels[row.type]} · {row.categoryName}
+                          </Text>
+                        </Stack>
+                        <Text size="xs" fw={700} c="#087f5b">
+                          {formatSignedCurrency(row.deviation, currencyFormatter)}
+                        </Text>
+                      </Group>
+                    ))}
+                  </Stack>
+                )}
               </Stack>
             </Paper>
           </Stack>

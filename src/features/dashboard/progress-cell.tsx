@@ -36,9 +36,54 @@ function clampToPercent(value: number) {
 
 function getProgressVisualScale(type: TransactionType, value: number): ProgressVisualScale {
   if (type === "income") {
-    if (value >= 100) {
+    if (value > 100) {
       return {
         fill: "#0f766e",
+        track: "#ccfbf1",
+        border: "#99f6e4",
+        text: "#ffffff",
+      };
+    }
+
+    if (value === 100) {
+      return {
+        fill: "#94a3b8",
+        track: "#f1f5f9",
+        border: "#e2e8f0",
+        text: "#334155",
+      };
+    }
+
+    return {
+      fill: "#fb7185",
+      track: "#fff1f2",
+      border: "#fecdd3",
+      text: value < 35 ? "#9f1239" : "#ffffff",
+    };
+  }
+
+  if (type === "expense") {
+    if (value > 100) {
+      return {
+        fill: "#be185d",
+        track: "#fce7f3",
+        border: "#f9a8d4",
+        text: "#ffffff",
+      };
+    }
+
+    if (value === 100) {
+      return {
+        fill: "#94a3b8",
+        track: "#f1f5f9",
+        border: "#e2e8f0",
+        text: "#334155",
+      };
+    }
+
+    if (value >= 80) {
+      return {
+        fill: "#5eead4",
         track: "#ccfbf1",
         border: "#99f6e4",
         text: "#ffffff",
@@ -53,34 +98,7 @@ function getProgressVisualScale(type: TransactionType, value: number): ProgressV
     };
   }
 
-  if (type === "expense") {
-    if (value > 100) {
-      return {
-        fill: "#be185d",
-        track: "#fce7f3",
-        border: "#f9a8d4",
-        text: "#ffffff",
-      };
-    }
-
-    if (value >= 80) {
-      return {
-        fill: "#f472b6",
-        track: "#fdf2f8",
-        border: "#fbcfe8",
-        text: "#ffffff",
-      };
-    }
-
-    return {
-      fill: "#fbcfe8",
-      track: "#fdf2f8",
-      border: "#fce7f3",
-      text: "#831843",
-    };
-  }
-
-  if (value >= 100) {
+  if (value > 100) {
     return {
       fill: "#4338ca",
       track: "#e0e7ff",
@@ -89,11 +107,20 @@ function getProgressVisualScale(type: TransactionType, value: number): ProgressV
     };
   }
 
+  if (value === 100) {
+    return {
+      fill: "#94a3b8",
+      track: "#f1f5f9",
+      border: "#e2e8f0",
+      text: "#334155",
+    };
+  }
+
   return {
-    fill: "#818cf8",
-    track: "#e0e7ff",
-    border: "#c7d2fe",
-    text: value < 35 ? "#3730a3" : "#ffffff",
+    fill: "#fb7185",
+    track: "#fff1f2",
+    border: "#fecdd3",
+    text: value < 35 ? "#9f1239" : "#ffffff",
   };
 }
 
