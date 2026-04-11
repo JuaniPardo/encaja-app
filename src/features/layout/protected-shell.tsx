@@ -79,7 +79,7 @@ const navItems = [
   },
   {
     href: "/app/settings",
-    label: "Settings",
+    label: "Configuración",
     icon: (
       <ShellIcon>
         <circle cx="12" cy="12" r="3.5" />
@@ -122,15 +122,21 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
 
   return (
     <AppShell
-      header={{ height: 68 }}
+      header={{ height: 66 }}
       navbar={{
-        width: desktopCollapsed ? 76 : 280,
+        width: desktopCollapsed ? 74 : 272,
         breakpoint: "sm",
         collapsed: { mobile: !opened },
       }}
       padding="md"
     >
-      <AppShell.Header>
+      <AppShell.Header
+        style={{
+          borderBottom: "1px solid #e4e7ec",
+          backgroundColor: "rgba(255, 255, 255, 0.94)",
+          backdropFilter: "blur(6px)",
+        }}
+      >
         <Group h="100%" px="md" justify="space-between">
           <Group>
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
@@ -165,44 +171,74 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
         </Group>
       </AppShell.Header>
 
-      <AppShell.Navbar p="md">
-        <Stack gap={6}>
-          {navItems.map((item) => (
-            <Tooltip
-              key={item.href}
-              label={item.label}
-              disabled={!desktopCollapsed}
-              position="right"
-              withArrow
-            >
-              <UnstyledButton
-                component={Link}
-                href={item.href}
-                onClick={() => {
-                  if (opened) {
-                    toggle();
-                  }
-                }}
-                style={{
-                  width: "100%",
-                  padding: desktopCollapsed ? "10px 0" : "10px 12px",
-                  borderRadius: 8,
-                  display: "block",
-                  backgroundColor: isActivePath(pathname, item.href) ? "#e8f3ff" : "transparent",
-                  color: isActivePath(pathname, item.href) ? "#1f6feb" : "#475467",
-                }}
+      <AppShell.Navbar
+        p="sm"
+        style={{
+          borderRight: "1px solid #e4e7ec",
+          backgroundColor: "#f9fbfa",
+        }}
+      >
+        <Stack gap={4}>
+          {navItems.map((item) => {
+            const isActive = isActivePath(pathname, item.href);
+
+            return (
+              <Tooltip
+                key={item.href}
+                label={item.label}
+                disabled={!desktopCollapsed}
+                position="right"
+                withArrow
               >
-                <Group gap={10} justify={desktopCollapsed ? "center" : "flex-start"} wrap="nowrap">
-                  <Box>{item.icon}</Box>
-                  {!desktopCollapsed ? (
-                    <Text size="sm" fw={600}>
-                      {item.label}
-                    </Text>
-                  ) : null}
-                </Group>
-              </UnstyledButton>
-            </Tooltip>
-          ))}
+                <UnstyledButton
+                  component={Link}
+                  href={item.href}
+                  onClick={() => {
+                    if (opened) {
+                      toggle();
+                    }
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: desktopCollapsed ? "11px 0" : "11px 12px",
+                    borderRadius: 10,
+                    display: "block",
+                    backgroundColor: isActive ? "#e7f6ef" : "transparent",
+                    border: `1px solid ${isActive ? "#b7e4d2" : "transparent"}`,
+                    color: isActive ? "#087f5b" : "#475467",
+                  }}
+                >
+                  <Group
+                    gap={10}
+                    justify={desktopCollapsed ? "center" : "flex-start"}
+                    wrap="nowrap"
+                  >
+                    <Box pos="relative">
+                      {item.icon}
+                      {desktopCollapsed && isActive ? (
+                        <Box
+                          h={6}
+                          w={6}
+                          style={{
+                            borderRadius: "50%",
+                            backgroundColor: "#0ca678",
+                            position: "absolute",
+                            right: -4,
+                            top: -2,
+                          }}
+                        />
+                      ) : null}
+                    </Box>
+                    {!desktopCollapsed ? (
+                      <Text size="sm" fw={isActive ? 700 : 600}>
+                        {item.label}
+                      </Text>
+                    ) : null}
+                  </Group>
+                </UnstyledButton>
+              </Tooltip>
+            );
+          })}
         </Stack>
 
         <Box mt="xl">
@@ -222,9 +258,10 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
               onClick={() => void signOut()}
               style={{
                 width: "100%",
-                padding: desktopCollapsed ? "10px 0" : "10px 12px",
-                borderRadius: 8,
+                padding: desktopCollapsed ? "11px 0" : "11px 12px",
+                borderRadius: 10,
                 color: "#475467",
+                border: "1px solid transparent",
               }}
             >
               <Group gap={10} justify={desktopCollapsed ? "center" : "flex-start"} wrap="nowrap">
