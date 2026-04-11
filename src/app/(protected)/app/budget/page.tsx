@@ -4,17 +4,20 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Alert,
+  Badge,
   Button,
+  Divider,
   Group,
   LoadingOverlay,
   NativeSelect,
   Paper,
+  SimpleGrid,
   Stack,
-  Table,
   Text,
   TextInput,
   Title,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useForm, useWatch } from "react-hook-form";
 
@@ -105,6 +108,7 @@ function monthLabel(month: number) {
 
 export default function BudgetPage() {
   const { supabase, workspace, user } = useWorkspace();
+  const isMobile = useMediaQuery("(max-width: 48em)");
 
   const now = useMemo(() => new Date(), []);
   const [startYear, setStartYear] = useState(now.getFullYear());
@@ -201,6 +205,11 @@ export default function BudgetPage() {
 
   const roundedBalance = roundMoney(totals.balance);
   const isBalanced = Math.abs(roundedBalance) < 0.005;
+  const balanceStatus = isBalanced
+    ? "balanced"
+    : roundedBalance > 0
+      ? "remaining"
+      : "overassigned";
 
   const yearOptions = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -593,6 +602,9 @@ export default function BudgetPage() {
     }
   };
 
+  const canCopyFromPrevious =
+    categories.length > 0 && !isPeriodLoading && !isSaving && !periodHasItems;
+
   return (
     <Stack gap="md" pos="relative">
       <LoadingOverlay visible={isBootstrapping || isPeriodLoading} />
@@ -600,44 +612,59 @@ export default function BudgetPage() {
       <Stack gap={2}>
         <Title order={2}>Presupuesto mensual</Title>
         <Text size="sm" c="dimmed">
-          Definí montos por categoría para el período seleccionado.
+          Editá el presupuesto mensual por categoría con un resumen consolidado del resultado.
         </Text>
       </Stack>
 
       <Paper withBorder radius="md" p="md">
-        <Group align="end" justify="space-between">
-          <Group align="end">
+        <Stack gap="sm">
+          <Group justify="space-between" align="flex-start" wrap="wrap">
+            <Stack gap={2}>
+              <Text size="sm" fw={600}>
+                Período en edición
+              </Text>
+              <Text size="sm" c="dimmed">
+                Elegí año y mes para cargar o ajustar montos.
+              </Text>
+            </Stack>
+            <Badge variant="light" color="blue" size="lg">
+              {monthLabel(selectedMonth)} {selectedYear}
+            </Badge>
+          </Group>
+
+          <SimpleGrid cols={isMobile ? 1 : 3} spacing="sm">
             <NativeSelect
               label="Año"
               data={yearOptions}
               value={String(selectedYear)}
               onChange={(event) => setSelectedYear(Number(event.currentTarget.value))}
+              size="sm"
             />
             <NativeSelect
               label="Mes"
               data={monthOptions}
               value={String(selectedMonth)}
               onChange={(event) => setSelectedMonth(Number(event.currentTarget.value))}
+              size="sm"
             />
-          </Group>
 
-          <Button
-            variant="light"
-            onClick={() => void copyFromPreviousMonth()}
-            loading={isCopying}
-            disabled={categories.length === 0 || isPeriodLoading || isSaving}
-          >
-            Copiar mes anterior
-          </Button>
-        </Group>
+            <Button
+              variant="light"
+              onClick={() => void copyFromPreviousMonth()}
+              loading={isCopying}
+              disabled={!canCopyFromPrevious}
+              mt={isMobile ? 0 : "auto"}
+            >
+              Copiar mes anterior
+            </Button>
+          </SimpleGrid>
 
-        <Text mt="sm" size="sm" c="dimmed">
-          Editando {monthLabel(selectedMonth)} {selectedYear}.
-        </Text>
-
-        <Text size="xs" c="dimmed" mt={4}>
-          La copia solo está habilitada cuando el período actual todavía no tiene ítems.
-        </Text>
+          <Text size="xs" c="dimmed">
+            {periodHasItems
+              ? "Este período ya tiene montos cargados. Revertí o limpiá ítems para poder copiar."
+              : "La copia usa el período anterior y solo trae categorías activas."}
+          </Text>
+        </Stack>
       </Paper>
 
       {categories.length === 0 ? (
@@ -648,7 +675,7 @@ export default function BudgetPage() {
         </Paper>
       ) : (
         <form onSubmit={onSubmit}>
-          <Stack gap="md">
+          <Stack gap="lg">
             {!periodId ? (
               <Alert color="blue" variant="light">
                 Este período todavía no tiene presupuesto guardado. Cargá montos y guardá para
@@ -656,91 +683,198 @@ export default function BudgetPage() {
               </Alert>
             ) : null}
 
+            <Stack gap={6}>
+              <Text size="sm" fw={600}>
+                Edición por categoría
+              </Text>
+              <Text size="xs" c="dimmed">
+                Cargá montos directos por categoría. Dejá vacío un campo para quitar su monto.
+              </Text>
+            </Stack>
+
             {(Object.keys(groupedCategories) as TransactionType[]).map((typeKey) => (
               <Paper key={typeKey} withBorder radius="md" p="md">
                 <Stack gap="sm">
-                  <Title order={4} c={typeColors[typeKey]}>
-                    {typeLabels[typeKey]}
-                  </Title>
+                  <Group justify="space-between" align="center" wrap="wrap">
+                    <Title order={4} c={typeColors[typeKey]}>
+                      {typeLabels[typeKey]}
+                    </Title>
+                    <Badge variant="light" color={typeColors[typeKey]}>
+                      {currencyFormatter.format(totals[typeKey])}
+                    </Badge>
+                  </Group>
+
+                  <Divider />
+
                   {groupedCategories[typeKey].length === 0 ? (
                     <Text size="sm" c="dimmed">
                       No hay categorías activas de este tipo.
                     </Text>
                   ) : (
-                    <Table.ScrollContainer minWidth={680}>
-                      <Table verticalSpacing="sm">
-                        <Table.Thead>
-                          <Table.Tr>
-                            <Table.Th>Categoría</Table.Th>
-                            <Table.Th>Monto presupuestado</Table.Th>
-                          </Table.Tr>
-                        </Table.Thead>
-                        <Table.Tbody>
-                          {groupedCategories[typeKey].map(({ category, index }) => (
-                            <Table.Tr key={category.id}>
-                              <Table.Td>{category.name}</Table.Td>
-                              <Table.Td>
-                                <input
-                                  type="hidden"
-                                  {...register(`items.${index}.categoryId` as const)}
-                                />
-                                <TextInput
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  placeholder="0"
-                                  error={errors.items?.[index]?.amount?.message}
-                                  {...register(`items.${index}.amount` as const)}
-                                />
-                              </Table.Td>
-                            </Table.Tr>
-                          ))}
-                        </Table.Tbody>
-                      </Table>
-                    </Table.ScrollContainer>
+                    <Stack gap="xs">
+                      {groupedCategories[typeKey].map(({ category, index }) => (
+                        <Paper key={category.id} withBorder radius="sm" p="sm">
+                          <SimpleGrid cols={isMobile ? 1 : 2} spacing="sm" verticalSpacing="xs">
+                            <Stack gap={2}>
+                              <Text fw={600} size="sm">
+                                {category.name}
+                              </Text>
+                              <Text size="xs" c="dimmed">
+                                Monto presupuestado
+                              </Text>
+                            </Stack>
+                            <Stack gap={2}>
+                              <input
+                                type="hidden"
+                                {...register(`items.${index}.categoryId` as const)}
+                              />
+                              <TextInput
+                                aria-label={`Monto de ${category.name}`}
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                placeholder="0"
+                                error={errors.items?.[index]?.amount?.message}
+                                rightSection={
+                                  <Text size="xs" c="dimmed">
+                                    {currencyCode}
+                                  </Text>
+                                }
+                                rightSectionPointerEvents="none"
+                                styles={{
+                                  input: {
+                                    textAlign: "right",
+                                    fontVariantNumeric: "tabular-nums",
+                                  },
+                                }}
+                                {...register(`items.${index}.amount` as const)}
+                              />
+                            </Stack>
+                          </SimpleGrid>
+                        </Paper>
+                      ))}
+                    </Stack>
                   )}
                 </Stack>
               </Paper>
             ))}
 
-            <Paper withBorder radius="md" p="md">
-              <Stack gap="xs">
-                <Group justify="space-between">
-                  <Text size="sm" c={`${typeColors.income}.7`}>
-                    Subtotal ingresos
-                  </Text>
-                  <Text fw={600} c={`${typeColors.income}.7`}>
-                    {currencyFormatter.format(totals.income)}
-                  </Text>
-                </Group>
-                <Group justify="space-between">
-                  <Text size="sm" c={`${typeColors.expense}.7`}>
-                    Subtotal gastos
-                  </Text>
-                  <Text fw={600} c={`${typeColors.expense}.7`}>
-                    {currencyFormatter.format(totals.expense)}
-                  </Text>
-                </Group>
-                <Group justify="space-between">
-                  <Text size="sm" c={`${typeColors.saving}.7`}>
-                    Subtotal ahorro
-                  </Text>
-                  <Text fw={600} c={`${typeColors.saving}.7`}>
-                    {currencyFormatter.format(totals.saving)}
-                  </Text>
-                </Group>
-                <Group justify="space-between" mt={4}>
-                  <Text fw={600}>Total asignado (gastos + ahorro)</Text>
-                  <Text fw={700}>{currencyFormatter.format(totals.assigned)}</Text>
-                </Group>
-                <Group justify="space-between" mt={4}>
-                  <Text fw={700}>Balance (ingresos - gastos - ahorro)</Text>
-                  <Text fw={800} c={isBalanced ? "teal.7" : roundedBalance > 0 ? "yellow.8" : "pink.7"}>
-                    {currencyFormatter.format(roundedBalance)}
-                  </Text>
+            <Paper
+              withBorder
+              radius="lg"
+              p="md"
+              style={{
+                borderColor:
+                  balanceStatus === "balanced"
+                    ? "var(--mantine-color-teal-4)"
+                    : balanceStatus === "remaining"
+                      ? "var(--mantine-color-yellow-4)"
+                      : "var(--mantine-color-pink-4)",
+              }}
+            >
+              <Stack gap="md">
+                <Group justify="space-between" align="center" wrap="wrap">
+                  <Stack gap={2}>
+                    <Title order={3}>Resultado del período</Title>
+                    <Text size="sm" c="dimmed">
+                      Resumen de montos para {monthLabel(selectedMonth)} {selectedYear}.
+                    </Text>
+                  </Stack>
+                  <Badge
+                    color={
+                      balanceStatus === "balanced"
+                        ? "teal"
+                        : balanceStatus === "remaining"
+                          ? "yellow"
+                          : "pink"
+                    }
+                    variant="filled"
+                  >
+                    {balanceStatus === "balanced"
+                      ? "Balanceado"
+                      : balanceStatus === "remaining"
+                        ? "Falta asignar"
+                        : "Sobreasignado"}
+                  </Badge>
                 </Group>
 
-                <Alert mt="xs" color={isBalanced ? "teal" : "yellow"} variant="light">
+                <SimpleGrid cols={isMobile ? 1 : 3} spacing="sm">
+                  <Paper withBorder radius="sm" p="sm">
+                    <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                      Ingresos
+                    </Text>
+                    <Text mt={2} fw={700} c={`${typeColors.income}.7`}>
+                      {currencyFormatter.format(totals.income)}
+                    </Text>
+                  </Paper>
+                  <Paper withBorder radius="sm" p="sm">
+                    <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                      Gastos
+                    </Text>
+                    <Text mt={2} fw={700} c={`${typeColors.expense}.7`}>
+                      {currencyFormatter.format(totals.expense)}
+                    </Text>
+                  </Paper>
+                  <Paper withBorder radius="sm" p="sm">
+                    <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                      Ahorro
+                    </Text>
+                    <Text mt={2} fw={700} c={`${typeColors.saving}.7`}>
+                      {currencyFormatter.format(totals.saving)}
+                    </Text>
+                  </Paper>
+                </SimpleGrid>
+
+                <Paper withBorder radius="md" p="md">
+                  <Group justify="space-between" align="center">
+                    <Text fw={600}>Total asignado (gastos + ahorro)</Text>
+                    <Text fw={700}>{currencyFormatter.format(totals.assigned)}</Text>
+                  </Group>
+                </Paper>
+
+                <Paper
+                  withBorder
+                  radius="md"
+                  p="md"
+                  style={{
+                    backgroundColor:
+                      balanceStatus === "balanced"
+                        ? "var(--mantine-color-teal-0)"
+                        : balanceStatus === "remaining"
+                          ? "var(--mantine-color-yellow-0)"
+                          : "var(--mantine-color-pink-0)",
+                  }}
+                >
+                  <Group justify="space-between" align="center">
+                    <Text fw={700}>Balance final</Text>
+                    <Text
+                      fw={800}
+                      size={isMobile ? "md" : "xl"}
+                      c={
+                        balanceStatus === "balanced"
+                          ? "teal.7"
+                          : balanceStatus === "remaining"
+                            ? "yellow.8"
+                            : "pink.7"
+                      }
+                      style={{ fontVariantNumeric: "tabular-nums" }}
+                    >
+                      {currencyFormatter.format(roundedBalance)}
+                    </Text>
+                  </Group>
+                </Paper>
+
+                <Alert
+                  mt={2}
+                  color={
+                    balanceStatus === "balanced"
+                      ? "teal"
+                      : balanceStatus === "remaining"
+                        ? "yellow"
+                        : "red"
+                  }
+                  variant={balanceStatus === "overassigned" ? "filled" : "light"}
+                >
                   {isBalanced
                     ? "Presupuesto balanceado: todos los ingresos están asignados."
                     : roundedBalance > 0
@@ -754,20 +888,28 @@ export default function BudgetPage() {
               </Stack>
             </Paper>
 
-            <Group justify="flex-end">
-              <Button
-                type="button"
-                variant="light"
-                color="gray"
-                onClick={() => void loadSelectedPeriod()}
-                disabled={isSaving || isCopying}
-              >
-                Revertir
-              </Button>
-              <Button type="submit" loading={isSaving} disabled={isCopying}>
-                Guardar presupuesto
-              </Button>
-            </Group>
+            <Paper withBorder radius="md" p="md">
+              <Stack gap="sm">
+                <Text size="sm" c="dimmed">
+                  Guardá para confirmar cambios del período o revertí para volver a lo último
+                  guardado.
+                </Text>
+                <Group justify="flex-end" grow={isMobile}>
+                  <Button
+                    type="button"
+                    variant="subtle"
+                    color="gray"
+                    onClick={() => void loadSelectedPeriod()}
+                    disabled={isSaving || isCopying}
+                  >
+                    Revertir
+                  </Button>
+                  <Button type="submit" loading={isSaving} disabled={isCopying} size="md">
+                    Guardar presupuesto
+                  </Button>
+                </Group>
+              </Stack>
+            </Paper>
           </Stack>
         </form>
       )}
