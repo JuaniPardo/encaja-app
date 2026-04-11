@@ -6,7 +6,6 @@ import {
   Alert,
   Badge,
   Button,
-  Divider,
   Group,
   LoadingOverlay,
   NativeSelect,
@@ -604,52 +603,50 @@ export default function BudgetPage() {
 
   const canCopyFromPrevious =
     categories.length > 0 && !isPeriodLoading && !isSaving && !periodHasItems;
+  const selectedPeriodLabel = `${selectedYear} · ${monthLabel(selectedMonth)}`;
 
   return (
-    <Stack gap="md" pos="relative">
+    <Stack gap="sm" pos="relative">
       <LoadingOverlay visible={isBootstrapping || isPeriodLoading} />
 
-      <Stack gap={2}>
+      <Stack gap={0}>
         <Title order={2}>Presupuesto mensual</Title>
-        <Text size="sm" c="dimmed">
+        <Text size="xs" c="dimmed">
           Editá el presupuesto mensual por categoría con un resumen consolidado del resultado.
         </Text>
       </Stack>
 
-      <Paper withBorder radius="md" p="md">
-        <Stack gap="sm">
-          <Group justify="space-between" align="flex-start" wrap="wrap">
-            <Stack gap={2}>
-              <Text size="sm" fw={600}>
-                Período en edición
-              </Text>
-              <Text size="sm" c="dimmed">
-                Elegí año y mes para cargar o ajustar montos.
-              </Text>
-            </Stack>
-            <Badge variant="light" color="blue" size="lg">
-              {monthLabel(selectedMonth)} {selectedYear}
+      <Paper withBorder radius="md" p="sm">
+        <Stack gap="xs">
+          <Group justify="space-between" align="center" wrap="nowrap">
+            <Text size="xs" c="dimmed" fw={600}>
+              Período en edición
+            </Text>
+            <Badge variant="light" color="blue" size="sm">
+              {selectedPeriodLabel}
             </Badge>
           </Group>
 
-          <SimpleGrid cols={isMobile ? 1 : 3} spacing="sm">
+          <SimpleGrid cols={isMobile ? 2 : 3} spacing="xs">
             <NativeSelect
               label="Año"
               data={yearOptions}
               value={String(selectedYear)}
               onChange={(event) => setSelectedYear(Number(event.currentTarget.value))}
-              size="sm"
+              size="xs"
             />
             <NativeSelect
               label="Mes"
               data={monthOptions}
               value={String(selectedMonth)}
               onChange={(event) => setSelectedMonth(Number(event.currentTarget.value))}
-              size="sm"
+              size="xs"
             />
 
             <Button
-              variant="light"
+              variant="subtle"
+              color="gray"
+              size="xs"
               onClick={() => void copyFromPreviousMonth()}
               loading={isCopying}
               disabled={!canCopyFromPrevious}
@@ -661,8 +658,8 @@ export default function BudgetPage() {
 
           <Text size="xs" c="dimmed">
             {periodHasItems
-              ? "Este período ya tiene montos cargados. Revertí o limpiá ítems para poder copiar."
-              : "La copia usa el período anterior y solo trae categorías activas."}
+              ? "Ya tiene montos guardados; copia deshabilitada."
+              : "Copia montos del mes anterior en categorías activas."}
           </Text>
         </Stack>
       </Paper>
@@ -675,16 +672,16 @@ export default function BudgetPage() {
         </Paper>
       ) : (
         <form onSubmit={onSubmit}>
-          <Stack gap="lg">
+          <Stack gap="sm">
             {!periodId ? (
-              <Alert color="blue" variant="light">
+              <Alert color="blue" variant="light" py={8}>
                 Este período todavía no tiene presupuesto guardado. Cargá montos y guardá para
                 crearlo.
               </Alert>
             ) : null}
 
-            <Stack gap={6}>
-              <Text size="sm" fw={600}>
+            <Stack gap={2}>
+              <Text size="xs" fw={600}>
                 Edición por categoría
               </Text>
               <Text size="xs" c="dimmed">
@@ -693,19 +690,16 @@ export default function BudgetPage() {
             </Stack>
 
             {(Object.keys(groupedCategories) as TransactionType[]).map((typeKey) => (
-              <Paper key={typeKey} withBorder radius="md" p="md">
-                <Stack gap="sm">
+              <Paper key={typeKey} withBorder radius="md" p="sm">
+                <Stack gap="xs">
                   <Group justify="space-between" align="center" wrap="wrap">
-                    <Title order={4} c={typeColors[typeKey]}>
+                    <Title order={5} c={typeColors[typeKey]}>
                       {typeLabels[typeKey]}
                     </Title>
-                    <Badge variant="light" color={typeColors[typeKey]}>
+                    <Badge variant="light" color={typeColors[typeKey]} size="sm">
                       {currencyFormatter.format(totals[typeKey])}
                     </Badge>
                   </Group>
-
-                  <Divider />
-
                   {groupedCategories[typeKey].length === 0 ? (
                     <Text size="sm" c="dimmed">
                       No hay categorías activas de este tipo.
@@ -713,44 +707,42 @@ export default function BudgetPage() {
                   ) : (
                     <Stack gap="xs">
                       {groupedCategories[typeKey].map(({ category, index }) => (
-                        <Paper key={category.id} withBorder radius="sm" p="sm">
-                          <SimpleGrid cols={isMobile ? 1 : 2} spacing="sm" verticalSpacing="xs">
-                            <Stack gap={2}>
-                              <Text fw={600} size="sm">
-                                {category.name}
-                              </Text>
-                              <Text size="xs" c="dimmed">
-                                Monto presupuestado
-                              </Text>
-                            </Stack>
-                            <Stack gap={2}>
-                              <input
-                                type="hidden"
-                                {...register(`items.${index}.categoryId` as const)}
-                              />
-                              <TextInput
-                                aria-label={`Monto de ${category.name}`}
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                placeholder="0"
-                                error={errors.items?.[index]?.amount?.message}
-                                rightSection={
-                                  <Text size="xs" c="dimmed">
-                                    {currencyCode}
-                                  </Text>
-                                }
-                                rightSectionPointerEvents="none"
-                                styles={{
-                                  input: {
-                                    textAlign: "right",
-                                    fontVariantNumeric: "tabular-nums",
-                                  },
-                                }}
-                                {...register(`items.${index}.amount` as const)}
-                              />
-                            </Stack>
-                          </SimpleGrid>
+                        <Paper key={category.id} withBorder radius="sm" p={isMobile ? 6 : 8}>
+                          <Group justify="space-between" align="center" wrap="nowrap">
+                            <Text fw={600} size="sm" lineClamp={1} style={{ flex: 1 }}>
+                              {category.name}
+                            </Text>
+                            <input
+                              type="hidden"
+                              {...register(`items.${index}.categoryId` as const)}
+                            />
+                            <TextInput
+                              aria-label={`Monto de ${category.name}`}
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              size="sm"
+                              placeholder="0"
+                              error={errors.items?.[index]?.amount?.message}
+                              rightSection={
+                                <Text size="10px" c="dimmed" fw={500}>
+                                  {currencyCode}
+                                </Text>
+                              }
+                              rightSectionWidth={40}
+                              rightSectionPointerEvents="none"
+                              styles={{
+                                input: {
+                                  textAlign: "right",
+                                  fontVariantNumeric: "tabular-nums",
+                                  paddingTop: "0.3rem",
+                                  paddingBottom: "0.3rem",
+                                },
+                              }}
+                              style={{ width: isMobile ? 132 : 164 }}
+                              {...register(`items.${index}.amount` as const)}
+                            />
+                          </Group>
                         </Paper>
                       ))}
                     </Stack>
@@ -762,7 +754,7 @@ export default function BudgetPage() {
             <Paper
               withBorder
               radius="lg"
-              p="md"
+              p="sm"
               style={{
                 borderColor:
                   balanceStatus === "balanced"
@@ -772,11 +764,11 @@ export default function BudgetPage() {
                       : "var(--mantine-color-pink-4)",
               }}
             >
-              <Stack gap="md">
+              <Stack gap="xs">
                 <Group justify="space-between" align="center" wrap="wrap">
-                  <Stack gap={2}>
-                    <Title order={3}>Resultado del período</Title>
-                    <Text size="sm" c="dimmed">
+                  <Stack gap={0}>
+                    <Title order={4}>Resultado del período</Title>
+                    <Text size="xs" c="dimmed">
                       Resumen de montos para {monthLabel(selectedMonth)} {selectedYear}.
                     </Text>
                   </Stack>
@@ -789,6 +781,7 @@ export default function BudgetPage() {
                           : "pink"
                     }
                     variant="filled"
+                    size="sm"
                   >
                     {balanceStatus === "balanced"
                       ? "Balanceado"
@@ -798,44 +791,48 @@ export default function BudgetPage() {
                   </Badge>
                 </Group>
 
-                <SimpleGrid cols={isMobile ? 1 : 3} spacing="sm">
-                  <Paper withBorder radius="sm" p="sm">
+                <SimpleGrid cols={3} spacing="xs">
+                  <Paper withBorder radius="sm" p={6}>
                     <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
                       Ingresos
                     </Text>
-                    <Text mt={2} fw={700} c={`${typeColors.income}.7`}>
+                    <Text mt={1} fw={700} size="sm" c={`${typeColors.income}.7`}>
                       {currencyFormatter.format(totals.income)}
                     </Text>
                   </Paper>
-                  <Paper withBorder radius="sm" p="sm">
+                  <Paper withBorder radius="sm" p={6}>
                     <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
                       Gastos
                     </Text>
-                    <Text mt={2} fw={700} c={`${typeColors.expense}.7`}>
+                    <Text mt={1} fw={700} size="sm" c={`${typeColors.expense}.7`}>
                       {currencyFormatter.format(totals.expense)}
                     </Text>
                   </Paper>
-                  <Paper withBorder radius="sm" p="sm">
+                  <Paper withBorder radius="sm" p={6}>
                     <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
                       Ahorro
                     </Text>
-                    <Text mt={2} fw={700} c={`${typeColors.saving}.7`}>
+                    <Text mt={1} fw={700} size="sm" c={`${typeColors.saving}.7`}>
                       {currencyFormatter.format(totals.saving)}
                     </Text>
                   </Paper>
                 </SimpleGrid>
 
-                <Paper withBorder radius="md" p="md">
+                <Paper withBorder radius="md" p="xs">
                   <Group justify="space-between" align="center">
-                    <Text fw={600}>Total asignado (gastos + ahorro)</Text>
-                    <Text fw={700}>{currencyFormatter.format(totals.assigned)}</Text>
+                    <Text fw={600} size="sm">
+                      Total asignado
+                    </Text>
+                    <Text fw={700} size="sm">
+                      {currencyFormatter.format(totals.assigned)}
+                    </Text>
                   </Group>
                 </Paper>
 
                 <Paper
                   withBorder
                   radius="md"
-                  p="md"
+                  p="xs"
                   style={{
                     backgroundColor:
                       balanceStatus === "balanced"
@@ -846,10 +843,12 @@ export default function BudgetPage() {
                   }}
                 >
                   <Group justify="space-between" align="center">
-                    <Text fw={700}>Balance final</Text>
+                    <Text fw={700} size="sm">
+                      Balance final
+                    </Text>
                     <Text
                       fw={800}
-                      size={isMobile ? "md" : "xl"}
+                      size={isMobile ? "sm" : "lg"}
                       c={
                         balanceStatus === "balanced"
                           ? "teal.7"
@@ -865,7 +864,8 @@ export default function BudgetPage() {
                 </Paper>
 
                 <Alert
-                  mt={2}
+                  mt={1}
+                  py={6}
                   color={
                     balanceStatus === "balanced"
                       ? "teal"
@@ -875,36 +875,34 @@ export default function BudgetPage() {
                   }
                   variant={balanceStatus === "overassigned" ? "filled" : "light"}
                 >
-                  {isBalanced
-                    ? "Presupuesto balanceado: todos los ingresos están asignados."
-                    : roundedBalance > 0
-                      ? `Falta asignar ${currencyFormatter.format(
-                          roundedBalance,
-                        )} de ingresos a gastos o ahorro.`
-                      : `Asignaste ${currencyFormatter.format(
-                          Math.abs(roundedBalance),
-                        )} por encima de los ingresos.`}
+                  <Text size="xs">
+                    {isBalanced
+                      ? "Presupuesto balanceado."
+                      : roundedBalance > 0
+                        ? `Falta asignar ${currencyFormatter.format(roundedBalance)}.`
+                        : `Sobreasignación de ${currencyFormatter.format(Math.abs(roundedBalance))}.`}
+                  </Text>
                 </Alert>
               </Stack>
             </Paper>
 
-            <Paper withBorder radius="md" p="md">
-              <Stack gap="sm">
-                <Text size="sm" c="dimmed">
-                  Guardá para confirmar cambios del período o revertí para volver a lo último
-                  guardado.
+            <Paper withBorder radius="md" p="sm">
+              <Stack gap="xs">
+                <Text size="xs" c="dimmed">
+                  Confirmá cambios del período actual.
                 </Text>
                 <Group justify="flex-end" grow={isMobile}>
                   <Button
                     type="button"
                     variant="subtle"
                     color="gray"
+                    size="sm"
                     onClick={() => void loadSelectedPeriod()}
                     disabled={isSaving || isCopying}
                   >
                     Revertir
                   </Button>
-                  <Button type="submit" loading={isSaving} disabled={isCopying} size="md">
+                  <Button type="submit" loading={isSaving} disabled={isCopying} size="sm">
                     Guardar presupuesto
                   </Button>
                 </Group>
