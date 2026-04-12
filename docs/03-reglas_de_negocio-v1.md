@@ -152,7 +152,23 @@ El sistema NO calcula ahorro automáticamente en v1.
 
 ---
 
-## 11. Medios de pago
+## 11. Comportamiento de gastos
+
+### Regla
+
+- Aplica solo a categorías de tipo `expense`.
+- `expense_behavior = variable` permite proyección lineal durante el mes.
+- `expense_behavior = fixed` evita proyección lineal; se evalúa contra el presupuesto por monto actual.
+
+### Proyección sugerida para variables
+
+```text
+proyección = monto_actual / días_transcurridos * días_del_mes
+```
+
+---
+
+## 12. Medios de pago
 
 ### Regla
 
@@ -164,7 +180,7 @@ El sistema NO calcula ahorro automáticamente en v1.
 
 ---
 
-## 12. Consistencia de workspace
+## 13. Consistencia de workspace
 
 Todas las entidades relacionadas deben pertenecer al mismo workspace:
 
@@ -175,7 +191,7 @@ Todas las entidades relacionadas deben pertenecer al mismo workspace:
 
 ---
 
-## 13. Validaciones
+## 14. Validaciones
 
 - No puede haber dos presupuestos para la misma categoría y período
 - No puede haber dos períodos iguales en un mismo workspace
@@ -183,7 +199,7 @@ Todas las entidades relacionadas deben pertenecer al mismo workspace:
 
 ---
 
-## 14. Casos no cubiertos en v1
+## 15. Casos no cubiertos en v1
 
 - lógica de tarjetas de crédito (cierres y vencimientos)
 - ingresos diferidos automáticos
@@ -192,7 +208,7 @@ Todas las entidades relacionadas deben pertenecer al mismo workspace:
 
 ---
 
-## 15. Principios
+## 16. Principios
 
 - claridad por sobre complejidad
 - comportamiento predecible
@@ -200,6 +216,6 @@ Todas las entidades relacionadas deben pertenecer al mismo workspace:
 
 ---
 
-## 16. Resumen
+## 17. Resumen
 
 Las reglas de negocio definen cómo se interpretan los datos y cómo se calculan los resultados financieros. En esta versión se prioriza un modelo simple, explícito y controlado por el usuario.

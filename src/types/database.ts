@@ -5,6 +5,7 @@ export type PaymentMethodType =
   | "credit_card"
   | "bank_transfer"
   | "other";
+export type ExpenseBehavior = "fixed" | "variable";
 export type WorkspaceRole = "owner" | "admin" | "member";
 export type SavingsRateMode = "manual" | "percentage";
 export type BudgetPeriodStatus = "draft" | "active" | "closed";
@@ -120,6 +121,7 @@ export interface Database {
           workspace_id: string;
           name: string;
           type: TransactionType;
+          expense_behavior: ExpenseBehavior | null;
           is_active: boolean;
           sort_order: number | null;
           color: string | null;
@@ -133,6 +135,7 @@ export interface Database {
           workspace_id: string;
           name: string;
           type: TransactionType;
+          expense_behavior?: ExpenseBehavior | null;
           is_active?: boolean;
           sort_order?: number | null;
           color?: string | null;
@@ -144,6 +147,7 @@ export interface Database {
         Update: {
           name?: string;
           type?: TransactionType;
+          expense_behavior?: ExpenseBehavior | null;
           is_active?: boolean;
           sort_order?: number | null;
           color?: string | null;

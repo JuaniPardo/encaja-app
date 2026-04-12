@@ -87,6 +87,7 @@ Campos:
 - workspace_id (uuid, fk -> workspaces.id)
 - name (text)
 - type (text)
+- expense_behavior (text, null; aplica a type=expense)
 - is_active (boolean)
 - sort_order (integer, null)
 - color (text, null)
@@ -102,6 +103,10 @@ Tipos:
 - income
 - expense
 - saving
+
+Comportamiento de gasto (`expense_behavior`):
+- fixed
+- variable
 
 ---
 

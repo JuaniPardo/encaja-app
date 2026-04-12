@@ -18,15 +18,16 @@ import {
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 
 import {
+  categoryExpenseBehaviorOptions,
   categoryFormSchema,
   type CategoryFormInputValues,
   type CategoryFormValues,
 } from "@/features/categories/schema";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
-import type { Database, TransactionType } from "@/types/database";
+import type { Database, ExpenseBehavior, TransactionType } from "@/types/database";
 
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
 type CategoryUsageLiteRow = Pick<Database["public"]["Tables"]["transactions"]["Row"], "category_id">;
@@ -83,6 +84,16 @@ const categoryTypeSelectData = [
   { value: "saving", label: "Ahorro" },
 ];
 
+const categoryExpenseBehaviorLabels: Record<ExpenseBehavior, string> = {
+  fixed: "Fijo",
+  variable: "Variable",
+};
+
+const categoryExpenseBehaviorSelectData = categoryExpenseBehaviorOptions.map((value) => ({
+  value,
+  label: categoryExpenseBehaviorLabels[value],
+}));
+
 function normalizeSearchText(value: string) {
   return value.trim().toLocaleLowerCase("es");
 }
@@ -107,6 +118,7 @@ function toCategoryDefaults(row?: CategoryRow): CategoryFormValues {
     return {
       name: "",
       type: "expense",
+      expenseBehavior: "variable",
       sortOrder: null,
     };
   }
@@ -114,6 +126,7 @@ function toCategoryDefaults(row?: CategoryRow): CategoryFormValues {
   return {
     name: row.name,
     type: row.type,
+    expenseBehavior: row.type === "expense" ? (row.expense_behavior ?? "variable") : null,
     sortOrder: row.sort_order,
   };
 }
@@ -194,6 +207,7 @@ export default function CategoriesPage() {
 
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
@@ -201,6 +215,7 @@ export default function CategoriesPage() {
     resolver: zodResolver(categoryFormSchema),
     defaultValues: toCategoryDefaults(),
   });
+  const selectedType = useWatch({ control, name: "type" });
 
   const loadRows = useCallback(async () => {
     setIsLoading(true);
@@ -283,7 +298,11 @@ export default function CategoriesPage() {
       const passesSearch =
         normalizedSearchFilter === ""
           ? true
-          : `${row.name} ${categoryTypeLabels[row.type]} ${row.is_active ? "activa" : "inactiva"}`
+          : `${row.name} ${categoryTypeLabels[row.type]} ${row.is_active ? "activa" : "inactiva"} ${
+              row.type === "expense"
+                ? categoryExpenseBehaviorLabels[row.expense_behavior ?? "variable"]
+                : ""
+            }`
               .toLocaleLowerCase("es")
               .includes(normalizedSearchFilter);
 
@@ -317,9 +336,11 @@ export default function CategoriesPage() {
     Number(normalizedSearchFilter !== "");
 
   const onSubmit = handleSubmit(async (values) => {
+    const expenseBehavior = values.type === "expense" ? values.expenseBehavior : null;
     const payload = {
       name: values.name.trim(),
       type: values.type,
+      expense_behavior: expenseBehavior,
       sort_order: values.sortOrder,
       updated_at: new Date().toISOString(),
     };
@@ -350,6 +371,7 @@ export default function CategoriesPage() {
         workspace_id: workspace.id,
         name: payload.name,
         type: payload.type,
+        expense_behavior: payload.expense_behavior,
         sort_order: payload.sort_order,
         is_active: true,
         created_by: user.id,
@@ -545,6 +567,18 @@ export default function CategoriesPage() {
                               >
                                 {row.is_active ? "Activa" : "Inactiva"}
                               </Text>
+
+                              {row.type === "expense" ? (
+                                <Text
+                                  size="10px"
+                                  c="gray.7"
+                                  fw={500}
+                                  tt="uppercase"
+                                  style={{ letterSpacing: "0.03em" }}
+                                >
+                                  {categoryExpenseBehaviorLabels[row.expense_behavior ?? "variable"]}
+                                </Text>
+                              ) : null}
                             </Stack>
 
                             <Menu position="bottom-end" withArrow>
@@ -608,6 +642,16 @@ export default function CategoriesPage() {
               error={errors.type?.message}
               {...register("type")}
             />
+
+            {selectedType === "expense" ? (
+              <NativeSelect
+                label="Comportamiento del gasto"
+                description="Los gastos variables se proyectan por ritmo. Los fijos no se proyectan linealmente."
+                data={categoryExpenseBehaviorSelectData}
+                error={errors.expenseBehavior?.message}
+                {...register("expenseBehavior")}
+              />
+            ) : null}
 
             <Paper withBorder radius="md" p="sm">
               <Stack gap={4}>

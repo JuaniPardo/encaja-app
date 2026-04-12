@@ -20,7 +20,7 @@ import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 
 import { useWorkspace } from "@/features/workspace/workspace-provider";
-import type { Database, TransactionType } from "@/types/database";
+import type { Database, ExpenseBehavior, TransactionType } from "@/types/database";
 
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
 type BudgetPeriodIdRow = Pick<Database["public"]["Tables"]["budget_periods"]["Row"], "id">;
@@ -56,6 +56,7 @@ type BudgetPaceStatus = "exceeded" | "risk" | "inline";
 type BudgetPaceRow = {
   categoryId: string;
   categoryName: string;
+  expenseBehavior: ExpenseBehavior;
   budgetAmount: number;
   currentAmount: number;
   projectedAmount: number;
@@ -210,7 +211,15 @@ function getRoundedPercentLabel(value: number) {
   return `${Math.round(value)}%`;
 }
 
-function getPaceMainMessage(status: BudgetPaceStatus, hasBudget: boolean) {
+function resolveExpenseBehavior(category: CategoryRow): ExpenseBehavior {
+  return category.expense_behavior ?? "variable";
+}
+
+function getPaceMainMessage(
+  status: BudgetPaceStatus,
+  hasBudget: boolean,
+  expenseBehavior: ExpenseBehavior,
+) {
   if (!hasBudget) {
     return "Todavía no tiene presupuesto definido";
   }
@@ -221,6 +230,10 @@ function getPaceMainMessage(status: BudgetPaceStatus, hasBudget: boolean) {
 
   if (status === "risk") {
     return "Podrías excederte si mantenés este ritmo";
+  }
+
+  if (expenseBehavior === "fixed") {
+    return "Gasto fijo en línea con tu presupuesto";
   }
 
   return "Viene en línea con tu presupuesto";
@@ -476,19 +489,26 @@ export default function InsightsPage() {
 
       const budgetAmount = roundMoney(budgetByCategoryId.get(categoryId) ?? 0);
       const currentAmount = roundMoney(expenseByCategoryId.get(categoryId) ?? 0);
+      const expenseBehavior = resolveExpenseBehavior(category);
 
       if (Math.abs(budgetAmount) < deviationTolerance && Math.abs(currentAmount) < deviationTolerance) {
         continue;
       }
 
-      const projectedAmount = roundMoney((currentAmount / elapsedDays) * daysInMonth);
+      const projectedAmount =
+        expenseBehavior === "variable"
+          ? roundMoney((currentAmount / elapsedDays) * daysInMonth)
+          : currentAmount;
 
       let status: BudgetPaceStatus;
       if (budgetAmount <= deviationTolerance) {
         status = currentAmount > deviationTolerance ? "exceeded" : "inline";
       } else if (currentAmount - budgetAmount > deviationTolerance) {
         status = "exceeded";
-      } else if (projectedAmount - budgetAmount > deviationTolerance) {
+      } else if (
+        expenseBehavior === "variable" &&
+        projectedAmount - budgetAmount > deviationTolerance
+      ) {
         status = "risk";
       } else {
         status = "inline";
@@ -497,6 +517,7 @@ export default function InsightsPage() {
       paceRows.push({
         categoryId,
         categoryName: category.name,
+        expenseBehavior,
         budgetAmount,
         currentAmount,
         projectedAmount,
@@ -858,7 +879,11 @@ export default function InsightsPage() {
                   <Stack gap={6}>
                     {currentMonthData.paceRows.map((row) => {
                       const hasBudget = row.budgetAmount > deviationTolerance;
-                      const paceMessage = getPaceMainMessage(row.status, hasBudget);
+                      const paceMessage = getPaceMainMessage(
+                        row.status,
+                        hasBudget,
+                        row.expenseBehavior,
+                      );
                       const mainDelta =
                         hasBudget && row.status === "risk"
                           ? row.projectedAmount - row.budgetAmount
@@ -877,15 +902,24 @@ export default function InsightsPage() {
                               <Text fw={600} size="sm">
                                 {row.categoryName}
                               </Text>
-                              <Button
-                                component={Link}
-                                href={drilldownHref(currentPeriod, row.categoryId)}
-                                size="compact-xs"
-                                variant="subtle"
-                                color="gray"
-                              >
-                                Ver transacciones
-                              </Button>
+                              <Group gap="xs">
+                                <Badge
+                                  size="xs"
+                                  variant="light"
+                                  color={row.expenseBehavior === "fixed" ? "gray" : "blue"}
+                                >
+                                  {row.expenseBehavior === "fixed" ? "Fijo" : "Variable"}
+                                </Badge>
+                                <Button
+                                  component={Link}
+                                  href={drilldownHref(currentPeriod, row.categoryId)}
+                                  size="compact-xs"
+                                  variant="subtle"
+                                  color="gray"
+                                >
+                                  Ver transacciones
+                                </Button>
+                              </Group>
                             </Group>
 
                             <Text size="sm" fw={600}>
@@ -916,7 +950,9 @@ export default function InsightsPage() {
                             )}
 
                             <Text size="xs" c="dimmed">
-                              Proyección: {currencyFormatter.format(row.projectedAmount)}
+                              {row.expenseBehavior === "fixed"
+                                ? "Proyección: gasto fijo (sin extrapolación lineal)."
+                                : `Proyección: ${currencyFormatter.format(row.projectedAmount)}`}
                             </Text>
                           </Stack>
                         </Paper>
