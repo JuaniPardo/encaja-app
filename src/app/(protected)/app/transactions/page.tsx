@@ -591,6 +591,10 @@ export default function TransactionsPage() {
   }, [paymentMethodOptions, selectedPaymentMethodId, setValue]);
 
   useEffect(() => {
+    if (isBootstrapping) {
+      return;
+    }
+
     if (categoryFilter === "all") {
       return;
     }
@@ -599,7 +603,7 @@ export default function TransactionsPage() {
     if (!isFilterAvailable) {
       setCategoryFilter("all");
     }
-  }, [categoryFilter, categoryFilterOptions]);
+  }, [categoryFilter, categoryFilterOptions, isBootstrapping]);
 
   const loadBaseData = useCallback(async () => {
     setIsBootstrapping(true);
