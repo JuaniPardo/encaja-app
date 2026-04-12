@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -26,6 +27,7 @@ import {
   type CategoryFormInputValues,
   type CategoryFormValues,
 } from "@/features/categories/schema";
+import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { Database, ExpenseBehavior, TransactionType } from "@/types/database";
 
@@ -334,6 +336,14 @@ export default function CategoriesPage() {
     Number(typeFilter !== "all") +
     Number(statusFilter !== "all") +
     Number(normalizedSearchFilter !== "");
+  const categoryDrilldownHref = useCallback(
+    (type: TransactionType, categoryId: string) =>
+      buildTransactionsDrilldownHref({
+        type,
+        categoryId,
+      }),
+    [],
+  );
 
   const onSubmit = handleSubmit(async (values) => {
     const expenseBehavior = values.type === "expense" ? values.expenseBehavior : null;
@@ -556,6 +566,20 @@ export default function CategoriesPage() {
                                 <Text size="11px" c="dimmed" lineClamp={1}>
                                   {usageLabel}
                                 </Text>
+                              ) : null}
+
+                              {hasUsageData && usageCount > 0 ? (
+                                <Button
+                                  component={Link}
+                                  href={categoryDrilldownHref(row.type, row.id)}
+                                  variant="subtle"
+                                  color="gray"
+                                  size="compact-xs"
+                                  px={0}
+                                  justify="flex-start"
+                                >
+                                  Ver movimientos
+                                </Button>
                               ) : null}
 
                               <Text

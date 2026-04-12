@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -30,6 +31,7 @@ import {
   type BudgetFormInputValues,
   type BudgetFormValues,
 } from "@/features/budget/schema";
+import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { Database, TransactionType } from "@/types/database";
 
@@ -600,6 +602,16 @@ export default function BudgetPage() {
   const canCopyFromPrevious =
     categories.length > 0 && !isPeriodLoading && !isSaving && !periodHasItems;
   const selectedPeriodLabel = `${selectedYear} · ${monthLabel(selectedMonth)}`;
+  const categoryDrilldownHref = useCallback(
+    (type: TransactionType, categoryId: string) =>
+      buildTransactionsDrilldownHref({
+        year: selectedYear,
+        month: selectedMonth,
+        type,
+        categoryId,
+      }),
+    [selectedMonth, selectedYear],
+  );
 
   return (
     <Stack gap="sm" pos="relative">
@@ -704,10 +716,23 @@ export default function BudgetPage() {
                     <Stack gap="xs">
                       {groupedCategories[typeKey].map(({ category, index }) => (
                         <Paper key={category.id} withBorder radius="sm" p={isMobile ? 6 : 8}>
-                          <Group justify="space-between" align="center" wrap="nowrap">
-                            <Text fw={600} size="sm" lineClamp={1} style={{ flex: 1 }}>
-                              {category.name}
-                            </Text>
+                          <Group justify="space-between" align="center" wrap="nowrap" gap="xs">
+                            <Stack gap={1} style={{ flex: 1, minWidth: 0 }}>
+                              <Text fw={600} size="sm" lineClamp={1}>
+                                {category.name}
+                              </Text>
+                              <Button
+                                component={Link}
+                                href={categoryDrilldownHref(typeKey, category.id)}
+                                variant="subtle"
+                                color="gray"
+                                size="compact-xs"
+                                px={0}
+                                justify="flex-start"
+                              >
+                                Ver movimientos
+                              </Button>
+                            </Stack>
                             <input
                               type="hidden"
                               {...register(`items.${index}.categoryId` as const)}
