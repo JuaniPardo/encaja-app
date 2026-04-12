@@ -35,7 +35,7 @@ import type { Database, PaymentMethodType, TransactionType } from "@/types/datab
 type PaymentMethodRow = Database["public"]["Tables"]["payment_methods"]["Row"];
 type PaymentMethodTransactionLiteRow = Pick<
   Database["public"]["Tables"]["transactions"]["Row"],
-  "payment_method_id" | "amount" | "type"
+  "payment_method_id" | "amount" | "type" | "transaction_date" | "effective_date"
 >;
 type WorkspaceSettingsLiteRow = Pick<
   Database["public"]["Tables"]["workspace_settings"]["Row"],
@@ -77,6 +77,16 @@ function normalizeBalanceByType(type: PaymentMethodType, value: number) {
 
 function roundMoney(value: number) {
   return Math.round(value * 100) / 100;
+}
+
+function buildMonthRange(year: number, month: number) {
+  const monthStart = String(month).padStart(2, "0");
+  const start = `${year}-${monthStart}-01`;
+  const nextMonth = month === 12 ? 1 : month + 1;
+  const nextYear = month === 12 ? year + 1 : year;
+  const nextMonthStart = String(nextMonth).padStart(2, "0");
+  const end = `${nextYear}-${nextMonthStart}-01`;
+  return { start, end };
 }
 
 function DotsIcon({ size = 14 }: { size?: number }) {
@@ -146,6 +156,13 @@ export default function PaymentMethodsPage() {
   });
 
   const selectedType = useWatch({ control, name: "type" });
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+  const currentPeriodLabel = useMemo(() => {
+    return new Intl.DateTimeFormat("es-AR", { month: "long", year: "numeric" })
+      .format(now)
+      .replace(/^./, (value) => value.toUpperCase());
+  }, [now]);
   const currencyFormatter = useMemo(() => {
     return new Intl.NumberFormat("es-AR", {
       style: "currency",
@@ -166,6 +183,11 @@ export default function PaymentMethodsPage() {
 
   const loadRows = useCallback(async () => {
     setIsLoading(true);
+    const { start, end } = buildMonthRange(currentYear, currentMonth);
+    const periodFilter = [
+      `and(effective_date.gte.${start},effective_date.lt.${end})`,
+      `and(effective_date.is.null,transaction_date.gte.${start},transaction_date.lt.${end})`,
+    ].join(",");
     const [paymentMethodsResponse, settingsResponse, transactionsResponse] = await Promise.all([
       supabase
         .from("payment_methods")
@@ -179,9 +201,10 @@ export default function PaymentMethodsPage() {
         .maybeSingle(),
       supabase
         .from("transactions")
-        .select("payment_method_id, amount, type")
+        .select("payment_method_id, amount, type, transaction_date, effective_date")
         .eq("workspace_id", workspace.id)
-        .not("payment_method_id", "is", null),
+        .not("payment_method_id", "is", null)
+        .or(periodFilter),
     ]);
 
     setIsLoading(false);
@@ -234,7 +257,7 @@ export default function PaymentMethodsPage() {
     }
 
     setRows(paymentMethodsResponse.data);
-  }, [getSignedMovementAmount, supabase, workspace.id]);
+  }, [currentMonth, currentYear, getSignedMovementAmount, supabase, workspace.id]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -255,14 +278,11 @@ export default function PaymentMethodsPage() {
 
   const computedRows = useMemo<PaymentMethodCardRow[]>(() => {
     return rows.map((row) => {
-      const manualBalance = normalizeBalanceByType(row.type, row.current_balance);
       const movementBalance = roundMoney(movementByMethodId[row.id] ?? 0);
-      const displayedBalance =
-        Math.abs(manualBalance) >= 0.005 ? manualBalance : movementBalance;
 
       return {
         ...row,
-        displayedBalance,
+        displayedBalance: movementBalance,
       };
     });
   }, [movementByMethodId, rows]);
@@ -295,11 +315,11 @@ export default function PaymentMethodsPage() {
   const paymentMethodDrilldownHref = useCallback(
     (paymentMethodId: string) =>
       buildTransactionsDrilldownHref({
-        year: now.getFullYear(),
-        month: now.getMonth() + 1,
+        year: currentYear,
+        month: currentMonth,
         paymentMethodId,
       }),
-    [now],
+    [currentMonth, currentYear],
   );
 
   const onSubmit = handleSubmit(async (values) => {
@@ -432,7 +452,7 @@ export default function PaymentMethodsPage() {
       <Paper withBorder radius="md" p="md">
         <Stack gap={2}>
           <Text size="xs" fw={700} c="#475467">
-            Balance total
+            Balance total ({currentPeriodLabel})
           </Text>
           <Text
             fw={900}
@@ -449,7 +469,7 @@ export default function PaymentMethodsPage() {
             {currencyFormatter.format(consolidatedBalance)}
           </Text>
           <Text size="xs" c="dimmed">
-            Consolidado de medios activos incluidos en balance.
+            Consolidado de movimientos del mes vigente en medios activos incluidos en balance.
           </Text>
         </Stack>
       </Paper>

@@ -109,6 +109,10 @@ function buildMonthRange(year: number, month: number) {
   return { start, end };
 }
 
+function resolveOperationalDate(row: Pick<TransactionRow, "effective_date" | "transaction_date">) {
+  return row.effective_date ?? row.transaction_date;
+}
+
 function parseQueryInteger(value: string | null, min: number, max: number) {
   if (!value) {
     return null;
@@ -516,7 +520,7 @@ export default function TransactionsPage() {
     const byDate = new Map<string, TransactionRow[]>();
 
     for (const row of filteredRows) {
-      const dateKey = row.transaction_date;
+      const dateKey = resolveOperationalDate(row);
       const groupRows = byDate.get(dateKey);
 
       if (groupRows) {
@@ -710,14 +714,16 @@ export default function TransactionsPage() {
     setIsLoadingTransactions(true);
 
     const { start, end } = buildMonthRange(selectedYear, selectedMonth);
+    const periodFilter = [
+      `and(effective_date.gte.${start},effective_date.lt.${end})`,
+      `and(effective_date.is.null,transaction_date.gte.${start},transaction_date.lt.${end})`,
+    ].join(",");
 
     let query = supabase
       .from("transactions")
       .select("*")
       .eq("workspace_id", workspace.id)
-      .gte("transaction_date", start)
-      .lt("transaction_date", end)
-      .order("transaction_date", { ascending: false })
+      .or(periodFilter)
       .order("created_at", { ascending: false });
 
     if (typeFilter !== "all") {
@@ -744,7 +750,16 @@ export default function TransactionsPage() {
       return;
     }
 
-    setRows(response.data);
+    const sortedRows = [...response.data].sort((a, b) => {
+      const dateDiff = resolveOperationalDate(b).localeCompare(resolveOperationalDate(a));
+      if (dateDiff !== 0) {
+        return dateDiff;
+      }
+
+      return b.created_at.localeCompare(a.created_at);
+    });
+
+    setRows(sortedRows);
   }, [
     categoryFilter,
     paymentMethodFilter,
@@ -1090,13 +1105,14 @@ export default function TransactionsPage() {
                     const paymentMethod = row.payment_method_id
                       ? paymentMethodById.get(row.payment_method_id)
                       : null;
+                    const operationalDate = resolveOperationalDate(row);
 
-                    const metaParts = [formatCompactDate(row.transaction_date)];
+                    const metaParts = [formatCompactDate(operationalDate)];
                     if (paymentMethod?.name) {
                       metaParts.push(paymentMethod.name);
                     }
                     if (row.effective_date) {
-                      metaParts.push(`Efec. ${formatCompactDate(row.effective_date)}`);
+                      metaParts.push(`Real ${formatCompactDate(row.transaction_date)}`);
                     }
 
                     return (
