@@ -1,17 +1,5 @@
 const APP_BASE_PATH = "/app";
 
-export function normalizeWorkspaceSlug(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replaceAll(/[^a-z0-9\s-]/g, "")
-    .replaceAll(/\s+/g, "-")
-    .replaceAll(/-+/g, "-")
-    .replaceAll(/^-|-$/g, "")
-    .slice(0, 40);
-}
-
 export function getWorkspaceSlugFromPathname(pathname: string) {
   if (!pathname.startsWith(`${APP_BASE_PATH}/`)) {
     return null;

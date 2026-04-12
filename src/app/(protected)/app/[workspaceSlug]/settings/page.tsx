@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  Alert,
   Button,
   Checkbox,
   Group,
@@ -27,6 +28,7 @@ import {
   type WorkspaceFormInputValues,
   type WorkspaceFormValues,
 } from "@/features/workspace/schema";
+import { canManageWorkspaceSettings } from "@/features/workspace/permissions";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 
 const savingsRateModeSelectData = [
@@ -36,6 +38,7 @@ const savingsRateModeSelectData = [
 
 export default function SettingsPage() {
   const { supabase, workspace, refreshWorkspace } = useWorkspace();
+  const canEditWorkspaceSettings = canManageWorkspaceSettings(workspace.role);
   const [isLoading, setIsLoading] = useState(true);
   const [settingsId, setSettingsId] = useState<string | null>(null);
 
@@ -129,6 +132,15 @@ export default function SettingsPage() {
   }, [loadSettings]);
 
   const onSubmit = handleSubmit(async (values) => {
+    if (!canEditWorkspaceSettings) {
+      notifications.show({
+        color: "red",
+        title: "Acción no permitida",
+        message: "Solo el owner puede modificar la configuración del workspace.",
+      });
+      return;
+    }
+
     const payload = {
       start_year: values.startYear,
       savings_rate_mode: values.savingsRateMode,
@@ -189,6 +201,15 @@ export default function SettingsPage() {
   });
 
   const onSubmitWorkspace = handleSubmitWorkspace(async (values) => {
+    if (!canEditWorkspaceSettings) {
+      notifications.show({
+        color: "red",
+        title: "Acción no permitida",
+        message: "Solo el owner puede editar la identidad del workspace.",
+      });
+      return;
+    }
+
     const response = await supabase
       .from("workspaces")
       .update({
@@ -225,6 +246,11 @@ export default function SettingsPage() {
           Configurá parámetros base que se usarán en los siguientes MVPs.
         </Text>
       </Stack>
+      {!canEditWorkspaceSettings ? (
+        <Alert color="yellow" variant="light" title="Acceso de solo lectura">
+          Tenés rol <b>{workspace.role}</b>. Solo el owner puede modificar la configuración del workspace.
+        </Alert>
+      ) : null}
 
       <Paper withBorder radius="md" p="md">
         <form onSubmit={onSubmitWorkspace}>
@@ -233,12 +259,17 @@ export default function SettingsPage() {
             <TextInput
               label="Nombre visible"
               placeholder="Ej: Hogar"
+              disabled={!canEditWorkspaceSettings}
               error={workspaceErrors.name?.message}
               {...registerWorkspace("name")}
             />
             <TextInput label="Slug técnico" value={workspace.slug} readOnly />
             <Group justify="flex-end" mt="sm">
-              <Button type="submit" loading={isWorkspaceSubmitting}>
+              <Button
+                type="submit"
+                loading={isWorkspaceSubmitting}
+                disabled={!canEditWorkspaceSettings}
+              >
                 Guardar nombre
               </Button>
             </Group>
@@ -260,6 +291,7 @@ export default function SettingsPage() {
             <NativeSelect
               label="Modo de ahorro"
               data={savingsRateModeSelectData}
+              disabled={!canEditWorkspaceSettings}
               error={errors.savingsRateMode?.message}
               {...register("savingsRateMode")}
             />
@@ -270,6 +302,7 @@ export default function SettingsPage() {
               render={({ field }) => (
                 <Checkbox
                   checked={field.value}
+                  disabled={!canEditWorkspaceSettings}
                   onChange={(event) => field.onChange(event.currentTarget.checked)}
                   label="Habilitar ingreso diferido"
                 />
@@ -281,6 +314,7 @@ export default function SettingsPage() {
               type="number"
               placeholder="Ej: 5"
               disabled={!deferredIncomeEnabled}
+              readOnly={!canEditWorkspaceSettings}
               error={errors.deferredIncomeDay?.message}
               {...register("deferredIncomeDay")}
             />
@@ -289,6 +323,7 @@ export default function SettingsPage() {
               label="Moneda"
               placeholder="ARS"
               maxLength={3}
+              readOnly={!canEditWorkspaceSettings}
               error={errors.currencyCode?.message}
               {...register("currencyCode")}
             />
@@ -299,6 +334,7 @@ export default function SettingsPage() {
               render={({ field }) => (
                 <Checkbox
                   checked={field.value}
+                  disabled={!canEditWorkspaceSettings}
                   onChange={(event) => field.onChange(event.currentTarget.checked)}
                   label="Mostrar centavos en la UI"
                 />
@@ -309,7 +345,7 @@ export default function SettingsPage() {
               <Button type="button" variant="light" color="gray" onClick={() => void loadSettings()}>
                 Revertir
               </Button>
-              <Button type="submit" loading={isSubmitting}>
+              <Button type="submit" loading={isSubmitting} disabled={!canEditWorkspaceSettings}>
                 Guardar settings
               </Button>
             </Group>

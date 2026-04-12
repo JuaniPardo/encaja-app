@@ -1,0 +1,9 @@
+import type { WorkspaceRole } from "@/types/database";
+
+export function canManageWorkspaceSettings(role: WorkspaceRole) {
+  return role === "owner";
+}
+
+export function canBootstrapWorkspaceFoundations(role: WorkspaceRole) {
+  return role === "owner";
+}

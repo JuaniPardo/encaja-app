@@ -1,14 +1,25 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { Button, Center, Loader, Paper, Stack, Text } from "@mantine/core";
 import { usePathname, useRouter } from "next/navigation";
 
 import { canUseFeature, type WorkspaceFeature } from "@/features/billing/feature-access";
 import {
+  buildFallbackWorkspacePath,
+  pickActiveWorkspace,
+} from "@/features/workspace/context-routing";
+import {
   buildWorkspaceHref,
-  getWorkspaceScopedSectionPath,
   getWorkspaceSlugFromPathname,
 } from "@/features/workspace/routing";
 import { LAST_WORKSPACE_SLUG_STORAGE_KEY } from "@/features/workspace/storage";
@@ -36,7 +47,7 @@ interface WorkspaceContextValue {
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 
 interface WorkspaceState {
-  isLoading: boolean;
+  isInitializing: boolean;
   errorMessage: string | null;
   user: User | null;
   workspaces: WorkspaceSummary[];
@@ -59,127 +70,159 @@ function rememberLastWorkspaceSlug(workspaceSlug: string) {
   window.localStorage.setItem(LAST_WORKSPACE_SLUG_STORAGE_KEY, workspaceSlug);
 }
 
-function pickActiveWorkspace(
-  workspaces: WorkspaceSummary[],
-  routeWorkspaceSlug: string | null,
-): WorkspaceSummary | null {
-  if (workspaces.length === 0) {
-    return null;
-  }
-
-  if (routeWorkspaceSlug) {
-    const fromRoute = workspaces.find((workspace) => workspace.slug === routeWorkspaceSlug);
-    if (fromRoute) {
-      return fromRoute;
-    }
-  }
-
-  const rememberedWorkspaceSlug = readLastWorkspaceSlug();
-  if (rememberedWorkspaceSlug) {
-    const remembered = workspaces.find((workspace) => workspace.slug === rememberedWorkspaceSlug);
-    if (remembered) {
-      return remembered;
-    }
-  }
-
-  return workspaces[0];
-}
-
-function buildFallbackWorkspacePath(pathname: string, workspaceSlug: string) {
-  const maybeLegacySection = getWorkspaceSlugFromPathname(pathname);
-  if (
-    maybeLegacySection &&
-    ["insights", "budget", "transactions", "categories", "payment-methods", "settings"].includes(
-      maybeLegacySection,
-    )
-  ) {
-    return buildWorkspaceHref(workspaceSlug, `/${maybeLegacySection}`);
-  }
-
-  const scopedSectionPath = getWorkspaceScopedSectionPath(pathname);
-  return buildWorkspaceHref(workspaceSlug, scopedSectionPath);
-}
-
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const routeWorkspaceSlug = getWorkspaceSlugFromPathname(pathname ?? "");
 
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
+  const requestCounterRef = useRef(0);
+  const pathnameRef = useRef(pathname ?? "/app");
   const [state, setState] = useState<WorkspaceState>({
-    isLoading: true,
+    isInitializing: true,
     errorMessage: null,
     user: null,
     workspaces: [],
     workspace: null,
   });
 
-  const loadWorkspace = useCallback(async () => {
-    const userResponse = await supabase.auth.getUser();
-    if (userResponse.error || !userResponse.data.user) {
-      await supabase.auth.signOut();
-      setState({
-        isLoading: false,
-        errorMessage: null,
-        user: null,
-        workspaces: [],
-        workspace: null,
-      });
-      router.replace("/login");
+  useEffect(() => {
+    pathnameRef.current = pathname ?? "/app";
+  }, [pathname]);
+
+  const loadSessionAndWorkspaces = useCallback(
+    async (options?: { forceBootstrap?: boolean }) => {
+      const requestId = requestCounterRef.current + 1;
+      requestCounterRef.current = requestId;
+
+      const userResponse = await supabase.auth.getUser();
+      if (userResponse.error || !userResponse.data.user) {
+        await supabase.auth.signOut();
+        if (requestCounterRef.current !== requestId) {
+          return;
+        }
+
+        setState({
+          isInitializing: false,
+          errorMessage: null,
+          user: null,
+          workspaces: [],
+          workspace: null,
+        });
+        router.replace("/login");
+        return;
+      }
+
+      const user = userResponse.data.user;
+      const fullNameFromMetadata =
+        typeof user.user_metadata?.full_name === "string"
+          ? user.user_metadata.full_name
+          : undefined;
+
+      try {
+        if (options?.forceBootstrap ?? true) {
+          await bootstrapUserWorkspace({
+            supabase,
+            user,
+            fullNameHint: fullNameFromMetadata,
+          });
+        }
+
+        const workspaces = await listUserWorkspaces({ supabase, user });
+        const workspace = pickActiveWorkspace(
+          workspaces,
+          {
+            routeWorkspaceSlug: getWorkspaceSlugFromPathname(pathnameRef.current),
+            currentWorkspaceSlug: null,
+            rememberedWorkspaceSlug: readLastWorkspaceSlug(),
+          },
+        );
+
+        if (!workspace) {
+          throw new Error("No encontramos un workspace asociado.");
+        }
+
+        if (requestCounterRef.current !== requestId) {
+          return;
+        }
+
+        setState({
+          isInitializing: false,
+          errorMessage: null,
+          user,
+          workspaces,
+          workspace,
+        });
+
+        rememberLastWorkspaceSlug(workspace.slug);
+      } catch (error) {
+        if (requestCounterRef.current !== requestId) {
+          return;
+        }
+
+        setState({
+          isInitializing: false,
+          errorMessage:
+            error instanceof Error
+              ? error.message
+              : "No pudimos inicializar el workspace.",
+          user,
+          workspaces: [],
+          workspace: null,
+        });
+      }
+    },
+    [router, supabase],
+  );
+
+  const refreshWorkspace = useCallback(async () => {
+    if (!state.user) {
+      await loadSessionAndWorkspaces();
       return;
     }
 
-    const user = userResponse.data.user;
-    const fullNameFromMetadata =
-      typeof user.user_metadata?.full_name === "string"
-        ? user.user_metadata.full_name
-        : undefined;
+    const requestId = requestCounterRef.current + 1;
+    requestCounterRef.current = requestId;
 
     try {
-      await bootstrapUserWorkspace({
-        supabase,
-        user,
-        fullNameHint: fullNameFromMetadata,
-      });
-
-      const workspaces = await listUserWorkspaces({ supabase, user });
-      const workspace = pickActiveWorkspace(workspaces, routeWorkspaceSlug);
+      const workspaces = await listUserWorkspaces({ supabase, user: state.user });
+      const workspace = pickActiveWorkspace(
+        workspaces,
+        {
+          routeWorkspaceSlug: getWorkspaceSlugFromPathname(pathnameRef.current),
+          currentWorkspaceSlug: state.workspace?.slug ?? null,
+          rememberedWorkspaceSlug: readLastWorkspaceSlug(),
+        },
+      );
 
       if (!workspace) {
         throw new Error("No encontramos un workspace asociado.");
       }
 
-      setState({
-        isLoading: false,
+      if (requestCounterRef.current !== requestId) {
+        return;
+      }
+
+      setState((prev) => ({
+        ...prev,
         errorMessage: null,
-        user,
         workspaces,
         workspace,
-      });
+      }));
 
       rememberLastWorkspaceSlug(workspace.slug);
-
-      if (routeWorkspaceSlug && routeWorkspaceSlug !== workspace.slug) {
-        router.replace(buildFallbackWorkspacePath(pathname ?? "/app", workspace.slug));
-      }
     } catch (error) {
-      setState({
-        isLoading: false,
-        errorMessage:
-          error instanceof Error
-            ? error.message
-            : "No pudimos inicializar el workspace.",
-        user,
-        workspaces: [],
-        workspace: null,
-      });
-    }
-  }, [pathname, routeWorkspaceSlug, router, supabase]);
+      if (requestCounterRef.current !== requestId) {
+        return;
+      }
 
-  const refreshWorkspace = useCallback(async () => {
-    setState((prev) => ({ ...prev, isLoading: true, errorMessage: null }));
-    await loadWorkspace();
-  }, [loadWorkspace]);
+      setState((prev) => ({
+        ...prev,
+        errorMessage:
+          error instanceof Error ? error.message : "No pudimos refrescar workspaces.",
+      }));
+    }
+  }, [loadSessionAndWorkspaces, state.user, state.workspace?.slug, supabase]);
 
   const createWorkspace = useCallback(
     async (name: string) => {
@@ -202,6 +245,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         ...prev,
         workspaces,
         workspace: createdWorkspace,
+        errorMessage: null,
       }));
 
       rememberLastWorkspaceSlug(createdWorkspace.slug);
@@ -225,7 +269,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setState({
-      isLoading: false,
+      isInitializing: false,
       errorMessage: null,
       user: null,
       workspaces: [],
@@ -235,12 +279,12 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   }, [router, supabase]);
 
   useEffect(() => {
-    void loadWorkspace();
+    void loadSessionAndWorkspaces();
 
     const authListener = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session?.user) {
         setState({
-          isLoading: false,
+          isInitializing: false,
           errorMessage: null,
           user: null,
           workspaces: [],
@@ -250,15 +294,56 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      void refreshWorkspace();
+      void loadSessionAndWorkspaces({ forceBootstrap: false });
     });
 
     return () => {
       authListener.data.subscription.unsubscribe();
     };
-  }, [loadWorkspace, refreshWorkspace, router, supabase.auth]);
+  }, [loadSessionAndWorkspaces, router, supabase.auth]);
 
-  if (state.isLoading) {
+  useEffect(() => {
+    if (state.isInitializing || !state.user || state.workspaces.length === 0) {
+      return;
+    }
+
+    const currentWorkspaceSlug = state.workspace?.slug ?? null;
+    const activeWorkspace = pickActiveWorkspace(
+      state.workspaces,
+      {
+        routeWorkspaceSlug,
+        currentWorkspaceSlug,
+        rememberedWorkspaceSlug: readLastWorkspaceSlug(),
+      },
+    );
+
+    if (!activeWorkspace) {
+      return;
+    }
+
+    if (currentWorkspaceSlug !== activeWorkspace.slug) {
+      setState((prev) => ({ ...prev, workspace: activeWorkspace }));
+    }
+
+    rememberLastWorkspaceSlug(activeWorkspace.slug);
+
+    if (routeWorkspaceSlug !== activeWorkspace.slug) {
+      const fallbackPath = buildFallbackWorkspacePath(pathname ?? "/app", activeWorkspace.slug);
+      if (fallbackPath !== pathname) {
+        router.replace(fallbackPath);
+      }
+    }
+  }, [
+    pathname,
+    routeWorkspaceSlug,
+    router,
+    state.isInitializing,
+    state.user,
+    state.workspace?.slug,
+    state.workspaces,
+  ]);
+
+  if (state.isInitializing) {
     return (
       <Center h="100vh">
         <Stack align="center" gap="xs">
@@ -280,7 +365,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
             <Text size="sm" c="dimmed">
               {state.errorMessage ?? "No encontramos un workspace asociado."}
             </Text>
-            <Button onClick={() => void refreshWorkspace()}>Reintentar</Button>
+            <Button onClick={() => void loadSessionAndWorkspaces()}>Reintentar</Button>
             <Button variant="light" color="gray" onClick={() => void signOut()}>
               Volver a ingresar
             </Button>

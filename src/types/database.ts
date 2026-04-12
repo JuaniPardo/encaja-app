@@ -327,7 +327,19 @@ export interface Database {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      create_workspace_with_defaults: {
+        Args: {
+          p_workspace_name: string;
+        };
+        Returns: {
+          workspace_id: string;
+          workspace_name: string;
+          workspace_slug: string;
+          workspace_role: WorkspaceRole;
+          subscription_plan: SubscriptionPlan;
+          subscription_status: SubscriptionStatus;
+        }[];
+      };
     };
     Enums: {
       [_ in never]: never;
