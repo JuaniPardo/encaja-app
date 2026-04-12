@@ -28,9 +28,13 @@ import {
   type PaymentMethodFormValues,
 } from "@/features/payment-methods/schema";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
-import type { Database, PaymentMethodType } from "@/types/database";
+import type { Database, PaymentMethodType, TransactionType } from "@/types/database";
 
 type PaymentMethodRow = Database["public"]["Tables"]["payment_methods"]["Row"];
+type PaymentMethodTransactionLiteRow = Pick<
+  Database["public"]["Tables"]["transactions"]["Row"],
+  "payment_method_id" | "amount" | "type"
+>;
 type WorkspaceSettingsLiteRow = Pick<
   Database["public"]["Tables"]["workspace_settings"]["Row"],
   "currency_code" | "show_cents"
@@ -119,6 +123,7 @@ function toDefaults(row?: PaymentMethodRow): PaymentMethodFormValues {
 export default function PaymentMethodsPage() {
   const { supabase, workspace, user } = useWorkspace();
   const [rows, setRows] = useState<PaymentMethodRow[]>([]);
+  const [movementByMethodId, setMovementByMethodId] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<PaymentMethodRow | null>(null);
@@ -147,9 +152,18 @@ export default function PaymentMethodsPage() {
     });
   }, [currencyCode, showCents]);
 
+  const getSignedMovementAmount = useCallback((type: TransactionType, amount: unknown) => {
+    const parsedAmount = typeof amount === "number" ? amount : Number(amount);
+    if (!Number.isFinite(parsedAmount)) {
+      return 0;
+    }
+
+    return type === "income" ? parsedAmount : -parsedAmount;
+  }, []);
+
   const loadRows = useCallback(async () => {
     setIsLoading(true);
-    const [paymentMethodsResponse, settingsResponse] = await Promise.all([
+    const [paymentMethodsResponse, settingsResponse, transactionsResponse] = await Promise.all([
       supabase
         .from("payment_methods")
         .select("*")
@@ -160,6 +174,11 @@ export default function PaymentMethodsPage() {
         .select("currency_code, show_cents")
         .eq("workspace_id", workspace.id)
         .maybeSingle(),
+      supabase
+        .from("transactions")
+        .select("payment_method_id, amount, type")
+        .eq("workspace_id", workspace.id)
+        .not("payment_method_id", "is", null),
     ]);
 
     setIsLoading(false);
@@ -187,8 +206,32 @@ export default function PaymentMethodsPage() {
       setShowCents(settings?.show_cents ?? false);
     }
 
+    if (transactionsResponse.error) {
+      notifications.show({
+        color: "red",
+        title: "No pudimos cargar movimientos por medio",
+        message: transactionsResponse.error.message,
+      });
+      setMovementByMethodId({});
+    } else {
+      const movementCounter: Record<string, number> = {};
+      const movementRows = (transactionsResponse.data ?? []) as PaymentMethodTransactionLiteRow[];
+
+      for (const row of movementRows) {
+        const methodId = row.payment_method_id;
+        if (!methodId) {
+          continue;
+        }
+
+        const signedAmount = getSignedMovementAmount(row.type, row.amount);
+        movementCounter[methodId] = roundMoney((movementCounter[methodId] ?? 0) + signedAmount);
+      }
+
+      setMovementByMethodId(movementCounter);
+    }
+
     setRows(paymentMethodsResponse.data);
-  }, [supabase, workspace.id]);
+  }, [getSignedMovementAmount, supabase, workspace.id]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -207,8 +250,22 @@ export default function PaymentMethodsPage() {
     setIsModalOpen(true);
   }
 
+  const computedRows = useMemo<PaymentMethodCardRow[]>(() => {
+    return rows.map((row) => {
+      const manualBalance = normalizeBalanceByType(row.type, row.current_balance);
+      const movementBalance = roundMoney(movementByMethodId[row.id] ?? 0);
+      const displayedBalance =
+        Math.abs(manualBalance) >= 0.005 ? manualBalance : movementBalance;
+
+      return {
+        ...row,
+        displayedBalance,
+      };
+    });
+  }, [movementByMethodId, rows]);
+
   const visibleRows = useMemo<PaymentMethodCardRow[]>(() => {
-    return rows
+    return computedRows
       .filter((row) => {
         if (statusFilter === "all") {
           return true;
@@ -216,10 +273,6 @@ export default function PaymentMethodsPage() {
 
         return statusFilter === "active" ? row.is_active : !row.is_active;
       })
-      .map((row) => ({
-        ...row,
-        displayedBalance: normalizeBalanceByType(row.type, row.current_balance),
-      }))
       .sort((a, b) => {
         if (b.displayedBalance !== a.displayedBalance) {
           return b.displayedBalance - a.displayedBalance;
@@ -227,14 +280,14 @@ export default function PaymentMethodsPage() {
 
         return a.name.localeCompare(b.name, "es");
       });
-  }, [rows, statusFilter]);
+  }, [computedRows, statusFilter]);
 
   const consolidatedBalance = useMemo(() => {
-    const total = rows
+    const total = computedRows
       .filter((row) => row.is_active && row.include_in_balance)
-      .reduce((sum, row) => sum + normalizeBalanceByType(row.type, row.current_balance), 0);
+      .reduce((sum, row) => sum + row.displayedBalance, 0);
     return roundMoney(total);
-  }, [rows]);
+  }, [computedRows]);
 
   const onSubmit = handleSubmit(async (values) => {
     const normalizedCurrentBalance = normalizeBalanceByType(values.type, values.currentBalance);
