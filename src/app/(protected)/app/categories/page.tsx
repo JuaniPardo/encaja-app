@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ActionIcon,
-  Badge,
   Button,
   Group,
   LoadingOverlay,
@@ -30,6 +29,7 @@ import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { Database, TransactionType } from "@/types/database";
 
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
+type CategoryUsageLiteRow = Pick<Database["public"]["Tables"]["transactions"]["Row"], "category_id">;
 
 type TypeFilter = TransactionType | "all";
 type StatusFilter = "all" | "active" | "inactive";
@@ -57,12 +57,6 @@ const categoryTypeLabels: Record<TransactionType, string> = {
   income: "Ingreso",
   expense: "Gasto",
   saving: "Ahorro",
-};
-
-const categoryTypeColors: Record<TransactionType, string> = {
-  income: "teal",
-  expense: "pink",
-  saving: "indigo",
 };
 
 const categoryTypeSelectData = [
@@ -171,6 +165,8 @@ export default function CategoriesPage() {
   const { supabase, workspace, user } = useWorkspace();
   const isMobile = useMediaQuery("(max-width: 48em)");
   const [rows, setRows] = useState<CategoryRow[]>([]);
+  const [usageByCategoryId, setUsageByCategoryId] = useState<Record<string, number>>({});
+  const [hasUsageData, setHasUsageData] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<CategoryRow | null>(null);
@@ -191,26 +187,45 @@ export default function CategoriesPage() {
   const loadRows = useCallback(async () => {
     setIsLoading(true);
 
-    const response = await supabase
-      .from("categories")
-      .select("*")
-      .eq("workspace_id", workspace.id)
-      .order("created_at", { ascending: true });
+    const [categoriesResponse, usageResponse] = await Promise.all([
+      supabase
+        .from("categories")
+        .select("*")
+        .eq("workspace_id", workspace.id)
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("transactions")
+        .select("category_id")
+        .eq("workspace_id", workspace.id),
+    ]);
     setIsLoading(false);
 
-    if (response.error) {
+    if (categoriesResponse.error) {
       notifications.show({
         color: "red",
         title: "No pudimos cargar categorías",
-        message: response.error.message,
+        message: categoriesResponse.error.message,
       });
       setRows([]);
+      setUsageByCategoryId({});
       return;
     }
 
-    const sorted = [...response.data].sort(sortCategories);
+    const sorted = [...categoriesResponse.data].sort(sortCategories);
+    const usageCounter: Record<string, number> = {};
+
+    if (usageResponse.error) {
+      setHasUsageData(false);
+    } else {
+      const usageRows = (usageResponse.data ?? []) as CategoryUsageLiteRow[];
+      for (const usageRow of usageRows) {
+        usageCounter[usageRow.category_id] = (usageCounter[usageRow.category_id] ?? 0) + 1;
+      }
+      setHasUsageData(true);
+    }
 
     setRows(sorted);
+    setUsageByCategoryId(usageCounter);
   }, [supabase, workspace.id]);
 
   useEffect(() => {
@@ -386,7 +401,12 @@ export default function CategoriesPage() {
           </Text>
         </Stack>
 
-        <Button onClick={openCreateModal} fullWidth={isMobile}>
+        <Button
+          onClick={openCreateModal}
+          fullWidth={isMobile}
+          radius="md"
+          styles={{ root: { boxShadow: "none", border: "none" } }}
+        >
           Nueva categoría
         </Button>
       </Group>
@@ -442,79 +462,92 @@ export default function CategoriesPage() {
           </Text>
         </Paper>
       ) : (
-        <Stack gap="sm">
+        <Stack gap="md">
           {groupedRows.map((group) => {
             const activeRows = group.rows.filter((row) => row.is_active).length;
 
             return (
               <Paper key={group.type} withBorder radius="md" p="sm">
                 <Stack gap="xs">
-                  <Group justify="space-between" align="center">
-                    <Group gap={8}>
-                      <Badge variant="light" color={categoryTypeColors[group.type]}>
-                        {group.label}
-                      </Badge>
-                      <Text size="xs" c="dimmed">
-                        {group.rows.length} categoría{group.rows.length === 1 ? "" : "s"} · {activeRows}{" "}
-                        activa{activeRows === 1 ? "" : "s"}
-                      </Text>
-                    </Group>
-                  </Group>
+                  <Stack gap={1}>
+                    <Text
+                      size="xs"
+                      fw={800}
+                      tt="uppercase"
+                      style={{ letterSpacing: "0.04em", lineHeight: 1.2 }}
+                    >
+                      {group.label}
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      {group.rows.length} categoría{group.rows.length === 1 ? "" : "s"} · {activeRows} activa
+                      {activeRows === 1 ? "" : "s"}
+                    </Text>
+                  </Stack>
 
                   <Stack gap={6}>
-                    {group.rows.map((row) => (
-                      <Paper key={row.id} withBorder radius={8} p={isMobile ? "xs" : "sm"}>
-                        <Group justify="space-between" align="flex-start" wrap="nowrap" gap="xs">
-                          <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
-                            <Text fw={600} size="sm" lineClamp={1} style={{ lineHeight: 1.2 }}>
-                              {row.name}
-                            </Text>
+                    {group.rows.map((row) => {
+                      const usageCount = usageByCategoryId[row.id] ?? 0;
+                      const usageLabel =
+                        usageCount === 0
+                          ? "Sin uso"
+                          : `${usageCount} movimiento${usageCount === 1 ? "" : "s"}`;
 
-                            <Group gap={6} wrap="wrap">
-                              <Badge size="xs" variant="light" color={categoryTypeColors[row.type]}>
-                                {categoryTypeLabels[row.type]}
-                              </Badge>
+                      return (
+                        <Paper key={row.id} withBorder radius={8} p={isMobile ? "xs" : "sm"}>
+                          <Group justify="space-between" align="flex-start" wrap="nowrap" gap="xs">
+                            <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
+                              <Text fw={600} size="sm" lineClamp={1} style={{ lineHeight: 1.2 }}>
+                                {row.name}
+                              </Text>
 
-                              <Badge
-                                size="xs"
-                                color={row.is_active ? "teal" : "gray"}
-                                variant={row.is_active ? "dot" : "light"}
+                              {hasUsageData ? (
+                                <Text size="11px" c="dimmed" lineClamp={1}>
+                                  {usageLabel}
+                                </Text>
+                              ) : null}
+
+                              <Text
+                                size="10px"
+                                c={row.is_active ? "gray.6" : "gray.7"}
+                                fw={500}
+                                tt="uppercase"
+                                style={{ letterSpacing: "0.03em" }}
                               >
                                 {row.is_active ? "Activa" : "Inactiva"}
-                              </Badge>
-                            </Group>
-                          </Stack>
+                              </Text>
+                            </Stack>
 
-                          <Menu position="bottom-end" withArrow>
-                            <Menu.Target>
-                              <ActionIcon
-                                variant="subtle"
-                                color="gray"
-                                aria-label={`Acciones para ${row.name}`}
-                              >
-                                <DotsIcon />
-                              </ActionIcon>
-                            </Menu.Target>
+                            <Menu position="bottom-end" withArrow>
+                              <Menu.Target>
+                                <ActionIcon
+                                  variant="subtle"
+                                  color="gray"
+                                  aria-label={`Acciones para ${row.name}`}
+                                >
+                                  <DotsIcon />
+                                </ActionIcon>
+                              </Menu.Target>
 
-                            <Menu.Dropdown>
-                              <Menu.Item
-                                leftSection={<EditIcon size={13} />}
-                                onClick={() => openEditModal(row)}
-                              >
-                                Editar
-                              </Menu.Item>
-                              <Menu.Item
-                                color={row.is_active ? "gray" : "teal"}
-                                leftSection={<ToggleActiveIcon size={13} />}
-                                onClick={() => void toggleActive(row)}
-                              >
-                                {row.is_active ? "Desactivar" : "Activar"}
-                              </Menu.Item>
-                            </Menu.Dropdown>
-                          </Menu>
-                        </Group>
-                      </Paper>
-                    ))}
+                              <Menu.Dropdown>
+                                <Menu.Item
+                                  leftSection={<EditIcon size={13} />}
+                                  onClick={() => openEditModal(row)}
+                                >
+                                  Editar
+                                </Menu.Item>
+                                <Menu.Item
+                                  color={row.is_active ? "gray" : "teal"}
+                                  leftSection={<ToggleActiveIcon size={13} />}
+                                  onClick={() => void toggleActive(row)}
+                                >
+                                  {row.is_active ? "Desactivar" : "Activar"}
+                                </Menu.Item>
+                              </Menu.Dropdown>
+                            </Menu>
+                          </Group>
+                        </Paper>
+                      );
+                    })}
                   </Stack>
                 </Stack>
               </Paper>
