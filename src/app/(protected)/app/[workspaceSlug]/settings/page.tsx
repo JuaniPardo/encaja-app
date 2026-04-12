@@ -8,6 +8,7 @@ import {
   Checkbox,
   Group,
   LoadingOverlay,
+  Modal,
   NativeSelect,
   Paper,
   Stack,
@@ -15,6 +16,7 @@ import {
   TextInput,
   Title,
 } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { Controller, useForm, useWatch } from "react-hook-form";
 
@@ -37,8 +39,18 @@ const savingsRateModeSelectData = [
 ];
 
 export default function SettingsPage() {
-  const { supabase, workspace, refreshWorkspace } = useWorkspace();
+  const {
+    supabase,
+    workspace,
+    refreshWorkspace,
+    createWorkspace,
+    switchWorkspace,
+    canUseWorkspaceFeature,
+  } = useWorkspace();
   const canEditWorkspaceSettings = canManageWorkspaceSettings(workspace.role);
+  const canCreateWorkspace = canUseWorkspaceFeature("multi_workspace") && canEditWorkspaceSettings;
+  const [isCreateWorkspaceOpen, { open: openCreateWorkspace, close: closeCreateWorkspace }] =
+    useDisclosure(false);
   const [isLoading, setIsLoading] = useState(true);
   const [settingsId, setSettingsId] = useState<string | null>(null);
 
@@ -75,12 +87,34 @@ export default function SettingsPage() {
       name: workspace.name,
     },
   });
+  const {
+    register: registerCreateWorkspace,
+    handleSubmit: handleSubmitCreateWorkspace,
+    reset: resetCreateWorkspace,
+    formState: {
+      errors: createWorkspaceErrors,
+      isSubmitting: isCreatingWorkspace,
+    },
+  } = useForm<WorkspaceFormInputValues, unknown, WorkspaceFormValues>({
+    resolver: zodResolver(workspaceFormSchema),
+    defaultValues: {
+      name: "",
+    },
+  });
 
   useEffect(() => {
     resetWorkspace({
       name: workspace.name,
     });
   }, [resetWorkspace, workspace.name]);
+
+  useEffect(() => {
+    if (!isCreateWorkspaceOpen) {
+      resetCreateWorkspace({
+        name: "",
+      });
+    }
+  }, [isCreateWorkspaceOpen, resetCreateWorkspace]);
 
   const loadSettings = useCallback(async () => {
     setIsLoading(true);
@@ -236,9 +270,65 @@ export default function SettingsPage() {
     });
   });
 
+  const onSubmitCreateWorkspace = handleSubmitCreateWorkspace(async (values) => {
+    if (!canCreateWorkspace) {
+      notifications.show({
+        color: "red",
+        title: "Acción no permitida",
+        message: "Solo el owner puede crear workspaces.",
+      });
+      return;
+    }
+
+    try {
+      const createdWorkspace = await createWorkspace(values.name);
+      notifications.show({
+        color: "green",
+        title: "Workspace creado",
+        message: `${createdWorkspace.name} ya está disponible.`,
+      });
+      closeCreateWorkspace();
+      switchWorkspace(createdWorkspace.slug, "/settings");
+    } catch (error) {
+      notifications.show({
+        color: "red",
+        title: "No pudimos crear el workspace",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Ocurrió un error inesperado al crear el workspace.",
+      });
+    }
+  });
+
   return (
     <Stack gap="md" pos="relative">
       <LoadingOverlay visible={isLoading} />
+      <Modal
+        opened={isCreateWorkspaceOpen}
+        onClose={closeCreateWorkspace}
+        title="Crear workspace"
+        centered
+      >
+        <form onSubmit={onSubmitCreateWorkspace}>
+          <Stack gap="sm">
+            <TextInput
+              label="Nombre visible"
+              placeholder="Ej: Hogar, Consultorio, Negocio"
+              error={createWorkspaceErrors.name?.message}
+              {...registerCreateWorkspace("name")}
+            />
+            <Group justify="flex-end">
+              <Button type="button" variant="light" color="gray" onClick={closeCreateWorkspace}>
+                Cancelar
+              </Button>
+              <Button type="submit" loading={isCreatingWorkspace}>
+                Crear
+              </Button>
+            </Group>
+          </Stack>
+        </form>
+      </Modal>
 
       <Stack gap={2}>
         <Title order={2}>Settings del workspace</Title>
@@ -255,7 +345,14 @@ export default function SettingsPage() {
       <Paper withBorder radius="md" p="md">
         <form onSubmit={onSubmitWorkspace}>
           <Stack>
-            <Text fw={600}>Identidad del workspace</Text>
+            <Group justify="space-between" align="center">
+              <Text fw={600}>Identidad del workspace</Text>
+              {canCreateWorkspace ? (
+                <Button variant="subtle" size="xs" onClick={openCreateWorkspace}>
+                  Crear workspace
+                </Button>
+              ) : null}
+            </Group>
             <TextInput
               label="Nombre visible"
               placeholder="Ej: Hogar"
@@ -263,7 +360,6 @@ export default function SettingsPage() {
               error={workspaceErrors.name?.message}
               {...registerWorkspace("name")}
             />
-            <TextInput label="Slug técnico" value={workspace.slug} readOnly />
             <Group justify="flex-end" mt="sm">
               <Button
                 type="submit"

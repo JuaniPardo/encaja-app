@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ActionIcon,
   AppShell,
@@ -11,21 +10,16 @@ import {
   Button,
   Container,
   Group,
-  Modal,
   NativeSelect,
   Stack,
   Text,
-  TextInput,
   Tooltip,
   Title,
   UnstyledButton,
 } from "@mantine/core";
 import { useDisclosure, useMediaQuery } from "@mantine/hooks";
-import { notifications } from "@mantine/notifications";
 import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
 
-import { workspaceFormSchema, type WorkspaceFormInputValues, type WorkspaceFormValues } from "@/features/workspace/schema";
 import {
   buildWorkspaceHref,
   getWorkspaceScopedSectionPath,
@@ -141,116 +135,37 @@ function ShellIcon({ children }: { children: React.ReactNode }) {
 export function ProtectedShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [opened, { toggle, close }] = useDisclosure(false);
-  const [isCreateWorkspaceOpen, { open: openCreateWorkspace, close: closeCreateWorkspace }] =
-    useDisclosure(false);
   const [desktopCollapsed, setDesktopCollapsed] = useState(false);
   const isMobile = useMediaQuery("(max-width: 47.99em)");
-  const {
-    workspace,
-    workspaces,
-    user,
-    createWorkspace,
-    switchWorkspace,
-    canUseWorkspaceFeature,
-    signOut,
-  } = useWorkspace();
+  const { workspace, workspaces, user, switchWorkspace, signOut } = useWorkspace();
   const sectionPath = getWorkspaceScopedSectionPath(pathname ?? "");
   const pathWithoutWorkspace = stripWorkspaceSlugFromPathname(pathname ?? "/app");
   const workspaceSelectData = useMemo(
     () => workspaces.map((item) => ({ value: item.slug, label: item.name })),
     [workspaces],
   );
-  const canCreateWorkspace = canUseWorkspaceFeature("multi_workspace");
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<WorkspaceFormInputValues, unknown, WorkspaceFormValues>({
-    resolver: zodResolver(workspaceFormSchema),
-    defaultValues: {
-      name: "",
-    },
-  });
 
   useEffect(() => {
     close();
   }, [pathname, close]);
 
-  useEffect(() => {
-    if (!isCreateWorkspaceOpen) {
-      reset({ name: "" });
-    }
-  }, [isCreateWorkspaceOpen, reset]);
-
-  const onCreateWorkspace = handleSubmit(async (values) => {
-    try {
-      const createdWorkspace = await createWorkspace(values.name);
-      notifications.show({
-        color: "green",
-        title: "Workspace creado",
-        message: `Ya podés usar ${createdWorkspace.name}.`,
-      });
-      closeCreateWorkspace();
-      switchWorkspace(createdWorkspace.slug, sectionPath);
-    } catch (error) {
-      notifications.show({
-        color: "red",
-        title: "No pudimos crear el workspace",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Ocurrió un error inesperado al crear el workspace.",
-      });
-    }
-  });
-
   return (
-    <>
-      <Modal
-        opened={isCreateWorkspaceOpen}
-        onClose={closeCreateWorkspace}
-        title="Crear nuevo workspace"
-        centered
-      >
-        <form onSubmit={onCreateWorkspace}>
-          <Stack gap="sm">
-            <TextInput
-              label="Nombre del workspace"
-              placeholder="Ej: Hogar, Consultorio, Negocio"
-              error={errors.name?.message}
-              {...register("name")}
-            />
-
-            <Group justify="flex-end" mt="xs">
-              <Button type="button" variant="light" color="gray" onClick={closeCreateWorkspace}>
-                Cancelar
-              </Button>
-              <Button type="submit" loading={isSubmitting}>
-                Crear
-              </Button>
-            </Group>
-          </Stack>
-        </form>
-      </Modal>
-
-      <AppShell
-        header={{ height: { base: 58, sm: 66 } }}
-        navbar={{
-          width: { base: 236, sm: desktopCollapsed ? 74 : 256 },
-          breakpoint: "sm",
-          collapsed: { mobile: !opened },
+    <AppShell
+      header={{ height: { base: 58, sm: 66 } }}
+      navbar={{
+        width: { base: 236, sm: desktopCollapsed ? 74 : 256 },
+        breakpoint: "sm",
+        collapsed: { mobile: !opened },
+      }}
+      padding={{ base: "xs", sm: "md" }}
+    >
+      <AppShell.Header
+        style={{
+          borderBottom: "1px solid #e4e7ec",
+          backgroundColor: "rgba(255, 255, 255, 0.94)",
+          backdropFilter: "blur(6px)",
         }}
-        padding={{ base: "xs", sm: "md" }}
       >
-        <AppShell.Header
-          style={{
-            borderBottom: "1px solid #e4e7ec",
-            backgroundColor: "rgba(255, 255, 255, 0.94)",
-            backdropFilter: "blur(6px)",
-          }}
-        >
           <Group h="100%" px={isMobile ? "xs" : "md"} justify="space-between">
             <Group>
               <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
@@ -290,11 +205,6 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
             </Group>
 
             <Group gap="sm" visibleFrom="sm">
-              {canCreateWorkspace ? (
-                <Button size="xs" variant="light" onClick={openCreateWorkspace}>
-                  Nuevo workspace
-                </Button>
-              ) : null}
               <Text size="sm" c="dimmed">
                 {user.email}
               </Text>
@@ -303,22 +213,16 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
               </Button>
             </Group>
           </Group>
-        </AppShell.Header>
+      </AppShell.Header>
 
-        <AppShell.Navbar
-          p={isMobile ? "xs" : "sm"}
-          style={{
-            borderRight: "1px solid #e4e7ec",
-            backgroundColor: "#f9fbfa",
-          }}
-        >
-          <Stack gap={isMobile ? 3 : 4}>
-            {canCreateWorkspace && isMobile ? (
-              <Button variant="light" size="xs" onClick={openCreateWorkspace}>
-                Nuevo workspace
-              </Button>
-            ) : null}
-
+      <AppShell.Navbar
+        p={isMobile ? "xs" : "sm"}
+        style={{
+          borderRight: "1px solid #e4e7ec",
+          backgroundColor: "#f9fbfa",
+        }}
+      >
+        <Stack gap={isMobile ? 3 : 4}>
             {navItems.map((item) => {
               const navPath = buildWorkspaceHref(workspace.slug, item.sectionPath);
               const activePath = item.sectionPath ? `/app${item.sectionPath}` : "/app";
@@ -382,9 +286,9 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
                 </Tooltip>
               );
             })}
-          </Stack>
+        </Stack>
 
-          <Box mt="auto" pt="lg">
+        <Box mt="auto" pt="lg">
             <Button
               variant="subtle"
               color="gray"
@@ -428,15 +332,14 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
                 Desarrollado por Juan Pardo
               </Text>
             ) : null}
-          </Box>
-        </AppShell.Navbar>
+        </Box>
+      </AppShell.Navbar>
 
-        <AppShell.Main>
-          <Container size="xl" py={isMobile ? "xs" : "md"}>
-            {children}
-          </Container>
-        </AppShell.Main>
-      </AppShell>
-    </>
+      <AppShell.Main>
+        <Container size="xl" py={isMobile ? "xs" : "md"}>
+          {children}
+        </Container>
+      </AppShell.Main>
+    </AppShell>
   );
 }
