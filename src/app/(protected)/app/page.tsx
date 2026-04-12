@@ -1,15 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Badge,
   Box,
-  Grid,
+  Button,
   Group,
   LoadingOverlay,
   Menu,
   Paper,
-  Progress,
   RingProgress,
   SimpleGrid,
   Stack,
@@ -76,20 +76,6 @@ type DonutDataByType = Record<
     slices: DonutSlice[];
   }
 >;
-
-type SemanticStatus = "problem" | "positive" | "neutral";
-
-type CategorySemantic = {
-  status: SemanticStatus;
-  detail: string;
-};
-
-type OperationalInsightRow = {
-  type: TransactionType;
-  categoryName: string;
-  deviation: number;
-  semantic: CategorySemantic;
-};
 
 type FinancialMethodRow = {
   id: string;
@@ -241,105 +227,16 @@ function clampToPercent(value: number) {
   return value;
 }
 
-function pluralize(value: number, singular: string, plural: string) {
-  return value === 1 ? singular : plural;
-}
-
-function getCategorySemantic(type: TransactionType, deviation: number): CategorySemantic {
-  if (Math.abs(deviation) < deviationTolerance) {
-    if (type === "expense") {
-      return {
-        status: "neutral",
-        detail: "Gasto en presupuesto",
-      };
-    }
-
-    if (type === "saving") {
-      return {
-        status: "neutral",
-        detail: "Ahorro en objetivo",
-      };
-    }
-
-    return {
-      status: "neutral",
-      detail: "Ingreso en presupuesto",
-    };
-  }
-
-  if (type === "income") {
-    return deviation > 0
-      ? {
-          status: "positive",
-          detail: "Ingreso por encima del presupuesto",
-        }
-      : {
-          status: "problem",
-          detail: "Ingreso por debajo del presupuesto",
-        };
-  }
-
-  if (type === "expense") {
-    return deviation > 0
-      ? {
-          status: "problem",
-          detail: "Gasto por encima del presupuesto",
-        }
-      : {
-          status: "positive",
-          detail: "Gasto por debajo del presupuesto",
-        };
-  }
-
-  return deviation > 0
-    ? {
-        status: "positive",
-        detail: "Ahorro por encima del objetivo",
-      }
-    : {
-        status: "problem",
-        detail: "Ahorro por debajo del objetivo",
-      };
-}
-
-function getSemanticColor(status: SemanticStatus) {
-  if (status === "problem") {
-    return "#c92a2a";
-  }
-
-  if (status === "positive") {
-    return "#087f5b";
-  }
-
-  return "#64748b";
-}
-
-function getProblemTypePriority(type: TransactionType) {
-  if (type === "expense") {
-    return 3;
-  }
-
-  if (type === "saving") {
-    return 2;
-  }
-
-  return 1;
-}
-
-function getPositiveTypePriority(type: TransactionType) {
-  if (type === "income") {
-    return 3;
-  }
-
-  if (type === "saving") {
-    return 2;
-  }
-
-  return 1;
-}
-
 function getDeviationColor(type: TransactionType, deviation: number) {
-  return getSemanticColor(getCategorySemantic(type, deviation).status);
+  if (Math.abs(deviation) < deviationTolerance) {
+    return "#64748b";
+  }
+
+  if (type === "income") {
+    return deviation > 0 ? "#087f5b" : "#c92a2a";
+  }
+
+  return deviation > 0 ? "#c92a2a" : "#087f5b";
 }
 
 export default function DashboardPage() {
@@ -644,21 +541,6 @@ export default function DashboardPage() {
     };
   }, [budgetItems, categories, transactionRows]);
 
-  const monthProgress = useMemo(() => {
-    const periodStart = new Date(selectedYear, selectedMonth - 1, 1);
-    const periodEnd = new Date(selectedYear, selectedMonth, 0);
-
-    if (now < periodStart) {
-      return 0;
-    }
-
-    if (now > periodEnd) {
-      return 100;
-    }
-
-    return clampToPercent((now.getDate() / periodEnd.getDate()) * 100);
-  }, [now, selectedMonth, selectedYear]);
-
   const savingsVsIncome = useMemo(() => {
     if (metrics.totalsByType.income.real <= 0) {
       return null;
@@ -717,90 +599,6 @@ export default function DashboardPage() {
       rows: metrics.groupedRows[type],
     }));
   }, [metrics.groupedRows]);
-
-  const operationalInsights = useMemo(() => {
-    const problemRows: OperationalInsightRow[] = [];
-    const positiveRows: OperationalInsightRow[] = [];
-
-    for (const type of Object.keys(metrics.groupedRows) as TransactionType[]) {
-      for (const row of metrics.groupedRows[type]) {
-        const hasOperationalSignal =
-          Math.abs(row.budgetAmount) >= deviationTolerance ||
-          Math.abs(row.realAmount) >= deviationTolerance;
-
-        if (!hasOperationalSignal) {
-          continue;
-        }
-
-        const semantic = getCategorySemantic(type, row.deviation);
-        const insight: OperationalInsightRow = {
-          type,
-          categoryName: row.categoryName,
-          deviation: row.deviation,
-          semantic,
-        };
-
-        const isProblem = type === "expense" && row.deviation > deviationTolerance;
-        if (isProblem) {
-          problemRows.push(insight);
-          continue;
-        }
-
-        const isPositive = type === "income" && row.deviation > deviationTolerance;
-        if (isPositive) {
-          positiveRows.push(insight);
-          continue;
-        }
-      }
-    }
-
-    problemRows.sort((a, b) => {
-      const priorityDiff = getProblemTypePriority(b.type) - getProblemTypePriority(a.type);
-      if (priorityDiff !== 0) {
-        return priorityDiff;
-      }
-
-      return Math.abs(b.deviation) - Math.abs(a.deviation);
-    });
-
-    positiveRows.sort((a, b) => {
-      const priorityDiff = getPositiveTypePriority(b.type) - getPositiveTypePriority(a.type);
-      if (priorityDiff !== 0) {
-        return priorityDiff;
-      }
-
-      return Math.abs(b.deviation) - Math.abs(a.deviation);
-    });
-
-    return {
-      problemRows,
-      positiveRows,
-    };
-  }, [metrics.groupedRows]);
-
-  const problemCount = operationalInsights.problemRows.length;
-  const positiveCount = operationalInsights.positiveRows.length;
-  const topProblemRows = operationalInsights.problemRows.slice(0, 3);
-  const topPositiveRows = operationalInsights.positiveRows.slice(0, 3);
-
-  const operationalHeadline = useMemo(() => {
-    if (problemCount === 0 && positiveCount === 0) {
-      return "Sin desvíos relevantes";
-    }
-
-    if (problemCount > 0 && positiveCount > 0) {
-      return `${problemCount} ${pluralize(problemCount, "problema", "problemas")} · ${positiveCount} ${pluralize(positiveCount, "destacado", "destacados")}`;
-    }
-
-    if (problemCount > 0) {
-      return `${problemCount} ${pluralize(problemCount, "problema detectado", "problemas detectados")}`;
-    }
-
-    return `${positiveCount} ${pluralize(positiveCount, "destacado", "destacados")}`;
-  }, [positiveCount, problemCount]);
-
-  const operationalHeadlineColor =
-    problemCount > 0 ? "#c92a2a" : positiveCount > 0 ? "#087f5b" : "#475467";
 
   const financialSummary = useMemo(() => {
     const transactionImpactByMethodId = new Map<string, number>();
@@ -872,7 +670,6 @@ export default function DashboardPage() {
   const cardPadding = isMobile ? "xs" : "sm";
   const tableHorizontalSpacing = isMobile ? "xs" : "sm";
   const tableVerticalSpacing = isMobile ? 5 : 6;
-  const monthProgressSize = isMobile ? 6 : 8;
   const executionBarWidth = isMobile ? "100%" : isTablet ? 88 : 96;
   const donutSize = isMobile ? 76 : isTablet ? 84 : 96;
   const donutThickness = isMobile ? 9 : 11;
@@ -925,6 +722,15 @@ export default function DashboardPage() {
             </Text>
           </Stack>
           <Group gap={6} align="center" wrap="wrap">
+            <Button
+              component={Link}
+              href="/app/insights"
+              variant="light"
+              color="indigo"
+              size="xs"
+            >
+              Ver insights
+            </Button>
             <Menu shadow="md" width={220} position="bottom-end">
               <Menu.Target>
                 <UnstyledButton
@@ -1015,35 +821,6 @@ export default function DashboardPage() {
         bg="#ffffff"
         style={{ borderColor: "#d6dde7" }}
       >
-        <Stack gap={6}>
-          <Text size="xs" fw={700} c="#475467">
-            Estado operativo
-          </Text>
-          <Text fw={800} c={operationalHeadlineColor}>
-            {operationalHeadline}
-          </Text>
-          <Group gap={6} wrap="wrap">
-            <Badge color="red" variant={problemCount > 0 ? "light" : "outline"} size="sm">
-              {problemCount} {pluralize(problemCount, "problema", "problemas")}
-            </Badge>
-            <Badge color="teal" variant={positiveCount > 0 ? "light" : "outline"} size="sm">
-              {positiveCount} en buen desempeño
-            </Badge>
-          </Group>
-          <Text size="xs" c="#667085">
-            Transcurrido: {percentageFormatter.format(monthProgress)}%
-          </Text>
-          <Progress value={monthProgress} color="#0ea5e9" radius="xl" size={monthProgressSize} />
-        </Stack>
-      </Paper>
-
-      <Paper
-        withBorder
-        radius="sm"
-        p={isMobile ? "xs" : "sm"}
-        bg="#ffffff"
-        style={{ borderColor: "#d6dde7" }}
-      >
         <Stack gap={isMobile ? "xs" : "sm"}>
           <Group justify="space-between" align="flex-start" wrap="wrap" gap={6}>
             <Stack gap={2}>
@@ -1115,120 +892,6 @@ export default function DashboardPage() {
           ) : null}
         </Stack>
       </Paper>
-
-      <Grid gap="sm" align="stretch">
-        <Grid.Col span={{ base: 12, lg: 6 }}>
-          <Paper
-            p={isMobile ? "sm" : "md"}
-            radius="sm"
-            style={{
-              border: "1px solid #d6dde7",
-              backgroundColor: problemCount > 0 ? "#fff5f5" : "#f8fafc",
-            }}
-          >
-            <Stack gap={isMobile ? "sm" : "md"}>
-              <Text size="xs" fw={800} c="#344054">
-                Problemas detectados
-              </Text>
-              <Text size="sm" fw={800} c={problemCount > 0 ? "#c92a2a" : "#475467"}>
-                {problemCount === 0
-                  ? "Sin problemas críticos"
-                  : `${problemCount} ${pluralize(problemCount, "categoría en alerta", "categorías en alerta")}`}
-              </Text>
-              {topProblemRows.length === 0 ? (
-                <Text size="xs" c="#667085">
-                  No hay desvíos operativos que requieran atención en este período.
-                </Text>
-              ) : (
-                <Stack gap="xs">
-                  {topProblemRows.map((row, index) => (
-                    <Box
-                      key={`${row.type}-${row.categoryName}-${index}`}
-                      className="dashboard-clickable-item"
-                      p={isMobile ? "xs" : "sm"}
-                      style={{
-                        border: "1px solid #ffd9d9",
-                        backgroundColor: "#fffafa",
-                        borderRadius: 8,
-                      }}
-                    >
-                      <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
-                        <Stack gap={1} style={{ flex: 1 }}>
-                          <Text size="xs" fw={700} c="#344054">
-                            {row.semantic.detail}
-                          </Text>
-                          <Text size="xs" c="#667085">
-                            {typeLabels[row.type]} · {row.categoryName}
-                          </Text>
-                        </Stack>
-                        <Text size={isMobile ? "sm" : "md"} fw={900} c="#c92a2a">
-                          {formatSignedCurrency(row.deviation, currencyFormatter)}
-                        </Text>
-                      </Group>
-                    </Box>
-                  ))}
-                </Stack>
-              )}
-            </Stack>
-          </Paper>
-        </Grid.Col>
-
-        <Grid.Col span={{ base: 12, lg: 6 }}>
-          <Paper
-            p={isMobile ? "sm" : "md"}
-            radius="sm"
-            style={{
-              border: "1px solid #d6dde7",
-              backgroundColor: positiveCount > 0 ? "#f1fff6" : "#f8fafc",
-            }}
-          >
-            <Stack gap={isMobile ? "sm" : "md"}>
-              <Text size="xs" fw={800} c="#344054">
-                Buen desempeño
-              </Text>
-              <Text size="sm" fw={800} c={positiveCount > 0 ? "#087f5b" : "#475467"}>
-                {positiveCount === 0
-                  ? "Sin destacados por ahora"
-                  : `${positiveCount} ${pluralize(positiveCount, "categoría destacada", "categorías destacadas")}`}
-              </Text>
-              {topPositiveRows.length === 0 ? (
-                <Text size="xs" c="#667085">
-                  Todavía no hay señales positivas por encima del plan para destacar.
-                </Text>
-              ) : (
-                <Stack gap="xs">
-                  {topPositiveRows.map((row, index) => (
-                    <Box
-                      key={`${row.type}-${row.categoryName}-${index}`}
-                      className="dashboard-clickable-item"
-                      p={isMobile ? "xs" : "sm"}
-                      style={{
-                        border: "1px solid #cceede",
-                        backgroundColor: "#f6fffa",
-                        borderRadius: 8,
-                      }}
-                    >
-                      <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
-                        <Stack gap={1} style={{ flex: 1 }}>
-                          <Text size="xs" fw={700} c="#344054">
-                            {row.semantic.detail}
-                          </Text>
-                          <Text size="xs" c="#667085">
-                            {typeLabels[row.type]} · {row.categoryName}
-                          </Text>
-                        </Stack>
-                        <Text size={isMobile ? "sm" : "md"} fw={900} c="#087f5b">
-                          {formatSignedCurrency(row.deviation, currencyFormatter)}
-                        </Text>
-                      </Group>
-                    </Box>
-                  ))}
-                </Stack>
-              )}
-            </Stack>
-          </Paper>
-        </Grid.Col>
-      </Grid>
 
       <SimpleGrid cols={kpiColumns} spacing={isMobile ? "xs" : "sm"}>
         <Paper withBorder radius="sm" p="xs" bg="#ffffff">
