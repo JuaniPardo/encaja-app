@@ -349,6 +349,47 @@ export interface Database {
           deleted_workspace_slug: string;
         }[];
       };
+      invite_workspace_member_by_email: {
+        Args: {
+          p_workspace_id: string;
+          p_email: string;
+        };
+        Returns: {
+          member_id: string;
+          user_id: string;
+          email: string;
+          full_name: string | null;
+          role: WorkspaceRole;
+          joined_at: string;
+          was_created: boolean;
+        }[];
+      };
+      list_workspace_members: {
+        Args: {
+          p_workspace_id: string;
+        };
+        Returns: {
+          member_id: string;
+          user_id: string;
+          email: string;
+          full_name: string | null;
+          role: WorkspaceRole;
+          joined_at: string;
+        }[];
+      };
+      remove_workspace_member: {
+        Args: {
+          p_workspace_id: string;
+          p_member_user_id: string;
+        };
+        Returns: {
+          member_id: string;
+          user_id: string;
+          email: string;
+          full_name: string | null;
+          role: WorkspaceRole;
+        }[];
+      };
     };
     Enums: {
       [_ in never]: never;

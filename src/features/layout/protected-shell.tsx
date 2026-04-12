@@ -132,6 +132,14 @@ function ShellIcon({ children }: { children: React.ReactNode }) {
   );
 }
 
+function formatRoleLabel(role: string) {
+  if (role === "owner") {
+    return "owner";
+  }
+
+  return "member";
+}
+
 export function ProtectedShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [opened, { toggle, close }] = useDisclosure(false);
@@ -141,7 +149,11 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
   const sectionPath = getWorkspaceScopedSectionPath(pathname ?? "");
   const pathWithoutWorkspace = stripWorkspaceSlugFromPathname(pathname ?? "/app");
   const workspaceSelectData = useMemo(
-    () => workspaces.map((item) => ({ value: item.slug, label: item.name })),
+    () =>
+      workspaces.map((item) => ({
+        value: item.slug,
+        label: `${item.name} · ${formatRoleLabel(item.role)}`,
+      })),
     [workspaces],
   );
 
@@ -198,9 +210,14 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
                   />
                 ) : (
                   <Text size="xs" c="dimmed">
-                    {workspace.name}
+                    {workspace.name} · {formatRoleLabel(workspace.role)}
                   </Text>
                 )}
+                {workspaces.length > 1 ? (
+                  <Text size="xs" c="dimmed">
+                    Rol activo: {formatRoleLabel(workspace.role)}
+                  </Text>
+                ) : null}
               </Box>
             </Group>
 

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Alert,
+  Badge,
   Button,
   Checkbox,
   Group,
@@ -26,20 +27,46 @@ import {
   type SettingsFormValues,
 } from "@/features/settings/schema";
 import {
+  inviteWorkspaceMemberSchema,
+  type InviteWorkspaceMemberInputValues,
+  type InviteWorkspaceMemberValues,
+} from "@/features/workspace/members-schema";
+import {
   workspaceFormSchema,
   type WorkspaceFormInputValues,
   type WorkspaceFormValues,
 } from "@/features/workspace/schema";
 import {
   canDeleteWorkspace,
+  canManageWorkspaceMembers,
   canManageWorkspaceSettings,
 } from "@/features/workspace/permissions";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
+import type { Database } from "@/types/database";
 
 const savingsRateModeSelectData = [
   { value: "manual", label: "Manual" },
   { value: "percentage", label: "Porcentaje objetivo" },
 ];
+
+type WorkspaceMemberSummary =
+  Database["public"]["Functions"]["list_workspace_members"]["Returns"][number];
+
+function normalizeRoleLabel(role: string) {
+  if (role === "owner") {
+    return "owner";
+  }
+
+  return "member";
+}
+
+function getMemberDisplayName(member: WorkspaceMemberSummary) {
+  if (member.full_name && member.full_name.trim().length > 0) {
+    return member.full_name.trim();
+  }
+
+  return member.email;
+}
 
 export default function SettingsPage() {
   const {
@@ -53,6 +80,7 @@ export default function SettingsPage() {
     canUseWorkspaceFeature,
   } = useWorkspace();
   const canEditWorkspaceSettings = canManageWorkspaceSettings(workspace.role);
+  const canManageMembers = canManageWorkspaceMembers(workspace.role);
   const canUseMultiWorkspace = canUseWorkspaceFeature("multi_workspace");
   const canCreateWorkspace = canUseMultiWorkspace && canEditWorkspaceSettings;
   const canDeleteCurrentWorkspace =
@@ -62,8 +90,11 @@ export default function SettingsPage() {
   const [isDeleteWorkspaceOpen, { open: openDeleteWorkspace, close: closeDeleteWorkspace }] =
     useDisclosure(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMembersLoading, setIsMembersLoading] = useState(true);
   const [isDeletingWorkspace, setIsDeletingWorkspace] = useState(false);
   const [deleteWorkspaceConfirmation, setDeleteWorkspaceConfirmation] = useState("");
+  const [members, setMembers] = useState<WorkspaceMemberSummary[]>([]);
+  const [removingMemberUserId, setRemovingMemberUserId] = useState<string | null>(null);
   const [settingsId, setSettingsId] = useState<string | null>(null);
 
   const {
@@ -111,6 +142,20 @@ export default function SettingsPage() {
     resolver: zodResolver(workspaceFormSchema),
     defaultValues: {
       name: "",
+    },
+  });
+  const {
+    register: registerInviteMember,
+    handleSubmit: handleSubmitInviteMember,
+    reset: resetInviteMember,
+    formState: {
+      errors: inviteMemberErrors,
+      isSubmitting: isInvitingMember,
+    },
+  } = useForm<InviteWorkspaceMemberInputValues, unknown, InviteWorkspaceMemberValues>({
+    resolver: zodResolver(inviteWorkspaceMemberSchema),
+    defaultValues: {
+      email: "",
     },
   });
 
@@ -181,6 +226,38 @@ export default function SettingsPage() {
   useEffect(() => {
     void loadSettings();
   }, [loadSettings]);
+
+  const loadMembers = useCallback(async () => {
+    setIsMembersLoading(true);
+
+    const response = await supabase.rpc("list_workspace_members", {
+      p_workspace_id: workspace.id,
+    });
+
+    setIsMembersLoading(false);
+
+    if (response.error) {
+      notifications.show({
+        color: "red",
+        title: "No pudimos cargar miembros",
+        message: response.error.message,
+      });
+      return;
+    }
+
+    const rows = (response.data ?? []) as WorkspaceMemberSummary[];
+    setMembers(rows);
+  }, [supabase, workspace.id]);
+
+  useEffect(() => {
+    void loadMembers();
+  }, [loadMembers]);
+
+  useEffect(() => {
+    resetInviteMember({
+      email: "",
+    });
+  }, [resetInviteMember, workspace.id]);
 
   const onSubmit = handleSubmit(async (values) => {
     if (!canEditWorkspaceSettings) {
@@ -361,6 +438,91 @@ export default function SettingsPage() {
     }
   };
 
+  const onSubmitInviteMember = handleSubmitInviteMember(async (values) => {
+    if (!canManageMembers) {
+      notifications.show({
+        color: "red",
+        title: "Acción no permitida",
+        message: "Solo el owner puede invitar miembros.",
+      });
+      return;
+    }
+
+    const response = await supabase.rpc("invite_workspace_member_by_email", {
+      p_workspace_id: workspace.id,
+      p_email: values.email,
+    });
+
+    if (response.error) {
+      notifications.show({
+        color: "red",
+        title: "No pudimos invitar al miembro",
+        message: response.error.message,
+      });
+      return;
+    }
+
+    const invitedMember = response.data?.[0];
+    if (!invitedMember) {
+      notifications.show({
+        color: "red",
+        title: "No pudimos invitar al miembro",
+        message: "No recibimos confirmación del backend.",
+      });
+      return;
+    }
+
+    notifications.show({
+      color: invitedMember.was_created ? "green" : "blue",
+      title: invitedMember.was_created ? "Miembro invitado" : "Miembro ya existente",
+      message: invitedMember.was_created
+        ? `${invitedMember.email} ya forma parte del workspace.`
+        : `${invitedMember.email} ya tenía acceso al workspace.`,
+    });
+
+    resetInviteMember({
+      email: "",
+    });
+    await loadMembers();
+  });
+
+  const onRemoveMember = async (member: WorkspaceMemberSummary) => {
+    if (!canManageMembers) {
+      notifications.show({
+        color: "red",
+        title: "Acción no permitida",
+        message: "Solo el owner puede remover miembros.",
+      });
+      return;
+    }
+
+    setRemovingMemberUserId(member.user_id);
+
+    const response = await supabase.rpc("remove_workspace_member", {
+      p_workspace_id: workspace.id,
+      p_member_user_id: member.user_id,
+    });
+
+    setRemovingMemberUserId(null);
+
+    if (response.error) {
+      notifications.show({
+        color: "red",
+        title: "No pudimos remover al miembro",
+        message: response.error.message,
+      });
+      return;
+    }
+
+    notifications.show({
+      color: "green",
+      title: "Acceso removido",
+      message: `${member.email} ya no tiene acceso a este workspace.`,
+    });
+
+    await loadMembers();
+  };
+
   return (
     <Stack gap="md" pos="relative">
       <LoadingOverlay visible={isLoading} />
@@ -433,14 +595,97 @@ export default function SettingsPage() {
       <Stack gap={2}>
         <Title order={2}>Settings del workspace</Title>
         <Text c="dimmed" size="sm">
-          Configurá parámetros base que se usarán en los siguientes MVPs.
+          Estás en <b>{workspace.name}</b> con rol <b>{normalizeRoleLabel(workspace.role)}</b>.
         </Text>
       </Stack>
       {!canEditWorkspaceSettings ? (
         <Alert color="yellow" variant="light" title="Acceso de solo lectura">
-          Tenés rol <b>{workspace.role}</b>. Solo el owner puede modificar la configuración del workspace.
+          Tenés rol <b>{normalizeRoleLabel(workspace.role)}</b>. Solo el owner puede modificar la
+          configuración del workspace.
         </Alert>
       ) : null}
+
+      <Paper withBorder radius="md" p="md">
+        <Stack gap="sm">
+          <Group justify="space-between" align="center">
+            <Text fw={600}>Miembros del workspace</Text>
+            <Badge variant="light" color="gray">
+              {members.length} {members.length === 1 ? "miembro" : "miembros"}
+            </Badge>
+          </Group>
+          <Text size="sm" c="dimmed">
+            Invitá personas por email para colaborar en este workspace compartido.
+          </Text>
+
+          {!canManageMembers ? (
+            <Alert color="blue" variant="light" title="Sin permisos de administración">
+              Podés ver miembros, pero solo el owner puede invitar o remover acceso.
+            </Alert>
+          ) : null}
+
+          <form onSubmit={onSubmitInviteMember}>
+            <Group align="flex-end" wrap="wrap">
+              <TextInput
+                label="Invitar por email"
+                placeholder="persona@ejemplo.com"
+                error={inviteMemberErrors.email?.message}
+                disabled={!canManageMembers}
+                style={{ flex: 1, minWidth: 220 }}
+                {...registerInviteMember("email")}
+              />
+              <Button type="submit" loading={isInvitingMember} disabled={!canManageMembers}>
+                Invitar
+              </Button>
+            </Group>
+          </form>
+
+          {isMembersLoading ? (
+            <Text size="sm" c="dimmed">
+              Cargando miembros...
+            </Text>
+          ) : members.length === 0 ? (
+            <Text size="sm" c="dimmed">
+              Este workspace todavía no tiene miembros.
+            </Text>
+          ) : (
+            <Stack gap="xs">
+              {members.map((member) => {
+                const canRemoveMember = canManageMembers && member.role !== "owner";
+
+                return (
+                  <Paper key={member.member_id} withBorder radius="sm" p="sm">
+                    <Group justify="space-between" align="center" wrap="wrap">
+                      <Stack gap={2}>
+                        <Text fw={600}>{getMemberDisplayName(member)}</Text>
+                        <Text size="sm" c="dimmed">
+                          {member.email}
+                        </Text>
+                      </Stack>
+                      <Group gap="xs" align="center">
+                        <Badge variant="light" color={member.role === "owner" ? "teal" : "gray"}>
+                          {normalizeRoleLabel(member.role)}
+                        </Badge>
+                        {canRemoveMember ? (
+                          <Button
+                            type="button"
+                            size="xs"
+                            color="red"
+                            variant="light"
+                            loading={removingMemberUserId === member.user_id}
+                            onClick={() => void onRemoveMember(member)}
+                          >
+                            Remover
+                          </Button>
+                        ) : null}
+                      </Group>
+                    </Group>
+                  </Paper>
+                );
+              })}
+            </Stack>
+          )}
+        </Stack>
+      </Paper>
 
       <Paper withBorder radius="md" p="md">
         <form onSubmit={onSubmitWorkspace}>

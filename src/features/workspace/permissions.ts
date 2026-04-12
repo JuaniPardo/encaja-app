@@ -11,3 +11,7 @@ export function canBootstrapWorkspaceFoundations(role: WorkspaceRole) {
 export function canDeleteWorkspace(role: WorkspaceRole) {
   return role === "owner";
 }
+
+export function canManageWorkspaceMembers(role: WorkspaceRole) {
+  return role === "owner";
+}
