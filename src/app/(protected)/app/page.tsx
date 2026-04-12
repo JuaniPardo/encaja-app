@@ -166,6 +166,10 @@ function roundMoney(value: number) {
 
 function normalizePaymentMethodBalance(type: PaymentMethodType, value: unknown) {
   const parsed = parseAmountValue(value);
+  if (Math.abs(parsed) < deviationTolerance) {
+    return 0;
+  }
+
   if (type === "credit_card") {
     return -Math.abs(parsed);
   }

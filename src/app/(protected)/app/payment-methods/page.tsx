@@ -53,6 +53,10 @@ const paymentTypeSelectData = [
 ];
 
 function normalizeBalanceByType(type: PaymentMethodType, value: number) {
+  if (Math.abs(value) < 0.005) {
+    return 0;
+  }
+
   if (type === "credit_card") {
     return -Math.abs(value);
   }
