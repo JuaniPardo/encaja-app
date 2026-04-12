@@ -59,6 +59,24 @@ const categoryTypeLabels: Record<TransactionType, string> = {
   saving: "Ahorro",
 };
 
+const categoryGroupBackgroundColor: Record<TransactionType, string> = {
+  expense: "var(--mantine-color-pink-0)",
+  income: "var(--mantine-color-teal-0)",
+  saving: "var(--mantine-color-indigo-0)",
+};
+
+const categoryGroupHeaderColor: Record<TransactionType, string> = {
+  expense: "var(--mantine-color-pink-6)",
+  income: "var(--mantine-color-teal-6)",
+  saving: "var(--mantine-color-indigo-6)",
+};
+
+const categoryGroupBorderColor: Record<TransactionType, string> = {
+  expense: "var(--mantine-color-pink-4)",
+  income: "var(--mantine-color-teal-4)",
+  saving: "var(--mantine-color-indigo-4)",
+};
+
 const categoryTypeSelectData = [
   { value: "income", label: "Ingreso" },
   { value: "expense", label: "Gasto" },
@@ -465,16 +483,28 @@ export default function CategoriesPage() {
         <Stack gap="md">
           {groupedRows.map((group) => {
             const activeRows = group.rows.filter((row) => row.is_active).length;
+            const groupBackground = categoryGroupBackgroundColor[group.type];
+            const groupHeaderColor = categoryGroupHeaderColor[group.type];
+            const groupBorderColor = categoryGroupBorderColor[group.type];
 
             return (
-              <Paper key={group.type} withBorder radius="md" p="sm">
+              <Paper
+                key={group.type}
+                withBorder
+                radius="md"
+                p="sm"
+                style={{
+                  backgroundColor: groupBackground,
+                  borderLeft: `3px solid ${groupBorderColor}`,
+                }}
+              >
                 <Stack gap="xs">
                   <Stack gap={1}>
                     <Text
                       size="xs"
                       fw={800}
                       tt="uppercase"
-                      style={{ letterSpacing: "0.04em", lineHeight: 1.2 }}
+                      style={{ letterSpacing: "0.04em", lineHeight: 1.2, color: groupHeaderColor }}
                     >
                       {group.label}
                     </Text>
