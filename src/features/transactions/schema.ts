@@ -1,16 +1,15 @@
 import { z } from "zod";
 
+import { parseBudgetAmount } from "@/features/budget/amount-format";
+
 export const transactionTypeOptions = ["income", "expense", "saving"] as const;
 
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
 
 const requiredAmount = z.preprocess(
   (value) => {
-    if (value === "" || value === null || value === undefined) {
-      return Number.NaN;
-    }
-
-    return Number(value);
+    const parsed = parseBudgetAmount(value);
+    return parsed === null ? Number.NaN : parsed;
   },
   z.number().finite("Ingresá un monto válido.").gt(0, "El monto debe ser mayor a cero."),
 );

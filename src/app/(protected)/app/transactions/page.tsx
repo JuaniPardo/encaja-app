@@ -11,17 +11,23 @@ import {
   Modal,
   NativeSelect,
   Paper,
+  SegmentedControl,
   Stack,
-  Table,
   Text,
   TextInput,
   Textarea,
   Title,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { modals } from "@mantine/modals";
 import { notifications } from "@mantine/notifications";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 
+import {
+  formatBudgetAmount,
+  parseBudgetAmount,
+  sanitizeBudgetTypingValue,
+} from "@/features/budget/amount-format";
 import {
   transactionFormSchema,
   type TransactionFormInputValues,
@@ -131,7 +137,7 @@ function toFormDefaults(
   return {
     type: row.type,
     categoryId: row.category_id,
-    amount: String(row.amount),
+    amount: formatBudgetAmount(row.amount),
     transactionDate: row.transaction_date,
     effectiveDate: row.effective_date ?? "",
     paymentMethodId: row.payment_method_id ?? "",
@@ -151,8 +157,13 @@ function sortCategories(a: CategoryRow, b: CategoryRow) {
   return a.name.localeCompare(b.name, "es");
 }
 
+function normalizeSearchText(value: string) {
+  return value.trim().toLocaleLowerCase("es");
+}
+
 export default function TransactionsPage() {
   const { supabase, workspace, user } = useWorkspace();
+  const isMobile = useMediaQuery("(max-width: 48em)");
 
   const now = useMemo(() => new Date(), []);
   const [rows, setRows] = useState<TransactionRow[]>([]);
@@ -163,6 +174,8 @@ export default function TransactionsPage() {
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [searchFilter, setSearchFilter] = useState("");
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -172,6 +185,7 @@ export default function TransactionsPage() {
   const {
     register,
     handleSubmit,
+    control,
     reset,
     setValue,
     watch,
@@ -248,6 +262,18 @@ export default function TransactionsPage() {
       }));
   }, [categories, editingRow?.category_id, selectedType]);
 
+  const categoryFilterOptions = useMemo(() => {
+    const sortedCategories = [...categories].sort(sortCategories);
+
+    return [
+      { value: "all", label: "Todas" },
+      ...sortedCategories.map((category) => ({
+        value: category.id,
+        label: category.is_active ? category.name : `${category.name} (inactiva)`,
+      })),
+    ];
+  }, [categories]);
+
   const paymentMethodOptions = useMemo(() => {
     const currentPaymentMethodId = editingRow?.payment_method_id ?? null;
 
@@ -262,6 +288,63 @@ export default function TransactionsPage() {
         label: paymentMethod.is_active ? paymentMethod.name : `${paymentMethod.name} (inactivo)`,
       }));
   }, [editingRow?.payment_method_id, paymentMethods]);
+
+  const formatDate = useCallback(
+    (dateValue: string | null) => {
+      if (!dateValue) {
+        return "-";
+      }
+
+      const parsedDate = parseDateValue(dateValue);
+      if (!parsedDate) {
+        return dateValue;
+      }
+
+      return dateFormatter.format(parsedDate);
+    },
+    [dateFormatter],
+  );
+
+  const normalizedSearchFilter = useMemo(() => normalizeSearchText(searchFilter), [searchFilter]);
+
+  const filteredRows = useMemo(() => {
+    if (normalizedSearchFilter === "") {
+      return rows;
+    }
+
+    return rows.filter((row) => {
+      const category = categoryById.get(row.category_id);
+      const paymentMethod = row.payment_method_id
+        ? paymentMethodById.get(row.payment_method_id)
+        : null;
+
+      const searchPool = [
+        category?.name ?? "",
+        row.description ?? "",
+        row.notes ?? "",
+        paymentMethod?.name ?? "",
+        transactionTypeLabels[row.type],
+        formatDate(row.transaction_date),
+        currencyFormatter.format(row.amount),
+      ]
+        .join(" ")
+        .toLocaleLowerCase("es");
+
+      return searchPool.includes(normalizedSearchFilter);
+    });
+  }, [
+    categoryById,
+    currencyFormatter,
+    formatDate,
+    normalizedSearchFilter,
+    paymentMethodById,
+    rows,
+  ]);
+
+  const activeFiltersCount =
+    Number(typeFilter !== "all") +
+    Number(categoryFilter !== "all") +
+    Number(normalizedSearchFilter !== "");
 
   useEffect(() => {
     if (selectedCategoryId === "") {
@@ -287,6 +370,17 @@ export default function TransactionsPage() {
       setValue("paymentMethodId", "");
     }
   }, [paymentMethodOptions, selectedPaymentMethodId, setValue]);
+
+  useEffect(() => {
+    if (categoryFilter === "all") {
+      return;
+    }
+
+    const isFilterAvailable = categoryFilterOptions.some((option) => option.value === categoryFilter);
+    if (!isFilterAvailable) {
+      setCategoryFilter("all");
+    }
+  }, [categoryFilter, categoryFilterOptions]);
 
   const loadBaseData = useCallback(async () => {
     setIsBootstrapping(true);
@@ -367,6 +461,10 @@ export default function TransactionsPage() {
       query = query.eq("type", typeFilter);
     }
 
+    if (categoryFilter !== "all") {
+      query = query.eq("category_id", categoryFilter);
+    }
+
     const response = await query;
     setIsLoadingTransactions(false);
 
@@ -380,7 +478,7 @@ export default function TransactionsPage() {
     }
 
     setRows(response.data);
-  }, [selectedMonth, selectedYear, supabase, typeFilter, workspace.id]);
+  }, [categoryFilter, selectedMonth, selectedYear, supabase, typeFilter, workspace.id]);
 
   useEffect(() => {
     void loadBaseData();
@@ -394,23 +492,24 @@ export default function TransactionsPage() {
     void loadTransactions();
   }, [isBootstrapping, loadTransactions]);
 
-  function formatDate(dateValue: string | null) {
-    if (!dateValue) {
-      return "-";
-    }
-
-    const parsedDate = parseDateValue(dateValue);
-    if (!parsedDate) {
-      return dateValue;
-    }
-
-    return dateFormatter.format(parsedDate);
+  function closeModal() {
+    setIsModalOpen(false);
+    setEditingRow(null);
   }
 
   function openCreateModal() {
     const defaultType = typeFilter === "all" ? "expense" : typeFilter;
+    const filteredCategory = categoryFilter !== "all" ? categoryById.get(categoryFilter) : null;
+
+    const resolvedType = filteredCategory?.is_active ? filteredCategory.type : defaultType;
+    const defaults = toFormDefaults(undefined, resolvedType);
+
+    if (filteredCategory?.is_active && filteredCategory.type === resolvedType) {
+      defaults.categoryId = filteredCategory.id;
+    }
+
     setEditingRow(null);
-    reset(toFormDefaults(undefined, defaultType));
+    reset(defaults);
     setIsModalOpen(true);
   }
 
@@ -539,8 +638,7 @@ export default function TransactionsPage() {
       });
     }
 
-    setIsModalOpen(false);
-    setEditingRow(null);
+    closeModal();
     reset(toFormDefaults(undefined, values.type));
     await loadTransactions();
   });
@@ -597,30 +695,31 @@ export default function TransactionsPage() {
   }
 
   return (
-    <Stack gap="md" pos="relative">
+    <Stack gap="sm" pos="relative">
       <LoadingOverlay visible={isBootstrapping || isLoadingTransactions} />
 
-      <Group justify="space-between" align="end">
+      <Group justify="space-between" align="end" wrap="wrap" gap="xs">
         <Stack gap={2}>
           <Title order={2}>Transacciones</Title>
           <Text c="dimmed" size="sm">
-            Registrá ingresos, gastos y ahorro reales para el período operativo.
+            Vista operativa de movimientos reales del período.
           </Text>
         </Stack>
 
-        <Button onClick={openCreateModal} disabled={!hasAnyActiveCategory}>
+        <Button onClick={openCreateModal} disabled={!hasAnyActiveCategory} fullWidth={isMobile}>
           Nueva transacción
         </Button>
       </Group>
 
-      <Paper withBorder radius="md" p="md">
-        <Group align="end" justify="space-between">
-          <Group align="end">
+      <Paper withBorder radius="md" p="sm">
+        <Stack gap="xs">
+          <Group align="end" wrap="wrap" gap="xs">
             <NativeSelect
               label="Año"
               data={yearOptions}
               value={String(selectedYear)}
               onChange={(event) => setSelectedYear(Number(event.currentTarget.value))}
+              style={{ minWidth: 104 }}
             />
 
             <NativeSelect
@@ -628,6 +727,7 @@ export default function TransactionsPage() {
               data={monthOptions}
               value={String(selectedMonth)}
               onChange={(event) => setSelectedMonth(Number(event.currentTarget.value))}
+              style={{ minWidth: 132 }}
             />
 
             <NativeSelect
@@ -635,13 +735,34 @@ export default function TransactionsPage() {
               data={[{ value: "all", label: "Todos" }, ...transactionTypeSelectData]}
               value={typeFilter}
               onChange={(event) => setTypeFilter(event.currentTarget.value as TypeFilter)}
+              style={{ minWidth: 132 }}
+            />
+
+            <NativeSelect
+              label="Categoría"
+              data={categoryFilterOptions}
+              value={categoryFilter}
+              onChange={(event) => setCategoryFilter(event.currentTarget.value)}
+              style={{ minWidth: 180 }}
+            />
+
+            <TextInput
+              label="Buscar"
+              placeholder="Categoría, descripción, nota..."
+              value={searchFilter}
+              onChange={(event) => setSearchFilter(event.currentTarget.value)}
+              style={{ minWidth: 220, flex: "1 1 220px" }}
             />
           </Group>
 
-          <Text size="sm" c="dimmed">
-            Mostrando {monthLabel(selectedMonth)} {selectedYear}
+          <Text size="xs" c="dimmed">
+            {monthLabel(selectedMonth)} {selectedYear} · {filteredRows.length} movimiento
+            {filteredRows.length === 1 ? "" : "s"}
+            {activeFiltersCount > 0
+              ? ` · ${activeFiltersCount} filtro${activeFiltersCount === 1 ? "" : "s"} activo${activeFiltersCount === 1 ? "" : "s"}`
+              : ""}
           </Text>
-        </Group>
+        </Stack>
       </Paper>
 
       {!hasAnyActiveCategory ? (
@@ -650,163 +771,197 @@ export default function TransactionsPage() {
         </Alert>
       ) : null}
 
-      <Paper withBorder radius="md" p="md">
-        {rows.length === 0 ? (
+      <Paper withBorder radius="md" p="sm">
+        {filteredRows.length === 0 ? (
           <Text size="sm" c="dimmed">
-            No hay transacciones para este período y filtro.
+            No hay transacciones para este período y filtros.
           </Text>
         ) : (
-          <Table.ScrollContainer minWidth={1200}>
-            <Table highlightOnHover verticalSpacing="sm">
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Fecha</Table.Th>
-                  <Table.Th>Fecha efectiva</Table.Th>
-                  <Table.Th>Tipo</Table.Th>
-                  <Table.Th>Categoría</Table.Th>
-                  <Table.Th>Medio de pago</Table.Th>
-                  <Table.Th>Descripción</Table.Th>
-                  <Table.Th>Notas</Table.Th>
-                  <Table.Th style={{ textAlign: "right" }}>Monto</Table.Th>
-                  <Table.Th>Acciones</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {rows.map((row) => {
-                  const category = categoryById.get(row.category_id);
-                  const paymentMethod = row.payment_method_id
-                    ? paymentMethodById.get(row.payment_method_id)
-                    : null;
+          <Stack gap="xs">
+            {filteredRows.map((row) => {
+              const category = categoryById.get(row.category_id);
+              const paymentMethod = row.payment_method_id
+                ? paymentMethodById.get(row.payment_method_id)
+                : null;
 
-                  return (
-                    <Table.Tr key={row.id}>
-                      <Table.Td>{formatDate(row.transaction_date)}</Table.Td>
-                      <Table.Td>{formatDate(row.effective_date)}</Table.Td>
-                      <Table.Td>
+              const dateSummary = row.effective_date
+                ? `Fecha ${formatDate(row.transaction_date)} · Efectiva ${formatDate(row.effective_date)}`
+                : `Fecha ${formatDate(row.transaction_date)}`;
+
+              return (
+                <Paper key={row.id} withBorder radius="sm" p="sm">
+                  <Stack gap={6}>
+                    <Group justify="space-between" align="flex-start" wrap="nowrap" gap="xs">
+                      <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
+                        <Text fw={600} size="sm" lineClamp={1}>
+                          {category?.name ?? "Categoría no disponible"}
+                        </Text>
+
+                        {row.description ? (
+                          <Text size="xs" c="dimmed" lineClamp={1}>
+                            {row.description}
+                          </Text>
+                        ) : null}
+                      </Stack>
+
+                      <Stack align="flex-end" gap={4}>
+                        <Text fw={700} size={isMobile ? "md" : "lg"}>
+                          {currencyFormatter.format(row.amount)}
+                        </Text>
                         <Badge variant="light" color={transactionTypeColors[row.type]}>
                           {transactionTypeLabels[row.type]}
                         </Badge>
-                      </Table.Td>
-                      <Table.Td>{category?.name ?? "Categoría no disponible"}</Table.Td>
-                      <Table.Td>{paymentMethod?.name ?? "-"}</Table.Td>
-                      <Table.Td>{row.description ?? "-"}</Table.Td>
-                      <Table.Td>{row.notes ?? "-"}</Table.Td>
-                      <Table.Td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                        {currencyFormatter.format(row.amount)}
-                      </Table.Td>
-                      <Table.Td>
-                        <Group gap="xs">
-                          <Button size="xs" variant="light" onClick={() => openEditModal(row)}>
-                            Editar
-                          </Button>
-                          <Button
-                            size="xs"
-                            color="red"
-                            variant="subtle"
-                            loading={deletingId === row.id}
-                            onClick={() => confirmDelete(row)}
-                          >
-                            Eliminar
-                          </Button>
-                        </Group>
-                      </Table.Td>
-                    </Table.Tr>
-                  );
-                })}
-              </Table.Tbody>
-            </Table>
-          </Table.ScrollContainer>
+                      </Stack>
+                    </Group>
+
+                    <Group justify="space-between" align="center" wrap="wrap" gap="xs">
+                      <Text size="xs" c="dimmed" style={{ minWidth: 0 }}>
+                        {dateSummary}
+                        {paymentMethod ? ` · ${paymentMethod.name}` : ""}
+                      </Text>
+
+                      <Group gap={4}>
+                        <Button size="xs" variant="subtle" onClick={() => openEditModal(row)}>
+                          Editar
+                        </Button>
+                        <Button
+                          size="xs"
+                          color="red"
+                          variant="subtle"
+                          loading={deletingId === row.id}
+                          onClick={() => confirmDelete(row)}
+                        >
+                          Eliminar
+                        </Button>
+                      </Group>
+                    </Group>
+                  </Stack>
+                </Paper>
+              );
+            })}
+          </Stack>
         )}
       </Paper>
 
       <Modal
         opened={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={closeModal}
         title={editingRow ? "Editar transacción" : "Nueva transacción"}
         size="lg"
+        fullScreen={isMobile}
       >
         <form onSubmit={onSubmit}>
-          <Stack>
+          <Stack gap="sm">
+            <Stack gap={4}>
+              <Text size="sm" fw={600}>
+                Tipo
+              </Text>
+              <Controller
+                control={control}
+                name="type"
+                render={({ field }) => (
+                  <SegmentedControl
+                    fullWidth
+                    data={transactionTypeSelectData}
+                    value={field.value}
+                    onChange={(value) => field.onChange(value as TransactionType)}
+                  />
+                )}
+              />
+              {errors.type?.message ? (
+                <Text size="xs" c="red">
+                  {errors.type.message}
+                </Text>
+              ) : null}
+            </Stack>
+
             <Group grow align="start">
               <NativeSelect
-                label="Tipo"
-                data={transactionTypeSelectData}
-                error={errors.type?.message}
-                {...register("type")}
-              />
-
-              <NativeSelect
                 label="Categoría"
-                data={[
-                  { value: "", label: "Seleccionar categoría" },
-                  ...categoryOptions,
-                ]}
+                data={[{ value: "", label: "Seleccionar categoría" }, ...categoryOptions]}
                 error={errors.categoryId?.message}
                 {...register("categoryId")}
               />
-            </Group>
 
-            <Group grow align="start">
-              <TextInput
-                label="Monto"
-                type="number"
-                step="0.01"
-                min="0.01"
-                placeholder="0"
-                error={errors.amount?.message}
-                {...register("amount")}
-              />
-
-              <TextInput
-                label="Fecha de transacción"
-                type="date"
-                error={errors.transactionDate?.message}
-                {...register("transactionDate")}
-              />
-            </Group>
-
-            <Group grow align="start">
-              <TextInput
-                label="Fecha efectiva (opcional)"
-                type="date"
-                error={errors.effectiveDate?.message}
-                {...register("effectiveDate")}
-              />
-
-              <NativeSelect
-                label="Medio de pago (opcional)"
-                data={[
-                  { value: "", label: "Sin medio de pago" },
-                  ...paymentMethodOptions,
-                ]}
-                error={errors.paymentMethodId?.message}
-                {...register("paymentMethodId")}
+              <Controller
+                control={control}
+                name="amount"
+                render={({ field }) => (
+                  <TextInput
+                    label="Monto"
+                    inputMode="decimal"
+                    placeholder="0"
+                    autoFocus
+                    error={errors.amount?.message}
+                    value={
+                      typeof field.value === "string"
+                        ? field.value
+                        : field.value === null || field.value === undefined
+                          ? ""
+                          : String(field.value)
+                    }
+                    onChange={(event) => {
+                      field.onChange(sanitizeBudgetTypingValue(event.currentTarget.value));
+                    }}
+                    onBlur={(event) => {
+                      field.onBlur();
+                      const parsed = parseBudgetAmount(event.currentTarget.value);
+                      field.onChange(parsed === null ? "" : formatBudgetAmount(parsed));
+                    }}
+                  />
+                )}
               />
             </Group>
 
             <TextInput
-              label="Descripción (opcional)"
-              placeholder="Ej: Compra semanal"
-              error={errors.description?.message}
-              {...register("description")}
+              label="Fecha de transacción"
+              type="date"
+              error={errors.transactionDate?.message}
+              {...register("transactionDate")}
             />
 
-            <Textarea
-              label="Notas (opcional)"
-              placeholder="Detalle adicional del movimiento"
-              minRows={3}
-              autosize
-              error={errors.notes?.message}
-              {...register("notes")}
-            />
+            <Paper withBorder radius="md" p="sm">
+              <Stack gap="xs">
+                <Text size="xs" c="dimmed" fw={600}>
+                  Campos opcionales
+                </Text>
+
+                <Group grow align="start">
+                  <TextInput
+                    label="Fecha efectiva"
+                    type="date"
+                    error={errors.effectiveDate?.message}
+                    {...register("effectiveDate")}
+                  />
+
+                  <NativeSelect
+                    label="Medio de pago"
+                    data={[{ value: "", label: "Sin medio de pago" }, ...paymentMethodOptions]}
+                    error={errors.paymentMethodId?.message}
+                    {...register("paymentMethodId")}
+                  />
+                </Group>
+
+                <TextInput
+                  label="Descripción"
+                  placeholder="Ej: Compra semanal"
+                  error={errors.description?.message}
+                  {...register("description")}
+                />
+
+                <Textarea
+                  label="Notas"
+                  placeholder="Detalle adicional del movimiento"
+                  minRows={2}
+                  autosize
+                  error={errors.notes?.message}
+                  {...register("notes")}
+                />
+              </Stack>
+            </Paper>
 
             <Group justify="flex-end" mt="sm">
-              <Button
-                type="button"
-                variant="light"
-                color="gray"
-                onClick={() => setIsModalOpen(false)}
-              >
+              <Button type="button" variant="light" color="gray" onClick={closeModal}>
                 Cancelar
               </Button>
               <Button type="submit" loading={isSubmitting}>
