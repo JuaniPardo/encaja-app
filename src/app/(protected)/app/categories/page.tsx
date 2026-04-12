@@ -3,19 +3,21 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  ActionIcon,
   Badge,
   Button,
   Group,
   LoadingOverlay,
+  Menu,
   Modal,
   NativeSelect,
   Paper,
   Stack,
-  Table,
   Text,
   TextInput,
   Title,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useForm } from "react-hook-form";
 
@@ -31,6 +33,25 @@ type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
 
 type TypeFilter = TransactionType | "all";
 type StatusFilter = "all" | "active" | "inactive";
+type GroupedCategoryRows = {
+  type: TransactionType;
+  label: string;
+  rows: CategoryRow[];
+};
+
+const categoryTypeOrder: Record<TransactionType, number> = {
+  expense: 0,
+  income: 1,
+  saving: 2,
+};
+
+const categoryTypeSectionLabels: Record<TransactionType, string> = {
+  expense: "Gastos",
+  income: "Ingresos",
+  saving: "Ahorro",
+};
+
+const categoryTypeSectionOrder: TransactionType[] = ["expense", "income", "saving"];
 
 const categoryTypeLabels: Record<TransactionType, string> = {
   income: "Ingreso",
@@ -50,6 +71,25 @@ const categoryTypeSelectData = [
   { value: "saving", label: "Ahorro" },
 ];
 
+function normalizeSearchText(value: string) {
+  return value.trim().toLocaleLowerCase("es");
+}
+
+function sortCategories(a: CategoryRow, b: CategoryRow) {
+  const typeDiff = categoryTypeOrder[a.type] - categoryTypeOrder[b.type];
+  if (typeDiff !== 0) {
+    return typeDiff;
+  }
+
+  const orderA = a.sort_order ?? Number.MAX_SAFE_INTEGER;
+  const orderB = b.sort_order ?? Number.MAX_SAFE_INTEGER;
+  if (orderA !== orderB) {
+    return orderA - orderB;
+  }
+
+  return a.name.localeCompare(b.name, "es");
+}
+
 function toCategoryDefaults(row?: CategoryRow): CategoryFormValues {
   if (!row) {
     return {
@@ -66,14 +106,77 @@ function toCategoryDefaults(row?: CategoryRow): CategoryFormValues {
   };
 }
 
+function DotsIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="5" r="1" />
+      <circle cx="12" cy="12" r="1" />
+      <circle cx="12" cy="19" r="1" />
+    </svg>
+  );
+}
+
+function EditIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
+}
+
+function ToggleActiveIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 2v10" />
+      <path d="M18.36 5.64a9 9 0 1 1-12.72 0" />
+    </svg>
+  );
+}
+
 export default function CategoriesPage() {
   const { supabase, workspace, user } = useWorkspace();
+  const isMobile = useMediaQuery("(max-width: 48em)");
   const [rows, setRows] = useState<CategoryRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<CategoryRow | null>(null);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [searchFilter, setSearchFilter] = useState("");
 
   const {
     register,
@@ -86,12 +189,13 @@ export default function CategoriesPage() {
   });
 
   const loadRows = useCallback(async () => {
+    setIsLoading(true);
+
     const response = await supabase
       .from("categories")
       .select("*")
       .eq("workspace_id", workspace.id)
       .order("created_at", { ascending: true });
-
     setIsLoading(false);
 
     if (response.error) {
@@ -100,14 +204,11 @@ export default function CategoriesPage() {
         title: "No pudimos cargar categorías",
         message: response.error.message,
       });
+      setRows([]);
       return;
     }
 
-    const sorted = [...response.data].sort((a, b) => {
-      const aOrder = a.sort_order ?? Number.MAX_SAFE_INTEGER;
-      const bOrder = b.sort_order ?? Number.MAX_SAFE_INTEGER;
-      return aOrder - bOrder;
-    });
+    const sorted = [...response.data].sort(sortCategories);
 
     setRows(sorted);
   }, [supabase, workspace.id]);
@@ -129,6 +230,14 @@ export default function CategoriesPage() {
     setIsModalOpen(true);
   }
 
+  function closeModal() {
+    setIsModalOpen(false);
+    setEditingRow(null);
+    reset(toCategoryDefaults());
+  }
+
+  const normalizedSearchFilter = useMemo(() => normalizeSearchText(searchFilter), [searchFilter]);
+
   const visibleRows = useMemo(() => {
     return rows.filter((row) => {
       const passesType = typeFilter === "all" ? true : row.type === typeFilter;
@@ -138,10 +247,41 @@ export default function CategoriesPage() {
           : statusFilter === "active"
             ? row.is_active
             : !row.is_active;
+      const passesSearch =
+        normalizedSearchFilter === ""
+          ? true
+          : `${row.name} ${categoryTypeLabels[row.type]} ${row.is_active ? "activa" : "inactiva"}`
+              .toLocaleLowerCase("es")
+              .includes(normalizedSearchFilter);
 
-      return passesType && passesStatus;
+      return passesType && passesStatus && passesSearch;
     });
-  }, [rows, statusFilter, typeFilter]);
+  }, [normalizedSearchFilter, rows, statusFilter, typeFilter]);
+
+  const groupedRows = useMemo<GroupedCategoryRows[]>(() => {
+    const grouped: Record<TransactionType, CategoryRow[]> = {
+      income: [],
+      expense: [],
+      saving: [],
+    };
+
+    for (const row of visibleRows) {
+      grouped[row.type].push(row);
+    }
+
+    return categoryTypeSectionOrder
+      .map((type) => ({
+        type,
+        label: categoryTypeSectionLabels[type],
+        rows: grouped[type],
+      }))
+      .filter((group) => group.rows.length > 0);
+  }, [visibleRows]);
+
+  const activeFiltersCount =
+    Number(typeFilter !== "all") +
+    Number(statusFilter !== "all") +
+    Number(normalizedSearchFilter !== "");
 
   const onSubmit = handleSubmit(async (values) => {
     const payload = {
@@ -201,10 +341,7 @@ export default function CategoriesPage() {
       });
     }
 
-    setIsModalOpen(false);
-    setEditingRow(null);
-    reset(toCategoryDefaults());
-    setIsLoading(true);
+    closeModal();
     await loadRows();
   });
 
@@ -238,10 +375,10 @@ export default function CategoriesPage() {
   }
 
   return (
-    <Stack gap="md" pos="relative">
+    <Stack gap="sm" pos="relative">
       <LoadingOverlay visible={isLoading} />
 
-      <Group justify="space-between" align="end">
+      <Group justify="space-between" align="end" wrap="wrap" gap="xs">
         <Stack gap={2}>
           <Title order={2}>Categorías</Title>
           <Text c="dimmed" size="sm">
@@ -249,99 +386,155 @@ export default function CategoriesPage() {
           </Text>
         </Stack>
 
-        <Button onClick={openCreateModal}>Nueva categoría</Button>
+        <Button onClick={openCreateModal} fullWidth={isMobile}>
+          Nueva categoría
+        </Button>
       </Group>
 
-      <Paper withBorder radius="md" p="md">
-        <Group align="end">
-          <NativeSelect
-            label="Tipo"
-            value={typeFilter}
-            onChange={(event) => setTypeFilter(event.currentTarget.value as TypeFilter)}
-            data={[
-              { value: "all", label: "Todos" },
-              ...categoryTypeSelectData,
-            ]}
-          />
+      <Paper withBorder radius="md" p="sm">
+        <Stack gap="xs">
+          <Group align="end" wrap="wrap" gap="xs">
+            <NativeSelect
+              label="Tipo"
+              value={typeFilter}
+              onChange={(event) => setTypeFilter(event.currentTarget.value as TypeFilter)}
+              data={[
+                { value: "all", label: "Todos" },
+                ...categoryTypeSelectData,
+              ]}
+              style={{ minWidth: 140 }}
+            />
 
-          <NativeSelect
-            label="Estado"
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.currentTarget.value as StatusFilter)}
-            data={[
-              { value: "all", label: "Todos" },
-              { value: "active", label: "Activas" },
-              { value: "inactive", label: "Inactivas" },
-            ]}
-          />
-        </Group>
+            <NativeSelect
+              label="Estado"
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.currentTarget.value as StatusFilter)}
+              data={[
+                { value: "all", label: "Todos" },
+                { value: "active", label: "Activas" },
+                { value: "inactive", label: "Inactivas" },
+              ]}
+              style={{ minWidth: 140 }}
+            />
+
+            <TextInput
+              label="Buscar"
+              placeholder="Nombre, tipo o estado"
+              value={searchFilter}
+              onChange={(event) => setSearchFilter(event.currentTarget.value)}
+              style={{ minWidth: 220, flex: "1 1 220px" }}
+            />
+          </Group>
+
+          <Text size="xs" c="dimmed">
+            {visibleRows.length} categoría{visibleRows.length === 1 ? "" : "s"}
+            {activeFiltersCount > 0
+              ? ` · ${activeFiltersCount} filtro${activeFiltersCount === 1 ? "" : "s"} activo${activeFiltersCount === 1 ? "" : "s"}`
+              : ""}
+          </Text>
+        </Stack>
       </Paper>
 
-      <Paper withBorder radius="md" p="md">
-        {visibleRows.length === 0 ? (
+      {groupedRows.length === 0 ? (
+        <Paper withBorder radius="md" p="md">
           <Text size="sm" c="dimmed">
             No hay categorías para los filtros seleccionados.
           </Text>
-        ) : (
-          <Table.ScrollContainer minWidth={760}>
-            <Table highlightOnHover verticalSpacing="sm">
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Nombre</Table.Th>
-                  <Table.Th>Tipo</Table.Th>
-                  <Table.Th>Orden</Table.Th>
-                  <Table.Th>Estado</Table.Th>
-                  <Table.Th>Acciones</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {visibleRows.map((row) => (
-                  <Table.Tr key={row.id}>
-                    <Table.Td>{row.name}</Table.Td>
-                    <Table.Td>
-                      <Badge variant="light" color={categoryTypeColors[row.type]}>
-                        {categoryTypeLabels[row.type]}
+        </Paper>
+      ) : (
+        <Stack gap="sm">
+          {groupedRows.map((group) => {
+            const activeRows = group.rows.filter((row) => row.is_active).length;
+
+            return (
+              <Paper key={group.type} withBorder radius="md" p="sm">
+                <Stack gap="xs">
+                  <Group justify="space-between" align="center">
+                    <Group gap={8}>
+                      <Badge variant="light" color={categoryTypeColors[group.type]}>
+                        {group.label}
                       </Badge>
-                    </Table.Td>
-                    <Table.Td>{row.sort_order ?? "-"}</Table.Td>
-                    <Table.Td>
-                      <Badge color={row.is_active ? "teal" : "gray"}>
-                        {row.is_active ? "Activa" : "Inactiva"}
-                      </Badge>
-                    </Table.Td>
-                    <Table.Td>
-                      <Group gap="xs">
-                        <Button size="xs" variant="light" onClick={() => openEditModal(row)}>
-                          Editar
-                        </Button>
-                        <Button
-                          size="xs"
-                          variant="subtle"
-                          color={row.is_active ? "gray" : "teal"}
-                          onClick={() => void toggleActive(row)}
-                        >
-                          {row.is_active ? "Desactivar" : "Activar"}
-                        </Button>
-                      </Group>
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          </Table.ScrollContainer>
-        )}
-      </Paper>
+                      <Text size="xs" c="dimmed">
+                        {group.rows.length} categoría{group.rows.length === 1 ? "" : "s"} · {activeRows}{" "}
+                        activa{activeRows === 1 ? "" : "s"}
+                      </Text>
+                    </Group>
+                  </Group>
+
+                  <Stack gap={6}>
+                    {group.rows.map((row) => (
+                      <Paper key={row.id} withBorder radius={8} p={isMobile ? "xs" : "sm"}>
+                        <Group justify="space-between" align="flex-start" wrap="nowrap" gap="xs">
+                          <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
+                            <Text fw={600} size="sm" lineClamp={1} style={{ lineHeight: 1.2 }}>
+                              {row.name}
+                            </Text>
+
+                            <Group gap={6} wrap="wrap">
+                              <Badge size="xs" variant="light" color={categoryTypeColors[row.type]}>
+                                {categoryTypeLabels[row.type]}
+                              </Badge>
+
+                              <Badge
+                                size="xs"
+                                color={row.is_active ? "teal" : "gray"}
+                                variant={row.is_active ? "dot" : "light"}
+                              >
+                                {row.is_active ? "Activa" : "Inactiva"}
+                              </Badge>
+                            </Group>
+                          </Stack>
+
+                          <Menu position="bottom-end" withArrow>
+                            <Menu.Target>
+                              <ActionIcon
+                                variant="subtle"
+                                color="gray"
+                                aria-label={`Acciones para ${row.name}`}
+                              >
+                                <DotsIcon />
+                              </ActionIcon>
+                            </Menu.Target>
+
+                            <Menu.Dropdown>
+                              <Menu.Item
+                                leftSection={<EditIcon size={13} />}
+                                onClick={() => openEditModal(row)}
+                              >
+                                Editar
+                              </Menu.Item>
+                              <Menu.Item
+                                color={row.is_active ? "gray" : "teal"}
+                                leftSection={<ToggleActiveIcon size={13} />}
+                                onClick={() => void toggleActive(row)}
+                              >
+                                {row.is_active ? "Desactivar" : "Activar"}
+                              </Menu.Item>
+                            </Menu.Dropdown>
+                          </Menu>
+                        </Group>
+                      </Paper>
+                    ))}
+                  </Stack>
+                </Stack>
+              </Paper>
+            );
+          })}
+        </Stack>
+      )}
 
       <Modal
         opened={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={closeModal}
         title={editingRow ? "Editar categoría" : "Nueva categoría"}
+        fullScreen={isMobile}
       >
         <form onSubmit={onSubmit}>
-          <Stack>
+          <Stack gap="sm">
             <TextInput
               label="Nombre"
               placeholder="Ej: Supermercado"
+              autoFocus
               error={errors.name?.message}
               {...register("name")}
             />
@@ -353,20 +546,28 @@ export default function CategoriesPage() {
               {...register("type")}
             />
 
-            <TextInput
-              label="Orden (opcional)"
-              placeholder="0"
-              type="number"
-              error={errors.sortOrder?.message}
-              {...register("sortOrder")}
-            />
+            <Paper withBorder radius="md" p="sm">
+              <Stack gap={4}>
+                <Text size="xs" c="dimmed" fw={600}>
+                  Configuración opcional
+                </Text>
+                <TextInput
+                  label="Orden interno"
+                  description="Si no lo definís, la categoría queda al final de su tipo."
+                  placeholder="0"
+                  type="number"
+                  error={errors.sortOrder?.message}
+                  {...register("sortOrder")}
+                />
+              </Stack>
+            </Paper>
 
             <Group justify="flex-end" mt="sm">
               <Button
                 type="button"
                 variant="light"
                 color="gray"
-                onClick={() => setIsModalOpen(false)}
+                onClick={closeModal}
               >
                 Cancelar
               </Button>
