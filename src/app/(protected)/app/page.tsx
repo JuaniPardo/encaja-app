@@ -36,7 +36,7 @@ type BudgetItemLiteRow = Pick<
 >;
 type TransactionLiteRow = Pick<
   Database["public"]["Tables"]["transactions"]["Row"],
-  "category_id" | "amount" | "transaction_date" | "effective_date"
+  "category_id" | "amount" | "transaction_date" | "effective_date" | "type" | "payment_method_id"
 >;
 type PaymentMethodBalanceRow = Pick<
   Database["public"]["Tables"]["payment_methods"]["Row"],
@@ -484,7 +484,7 @@ export default function DashboardPage() {
 
     const transactionsResponsePromise = supabase
       .from("transactions")
-      .select("category_id, amount, transaction_date, effective_date")
+      .select("category_id, amount, transaction_date, effective_date, type, payment_method_id")
       .eq("workspace_id", workspace.id)
       .or(transactionFilter);
 
@@ -803,13 +803,36 @@ export default function DashboardPage() {
     problemCount > 0 ? "#c92a2a" : positiveCount > 0 ? "#087f5b" : "#475467";
 
   const financialSummary = useMemo(() => {
+    const transactionImpactByMethodId = new Map<string, number>();
+
+    for (const row of transactionRows) {
+      if (!row.payment_method_id) {
+        continue;
+      }
+
+      const parsedAmount = parseAmountValue(row.amount);
+      const signedAmount = row.type === "income" ? parsedAmount : -parsedAmount;
+      const previousAmount = transactionImpactByMethodId.get(row.payment_method_id) ?? 0;
+      transactionImpactByMethodId.set(
+        row.payment_method_id,
+        roundMoney(previousAmount + signedAmount),
+      );
+    }
+
     const activeIncludedRows: FinancialMethodRow[] = paymentMethodRows
       .filter((row) => row.is_active && row.include_in_balance)
       .map((row) => ({
         id: row.id,
         name: row.name,
         type: row.type,
-        currentBalance: normalizePaymentMethodBalance(row.type, row.current_balance),
+        currentBalance: (() => {
+          const manualBalance = normalizePaymentMethodBalance(row.type, row.current_balance);
+          if (Math.abs(manualBalance) >= deviationTolerance) {
+            return manualBalance;
+          }
+
+          return roundMoney(transactionImpactByMethodId.get(row.id) ?? 0);
+        })(),
       }))
       .sort((a, b) => {
         if (b.currentBalance !== a.currentBalance) {
@@ -837,7 +860,7 @@ export default function DashboardPage() {
       excludedActiveCount,
       inactiveCount,
     };
-  }, [paymentMethodRows]);
+  }, [paymentMethodRows, transactionRows]);
 
   const selectedPeriodLabel = `${monthLabel(selectedMonth)} ${selectedYear}`;
   const isMobile = useMediaQuery("(max-width: 47.99em)");
