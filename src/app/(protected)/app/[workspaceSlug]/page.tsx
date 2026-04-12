@@ -6,6 +6,7 @@ import {
   Badge,
   Box,
   Button,
+  Grid,
   Group,
   LoadingOverlay,
   Menu,
@@ -668,6 +669,7 @@ export default function DashboardPage() {
 
   const kpiColumns = isMobile ? (isNarrowMobile ? 1 : 2) : 2;
   const distributionColumns = isMobile ? 1 : isTablet ? 1 : 3;
+  const isDesktop = !isMobile && !isTablet;
   const cardPadding = isMobile ? "xs" : "sm";
   const tableHorizontalSpacing = isMobile ? "xs" : "sm";
   const tableVerticalSpacing = isMobile ? 5 : 6;
@@ -719,6 +721,130 @@ export default function DashboardPage() {
         categoryId,
       }),
     [selectedMonth, selectedYear, workspace.slug],
+  );
+
+  const financialMethodsCard = (
+    <Paper
+      withBorder
+      radius="sm"
+      p={isMobile ? "xs" : "sm"}
+      bg="#ffffff"
+      style={{ borderColor: "#d6dde7" }}
+    >
+      <Stack gap={isMobile ? "xs" : "sm"}>
+        <Group justify="space-between" align="flex-start" wrap="wrap" gap={6}>
+          <Stack gap={2}>
+            <Text size="xs" fw={700} c="#475467">
+              Medios financieros
+            </Text>
+            <Text fw={800} c={financialSummary.totalBalance >= 0 ? "#087f5b" : "#c92a2a"}>
+              Balance total: {currencyFormatter.format(financialSummary.totalBalance)}
+            </Text>
+            <Text size="xs" c="#667085">
+              {financialSummary.activeIncludedRows.length} activos en balance
+            </Text>
+          </Stack>
+          <Group gap={6} wrap="wrap">
+            <Badge color="teal" variant={financialSummary.positiveCount > 0 ? "light" : "outline"}>
+              {financialSummary.positiveCount} positivos
+            </Badge>
+            <Badge color="red" variant={financialSummary.negativeCount > 0 ? "light" : "outline"}>
+              {financialSummary.negativeCount} negativos
+            </Badge>
+          </Group>
+        </Group>
+
+        {financialSummary.activeIncludedRows.length === 0 ? (
+          <Text size="xs" c="#667085">
+            No hay medios activos incluidos en el balance principal.
+          </Text>
+        ) : (
+          <Stack gap={6}>
+            {financialSummary.activeIncludedRows.map((row) => (
+              <UnstyledButton
+                key={row.id}
+                component={Link}
+                href={paymentMethodDrilldownHref(row.id)}
+                className="dashboard-clickable-item"
+                style={{
+                  display: "block",
+                  borderRadius: 8,
+                  border: "1px solid #e4e7ec",
+                  backgroundColor: "#f8fafc",
+                  padding: isMobile ? "6px 8px" : "6px 10px",
+                }}
+              >
+                <Group justify="space-between" align="center" wrap="nowrap">
+                  <Stack gap={0} style={{ minWidth: 0 }}>
+                    <Text size="sm" fw={700} c="#1f2937" truncate>
+                      {row.name}
+                    </Text>
+                    <Text size="xs" c="#667085">
+                      {paymentMethodTypeLabels[row.type]} · Ver movimientos
+                    </Text>
+                  </Stack>
+                  <Text
+                    size="sm"
+                    fw={800}
+                    c={row.currentBalance >= 0 ? "#087f5b" : "#c92a2a"}
+                  >
+                    {currencyFormatter.format(row.currentBalance)}
+                  </Text>
+                </Group>
+              </UnstyledButton>
+            ))}
+          </Stack>
+        )}
+
+        {financialSummary.excludedActiveCount > 0 || financialSummary.inactiveCount > 0 ? (
+          <Text size="xs" c="#98a2b3">
+            Fuera del balance: {financialSummary.excludedActiveCount} activos excluidos y{" "}
+            {financialSummary.inactiveCount} inactivos.
+          </Text>
+        ) : null}
+      </Stack>
+    </Paper>
+  );
+
+  const balancePeriodCard = (
+    <Paper withBorder radius="sm" p={isDesktop ? "sm" : "xs"} bg="#ffffff">
+      <Stack gap={4}>
+        <Text size="xs" fw={700} c="#475467">
+          Balance período
+        </Text>
+        <Text fw={800} c={metrics.balanceReal >= 0 ? "#0ca678" : "#e03131"}>
+          {currencyFormatter.format(metrics.balanceReal)}
+        </Text>
+        <Text size="xs" c="#667085">
+          Presup: {currencyFormatter.format(metrics.balanceBudget)}
+        </Text>
+        <Text size="xs" c={metrics.balanceDelta >= 0 ? "#087f5b" : "#c92a2a"}>
+          Delta: {formatSignedCurrency(metrics.balanceDelta, currencyFormatter)}
+        </Text>
+      </Stack>
+    </Paper>
+  );
+
+  const savingsPeriodCard = (
+    <Paper withBorder radius="sm" p={isDesktop ? "sm" : "xs"} bg="#ffffff">
+      <Stack gap={4}>
+        <Text size="xs" fw={700} c="#475467">
+          Ahorro período
+        </Text>
+        <Text fw={800} c="#2b8aaf">
+          {currencyFormatter.format(metrics.totalsByType.saving.real)}
+        </Text>
+        <Text size="xs" c="#667085">
+          Presup: {currencyFormatter.format(metrics.totalsByType.saving.budget)}
+        </Text>
+        <Text size="xs" c="#667085">
+          Ratio:{" "}
+          {savingsVsIncome === null
+            ? "N/A"
+            : `${percentageFormatter.format(savingsVsIncome)}% de ingresos`}
+        </Text>
+      </Stack>
+    </Paper>
   );
 
   return (
@@ -838,125 +964,25 @@ export default function DashboardPage() {
         </Group>
       </Paper>
 
-      <Paper
-        withBorder
-        radius="sm"
-        p={isMobile ? "xs" : "sm"}
-        bg="#ffffff"
-        style={{ borderColor: "#d6dde7" }}
-      >
-        <Stack gap={isMobile ? "xs" : "sm"}>
-          <Group justify="space-between" align="flex-start" wrap="wrap" gap={6}>
-            <Stack gap={2}>
-              <Text size="xs" fw={700} c="#475467">
-                Medios financieros
-              </Text>
-              <Text fw={800} c={financialSummary.totalBalance >= 0 ? "#087f5b" : "#c92a2a"}>
-                Balance total: {currencyFormatter.format(financialSummary.totalBalance)}
-              </Text>
-              <Text size="xs" c="#667085">
-                {financialSummary.activeIncludedRows.length} activos en balance
-              </Text>
+      {isDesktop ? (
+        <Grid gap="sm" align="stretch">
+          <Grid.Col span={6}>{financialMethodsCard}</Grid.Col>
+          <Grid.Col span={6}>
+            <Stack gap="sm" h="100%">
+              {balancePeriodCard}
+              {savingsPeriodCard}
             </Stack>
-            <Group gap={6} wrap="wrap">
-              <Badge color="teal" variant={financialSummary.positiveCount > 0 ? "light" : "outline"}>
-                {financialSummary.positiveCount} positivos
-              </Badge>
-              <Badge color="red" variant={financialSummary.negativeCount > 0 ? "light" : "outline"}>
-                {financialSummary.negativeCount} negativos
-              </Badge>
-            </Group>
-          </Group>
-
-          {financialSummary.activeIncludedRows.length === 0 ? (
-            <Text size="xs" c="#667085">
-              No hay medios activos incluidos en el balance principal.
-            </Text>
-          ) : (
-            <Stack gap={6}>
-              {financialSummary.activeIncludedRows.map((row) => (
-                <UnstyledButton
-                  key={row.id}
-                  component={Link}
-                  href={paymentMethodDrilldownHref(row.id)}
-                  className="dashboard-clickable-item"
-                  style={{
-                    display: "block",
-                    borderRadius: 8,
-                    border: "1px solid #e4e7ec",
-                    backgroundColor: "#f8fafc",
-                    padding: isMobile ? "6px 8px" : "6px 10px",
-                  }}
-                >
-                  <Group justify="space-between" align="center" wrap="nowrap">
-                    <Stack gap={0} style={{ minWidth: 0 }}>
-                      <Text size="sm" fw={700} c="#1f2937" truncate>
-                        {row.name}
-                      </Text>
-                      <Text size="xs" c="#667085">
-                        {paymentMethodTypeLabels[row.type]} · Ver movimientos
-                      </Text>
-                    </Stack>
-                    <Text
-                      size="sm"
-                      fw={800}
-                      c={row.currentBalance >= 0 ? "#087f5b" : "#c92a2a"}
-                    >
-                      {currencyFormatter.format(row.currentBalance)}
-                    </Text>
-                  </Group>
-                </UnstyledButton>
-              ))}
-            </Stack>
-          )}
-
-          {financialSummary.excludedActiveCount > 0 || financialSummary.inactiveCount > 0 ? (
-            <Text size="xs" c="#98a2b3">
-              Fuera del balance: {financialSummary.excludedActiveCount} activos excluidos y{" "}
-              {financialSummary.inactiveCount} inactivos.
-            </Text>
-          ) : null}
-        </Stack>
-      </Paper>
-
-      <SimpleGrid cols={kpiColumns} spacing={isMobile ? "xs" : "sm"}>
-        <Paper withBorder radius="sm" p="xs" bg="#ffffff">
-          <Stack gap={4}>
-            <Text size="xs" fw={700} c="#475467">
-              Balance período
-            </Text>
-            <Text fw={800} c={metrics.balanceReal >= 0 ? "#0ca678" : "#e03131"}>
-              {currencyFormatter.format(metrics.balanceReal)}
-            </Text>
-            <Text size="xs" c="#667085">
-              Presup: {currencyFormatter.format(metrics.balanceBudget)}
-            </Text>
-            <Text size="xs" c={metrics.balanceDelta >= 0 ? "#087f5b" : "#c92a2a"}>
-              Delta: {formatSignedCurrency(metrics.balanceDelta, currencyFormatter)}
-            </Text>
-          </Stack>
-        </Paper>
-
-        <Paper withBorder radius="sm" p="xs" bg="#ffffff">
-          <Stack gap={4}>
-            <Text size="xs" fw={700} c="#475467">
-              Ahorro período
-            </Text>
-            <Text fw={800} c="#2b8aaf">
-              {currencyFormatter.format(metrics.totalsByType.saving.real)}
-            </Text>
-            <Text size="xs" c="#667085">
-              Presup: {currencyFormatter.format(metrics.totalsByType.saving.budget)}
-            </Text>
-            <Text size="xs" c="#667085">
-              Ratio:{" "}
-              {savingsVsIncome === null
-                ? "N/A"
-                : `${percentageFormatter.format(savingsVsIncome)}% de ingresos`}
-            </Text>
-          </Stack>
-        </Paper>
-      </SimpleGrid>
+          </Grid.Col>
+        </Grid>
+      ) : (
+        <>
+          {financialMethodsCard}
+          <SimpleGrid cols={kpiColumns} spacing={isMobile ? "xs" : "sm"}>
+            {balancePeriodCard}
+            {savingsPeriodCard}
+          </SimpleGrid>
+        </>
+      )}
 
       <Stack gap={isMobile ? "xs" : "sm"}>
         {summaryRows.map(({ type, rows }) => {
