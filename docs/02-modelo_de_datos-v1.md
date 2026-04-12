@@ -1,10 +1,10 @@
 # Encaja App — Modelo de Datos v1
 
 ## Fecha
-2026-04-10
+2026-04-12
 
 ## Estado
-Draft
+Vigente
 
 ## Autor
 Juan Pardo
@@ -72,8 +72,9 @@ Campos:
 
 Restricción:
 - unique(workspace_id, user_id)
+- check role in ('owner', 'admin', 'member')
 
-Roles sugeridos:
+Roles válidos:
 - owner
 - admin
 - member
@@ -98,6 +99,10 @@ Campos:
 
 Restricción:
 - unique(workspace_id, name)
+- check type in ('income', 'expense', 'saving')
+- check expense_behavior:
+  - si type = expense -> ('fixed', 'variable')
+  - si type in ('income', 'saving') -> null
 
 Tipos:
 - income
@@ -133,6 +138,10 @@ Tipos:
 - bank_transfer
 - other
 
+Checks:
+- closing_day between 1 and 31 (o null)
+- due_day between 1 and 31 (o null)
+
 ---
 
 ### 3.6 budget_periods
@@ -149,6 +158,9 @@ Campos:
 
 Restricción:
 - unique(workspace_id, year, month)
+- check year between 2000 y 2200
+- check month between 1 y 12
+- check status in ('draft', 'active', 'closed')
 
 Estados:
 - draft
@@ -169,6 +181,10 @@ Campos:
 
 Restricción:
 - unique(budget_period_id, category_id)
+- check amount >= 0
+
+Integridad:
+- trigger para validar que `budget_period_id` y `category_id` pertenezcan al mismo workspace
 
 ---
 
@@ -195,6 +211,16 @@ Tipos:
 - expense
 - saving
 
+Checks:
+- check amount > 0
+- check type in ('income', 'expense', 'saving')
+
+Integridad:
+- trigger para validar:
+  - categoría y transacción en el mismo workspace
+  - medio de pago (si existe) en el mismo workspace
+  - type de transacción igual al type de categoría
+
 ---
 
 ### 3.9 workspace_settings
@@ -207,11 +233,16 @@ Campos:
 - deferred_income_enabled (boolean)
 - deferred_income_day (smallint, null)
 - currency_code (text, default 'ARS')
+- show_cents (boolean, default false)
 - created_at (timestamptz)
 - updated_at (timestamptz)
 
 Restricción:
 - unique(workspace_id)
+- check savings_rate_mode in ('manual', 'percentage')
+- check deferred_income:
+  - si deferred_income_enabled = false -> deferred_income_day = null
+  - si deferred_income_enabled = true -> deferred_income_day between 1 and 31
 
 ---
 
@@ -228,7 +259,8 @@ Restricción:
 
 ## 5. Reglas estructurales clave
 
-- Todos los datos financieros tienen `workspace_id`
+- Los datos financieros principales usan `workspace_id` directo
+- `budget_items` hereda ownership vía `budget_period_id` (y se valida consistencia con `category_id` por trigger)
 - No hay datos financieros directos en `profiles`
 - Presupuesto y ejecución están separados
 - Categorías y medios de pago son por workspace
