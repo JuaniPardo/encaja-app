@@ -45,6 +45,7 @@ type WorkspaceSettingsLiteRow = Pick<
 >;
 
 type TypeFilter = TransactionType | "all";
+type CentsDisplayMode = "always" | "smart";
 
 const monthOptions = [
   { value: "1", label: "Enero" },
@@ -176,6 +177,7 @@ export default function TransactionsPage() {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [searchFilter, setSearchFilter] = useState("");
+  const [centsDisplayMode, setCentsDisplayMode] = useState<CentsDisplayMode>("smart");
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -222,6 +224,20 @@ export default function TransactionsPage() {
       maximumFractionDigits: 2,
     });
   }, [currencyCode]);
+
+  const compactCurrencyFormatter = useMemo(() => {
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: currencyCode || "ARS",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+  }, [currencyCode]);
+
+  const visibleAmountFormatter = useMemo(
+    () => (centsDisplayMode === "always" ? currencyFormatter : compactCurrencyFormatter),
+    [centsDisplayMode, compactCurrencyFormatter, currencyFormatter],
+  );
 
   const dateFormatter = useMemo(() => {
     return new Intl.DateTimeFormat("es-AR", {
@@ -326,6 +342,7 @@ export default function TransactionsPage() {
         transactionTypeLabels[row.type],
         formatDate(row.transaction_date),
         currencyFormatter.format(row.amount),
+        compactCurrencyFormatter.format(row.amount),
       ]
         .join(" ")
         .toLocaleLowerCase("es");
@@ -334,6 +351,7 @@ export default function TransactionsPage() {
     });
   }, [
     categoryById,
+    compactCurrencyFormatter,
     currencyFormatter,
     formatDate,
     normalizedSearchFilter,
@@ -753,6 +771,19 @@ export default function TransactionsPage() {
               onChange={(event) => setSearchFilter(event.currentTarget.value)}
               style={{ minWidth: 220, flex: "1 1 220px" }}
             />
+
+            <NativeSelect
+              label="Centavos"
+              data={[
+                { value: "smart", label: "Auto" },
+                { value: "always", label: "Siempre" },
+              ]}
+              value={centsDisplayMode}
+              onChange={(event) =>
+                setCentsDisplayMode(event.currentTarget.value as CentsDisplayMode)
+              }
+              style={{ minWidth: 110 }}
+            />
           </Group>
 
           <Text size="xs" c="dimmed">
@@ -784,13 +815,9 @@ export default function TransactionsPage() {
                 ? paymentMethodById.get(row.payment_method_id)
                 : null;
 
-              const dateSummary = row.effective_date
-                ? `Fecha ${formatDate(row.transaction_date)} · Efectiva ${formatDate(row.effective_date)}`
-                : `Fecha ${formatDate(row.transaction_date)}`;
-
               return (
                 <Paper key={row.id} withBorder radius="sm" p="sm">
-                  <Stack gap={6}>
+                  <Stack gap={5}>
                     <Group justify="space-between" align="flex-start" wrap="nowrap" gap="xs">
                       <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
                         <Text fw={600} size="sm" lineClamp={1}>
@@ -804,21 +831,44 @@ export default function TransactionsPage() {
                         ) : null}
                       </Stack>
 
-                      <Stack align="flex-end" gap={4}>
-                        <Text fw={700} size={isMobile ? "md" : "lg"}>
-                          {currencyFormatter.format(row.amount)}
+                      <Stack
+                        align="flex-end"
+                        gap={3}
+                        style={{ minWidth: isMobile ? 130 : 182, flexShrink: 0 }}
+                      >
+                        <Text
+                          fw={800}
+                          size={isMobile ? "lg" : "xl"}
+                          style={{
+                            textAlign: "right",
+                            lineHeight: 1.05,
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
+                          {visibleAmountFormatter.format(row.amount)}
                         </Text>
-                        <Badge variant="light" color={transactionTypeColors[row.type]}>
+                        <Badge size="xs" variant="light" color={transactionTypeColors[row.type]}>
                           {transactionTypeLabels[row.type]}
                         </Badge>
                       </Stack>
                     </Group>
 
                     <Group justify="space-between" align="center" wrap="wrap" gap="xs">
-                      <Text size="xs" c="dimmed" style={{ minWidth: 0 }}>
-                        {dateSummary}
-                        {paymentMethod ? ` · ${paymentMethod.name}` : ""}
-                      </Text>
+                      <Group gap={6} wrap="wrap" style={{ minWidth: 0 }}>
+                        <Badge size="xs" color="gray" variant="light">
+                          {formatDate(row.transaction_date)}
+                        </Badge>
+                        {row.effective_date ? (
+                          <Badge size="xs" color="gray" variant="outline">
+                            Efec. {formatDate(row.effective_date)}
+                          </Badge>
+                        ) : null}
+                        {paymentMethod ? (
+                          <Badge size="xs" color="gray" variant="outline">
+                            {paymentMethod.name}
+                          </Badge>
+                        ) : null}
+                      </Group>
 
                       <Group gap={4}>
                         <Button size="xs" variant="subtle" onClick={() => openEditModal(row)}>
