@@ -24,6 +24,8 @@ type SubscriptionRow = Pick<
 
 type CreateWorkspaceRpcRow =
   Database["public"]["Functions"]["create_workspace_with_defaults"]["Returns"][number];
+type DeleteWorkspaceRpcRow =
+  Database["public"]["Functions"]["delete_workspace"]["Returns"][number];
 
 export interface WorkspaceSubscription {
   plan: SubscriptionPlan;
@@ -53,6 +55,11 @@ interface CreateWorkspaceOptions {
   supabase: SupabaseClient<Database>;
   user: User;
   name: string;
+}
+
+interface DeleteWorkspaceOptions {
+  supabase: SupabaseClient<Database>;
+  workspaceId: string;
 }
 
 function buildWorkspaceName(fullNameHint: string | undefined, email: string | undefined) {
@@ -153,6 +160,26 @@ export async function createWorkspaceForUser({
   }
 
   return createWorkspaceWithDefaults(supabase, workspaceName);
+}
+
+export async function deleteWorkspaceForUser({
+  supabase,
+  workspaceId,
+}: DeleteWorkspaceOptions): Promise<DeleteWorkspaceRpcRow> {
+  const rpcResponse = await supabase.rpc("delete_workspace", {
+    p_workspace_id: workspaceId,
+  });
+
+  if (rpcResponse.error) {
+    throw rpcResponse.error;
+  }
+
+  const deletedRow = (rpcResponse.data ?? [])[0] as DeleteWorkspaceRpcRow | undefined;
+  if (!deletedRow) {
+    throw new Error("No pudimos eliminar el workspace.");
+  }
+
+  return deletedRow;
 }
 
 export async function listUserWorkspaces({

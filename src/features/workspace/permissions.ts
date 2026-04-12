@@ -7,3 +7,7 @@ export function canManageWorkspaceSettings(role: WorkspaceRole) {
 export function canBootstrapWorkspaceFoundations(role: WorkspaceRole) {
   return role === "owner";
 }
+
+export function canDeleteWorkspace(role: WorkspaceRole) {
+  return role === "owner";
+}

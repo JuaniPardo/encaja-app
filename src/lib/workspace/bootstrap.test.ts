@@ -1,7 +1,10 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
 
-import { createWorkspaceForUser } from "@/lib/workspace/bootstrap";
+import {
+  createWorkspaceForUser,
+  deleteWorkspaceForUser,
+} from "@/lib/workspace/bootstrap";
 import type { Database } from "@/types/database";
 
 function buildSupabaseMock() {
@@ -59,6 +62,32 @@ describe("workspace bootstrap", () => {
         plan: "premium",
         status: "active",
       },
+    });
+  });
+
+  it("deletes workspace through RPC", async () => {
+    const { supabase, rpc } = buildSupabaseMock();
+    rpc.mockResolvedValueOnce({
+      error: null,
+      data: [
+        {
+          deleted_workspace_id: "workspace-1",
+          deleted_workspace_slug: "hogar",
+        },
+      ],
+    });
+
+    const deletedWorkspace = await deleteWorkspaceForUser({
+      supabase,
+      workspaceId: "workspace-1",
+    });
+
+    expect(rpc).toHaveBeenCalledWith("delete_workspace", {
+      p_workspace_id: "workspace-1",
+    });
+    expect(deletedWorkspace).toMatchObject({
+      deleted_workspace_id: "workspace-1",
+      deleted_workspace_slug: "hogar",
     });
   });
 });

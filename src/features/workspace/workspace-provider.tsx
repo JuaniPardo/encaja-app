@@ -27,6 +27,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import {
   bootstrapUserWorkspace,
   createWorkspaceForUser,
+  deleteWorkspaceForUser,
   listUserWorkspaces,
   type WorkspaceSummary,
 } from "@/lib/workspace/bootstrap";
@@ -39,6 +40,7 @@ interface WorkspaceContextValue {
   workspaces: WorkspaceSummary[];
   refreshWorkspace: () => Promise<void>;
   createWorkspace: (name: string) => Promise<WorkspaceSummary>;
+  deleteWorkspace: (workspaceId: string) => Promise<WorkspaceSummary>;
   switchWorkspace: (workspaceSlug: string, sectionPath?: string) => void;
   canUseWorkspaceFeature: (feature: WorkspaceFeature) => boolean;
   signOut: () => Promise<void>;
@@ -254,6 +256,57 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     [state.user, supabase],
   );
 
+  const deleteWorkspace = useCallback(
+    async (workspaceId: string) => {
+      if (!state.user) {
+        throw new Error("Tu sesión no está disponible.");
+      }
+
+      const workspaceToDelete = state.workspaces.find(
+        (workspaceItem) => workspaceItem.id === workspaceId,
+      );
+      if (!workspaceToDelete) {
+        throw new Error("No encontramos el workspace que querés eliminar.");
+      }
+
+      await deleteWorkspaceForUser({
+        supabase,
+        workspaceId,
+      });
+
+      const workspaces = await listUserWorkspaces({
+        supabase,
+        user: state.user,
+      });
+
+      const routeWorkspaceSlug = getWorkspaceSlugFromPathname(pathnameRef.current);
+      const rememberedWorkspaceSlug = readLastWorkspaceSlug();
+      const workspace = pickActiveWorkspace(workspaces, {
+        routeWorkspaceSlug:
+          routeWorkspaceSlug === workspaceToDelete.slug ? null : routeWorkspaceSlug,
+        currentWorkspaceSlug:
+          state.workspace?.id === workspaceId ? null : (state.workspace?.slug ?? null),
+        rememberedWorkspaceSlug:
+          rememberedWorkspaceSlug === workspaceToDelete.slug ? null : rememberedWorkspaceSlug,
+      });
+
+      if (!workspace) {
+        throw new Error("Necesitás al menos un workspace activo.");
+      }
+
+      setState((prev) => ({
+        ...prev,
+        workspaces,
+        workspace,
+        errorMessage: null,
+      }));
+
+      rememberLastWorkspaceSlug(workspace.slug);
+      return workspace;
+    },
+    [state.user, state.workspace?.id, state.workspace?.slug, state.workspaces, supabase],
+  );
+
   const switchWorkspace = useCallback(
     (workspaceSlug: string, sectionPath = "") => {
       const nextWorkspace = state.workspaces.find((workspace) => workspace.slug === workspaceSlug);
@@ -387,6 +440,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         workspaces: state.workspaces,
         refreshWorkspace,
         createWorkspace,
+        deleteWorkspace,
         switchWorkspace,
         canUseWorkspaceFeature,
         signOut,

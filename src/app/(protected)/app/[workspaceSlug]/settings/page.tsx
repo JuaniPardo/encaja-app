@@ -30,7 +30,10 @@ import {
   type WorkspaceFormInputValues,
   type WorkspaceFormValues,
 } from "@/features/workspace/schema";
-import { canManageWorkspaceSettings } from "@/features/workspace/permissions";
+import {
+  canDeleteWorkspace,
+  canManageWorkspaceSettings,
+} from "@/features/workspace/permissions";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 
 const savingsRateModeSelectData = [
@@ -42,16 +45,25 @@ export default function SettingsPage() {
   const {
     supabase,
     workspace,
+    workspaces,
     refreshWorkspace,
     createWorkspace,
+    deleteWorkspace,
     switchWorkspace,
     canUseWorkspaceFeature,
   } = useWorkspace();
   const canEditWorkspaceSettings = canManageWorkspaceSettings(workspace.role);
-  const canCreateWorkspace = canUseWorkspaceFeature("multi_workspace") && canEditWorkspaceSettings;
+  const canUseMultiWorkspace = canUseWorkspaceFeature("multi_workspace");
+  const canCreateWorkspace = canUseMultiWorkspace && canEditWorkspaceSettings;
+  const canDeleteCurrentWorkspace =
+    canUseMultiWorkspace && canDeleteWorkspace(workspace.role) && workspaces.length > 1;
   const [isCreateWorkspaceOpen, { open: openCreateWorkspace, close: closeCreateWorkspace }] =
     useDisclosure(false);
+  const [isDeleteWorkspaceOpen, { open: openDeleteWorkspace, close: closeDeleteWorkspace }] =
+    useDisclosure(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeletingWorkspace, setIsDeletingWorkspace] = useState(false);
+  const [deleteWorkspaceConfirmation, setDeleteWorkspaceConfirmation] = useState("");
   const [settingsId, setSettingsId] = useState<string | null>(null);
 
   const {
@@ -116,6 +128,12 @@ export default function SettingsPage() {
     }
   }, [isCreateWorkspaceOpen, resetCreateWorkspace]);
 
+  useEffect(() => {
+    if (!isDeleteWorkspaceOpen) {
+      setDeleteWorkspaceConfirmation("");
+    }
+  }, [isDeleteWorkspaceOpen]);
+
   const loadSettings = useCallback(async () => {
     setIsLoading(true);
 
@@ -161,7 +179,6 @@ export default function SettingsPage() {
   }, [reset, supabase, workspace.id]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadSettings();
   }, [loadSettings]);
 
@@ -301,6 +318,49 @@ export default function SettingsPage() {
     }
   });
 
+  const onDeleteWorkspace = async () => {
+    if (!canDeleteCurrentWorkspace) {
+      notifications.show({
+        color: "red",
+        title: "Acción no permitida",
+        message: "Necesitás ser owner y tener al menos otro workspace disponible.",
+      });
+      return;
+    }
+
+    if (deleteWorkspaceConfirmation.trim() !== workspace.name.trim()) {
+      notifications.show({
+        color: "red",
+        title: "Confirmación inválida",
+        message: "Escribí el nombre exacto del workspace para confirmar la eliminación.",
+      });
+      return;
+    }
+
+    setIsDeletingWorkspace(true);
+
+    try {
+      const fallbackWorkspace = await deleteWorkspace(workspace.id);
+      closeDeleteWorkspace();
+      notifications.show({
+        color: "green",
+        title: "Workspace eliminado",
+        message: `Te movimos a ${fallbackWorkspace.name}.`,
+      });
+    } catch (error) {
+      notifications.show({
+        color: "red",
+        title: "No pudimos eliminar el workspace",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Ocurrió un error inesperado al eliminar el workspace.",
+      });
+    } finally {
+      setIsDeletingWorkspace(false);
+    }
+  };
+
   return (
     <Stack gap="md" pos="relative">
       <LoadingOverlay visible={isLoading} />
@@ -328,6 +388,46 @@ export default function SettingsPage() {
             </Group>
           </Stack>
         </form>
+      </Modal>
+      <Modal
+        opened={isDeleteWorkspaceOpen}
+        onClose={closeDeleteWorkspace}
+        title="Eliminar workspace"
+        centered
+      >
+        <Stack gap="sm">
+          <Alert color="red" variant="light" title="Acción irreversible">
+            Se eliminarán categorías, transacciones, presupuestos y settings del workspace.
+          </Alert>
+          <Text size="sm">
+            Escribí <b>{workspace.name}</b> para confirmar.
+          </Text>
+          <TextInput
+            value={deleteWorkspaceConfirmation}
+            onChange={(event) => setDeleteWorkspaceConfirmation(event.currentTarget.value)}
+            placeholder={workspace.name}
+          />
+          <Group justify="flex-end">
+            <Button
+              type="button"
+              variant="light"
+              color="gray"
+              onClick={closeDeleteWorkspace}
+              disabled={isDeletingWorkspace}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              color="red"
+              loading={isDeletingWorkspace}
+              disabled={deleteWorkspaceConfirmation.trim() !== workspace.name.trim()}
+              onClick={() => void onDeleteWorkspace()}
+            >
+              Eliminar workspace
+            </Button>
+          </Group>
+        </Stack>
       </Modal>
 
       <Stack gap={2}>
@@ -447,6 +547,37 @@ export default function SettingsPage() {
             </Group>
           </Stack>
         </form>
+      </Paper>
+
+      <Paper withBorder radius="md" p="md">
+        <Stack gap="sm">
+          <Text fw={600} c="red.7">
+            Zona de peligro
+          </Text>
+          <Text size="sm" c="dimmed">
+            Podés eliminar este workspace si tenés otro disponible. Esta acción es irreversible.
+          </Text>
+          {!canDeleteWorkspace(workspace.role) ? (
+            <Text size="sm" c="dimmed">
+              Solo el owner puede eliminar workspaces.
+            </Text>
+          ) : null}
+          {workspaces.length <= 1 ? (
+            <Text size="sm" c="dimmed">
+              Necesitás al menos otro workspace antes de eliminar este.
+            </Text>
+          ) : null}
+          <Group justify="flex-end">
+            <Button
+              color="red"
+              variant="light"
+              onClick={openDeleteWorkspace}
+              disabled={!canDeleteCurrentWorkspace}
+            >
+              Eliminar workspace
+            </Button>
+          </Group>
+        </Stack>
       </Paper>
     </Stack>
   );

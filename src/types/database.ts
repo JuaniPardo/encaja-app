@@ -340,6 +340,15 @@ export interface Database {
           subscription_status: SubscriptionStatus;
         }[];
       };
+      delete_workspace: {
+        Args: {
+          p_workspace_id: string;
+        };
+        Returns: {
+          deleted_workspace_id: string;
+          deleted_workspace_slug: string;
+        }[];
+      };
     };
     Enums: {
       [_ in never]: never;
