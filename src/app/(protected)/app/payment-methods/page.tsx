@@ -3,16 +3,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  ActionIcon,
   Badge,
   Button,
   Checkbox,
   Group,
   LoadingOverlay,
+  Menu,
   Modal,
   NativeSelect,
   Paper,
+  SimpleGrid,
   Stack,
-  Table,
   Text,
   TextInput,
   Title,
@@ -33,6 +35,9 @@ type WorkspaceSettingsLiteRow = Pick<
   Database["public"]["Tables"]["workspace_settings"]["Row"],
   "currency_code" | "show_cents"
 >;
+type PaymentMethodCardRow = PaymentMethodRow & {
+  displayedBalance: number;
+};
 
 type StatusFilter = "all" | "active" | "inactive";
 
@@ -62,6 +67,31 @@ function normalizeBalanceByType(type: PaymentMethodType, value: number) {
   }
 
   return value;
+}
+
+function roundMoney(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
+function DotsIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="5" r="1" />
+      <circle cx="12" cy="12" r="1" />
+      <circle cx="12" cy="19" r="1" />
+    </svg>
+  );
 }
 
 function toDefaults(row?: PaymentMethodRow): PaymentMethodFormValues {
@@ -177,15 +207,34 @@ export default function PaymentMethodsPage() {
     setIsModalOpen(true);
   }
 
-  const visibleRows = useMemo(() => {
-    return rows.filter((row) => {
-      if (statusFilter === "all") {
-        return true;
-      }
+  const visibleRows = useMemo<PaymentMethodCardRow[]>(() => {
+    return rows
+      .filter((row) => {
+        if (statusFilter === "all") {
+          return true;
+        }
 
-      return statusFilter === "active" ? row.is_active : !row.is_active;
-    });
+        return statusFilter === "active" ? row.is_active : !row.is_active;
+      })
+      .map((row) => ({
+        ...row,
+        displayedBalance: normalizeBalanceByType(row.type, row.current_balance),
+      }))
+      .sort((a, b) => {
+        if (b.displayedBalance !== a.displayedBalance) {
+          return b.displayedBalance - a.displayedBalance;
+        }
+
+        return a.name.localeCompare(b.name, "es");
+      });
   }, [rows, statusFilter]);
+
+  const consolidatedBalance = useMemo(() => {
+    const total = rows
+      .filter((row) => row.is_active && row.include_in_balance)
+      .reduce((sum, row) => sum + normalizeBalanceByType(row.type, row.current_balance), 0);
+    return roundMoney(total);
+  }, [rows]);
 
   const onSubmit = handleSubmit(async (values) => {
     const normalizedCurrentBalance = normalizeBalanceByType(values.type, values.currentBalance);
@@ -315,82 +364,101 @@ export default function PaymentMethodsPage() {
       </Paper>
 
       <Paper withBorder radius="md" p="md">
+        <Stack gap={2}>
+          <Text size="xs" fw={700} c="#475467">
+            Balance total
+          </Text>
+          <Text
+            fw={900}
+            size="2rem"
+            lh={1}
+            c={
+              consolidatedBalance > 0
+                ? "#087f5b"
+                : consolidatedBalance < 0
+                  ? "#c92a2a"
+                  : "#475467"
+            }
+          >
+            {currencyFormatter.format(consolidatedBalance)}
+          </Text>
+          <Text size="xs" c="dimmed">
+            Consolidado de medios activos incluidos en balance.
+          </Text>
+        </Stack>
+      </Paper>
+
+      <Paper withBorder radius="md" p="md">
         {visibleRows.length === 0 ? (
           <Text size="sm" c="dimmed">
             No hay medios de pago para el filtro seleccionado.
           </Text>
         ) : (
-          <Table.ScrollContainer minWidth={980}>
-            <Table highlightOnHover verticalSpacing="sm">
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Nombre</Table.Th>
-                  <Table.Th>Tipo</Table.Th>
-                  <Table.Th style={{ textAlign: "right" }}>Saldo actual</Table.Th>
-                  <Table.Th>Participa en balance</Table.Th>
-                  <Table.Th>Cierre</Table.Th>
-                  <Table.Th>Vencimiento</Table.Th>
-                  <Table.Th>Estado</Table.Th>
-                  <Table.Th>Acciones</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {visibleRows.map((row) => {
-                  const displayedBalance = normalizeBalanceByType(row.type, row.current_balance);
-
-                  return (
-                    <Table.Tr key={row.id}>
-                      <Table.Td>{row.name}</Table.Td>
-                      <Table.Td>
+          <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="sm">
+            {visibleRows.map((row) => (
+              <Paper key={row.id} withBorder radius="md" p="md" bg="#ffffff">
+                <Stack gap="xs">
+                  <Group justify="space-between" align="flex-start" wrap="nowrap" gap="xs">
+                    <Stack gap={4} style={{ minWidth: 0, flex: 1 }}>
+                      <Text fw={700} size="lg" lineClamp={1} style={{ lineHeight: 1.2 }}>
+                        {row.name}
+                      </Text>
+                      <Group gap={6} wrap="wrap">
                         <Badge variant="light">{paymentTypeLabels[row.type]}</Badge>
-                      </Table.Td>
-                      <Table.Td style={{ textAlign: "right" }}>
-                        <Text
-                          fw={700}
-                          c={
-                            displayedBalance > 0
-                              ? "#087f5b"
-                              : displayedBalance < 0
-                                ? "#c92a2a"
-                                : "#667085"
-                          }
-                        >
-                          {currencyFormatter.format(displayedBalance)}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Badge variant={row.include_in_balance ? "light" : "outline"} color="blue">
-                          {row.include_in_balance ? "Sí" : "No"}
-                        </Badge>
-                      </Table.Td>
-                      <Table.Td>{row.closing_day ?? "-"}</Table.Td>
-                      <Table.Td>{row.due_day ?? "-"}</Table.Td>
-                      <Table.Td>
-                        <Badge color={row.is_active ? "teal" : "gray"}>
+                        <Badge color={row.is_active ? "teal" : "gray"} variant="outline">
                           {row.is_active ? "Activo" : "Inactivo"}
                         </Badge>
-                      </Table.Td>
-                      <Table.Td>
-                        <Group gap="xs">
-                          <Button size="xs" variant="light" onClick={() => openEditModal(row)}>
-                            Editar
-                          </Button>
-                          <Button
-                            size="xs"
-                            variant="subtle"
-                            color={row.is_active ? "gray" : "teal"}
-                            onClick={() => void toggleActive(row)}
-                          >
-                            {row.is_active ? "Desactivar" : "Activar"}
-                          </Button>
-                        </Group>
-                      </Table.Td>
-                    </Table.Tr>
-                  );
-                })}
-              </Table.Tbody>
-            </Table>
-          </Table.ScrollContainer>
+                      </Group>
+                    </Stack>
+
+                    <Menu position="bottom-end" withArrow>
+                      <Menu.Target>
+                        <ActionIcon variant="subtle" color="gray" aria-label={`Acciones para ${row.name}`}>
+                          <DotsIcon />
+                        </ActionIcon>
+                      </Menu.Target>
+
+                      <Menu.Dropdown>
+                        <Menu.Item onClick={() => openEditModal(row)}>Editar</Menu.Item>
+                        <Menu.Item
+                          color={row.is_active ? "gray" : "teal"}
+                          onClick={() => void toggleActive(row)}
+                        >
+                          {row.is_active ? "Desactivar" : "Activar"}
+                        </Menu.Item>
+                      </Menu.Dropdown>
+                    </Menu>
+                  </Group>
+
+                  <Text
+                    fw={900}
+                    size="2rem"
+                    lh={1}
+                    c={
+                      row.displayedBalance > 0
+                        ? "#087f5b"
+                        : row.displayedBalance < 0
+                          ? "#c92a2a"
+                          : "#475467"
+                    }
+                  >
+                    {currencyFormatter.format(row.displayedBalance)}
+                  </Text>
+
+                  <Group justify="space-between" wrap="wrap" gap={6}>
+                    <Badge variant={row.include_in_balance ? "light" : "outline"} color="blue">
+                      {row.include_in_balance ? "Incluido en balance" : "Fuera de balance"}
+                    </Badge>
+                    {row.type === "credit_card" ? (
+                      <Text size="xs" c="dimmed">
+                        Cierre: {row.closing_day ?? "-"} · Venc: {row.due_day ?? "-"}
+                      </Text>
+                    ) : null}
+                  </Group>
+                </Stack>
+              </Paper>
+            ))}
+          </SimpleGrid>
         )}
       </Paper>
 
