@@ -109,6 +109,27 @@ function buildMonthRange(year: number, month: number) {
   return { start, end };
 }
 
+function parseQueryInteger(value: string | null, min: number, max: number) {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed)) {
+    return null;
+  }
+
+  if (parsed < min || parsed > max) {
+    return null;
+  }
+
+  return parsed;
+}
+
+function isTransactionTypeValue(value: string | null): value is TransactionType {
+  return value === "income" || value === "expense" || value === "saving";
+}
+
 function parseDateValue(dateValue: string) {
   const [yearText, monthText, dayText] = dateValue.split("-");
   const year = Number(yearText);
@@ -231,6 +252,7 @@ export default function TransactionsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<TransactionRow | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [didApplyUrlFilters, setDidApplyUrlFilters] = useState(false);
 
   const {
     register,
@@ -503,6 +525,45 @@ export default function TransactionsPage() {
     Number(typeFilter !== "all") +
     Number(categoryFilter !== "all") +
     Number(normalizedSearchFilter !== "");
+
+  useEffect(() => {
+    if (didApplyUrlFilters) {
+      return;
+    }
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+
+    const yearFromQuery = parseQueryInteger(params.get("year"), 1900, 9999);
+    if (yearFromQuery !== null) {
+      setSelectedYear(yearFromQuery);
+    }
+
+    const monthFromQuery = parseQueryInteger(params.get("month"), 1, 12);
+    if (monthFromQuery !== null) {
+      setSelectedMonth(monthFromQuery);
+    }
+
+    const typeFromQuery = params.get("type");
+    if (isTransactionTypeValue(typeFromQuery)) {
+      setTypeFilter(typeFromQuery);
+    }
+
+    const categoryFromQuery = params.get("categoryId") ?? params.get("category");
+    if (categoryFromQuery && categoryFromQuery.trim() !== "") {
+      setCategoryFilter(categoryFromQuery);
+    }
+
+    const searchFromQuery = params.get("search");
+    if (searchFromQuery && searchFromQuery.trim() !== "") {
+      setSearchFilter(searchFromQuery.trim());
+    }
+
+    setDidApplyUrlFilters(true);
+  }, [didApplyUrlFilters]);
 
   useEffect(() => {
     if (selectedCategoryId === "") {

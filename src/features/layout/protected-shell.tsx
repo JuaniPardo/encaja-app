@@ -32,6 +32,18 @@ const navItems = [
     ),
   },
   {
+    href: "/app/insights",
+    label: "Insights",
+    icon: (
+      <ShellIcon>
+        <path d="M4 18V8" />
+        <path d="M10 18V4" />
+        <path d="M16 18v-6" />
+        <path d="M22 18V10" />
+      </ShellIcon>
+    ),
+  },
+  {
     href: "/app/budget",
     label: "Presupuesto",
     icon: (
