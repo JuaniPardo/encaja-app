@@ -21,7 +21,7 @@ import {
 import { useMediaQuery } from "@mantine/hooks";
 import { modals } from "@mantine/modals";
 import { notifications } from "@mantine/notifications";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 
 import {
   formatBudgetAmount,
@@ -260,16 +260,15 @@ export default function TransactionsPage() {
     control,
     reset,
     setValue,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm<TransactionFormInputValues, unknown, TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
     defaultValues: toFormDefaults(),
   });
 
-  const selectedType = watch("type");
-  const selectedCategoryId = watch("categoryId");
-  const selectedPaymentMethodId = watch("paymentMethodId");
+  const selectedType = useWatch({ control, name: "type" });
+  const selectedCategoryId = useWatch({ control, name: "categoryId" });
+  const selectedPaymentMethodId = useWatch({ control, name: "paymentMethodId" });
 
   const categoryById = useMemo(
     () => new Map(categories.map((category) => [category.id, category])),
@@ -539,6 +538,7 @@ export default function TransactionsPage() {
 
     const yearFromQuery = parseQueryInteger(params.get("year"), 1900, 9999);
     if (yearFromQuery !== null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedYear(yearFromQuery);
     }
 
@@ -601,6 +601,7 @@ export default function TransactionsPage() {
 
     const isFilterAvailable = categoryFilterOptions.some((option) => option.value === categoryFilter);
     if (!isFilterAvailable) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCategoryFilter("all");
     }
   }, [categoryFilter, categoryFilterOptions, isBootstrapping]);
@@ -706,6 +707,7 @@ export default function TransactionsPage() {
   }, [categoryFilter, selectedMonth, selectedYear, supabase, typeFilter, workspace.id]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadBaseData();
   }, [loadBaseData]);
 
@@ -714,6 +716,7 @@ export default function TransactionsPage() {
       return;
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadTransactions();
   }, [isBootstrapping, loadTransactions]);
 

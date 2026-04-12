@@ -158,6 +158,9 @@ El sistema NO calcula ahorro automáticamente en v1.
 
 - Son opcionales en la transacción
 - Deben pertenecer al mismo workspace
+- El balance financiero consolidado usa solo medios activos con `include_in_balance = true`
+- `current_balance` puede ser positivo o negativo (deuda)
+- Para `credit_card`, la posición se presenta como negativa cuando representa deuda
 
 ---
 

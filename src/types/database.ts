@@ -159,6 +159,8 @@ export interface Database {
           name: string;
           type: PaymentMethodType;
           is_active: boolean;
+          current_balance: number;
+          include_in_balance: boolean;
           closing_day: number | null;
           due_day: number | null;
           created_by: string;
@@ -171,6 +173,8 @@ export interface Database {
           name: string;
           type: PaymentMethodType;
           is_active?: boolean;
+          current_balance?: number;
+          include_in_balance?: boolean;
           closing_day?: number | null;
           due_day?: number | null;
           created_by: string;
@@ -181,6 +185,8 @@ export interface Database {
           name?: string;
           type?: PaymentMethodType;
           is_active?: boolean;
+          current_balance?: number;
+          include_in_balance?: boolean;
           closing_day?: number | null;
           due_day?: number | null;
           updated_at?: string;

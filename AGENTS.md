@@ -30,6 +30,16 @@ La aplicación está diseñada para comenzar como una experiencia simple, pero c
 
 ---
 
+## 2.1 Entorno de terminal (Codex)
+
+- En sesiones de Codex, `node`/`npm` pueden no estar en el `PATH` por defecto.
+- Para ejecutar comandos de Node, usar:
+  - `PATH="/usr/local/bin:/opt/homebrew/bin:$PATH" npm run lint`
+  - `PATH="/usr/local/bin:/opt/homebrew/bin:$PATH" npm run build`
+- Nota operativa: el build puede requerir acceso de red para descargar Google Fonts.
+
+---
+
 ## 3. Restricción crítica sobre Next.js
 
 Este proyecto usa una versión moderna de Next.js con App Router.

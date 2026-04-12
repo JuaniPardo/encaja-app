@@ -113,6 +113,8 @@ Campos:
 - name (text)
 - type (text)
 - is_active (boolean)
+- current_balance (numeric(14,2), default 0)
+- include_in_balance (boolean, default true)
 - closing_day (smallint, null)
 - due_day (smallint, null)
 - created_by (uuid, fk -> profiles.id)

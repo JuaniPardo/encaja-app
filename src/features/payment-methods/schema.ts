@@ -24,6 +24,22 @@ const optionalDay = z.preprocess(
     .nullable(),
 );
 
+const requiredCurrentBalance = z.preprocess(
+  (value) => {
+    if (value === null || value === undefined || value === "") {
+      return Number.NaN;
+    }
+
+    if (typeof value === "number") {
+      return value;
+    }
+
+    const normalized = String(value).trim().replace(",", ".");
+    return Number(normalized);
+  },
+  z.number().finite("Ingresá un saldo válido."),
+);
+
 export const paymentMethodFormSchema = z.object({
   name: z
     .string()
@@ -31,6 +47,8 @@ export const paymentMethodFormSchema = z.object({
     .min(1, "El nombre es obligatorio.")
     .max(80, "El nombre no puede superar 80 caracteres."),
   type: z.enum(paymentMethodTypeOptions),
+  currentBalance: requiredCurrentBalance,
+  includeInBalance: z.boolean(),
   closingDay: optionalDay,
   dueDay: optionalDay,
 });

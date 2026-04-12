@@ -22,7 +22,7 @@ import { notifications } from "@mantine/notifications";
 
 import { ProgressCell } from "@/features/dashboard/progress-cell";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
-import type { Database, TransactionType } from "@/types/database";
+import type { Database, PaymentMethodType, TransactionType } from "@/types/database";
 
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
 type WorkspaceSettingsLiteRow = Pick<
@@ -37,6 +37,10 @@ type BudgetItemLiteRow = Pick<
 type TransactionLiteRow = Pick<
   Database["public"]["Tables"]["transactions"]["Row"],
   "category_id" | "amount" | "transaction_date" | "effective_date"
+>;
+type PaymentMethodBalanceRow = Pick<
+  Database["public"]["Tables"]["payment_methods"]["Row"],
+  "id" | "name" | "type" | "is_active" | "include_in_balance" | "current_balance"
 >;
 
 type CategorySummaryRow = {
@@ -87,6 +91,13 @@ type OperationalInsightRow = {
   semantic: CategorySemantic;
 };
 
+type FinancialMethodRow = {
+  id: string;
+  name: string;
+  type: PaymentMethodType;
+  currentBalance: number;
+};
+
 const deviationTolerance = 0.005;
 
 const monthOptions = [
@@ -116,6 +127,14 @@ const typeLabels: Record<TransactionType, string> = {
   saving: "Ahorro",
 };
 
+const paymentMethodTypeLabels: Record<PaymentMethodType, string> = {
+  cash: "Efectivo",
+  debit_card: "Tarjeta débito",
+  credit_card: "Tarjeta crédito",
+  bank_transfer: "Transferencia",
+  other: "Otro",
+};
+
 const typeTheme: Record<
   TransactionType,
   {
@@ -143,6 +162,15 @@ const typeTheme: Record<
 
 function roundMoney(value: number) {
   return Math.round(value * 100) / 100;
+}
+
+function normalizePaymentMethodBalance(type: PaymentMethodType, value: unknown) {
+  const parsed = parseAmountValue(value);
+  if (type === "credit_card") {
+    return -Math.abs(parsed);
+  }
+
+  return parsed;
 }
 
 function parseAmountValue(value: unknown) {
@@ -317,6 +345,7 @@ export default function DashboardPage() {
   const [categories, setCategories] = useState<CategoryRow[]>([]);
   const [budgetItems, setBudgetItems] = useState<BudgetItemLiteRow[]>([]);
   const [transactionRows, setTransactionRows] = useState<TransactionLiteRow[]>([]);
+  const [paymentMethodRows, setPaymentMethodRows] = useState<PaymentMethodBalanceRow[]>([]);
   const [startYear, setStartYear] = useState(now.getFullYear());
   const [currencyCode, setCurrencyCode] = useState("ARS");
   const [showCents, setShowCents] = useState(false);
@@ -374,10 +403,15 @@ export default function DashboardPage() {
   }, [selectedYear, startYear]);
 
   const loadBaseData = useCallback(async () => {
-    const [categoriesResponse, settingsResponse] = await Promise.all([
+    const [categoriesResponse, paymentMethodsResponse, settingsResponse] = await Promise.all([
       supabase
         .from("categories")
         .select("*")
+        .eq("workspace_id", workspace.id)
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("payment_methods")
+        .select("id, name, type, is_active, include_in_balance, current_balance")
         .eq("workspace_id", workspace.id)
         .order("created_at", { ascending: true }),
       supabase
@@ -413,6 +447,17 @@ export default function DashboardPage() {
       setStartYear(settings?.start_year ?? new Date().getFullYear());
       setCurrencyCode(settings?.currency_code ?? "ARS");
       setShowCents(settings?.show_cents ?? false);
+    }
+
+    if (paymentMethodsResponse.error) {
+      notifications.show({
+        color: "red",
+        title: "No pudimos cargar medios financieros",
+        message: paymentMethodsResponse.error.message,
+      });
+      setPaymentMethodRows([]);
+    } else {
+      setPaymentMethodRows((paymentMethodsResponse.data ?? []) as PaymentMethodBalanceRow[]);
     }
 
     setIsBootstrapping(false);
@@ -753,6 +798,43 @@ export default function DashboardPage() {
   const operationalHeadlineColor =
     problemCount > 0 ? "#c92a2a" : positiveCount > 0 ? "#087f5b" : "#475467";
 
+  const financialSummary = useMemo(() => {
+    const activeIncludedRows: FinancialMethodRow[] = paymentMethodRows
+      .filter((row) => row.is_active && row.include_in_balance)
+      .map((row) => ({
+        id: row.id,
+        name: row.name,
+        type: row.type,
+        currentBalance: normalizePaymentMethodBalance(row.type, row.current_balance),
+      }))
+      .sort((a, b) => {
+        if (b.currentBalance !== a.currentBalance) {
+          return b.currentBalance - a.currentBalance;
+        }
+
+        return a.name.localeCompare(b.name, "es");
+      });
+
+    const totalBalance = roundMoney(
+      activeIncludedRows.reduce((sum, row) => sum + row.currentBalance, 0),
+    );
+    const positiveCount = activeIncludedRows.filter((row) => row.currentBalance > 0).length;
+    const negativeCount = activeIncludedRows.filter((row) => row.currentBalance < 0).length;
+    const excludedActiveCount = paymentMethodRows.filter(
+      (row) => row.is_active && !row.include_in_balance,
+    ).length;
+    const inactiveCount = paymentMethodRows.filter((row) => !row.is_active).length;
+
+    return {
+      activeIncludedRows,
+      totalBalance,
+      positiveCount,
+      negativeCount,
+      excludedActiveCount,
+      inactiveCount,
+    };
+  }, [paymentMethodRows]);
+
   const selectedPeriodLabel = `${monthLabel(selectedMonth)} ${selectedYear}`;
   const isMobile = useMediaQuery("(max-width: 47.99em)");
   const isNarrowMobile = useMediaQuery("(max-width: 33.99em)");
@@ -925,6 +1007,85 @@ export default function DashboardPage() {
             Transcurrido: {percentageFormatter.format(monthProgress)}%
           </Text>
           <Progress value={monthProgress} color="#0ea5e9" radius="xl" size={monthProgressSize} />
+        </Stack>
+      </Paper>
+
+      <Paper
+        withBorder
+        radius="sm"
+        p={isMobile ? "xs" : "sm"}
+        bg="#ffffff"
+        style={{ borderColor: "#d6dde7" }}
+      >
+        <Stack gap={isMobile ? "xs" : "sm"}>
+          <Group justify="space-between" align="flex-start" wrap="wrap" gap={6}>
+            <Stack gap={2}>
+              <Text size="xs" fw={700} c="#475467">
+                Medios financieros
+              </Text>
+              <Text fw={800} c={financialSummary.totalBalance >= 0 ? "#087f5b" : "#c92a2a"}>
+                Balance total: {currencyFormatter.format(financialSummary.totalBalance)}
+              </Text>
+              <Text size="xs" c="#667085">
+                {financialSummary.activeIncludedRows.length} activos en balance
+              </Text>
+            </Stack>
+            <Group gap={6} wrap="wrap">
+              <Badge color="teal" variant={financialSummary.positiveCount > 0 ? "light" : "outline"}>
+                {financialSummary.positiveCount} positivos
+              </Badge>
+              <Badge color="red" variant={financialSummary.negativeCount > 0 ? "light" : "outline"}>
+                {financialSummary.negativeCount} negativos
+              </Badge>
+            </Group>
+          </Group>
+
+          {financialSummary.activeIncludedRows.length === 0 ? (
+            <Text size="xs" c="#667085">
+              No hay medios activos incluidos en el balance principal.
+            </Text>
+          ) : (
+            <Stack gap={6}>
+              {financialSummary.activeIncludedRows.map((row) => (
+                <Group
+                  key={row.id}
+                  justify="space-between"
+                  align="center"
+                  wrap="nowrap"
+                  px={isMobile ? 6 : 8}
+                  py={6}
+                  style={{
+                    borderRadius: 8,
+                    border: "1px solid #e4e7ec",
+                    backgroundColor: "#f8fafc",
+                  }}
+                >
+                  <Stack gap={0} style={{ minWidth: 0 }}>
+                    <Text size="sm" fw={700} c="#1f2937" truncate>
+                      {row.name}
+                    </Text>
+                    <Text size="xs" c="#667085">
+                      {paymentMethodTypeLabels[row.type]}
+                    </Text>
+                  </Stack>
+                  <Text
+                    size="sm"
+                    fw={800}
+                    c={row.currentBalance >= 0 ? "#087f5b" : "#c92a2a"}
+                  >
+                    {currencyFormatter.format(row.currentBalance)}
+                  </Text>
+                </Group>
+              ))}
+            </Stack>
+          )}
+
+          {financialSummary.excludedActiveCount > 0 || financialSummary.inactiveCount > 0 ? (
+            <Text size="xs" c="#98a2b3">
+              Fuera del balance: {financialSummary.excludedActiveCount} activos excluidos y{" "}
+              {financialSummary.inactiveCount} inactivos.
+            </Text>
+          ) : null}
         </Stack>
       </Paper>
 

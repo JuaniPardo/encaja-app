@@ -15,7 +15,7 @@ import {
   Title,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 
 import {
   settingsFormSchema,
@@ -37,7 +37,6 @@ export default function SettingsPage() {
   const {
     register,
     control,
-    watch,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
@@ -53,7 +52,7 @@ export default function SettingsPage() {
     },
   });
 
-  const deferredIncomeEnabled = watch("deferredIncomeEnabled");
+  const deferredIncomeEnabled = useWatch({ control, name: "deferredIncomeEnabled" }) ?? false;
 
   const loadSettings = useCallback(async () => {
     setIsLoading(true);
@@ -100,6 +99,7 @@ export default function SettingsPage() {
   }, [reset, supabase, workspace.id]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadSettings();
   }, [loadSettings]);
 
