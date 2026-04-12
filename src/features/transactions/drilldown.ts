@@ -1,6 +1,7 @@
 import type { TransactionType } from "@/types/database";
 
 type TransactionsDrilldownParams = {
+  workspaceSlug: string;
   year?: number;
   month?: number;
   type?: TransactionType;
@@ -37,5 +38,6 @@ export function buildTransactionsDrilldownHref(params: TransactionsDrilldownPara
   }
 
   const query = searchParams.toString();
-  return query.length > 0 ? `/app/transactions?${query}` : "/app/transactions";
+  const basePath = `/app/${params.workspaceSlug}/transactions`;
+  return query.length > 0 ? `${basePath}?${query}` : basePath;
 }

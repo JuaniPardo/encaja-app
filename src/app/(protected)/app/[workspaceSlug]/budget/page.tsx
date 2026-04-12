@@ -605,12 +605,13 @@ export default function BudgetPage() {
   const categoryDrilldownHref = useCallback(
     (type: TransactionType, categoryId: string) =>
       buildTransactionsDrilldownHref({
+        workspaceSlug: workspace.slug,
         year: selectedYear,
         month: selectedMonth,
         type,
         categoryId,
       }),
-    [selectedMonth, selectedYear],
+    [selectedMonth, selectedYear, workspace.slug],
   );
 
   return (

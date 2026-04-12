@@ -754,12 +754,13 @@ export default function InsightsPage() {
 
   const drilldownHref = useCallback((period: PeriodRef, categoryId: string) => {
     return buildTransactionsDrilldownHref({
+      workspaceSlug: workspace.slug,
       year: period.year,
       month: period.month,
       categoryId,
       type: "expense",
     });
-  }, []);
+  }, [workspace.slug]);
 
   const currentMonthBadge = periodLabel(currentPeriod);
   const closedMonthBadge = periodLabel(closedPeriod);

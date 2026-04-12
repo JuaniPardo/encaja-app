@@ -22,6 +22,11 @@ import {
   type SettingsFormInputValues,
   type SettingsFormValues,
 } from "@/features/settings/schema";
+import {
+  workspaceFormSchema,
+  type WorkspaceFormInputValues,
+  type WorkspaceFormValues,
+} from "@/features/workspace/schema";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 
 const savingsRateModeSelectData = [
@@ -30,7 +35,7 @@ const savingsRateModeSelectData = [
 ];
 
 export default function SettingsPage() {
-  const { supabase, workspace } = useWorkspace();
+  const { supabase, workspace, refreshWorkspace } = useWorkspace();
   const [isLoading, setIsLoading] = useState(true);
   const [settingsId, setSettingsId] = useState<string | null>(null);
 
@@ -53,6 +58,26 @@ export default function SettingsPage() {
   });
 
   const deferredIncomeEnabled = useWatch({ control, name: "deferredIncomeEnabled" }) ?? false;
+  const {
+    register: registerWorkspace,
+    handleSubmit: handleSubmitWorkspace,
+    reset: resetWorkspace,
+    formState: {
+      errors: workspaceErrors,
+      isSubmitting: isWorkspaceSubmitting,
+    },
+  } = useForm<WorkspaceFormInputValues, unknown, WorkspaceFormValues>({
+    resolver: zodResolver(workspaceFormSchema),
+    defaultValues: {
+      name: workspace.name,
+    },
+  });
+
+  useEffect(() => {
+    resetWorkspace({
+      name: workspace.name,
+    });
+  }, [resetWorkspace, workspace.name]);
 
   const loadSettings = useCallback(async () => {
     setIsLoading(true);
@@ -163,6 +188,33 @@ export default function SettingsPage() {
     });
   });
 
+  const onSubmitWorkspace = handleSubmitWorkspace(async (values) => {
+    const response = await supabase
+      .from("workspaces")
+      .update({
+        name: values.name,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", workspace.id);
+
+    if (response.error) {
+      notifications.show({
+        color: "red",
+        title: "No pudimos actualizar el workspace",
+        message: response.error.message,
+      });
+      return;
+    }
+
+    await refreshWorkspace();
+
+    notifications.show({
+      color: "green",
+      title: "Workspace actualizado",
+      message: "La identidad del workspace se actualizó correctamente.",
+    });
+  });
+
   return (
     <Stack gap="md" pos="relative">
       <LoadingOverlay visible={isLoading} />
@@ -173,6 +225,26 @@ export default function SettingsPage() {
           Configurá parámetros base que se usarán en los siguientes MVPs.
         </Text>
       </Stack>
+
+      <Paper withBorder radius="md" p="md">
+        <form onSubmit={onSubmitWorkspace}>
+          <Stack>
+            <Text fw={600}>Identidad del workspace</Text>
+            <TextInput
+              label="Nombre visible"
+              placeholder="Ej: Hogar"
+              error={workspaceErrors.name?.message}
+              {...registerWorkspace("name")}
+            />
+            <TextInput label="Slug técnico" value={workspace.slug} readOnly />
+            <Group justify="flex-end" mt="sm">
+              <Button type="submit" loading={isWorkspaceSubmitting}>
+                Guardar nombre
+              </Button>
+            </Group>
+          </Stack>
+        </form>
+      </Paper>
 
       <Paper withBorder radius="md" p="md">
         <form onSubmit={onSubmit}>

@@ -9,6 +9,8 @@ export type ExpenseBehavior = "fixed" | "variable";
 export type WorkspaceRole = "owner" | "admin" | "member";
 export type SavingsRateMode = "manual" | "percentage";
 export type BudgetPeriodStatus = "draft" | "active" | "closed";
+export type SubscriptionPlan = "free" | "pro" | "premium";
+export type SubscriptionStatus = "active" | "canceled" | "past_due";
 
 export interface Database {
   public: {
@@ -39,7 +41,7 @@ export interface Database {
         Row: {
           id: string;
           name: string;
-          slug: string | null;
+          slug: string;
           created_by: string;
           created_at: string;
           updated_at: string;
@@ -47,14 +49,38 @@ export interface Database {
         Insert: {
           id?: string;
           name: string;
-          slug?: string | null;
+          slug: string;
           created_by: string;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           name?: string;
-          slug?: string | null;
+          slug?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      subscriptions: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          plan: SubscriptionPlan;
+          status: SubscriptionStatus;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          plan?: SubscriptionPlan;
+          status?: SubscriptionStatus;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          plan?: SubscriptionPlan;
+          status?: SubscriptionStatus;
           updated_at?: string;
         };
         Relationships: [];

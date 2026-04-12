@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ActionIcon,
   AppShell,
@@ -10,20 +11,31 @@ import {
   Button,
   Container,
   Group,
+  Modal,
+  NativeSelect,
   Stack,
   Text,
+  TextInput,
   Tooltip,
   Title,
   UnstyledButton,
 } from "@mantine/core";
 import { useDisclosure, useMediaQuery } from "@mantine/hooks";
-import { useEffect, useState } from "react";
+import { notifications } from "@mantine/notifications";
+import { useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
 
+import { workspaceFormSchema, type WorkspaceFormInputValues, type WorkspaceFormValues } from "@/features/workspace/schema";
+import {
+  buildWorkspaceHref,
+  getWorkspaceScopedSectionPath,
+  stripWorkspaceSlugFromPathname,
+} from "@/features/workspace/routing";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 
 const navItems = [
   {
-    href: "/app",
+    sectionPath: "",
     label: "Resumen",
     icon: (
       <ShellIcon>
@@ -32,7 +44,7 @@ const navItems = [
     ),
   },
   {
-    href: "/app/insights",
+    sectionPath: "/insights",
     label: "Insights",
     icon: (
       <ShellIcon>
@@ -44,7 +56,7 @@ const navItems = [
     ),
   },
   {
-    href: "/app/budget",
+    sectionPath: "/budget",
     label: "Presupuesto",
     icon: (
       <ShellIcon>
@@ -55,7 +67,7 @@ const navItems = [
     ),
   },
   {
-    href: "/app/transactions",
+    sectionPath: "/transactions",
     label: "Transacciones",
     icon: (
       <ShellIcon>
@@ -67,7 +79,7 @@ const navItems = [
     ),
   },
   {
-    href: "/app/categories",
+    sectionPath: "/categories",
     label: "Categorías",
     icon: (
       <ShellIcon>
@@ -79,7 +91,7 @@ const navItems = [
     ),
   },
   {
-    href: "/app/payment-methods",
+    sectionPath: "/payment-methods",
     label: "Medios de pago",
     icon: (
       <ShellIcon>
@@ -90,7 +102,7 @@ const navItems = [
     ),
   },
   {
-    href: "/app/settings",
+    sectionPath: "/settings",
     label: "Configuración",
     icon: (
       <ShellIcon>
@@ -101,12 +113,12 @@ const navItems = [
   },
 ];
 
-function isActivePath(currentPath: string, href: string) {
-  if (href === "/app") {
-    return currentPath === href;
+function isActivePath(currentPath: string, navPath: string) {
+  if (navPath === "/app") {
+    return currentPath === "/app";
   }
 
-  return currentPath.startsWith(href);
+  return currentPath === navPath || currentPath.startsWith(`${navPath}/`);
 }
 
 function ShellIcon({ children }: { children: React.ReactNode }) {
@@ -129,188 +141,302 @@ function ShellIcon({ children }: { children: React.ReactNode }) {
 export function ProtectedShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [opened, { toggle, close }] = useDisclosure(false);
+  const [isCreateWorkspaceOpen, { open: openCreateWorkspace, close: closeCreateWorkspace }] =
+    useDisclosure(false);
   const [desktopCollapsed, setDesktopCollapsed] = useState(false);
   const isMobile = useMediaQuery("(max-width: 47.99em)");
-  const { workspace, user, signOut } = useWorkspace();
+  const {
+    workspace,
+    workspaces,
+    user,
+    createWorkspace,
+    switchWorkspace,
+    canUseWorkspaceFeature,
+    signOut,
+  } = useWorkspace();
+  const sectionPath = getWorkspaceScopedSectionPath(pathname ?? "");
+  const pathWithoutWorkspace = stripWorkspaceSlugFromPathname(pathname ?? "/app");
+  const workspaceSelectData = useMemo(
+    () => workspaces.map((item) => ({ value: item.slug, label: item.name })),
+    [workspaces],
+  );
+  const canCreateWorkspace = canUseWorkspaceFeature("multi_workspace");
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<WorkspaceFormInputValues, unknown, WorkspaceFormValues>({
+    resolver: zodResolver(workspaceFormSchema),
+    defaultValues: {
+      name: "",
+    },
+  });
 
   useEffect(() => {
     close();
   }, [pathname, close]);
 
+  useEffect(() => {
+    if (!isCreateWorkspaceOpen) {
+      reset({ name: "" });
+    }
+  }, [isCreateWorkspaceOpen, reset]);
+
+  const onCreateWorkspace = handleSubmit(async (values) => {
+    try {
+      const createdWorkspace = await createWorkspace(values.name);
+      notifications.show({
+        color: "green",
+        title: "Workspace creado",
+        message: `Ya podés usar ${createdWorkspace.name}.`,
+      });
+      closeCreateWorkspace();
+      switchWorkspace(createdWorkspace.slug, sectionPath);
+    } catch (error) {
+      notifications.show({
+        color: "red",
+        title: "No pudimos crear el workspace",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Ocurrió un error inesperado al crear el workspace.",
+      });
+    }
+  });
+
   return (
-    <AppShell
-      header={{ height: { base: 58, sm: 66 } }}
-      navbar={{
-        width: { base: 236, sm: desktopCollapsed ? 74 : 256 },
-        breakpoint: "sm",
-        collapsed: { mobile: !opened },
-      }}
-      padding={{ base: "xs", sm: "md" }}
-    >
-      <AppShell.Header
-        style={{
-          borderBottom: "1px solid #e4e7ec",
-          backgroundColor: "rgba(255, 255, 255, 0.94)",
-          backdropFilter: "blur(6px)",
-        }}
+    <>
+      <Modal
+        opened={isCreateWorkspaceOpen}
+        onClose={closeCreateWorkspace}
+        title="Crear nuevo workspace"
+        centered
       >
-        <Group h="100%" px={isMobile ? "xs" : "md"} justify="space-between">
-          <Group>
-            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-            <ActionIcon
-              variant="light"
-              color="gray"
-              size="sm"
-              visibleFrom="sm"
-              aria-label={desktopCollapsed ? "Expandir menú" : "Colapsar menú"}
-              onClick={() => setDesktopCollapsed((prev) => !prev)}
-            >
-              <Text size="sm" fw={700}>
-                {desktopCollapsed ? "›" : "‹"}
-              </Text>
-            </ActionIcon>
-            <Box>
-              <Title order={isMobile ? 4 : 3}>Encaja</Title>
-              <Text size="xs" c="dimmed">
-                {workspace.name}
-              </Text>
-            </Box>
-          </Group>
+        <form onSubmit={onCreateWorkspace}>
+          <Stack gap="sm">
+            <TextInput
+              label="Nombre del workspace"
+              placeholder="Ej: Hogar, Consultorio, Negocio"
+              error={errors.name?.message}
+              {...register("name")}
+            />
 
-          <Group gap="sm" visibleFrom="sm">
-            <Text size="sm" c="dimmed">
-              {user.email}
-            </Text>
-            <Button size="xs" variant="light" color="gray" onClick={() => void signOut()}>
-              Salir
-            </Button>
-          </Group>
-        </Group>
-      </AppShell.Header>
+            <Group justify="flex-end" mt="xs">
+              <Button type="button" variant="light" color="gray" onClick={closeCreateWorkspace}>
+                Cancelar
+              </Button>
+              <Button type="submit" loading={isSubmitting}>
+                Crear
+              </Button>
+            </Group>
+          </Stack>
+        </form>
+      </Modal>
 
-      <AppShell.Navbar
-        p={isMobile ? "xs" : "sm"}
-        style={{
-          borderRight: "1px solid #e4e7ec",
-          backgroundColor: "#f9fbfa",
+      <AppShell
+        header={{ height: { base: 58, sm: 66 } }}
+        navbar={{
+          width: { base: 236, sm: desktopCollapsed ? 74 : 256 },
+          breakpoint: "sm",
+          collapsed: { mobile: !opened },
         }}
+        padding={{ base: "xs", sm: "md" }}
       >
-        <Stack gap={isMobile ? 3 : 4}>
-          {navItems.map((item) => {
-            const isActive = isActivePath(pathname, item.href);
-
-            return (
-              <Tooltip
-                key={item.href}
-                label={item.label}
-                disabled={!desktopCollapsed}
-                position="right"
-                withArrow
+        <AppShell.Header
+          style={{
+            borderBottom: "1px solid #e4e7ec",
+            backgroundColor: "rgba(255, 255, 255, 0.94)",
+            backdropFilter: "blur(6px)",
+          }}
+        >
+          <Group h="100%" px={isMobile ? "xs" : "md"} justify="space-between">
+            <Group>
+              <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+              <ActionIcon
+                variant="light"
+                color="gray"
+                size="sm"
+                visibleFrom="sm"
+                aria-label={desktopCollapsed ? "Expandir menú" : "Colapsar menú"}
+                onClick={() => setDesktopCollapsed((prev) => !prev)}
               >
-                <UnstyledButton
-                  component={Link}
-                  href={item.href}
-                  onClick={() => {
-                    if (opened) {
-                      close();
-                    }
-                  }}
-                  style={{
-                    width: "100%",
-                    padding: desktopCollapsed ? "10px 0" : isMobile ? "10px 10px" : "11px 12px",
-                    borderRadius: 8,
-                    display: "block",
-                    backgroundColor: isActive ? "#dff3ea" : "transparent",
-                    border: `1px solid ${isActive ? "#9fd7bf" : "transparent"}`,
-                    color: isActive ? "#087f5b" : "#475467",
-                    boxShadow: isActive ? "inset 3px 0 0 #0ca678" : "none",
-                  }}
-                >
-                  <Group
-                    gap={10}
-                    justify={desktopCollapsed ? "center" : "flex-start"}
-                    wrap="nowrap"
-                  >
-                    <Box pos="relative">
-                      {item.icon}
-                      {desktopCollapsed && isActive ? (
-                        <Box
-                          h={6}
-                          w={6}
-                          style={{
-                            borderRadius: "50%",
-                            backgroundColor: "#0ca678",
-                            position: "absolute",
-                            right: -4,
-                            top: -2,
-                          }}
-                        />
-                      ) : null}
-                    </Box>
-                    {!desktopCollapsed ? (
-                      <Text size={isMobile ? "xs" : "sm"} fw={isActive ? 700 : 600}>
-                        {item.label}
-                      </Text>
-                    ) : null}
-                  </Group>
-                </UnstyledButton>
-              </Tooltip>
-            );
-          })}
-        </Stack>
-
-        <Box mt="auto" pt="lg">
-          <Button
-            variant="subtle"
-            color="gray"
-            hiddenFrom="sm"
-            size="xs"
-            onClick={() => void signOut()}
-            fullWidth
-          >
-            Cerrar sesión
-          </Button>
-
-          <Tooltip label="Salir" disabled={!desktopCollapsed} position="right" withArrow>
-            <UnstyledButton
-              visibleFrom="sm"
-              onClick={() => void signOut()}
-              style={{
-                width: "100%",
-                padding: desktopCollapsed ? "11px 0" : "11px 12px",
-                borderRadius: 8,
-                color: "#475467",
-                border: "1px solid transparent",
-              }}
-            >
-              <Group gap={10} justify={desktopCollapsed ? "center" : "flex-start"} wrap="nowrap">
-                <ShellIcon>
-                  <path d="M15 7.5V5.8a2 2 0 0 0-2-2H5.5a2 2 0 0 0-2 2v12.4a2 2 0 0 0 2 2H13a2 2 0 0 0 2-2v-1.7" />
-                  <path d="M10 12h10" />
-                  <path d="m17 8 3 4-3 4" />
-                </ShellIcon>
-                {!desktopCollapsed ? (
-                  <Text size="sm" fw={600}>
-                    Salir
+                <Text size="sm" fw={700}>
+                  {desktopCollapsed ? "›" : "‹"}
+                </Text>
+              </ActionIcon>
+              <Box>
+                <Title order={isMobile ? 4 : 3}>Encaja</Title>
+                {workspaces.length > 1 ? (
+                  <NativeSelect
+                    value={workspace.slug}
+                    onChange={(event) => {
+                      const nextSlug = event.currentTarget.value;
+                      if (nextSlug && nextSlug !== workspace.slug) {
+                        switchWorkspace(nextSlug, sectionPath);
+                      }
+                    }}
+                    data={workspaceSelectData}
+                    size="xs"
+                    maw={220}
+                  />
+                ) : (
+                  <Text size="xs" c="dimmed">
+                    {workspace.name}
                   </Text>
-                ) : null}
-              </Group>
-            </UnstyledButton>
-          </Tooltip>
+                )}
+              </Box>
+            </Group>
 
-          {!desktopCollapsed || isMobile ? (
-            <Text size="10px" c="#98a2b3" mt="sm" ta={isMobile ? "center" : "left"}>
-              Desarrollado por Juan Pardo
-            </Text>
-          ) : null}
-        </Box>
-      </AppShell.Navbar>
+            <Group gap="sm" visibleFrom="sm">
+              {canCreateWorkspace ? (
+                <Button size="xs" variant="light" onClick={openCreateWorkspace}>
+                  Nuevo workspace
+                </Button>
+              ) : null}
+              <Text size="sm" c="dimmed">
+                {user.email}
+              </Text>
+              <Button size="xs" variant="light" color="gray" onClick={() => void signOut()}>
+                Salir
+              </Button>
+            </Group>
+          </Group>
+        </AppShell.Header>
 
-      <AppShell.Main>
-        <Container size="xl" py={isMobile ? "xs" : "md"}>
-          {children}
-        </Container>
-      </AppShell.Main>
-    </AppShell>
+        <AppShell.Navbar
+          p={isMobile ? "xs" : "sm"}
+          style={{
+            borderRight: "1px solid #e4e7ec",
+            backgroundColor: "#f9fbfa",
+          }}
+        >
+          <Stack gap={isMobile ? 3 : 4}>
+            {canCreateWorkspace && isMobile ? (
+              <Button variant="light" size="xs" onClick={openCreateWorkspace}>
+                Nuevo workspace
+              </Button>
+            ) : null}
+
+            {navItems.map((item) => {
+              const navPath = buildWorkspaceHref(workspace.slug, item.sectionPath);
+              const activePath = item.sectionPath ? `/app${item.sectionPath}` : "/app";
+              const isActive = isActivePath(pathWithoutWorkspace, activePath);
+
+              return (
+                <Tooltip
+                  key={item.sectionPath || "/"}
+                  label={item.label}
+                  disabled={!desktopCollapsed}
+                  position="right"
+                  withArrow
+                >
+                  <UnstyledButton
+                    component={Link}
+                    href={navPath}
+                    onClick={() => {
+                      if (opened) {
+                        close();
+                      }
+                    }}
+                    style={{
+                      width: "100%",
+                      padding: desktopCollapsed ? "10px 0" : isMobile ? "10px 10px" : "11px 12px",
+                      borderRadius: 8,
+                      display: "block",
+                      backgroundColor: isActive ? "#dff3ea" : "transparent",
+                      border: `1px solid ${isActive ? "#9fd7bf" : "transparent"}`,
+                      color: isActive ? "#087f5b" : "#475467",
+                      boxShadow: isActive ? "inset 3px 0 0 #0ca678" : "none",
+                    }}
+                  >
+                    <Group
+                      gap={10}
+                      justify={desktopCollapsed ? "center" : "flex-start"}
+                      wrap="nowrap"
+                    >
+                      <Box pos="relative">
+                        {item.icon}
+                        {desktopCollapsed && isActive ? (
+                          <Box
+                            h={6}
+                            w={6}
+                            style={{
+                              borderRadius: "50%",
+                              backgroundColor: "#0ca678",
+                              position: "absolute",
+                              right: -4,
+                              top: -2,
+                            }}
+                          />
+                        ) : null}
+                      </Box>
+                      {!desktopCollapsed ? (
+                        <Text size={isMobile ? "xs" : "sm"} fw={isActive ? 700 : 600}>
+                          {item.label}
+                        </Text>
+                      ) : null}
+                    </Group>
+                  </UnstyledButton>
+                </Tooltip>
+              );
+            })}
+          </Stack>
+
+          <Box mt="auto" pt="lg">
+            <Button
+              variant="subtle"
+              color="gray"
+              hiddenFrom="sm"
+              size="xs"
+              onClick={() => void signOut()}
+              fullWidth
+            >
+              Cerrar sesión
+            </Button>
+
+            <Tooltip label="Salir" disabled={!desktopCollapsed} position="right" withArrow>
+              <UnstyledButton
+                visibleFrom="sm"
+                onClick={() => void signOut()}
+                style={{
+                  width: "100%",
+                  padding: desktopCollapsed ? "11px 0" : "11px 12px",
+                  borderRadius: 8,
+                  color: "#475467",
+                  border: "1px solid transparent",
+                }}
+              >
+                <Group gap={10} justify={desktopCollapsed ? "center" : "flex-start"} wrap="nowrap">
+                  <ShellIcon>
+                    <path d="M15 7.5V5.8a2 2 0 0 0-2-2H5.5a2 2 0 0 0-2 2v12.4a2 2 0 0 0 2 2H13a2 2 0 0 0 2-2v-1.7" />
+                    <path d="M10 12h10" />
+                    <path d="m17 8 3 4-3 4" />
+                  </ShellIcon>
+                  {!desktopCollapsed ? (
+                    <Text size="sm" fw={600}>
+                      Salir
+                    </Text>
+                  ) : null}
+                </Group>
+              </UnstyledButton>
+            </Tooltip>
+
+            {!desktopCollapsed || isMobile ? (
+              <Text size="10px" c="#98a2b3" mt="sm" ta={isMobile ? "center" : "left"}>
+                Desarrollado por Juan Pardo
+              </Text>
+            ) : null}
+          </Box>
+        </AppShell.Navbar>
+
+        <AppShell.Main>
+          <Container size="xl" py={isMobile ? "xs" : "md"}>
+            {children}
+          </Container>
+        </AppShell.Main>
+      </AppShell>
+    </>
   );
 }

@@ -339,10 +339,11 @@ export default function CategoriesPage() {
   const categoryDrilldownHref = useCallback(
     (type: TransactionType, categoryId: string) =>
       buildTransactionsDrilldownHref({
+        workspaceSlug: workspace.slug,
         type,
         categoryId,
       }),
-    [],
+    [workspace.slug],
   );
 
   const onSubmit = handleSubmit(async (values) => {

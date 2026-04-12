@@ -315,11 +315,12 @@ export default function PaymentMethodsPage() {
   const paymentMethodDrilldownHref = useCallback(
     (paymentMethodId: string) =>
       buildTransactionsDrilldownHref({
+        workspaceSlug: workspace.slug,
         year: currentYear,
         month: currentMonth,
         paymentMethodId,
       }),
-    [currentMonth, currentYear],
+    [currentMonth, currentYear, workspace.slug],
   );
 
   const onSubmit = handleSubmit(async (values) => {
