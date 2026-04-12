@@ -15,6 +15,7 @@ interface BootstrapOptions {
 
 const defaultCurrency = "ARS";
 const defaultSavingsRateMode = "manual" as const;
+const defaultShowCents = false;
 
 function buildWorkspaceName(fullNameHint: string | undefined, email: string | undefined) {
   if (fullNameHint && fullNameHint.trim().length > 0) {
@@ -70,6 +71,7 @@ async function ensureWorkspaceSettings(
     deferred_income_enabled: false,
     deferred_income_day: null,
     currency_code: defaultCurrency,
+    show_cents: defaultShowCents,
   });
 
   if (settingsInsert.error && settingsInsert.error.code !== "23505") {

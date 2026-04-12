@@ -87,6 +87,7 @@ export interface Database {
           deferred_income_enabled: boolean;
           deferred_income_day: number | null;
           currency_code: string;
+          show_cents: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -98,6 +99,7 @@ export interface Database {
           deferred_income_enabled?: boolean;
           deferred_income_day?: number | null;
           currency_code?: string;
+          show_cents?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -107,6 +109,7 @@ export interface Database {
           deferred_income_enabled?: boolean;
           deferred_income_day?: number | null;
           currency_code?: string;
+          show_cents?: boolean;
           updated_at?: string;
         };
         Relationships: [];

@@ -31,6 +31,7 @@ export const settingsFormSchema = z
     savingsRateMode: z.enum(savingsRateModeOptions),
     deferredIncomeEnabled: z.boolean(),
     deferredIncomeDay: optionalDay,
+    showCents: z.boolean(),
     currencyCode: z
       .string()
       .trim()

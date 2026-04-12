@@ -41,11 +41,16 @@ type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
 type PaymentMethodRow = Database["public"]["Tables"]["payment_methods"]["Row"];
 type WorkspaceSettingsLiteRow = Pick<
   Database["public"]["Tables"]["workspace_settings"]["Row"],
-  "start_year" | "currency_code"
+  "start_year" | "currency_code" | "show_cents"
 >;
 
 type TypeFilter = TransactionType | "all";
-type CentsDisplayMode = "always" | "smart";
+
+type TransactionGroup = {
+  key: string;
+  label: string;
+  rows: TransactionRow[];
+};
 
 const monthOptions = [
   { value: "1", label: "Enero" },
@@ -162,6 +167,49 @@ function normalizeSearchText(value: string) {
   return value.trim().toLocaleLowerCase("es");
 }
 
+function EditIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
+}
+
+function TrashIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M19 6l-1 14H6L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+    </svg>
+  );
+}
+
 export default function TransactionsPage() {
   const { supabase, workspace, user } = useWorkspace();
   const isMobile = useMediaQuery("(max-width: 48em)");
@@ -171,13 +219,13 @@ export default function TransactionsPage() {
   const [categories, setCategories] = useState<CategoryRow[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodRow[]>([]);
   const [currencyCode, setCurrencyCode] = useState("ARS");
+  const [showCents, setShowCents] = useState(false);
   const [startYear, setStartYear] = useState(now.getFullYear());
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [searchFilter, setSearchFilter] = useState("");
-  const [centsDisplayMode, setCentsDisplayMode] = useState<CentsDisplayMode>("smart");
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -225,18 +273,18 @@ export default function TransactionsPage() {
     });
   }, [currencyCode]);
 
-  const compactCurrencyFormatter = useMemo(() => {
+  const roundedCurrencyFormatter = useMemo(() => {
     return new Intl.NumberFormat("es-AR", {
       style: "currency",
       currency: currencyCode || "ARS",
       minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
+      maximumFractionDigits: 0,
     });
   }, [currencyCode]);
 
   const visibleAmountFormatter = useMemo(
-    () => (centsDisplayMode === "always" ? currencyFormatter : compactCurrencyFormatter),
-    [centsDisplayMode, compactCurrencyFormatter, currencyFormatter],
+    () => (showCents ? currencyFormatter : roundedCurrencyFormatter),
+    [currencyFormatter, roundedCurrencyFormatter, showCents],
   );
 
   const dateFormatter = useMemo(() => {
@@ -246,6 +294,35 @@ export default function TransactionsPage() {
       year: "numeric",
     });
   }, []);
+
+  const shortDateFormatter = useMemo(() => {
+    return new Intl.DateTimeFormat("es-AR", {
+      day: "numeric",
+      month: "short",
+    });
+  }, []);
+
+  const longDateFormatter = useMemo(() => {
+    return new Intl.DateTimeFormat("es-AR", {
+      day: "numeric",
+      month: "long",
+    });
+  }, []);
+
+  const longDateWithYearFormatter = useMemo(() => {
+    return new Intl.DateTimeFormat("es-AR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  }, []);
+
+  const todayKey = useMemo(() => toDateInputValue(now), [now]);
+  const yesterdayKey = useMemo(() => {
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    return toDateInputValue(yesterday);
+  }, [now]);
 
   const yearOptions = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -321,6 +398,46 @@ export default function TransactionsPage() {
     [dateFormatter],
   );
 
+  const formatCompactDate = useCallback(
+    (dateValue: string) => {
+      const parsedDate = parseDateValue(dateValue);
+      if (!parsedDate) {
+        return dateValue;
+      }
+
+      return shortDateFormatter
+        .format(parsedDate)
+        .replaceAll(".", "")
+        .replace(" de ", " ")
+        .toLocaleLowerCase("es");
+    },
+    [shortDateFormatter],
+  );
+
+  const formatGroupLabel = useCallback(
+    (dateValue: string) => {
+      if (dateValue === todayKey) {
+        return "Hoy";
+      }
+
+      if (dateValue === yesterdayKey) {
+        return "Ayer";
+      }
+
+      const parsedDate = parseDateValue(dateValue);
+      if (!parsedDate) {
+        return dateValue;
+      }
+
+      if (parsedDate.getFullYear() === now.getFullYear()) {
+        return longDateFormatter.format(parsedDate);
+      }
+
+      return longDateWithYearFormatter.format(parsedDate);
+    },
+    [longDateFormatter, longDateWithYearFormatter, now, todayKey, yesterdayKey],
+  );
+
   const normalizedSearchFilter = useMemo(() => normalizeSearchText(searchFilter), [searchFilter]);
 
   const filteredRows = useMemo(() => {
@@ -341,8 +458,9 @@ export default function TransactionsPage() {
         paymentMethod?.name ?? "",
         transactionTypeLabels[row.type],
         formatDate(row.transaction_date),
+        formatCompactDate(row.transaction_date),
         currencyFormatter.format(row.amount),
-        compactCurrencyFormatter.format(row.amount),
+        roundedCurrencyFormatter.format(row.amount),
       ]
         .join(" ")
         .toLocaleLowerCase("es");
@@ -351,13 +469,35 @@ export default function TransactionsPage() {
     });
   }, [
     categoryById,
-    compactCurrencyFormatter,
     currencyFormatter,
+    formatCompactDate,
     formatDate,
     normalizedSearchFilter,
     paymentMethodById,
+    roundedCurrencyFormatter,
     rows,
   ]);
+
+  const groupedRows = useMemo<TransactionGroup[]>(() => {
+    const byDate = new Map<string, TransactionRow[]>();
+
+    for (const row of filteredRows) {
+      const dateKey = row.transaction_date;
+      const groupRows = byDate.get(dateKey);
+
+      if (groupRows) {
+        groupRows.push(row);
+      } else {
+        byDate.set(dateKey, [row]);
+      }
+    }
+
+    return Array.from(byDate.entries()).map(([key, groupedDateRows]) => ({
+      key,
+      label: formatGroupLabel(key),
+      rows: groupedDateRows,
+    }));
+  }, [filteredRows, formatGroupLabel]);
 
   const activeFiltersCount =
     Number(typeFilter !== "all") +
@@ -416,7 +556,7 @@ export default function TransactionsPage() {
         .order("created_at", { ascending: true }),
       supabase
         .from("workspace_settings")
-        .select("start_year, currency_code")
+        .select("start_year, currency_code, show_cents")
         .eq("workspace_id", workspace.id)
         .maybeSingle(),
     ]);
@@ -452,10 +592,12 @@ export default function TransactionsPage() {
       });
       setStartYear(new Date().getFullYear());
       setCurrencyCode("ARS");
+      setShowCents(false);
     } else {
       const settings = settingsResponse.data as WorkspaceSettingsLiteRow | null;
       setStartYear(settings?.start_year ?? new Date().getFullYear());
       setCurrencyCode(settings?.currency_code ?? "ARS");
+      setShowCents(settings?.show_cents ?? false);
     }
 
     setIsBootstrapping(false);
@@ -713,7 +855,7 @@ export default function TransactionsPage() {
   }
 
   return (
-    <Stack gap="sm" pos="relative">
+    <Stack gap="sm" pos="relative" style={isMobile ? { paddingBottom: "5.2rem" } : undefined}>
       <LoadingOverlay visible={isBootstrapping || isLoadingTransactions} />
 
       <Group justify="space-between" align="end" wrap="wrap" gap="xs">
@@ -724,9 +866,11 @@ export default function TransactionsPage() {
           </Text>
         </Stack>
 
-        <Button onClick={openCreateModal} disabled={!hasAnyActiveCategory} fullWidth={isMobile}>
-          Nueva transacción
-        </Button>
+        {!isMobile ? (
+          <Button onClick={openCreateModal} disabled={!hasAnyActiveCategory}>
+            Nueva transacción
+          </Button>
+        ) : null}
       </Group>
 
       <Paper withBorder radius="md" p="sm">
@@ -771,19 +915,6 @@ export default function TransactionsPage() {
               onChange={(event) => setSearchFilter(event.currentTarget.value)}
               style={{ minWidth: 220, flex: "1 1 220px" }}
             />
-
-            <NativeSelect
-              label="Centavos"
-              data={[
-                { value: "smart", label: "Auto" },
-                { value: "always", label: "Siempre" },
-              ]}
-              value={centsDisplayMode}
-              onChange={(event) =>
-                setCentsDisplayMode(event.currentTarget.value as CentsDisplayMode)
-              }
-              style={{ minWidth: 110 }}
-            />
           </Group>
 
           <Text size="xs" c="dimmed">
@@ -802,96 +933,144 @@ export default function TransactionsPage() {
         </Alert>
       ) : null}
 
-      <Paper withBorder radius="md" p="sm">
-        {filteredRows.length === 0 ? (
-          <Text size="sm" c="dimmed">
+      <Paper withBorder radius="md" p={6}>
+        {groupedRows.length === 0 ? (
+          <Text size="sm" c="dimmed" p="xs">
             No hay transacciones para este período y filtros.
           </Text>
         ) : (
-          <Stack gap="xs">
-            {filteredRows.map((row) => {
-              const category = categoryById.get(row.category_id);
-              const paymentMethod = row.payment_method_id
-                ? paymentMethodById.get(row.payment_method_id)
-                : null;
+          <Stack gap={8}>
+            {groupedRows.map((group) => (
+              <Stack key={group.key} gap={5}>
+                <Text
+                  size="10px"
+                  fw={700}
+                  c="dimmed"
+                  px={6}
+                  tt="uppercase"
+                  style={{ letterSpacing: "0.04em" }}
+                >
+                  {group.label}
+                </Text>
 
-              return (
-                <Paper key={row.id} withBorder radius="sm" p="sm">
-                  <Stack gap={5}>
-                    <Group justify="space-between" align="flex-start" wrap="nowrap" gap="xs">
-                      <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
-                        <Text fw={600} size="sm" lineClamp={1}>
-                          {category?.name ?? "Categoría no disponible"}
-                        </Text>
+                <Stack gap={5}>
+                  {group.rows.map((row) => {
+                    const category = categoryById.get(row.category_id);
+                    const paymentMethod = row.payment_method_id
+                      ? paymentMethodById.get(row.payment_method_id)
+                      : null;
 
-                        {row.description ? (
-                          <Text size="xs" c="dimmed" lineClamp={1}>
-                            {row.description}
-                          </Text>
-                        ) : null}
-                      </Stack>
+                    const metaParts = [formatCompactDate(row.transaction_date)];
+                    if (paymentMethod?.name) {
+                      metaParts.push(paymentMethod.name);
+                    }
+                    if (row.effective_date) {
+                      metaParts.push(`Efec. ${formatCompactDate(row.effective_date)}`);
+                    }
 
-                      <Stack
-                        align="flex-end"
-                        gap={3}
-                        style={{ minWidth: isMobile ? 130 : 182, flexShrink: 0 }}
-                      >
-                        <Text
-                          fw={800}
-                          size={isMobile ? "lg" : "xl"}
-                          style={{
-                            textAlign: "right",
-                            lineHeight: 1.05,
-                            fontVariantNumeric: "tabular-nums",
-                          }}
-                        >
-                          {visibleAmountFormatter.format(row.amount)}
-                        </Text>
-                        <Badge size="xs" variant="light" color={transactionTypeColors[row.type]}>
-                          {transactionTypeLabels[row.type]}
-                        </Badge>
-                      </Stack>
-                    </Group>
+                    return (
+                      <Paper key={row.id} withBorder radius={6} p={isMobile ? 7 : 8}>
+                        <Stack gap={3}>
+                          <Group justify="space-between" align="flex-start" wrap="nowrap" gap={6}>
+                            <Stack gap={1} style={{ flex: 1, minWidth: 0 }}>
+                              <Text fw={600} size="sm" lineClamp={1} style={{ lineHeight: 1.15 }}>
+                                {category?.name ?? "Categoría no disponible"}
+                              </Text>
 
-                    <Group justify="space-between" align="center" wrap="wrap" gap="xs">
-                      <Group gap={6} wrap="wrap" style={{ minWidth: 0 }}>
-                        <Badge size="xs" color="gray" variant="light">
-                          {formatDate(row.transaction_date)}
-                        </Badge>
-                        {row.effective_date ? (
-                          <Badge size="xs" color="gray" variant="outline">
-                            Efec. {formatDate(row.effective_date)}
-                          </Badge>
-                        ) : null}
-                        {paymentMethod ? (
-                          <Badge size="xs" color="gray" variant="outline">
-                            {paymentMethod.name}
-                          </Badge>
-                        ) : null}
-                      </Group>
+                              {row.description ? (
+                                <Text size="11px" c="dimmed" lineClamp={1} style={{ lineHeight: 1.15 }}>
+                                  {row.description}
+                                </Text>
+                              ) : null}
+                            </Stack>
 
-                      <Group gap={4}>
-                        <Button size="xs" variant="subtle" onClick={() => openEditModal(row)}>
-                          Editar
-                        </Button>
-                        <Button
-                          size="xs"
-                          color="red"
-                          variant="subtle"
-                          loading={deletingId === row.id}
-                          onClick={() => confirmDelete(row)}
-                        >
-                          Eliminar
-                        </Button>
-                      </Group>
-                    </Group>
-                  </Stack>
-                </Paper>
-              );
-            })}
+                            <Stack
+                              align="flex-end"
+                              gap={1}
+                              style={{ minWidth: isMobile ? 132 : 196, flexShrink: 0 }}
+                            >
+                              <Text
+                                fw={800}
+                                style={{
+                                  fontSize: isMobile ? "1.2rem" : "1.5rem",
+                                  textAlign: "right",
+                                  lineHeight: 1,
+                                  letterSpacing: "-0.01em",
+                                  fontVariantNumeric: "tabular-nums",
+                                }}
+                              >
+                                {visibleAmountFormatter.format(row.amount)}
+                              </Text>
+                              <Badge size="xs" variant="light" color={transactionTypeColors[row.type]}>
+                                {transactionTypeLabels[row.type]}
+                              </Badge>
+                            </Stack>
+                          </Group>
+
+                          <Group justify="space-between" align="center" wrap="nowrap" gap={6}>
+                            <Text size="11px" c="dimmed" lineClamp={1} style={{ minWidth: 0 }}>
+                              {metaParts.join(" · ")}
+                            </Text>
+
+                            <Group gap={1} wrap="nowrap">
+                              <Button
+                                size="xs"
+                                variant="subtle"
+                                color="gray"
+                                leftSection={<EditIcon size={11} />}
+                                onClick={() => openEditModal(row)}
+                                aria-label="Editar transacción"
+                                px={isMobile ? 6 : 8}
+                                styles={{ label: { fontSize: "0.67rem", fontWeight: 500 } }}
+                              >
+                                {isMobile ? null : "Editar"}
+                              </Button>
+                              <Button
+                                size="xs"
+                                variant="subtle"
+                                color="red"
+                                leftSection={<TrashIcon size={11} />}
+                                loading={deletingId === row.id}
+                                onClick={() => confirmDelete(row)}
+                                aria-label="Eliminar transacción"
+                                px={isMobile ? 6 : 8}
+                                styles={{ label: { fontSize: "0.67rem", fontWeight: 500 } }}
+                              >
+                                {isMobile ? null : "Eliminar"}
+                              </Button>
+                            </Group>
+                          </Group>
+                        </Stack>
+                      </Paper>
+                    );
+                  })}
+                </Stack>
+              </Stack>
+            ))}
           </Stack>
         )}
       </Paper>
+
+      {isMobile ? (
+        <Paper
+          withBorder
+          radius={8}
+          p={6}
+          style={{
+            position: "fixed",
+            left: 12,
+            right: 12,
+            bottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
+            zIndex: 40,
+            backgroundColor: "var(--mantine-color-body)",
+            boxShadow: "0 -8px 18px rgba(0, 0, 0, 0.08)",
+          }}
+        >
+          <Button onClick={openCreateModal} disabled={!hasAnyActiveCategory} fullWidth>
+            Nueva transacción
+          </Button>
+        </Paper>
+      ) : null}
 
       <Modal
         opened={isModalOpen}
@@ -958,6 +1137,9 @@ export default function TransactionsPage() {
                       const parsed = parseBudgetAmount(event.currentTarget.value);
                       field.onChange(parsed === null ? "" : formatBudgetAmount(parsed));
                     }}
+                    leftSection={<Text size="xs" c="dimmed" fw={700}>$</Text>}
+                    leftSectionWidth={24}
+                    styles={{ input: { textAlign: "right", fontVariantNumeric: "tabular-nums" } }}
                   />
                 )}
               />

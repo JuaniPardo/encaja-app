@@ -104,6 +104,7 @@ export default function BudgetPage() {
   const now = useMemo(() => new Date(), []);
   const [startYear, setStartYear] = useState(now.getFullYear());
   const [currencyCode, setCurrencyCode] = useState("ARS");
+  const [showCents, setShowCents] = useState(false);
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [categories, setCategories] = useState<CategoryRow[]>([]);
@@ -136,10 +137,10 @@ export default function BudgetPage() {
     return new Intl.NumberFormat("es-AR", {
       style: "currency",
       currency: currencyCode || "ARS",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      minimumFractionDigits: showCents ? 2 : 0,
+      maximumFractionDigits: showCents ? 2 : 0,
     });
-  }, [currencyCode]);
+  }, [currencyCode, showCents]);
 
   const groupedCategories = useMemo<GroupedCategories>(() => {
     const grouped: GroupedCategories = {
@@ -201,7 +202,7 @@ export default function BudgetPage() {
     : roundedBalance > 0
       ? "remaining"
       : "overassigned";
-  const formattedBalanceAbsolute = `$${formatBudgetAmount(Math.abs(roundedBalance))}`;
+  const formattedBalanceAbsolute = currencyFormatter.format(Math.abs(roundedBalance));
 
   const yearOptions = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -271,10 +272,12 @@ export default function BudgetPage() {
       });
       setStartYear(new Date().getFullYear());
       setCurrencyCode("ARS");
+      setShowCents(false);
     } else {
       const settingsRow = settingsResponse.data as WorkspaceSettingsRow | null;
       setStartYear(settingsRow?.start_year ?? new Date().getFullYear());
       setCurrencyCode(settingsRow?.currency_code ?? "ARS");
+      setShowCents(settingsRow?.show_cents ?? false);
     }
 
     setIsBootstrapping(false);

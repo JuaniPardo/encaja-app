@@ -48,6 +48,7 @@ export default function SettingsPage() {
       savingsRateMode: "manual",
       deferredIncomeEnabled: false,
       deferredIncomeDay: null,
+      showCents: false,
       currencyCode: "ARS",
     },
   });
@@ -81,6 +82,7 @@ export default function SettingsPage() {
         savingsRateMode: "manual",
         deferredIncomeEnabled: false,
         deferredIncomeDay: null,
+        showCents: false,
         currencyCode: "ARS",
       });
       return;
@@ -92,6 +94,7 @@ export default function SettingsPage() {
       savingsRateMode: response.data.savings_rate_mode,
       deferredIncomeEnabled: response.data.deferred_income_enabled,
       deferredIncomeDay: response.data.deferred_income_day,
+      showCents: response.data.show_cents ?? false,
       currencyCode: response.data.currency_code,
     });
   }, [reset, supabase, workspace.id]);
@@ -106,6 +109,7 @@ export default function SettingsPage() {
       savings_rate_mode: values.savingsRateMode,
       deferred_income_enabled: values.deferredIncomeEnabled,
       deferred_income_day: values.deferredIncomeEnabled ? values.deferredIncomeDay : null,
+      show_cents: values.showCents,
       currency_code: values.currencyCode.toUpperCase(),
       updated_at: new Date().toISOString(),
     };
@@ -134,6 +138,7 @@ export default function SettingsPage() {
           savings_rate_mode: payload.savings_rate_mode,
           deferred_income_enabled: payload.deferred_income_enabled,
           deferred_income_day: payload.deferred_income_day,
+          show_cents: payload.show_cents,
           currency_code: payload.currency_code,
         })
         .select("id")
@@ -214,6 +219,18 @@ export default function SettingsPage() {
               maxLength={3}
               error={errors.currencyCode?.message}
               {...register("currencyCode")}
+            />
+
+            <Controller
+              control={control}
+              name="showCents"
+              render={({ field }) => (
+                <Checkbox
+                  checked={field.value}
+                  onChange={(event) => field.onChange(event.currentTarget.checked)}
+                  label="Mostrar centavos en la UI"
+                />
+              )}
             />
 
             <Group justify="flex-end" mt="sm">

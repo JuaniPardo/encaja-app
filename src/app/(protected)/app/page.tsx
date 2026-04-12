@@ -27,7 +27,7 @@ import type { Database, TransactionType } from "@/types/database";
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
 type WorkspaceSettingsLiteRow = Pick<
   Database["public"]["Tables"]["workspace_settings"]["Row"],
-  "start_year" | "currency_code"
+  "start_year" | "currency_code" | "show_cents"
 >;
 type BudgetPeriodIdRow = Pick<Database["public"]["Tables"]["budget_periods"]["Row"], "id">;
 type BudgetItemLiteRow = Pick<
@@ -319,6 +319,7 @@ export default function DashboardPage() {
   const [transactionRows, setTransactionRows] = useState<TransactionLiteRow[]>([]);
   const [startYear, setStartYear] = useState(now.getFullYear());
   const [currencyCode, setCurrencyCode] = useState("ARS");
+  const [showCents, setShowCents] = useState(false);
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
@@ -328,10 +329,10 @@ export default function DashboardPage() {
     return new Intl.NumberFormat("es-AR", {
       style: "currency",
       currency: currencyCode || "ARS",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      minimumFractionDigits: showCents ? 2 : 0,
+      maximumFractionDigits: showCents ? 2 : 0,
     });
-  }, [currencyCode]);
+  }, [currencyCode, showCents]);
 
   const percentageFormatter = useMemo(() => {
     return new Intl.NumberFormat("es-AR", {
@@ -381,7 +382,7 @@ export default function DashboardPage() {
         .order("created_at", { ascending: true }),
       supabase
         .from("workspace_settings")
-        .select("start_year, currency_code")
+        .select("start_year, currency_code, show_cents")
         .eq("workspace_id", workspace.id)
         .maybeSingle(),
     ]);
@@ -406,10 +407,12 @@ export default function DashboardPage() {
       });
       setStartYear(new Date().getFullYear());
       setCurrencyCode("ARS");
+      setShowCents(false);
     } else {
       const settings = settingsResponse.data as WorkspaceSettingsLiteRow | null;
       setStartYear(settings?.start_year ?? new Date().getFullYear());
       setCurrencyCode(settings?.currency_code ?? "ARS");
+      setShowCents(settings?.show_cents ?? false);
     }
 
     setIsBootstrapping(false);
