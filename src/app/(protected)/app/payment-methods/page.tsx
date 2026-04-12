@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -27,6 +28,7 @@ import {
   type PaymentMethodFormInputValues,
   type PaymentMethodFormValues,
 } from "@/features/payment-methods/schema";
+import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { Database, PaymentMethodType, TransactionType } from "@/types/database";
 
@@ -122,6 +124,7 @@ function toDefaults(row?: PaymentMethodRow): PaymentMethodFormValues {
 
 export default function PaymentMethodsPage() {
   const { supabase, workspace, user } = useWorkspace();
+  const now = useMemo(() => new Date(), []);
   const [rows, setRows] = useState<PaymentMethodRow[]>([]);
   const [movementByMethodId, setMovementByMethodId] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -288,6 +291,16 @@ export default function PaymentMethodsPage() {
       .reduce((sum, row) => sum + row.displayedBalance, 0);
     return roundMoney(total);
   }, [computedRows]);
+
+  const paymentMethodDrilldownHref = useCallback(
+    (paymentMethodId: string) =>
+      buildTransactionsDrilldownHref({
+        year: now.getFullYear(),
+        month: now.getMonth() + 1,
+        paymentMethodId,
+      }),
+    [now],
+  );
 
   const onSubmit = handleSubmit(async (values) => {
     const normalizedCurrentBalance = normalizeBalanceByType(values.type, values.currentBalance);
@@ -508,6 +521,18 @@ export default function PaymentMethodsPage() {
                       </Text>
                     ) : null}
                   </Group>
+
+                  <Button
+                    component={Link}
+                    href={paymentMethodDrilldownHref(row.id)}
+                    variant="subtle"
+                    color="gray"
+                    size="compact-xs"
+                    px={0}
+                    justify="flex-start"
+                  >
+                    Ver movimientos
+                  </Button>
                 </Stack>
               </Paper>
             ))}

@@ -21,6 +21,7 @@ import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 
 import { ProgressCell } from "@/features/dashboard/progress-cell";
+import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { Database, PaymentMethodType, TransactionType } from "@/types/database";
 
@@ -697,6 +698,27 @@ export default function DashboardPage() {
           deviation: "13%",
         };
 
+  const paymentMethodDrilldownHref = useCallback(
+    (paymentMethodId: string) =>
+      buildTransactionsDrilldownHref({
+        year: selectedYear,
+        month: selectedMonth,
+        paymentMethodId,
+      }),
+    [selectedMonth, selectedYear],
+  );
+
+  const categoryDrilldownHref = useCallback(
+    (type: TransactionType, categoryId: string) =>
+      buildTransactionsDrilldownHref({
+        year: selectedYear,
+        month: selectedMonth,
+        type,
+        categoryId,
+      }),
+    [selectedMonth, selectedYear],
+  );
+
   return (
     <Stack gap={isMobile ? "xs" : "sm"} pos="relative">
       <LoadingOverlay visible={isBootstrapping || isLoadingSummary} />
@@ -851,35 +873,37 @@ export default function DashboardPage() {
           ) : (
             <Stack gap={6}>
               {financialSummary.activeIncludedRows.map((row) => (
-                <Group
+                <UnstyledButton
                   key={row.id}
-                  justify="space-between"
-                  align="center"
-                  wrap="nowrap"
-                  px={isMobile ? 6 : 8}
-                  py={6}
+                  component={Link}
+                  href={paymentMethodDrilldownHref(row.id)}
+                  className="dashboard-clickable-item"
                   style={{
+                    display: "block",
                     borderRadius: 8,
                     border: "1px solid #e4e7ec",
                     backgroundColor: "#f8fafc",
+                    padding: isMobile ? "6px 8px" : "6px 10px",
                   }}
                 >
-                  <Stack gap={0} style={{ minWidth: 0 }}>
-                    <Text size="sm" fw={700} c="#1f2937" truncate>
-                      {row.name}
+                  <Group justify="space-between" align="center" wrap="nowrap">
+                    <Stack gap={0} style={{ minWidth: 0 }}>
+                      <Text size="sm" fw={700} c="#1f2937" truncate>
+                        {row.name}
+                      </Text>
+                      <Text size="xs" c="#667085">
+                        {paymentMethodTypeLabels[row.type]} · Ver movimientos
+                      </Text>
+                    </Stack>
+                    <Text
+                      size="sm"
+                      fw={800}
+                      c={row.currentBalance >= 0 ? "#087f5b" : "#c92a2a"}
+                    >
+                      {currencyFormatter.format(row.currentBalance)}
                     </Text>
-                    <Text size="xs" c="#667085">
-                      {paymentMethodTypeLabels[row.type]}
-                    </Text>
-                  </Stack>
-                  <Text
-                    size="sm"
-                    fw={800}
-                    c={row.currentBalance >= 0 ? "#087f5b" : "#c92a2a"}
-                  >
-                    {currencyFormatter.format(row.currentBalance)}
-                  </Text>
-                </Group>
+                  </Group>
+                </UnstyledButton>
               ))}
             </Stack>
           )}
@@ -1019,10 +1043,17 @@ export default function DashboardPage() {
                       const deviationColor = getDeviationColor(type, row.deviation);
 
                       return (
-                        <Table.Tr key={row.categoryId} className="dashboard-clickable-row">
+                        <Table.Tr key={row.categoryId}>
                           <Table.Td>
                             <Group gap={6} wrap={isMobile ? "wrap" : "nowrap"}>
-                              <Text size="xs" c="#1f2937" lineClamp={isMobile ? 2 : 1}>
+                              <Text
+                                component={Link}
+                                href={categoryDrilldownHref(type, row.categoryId)}
+                                size="xs"
+                                c="#1f2937"
+                                lineClamp={isMobile ? 2 : 1}
+                                style={{ textDecoration: "none" }}
+                              >
                                 {row.categoryName}
                               </Text>
                               {!isMobile && !row.categoryIsActive ? (

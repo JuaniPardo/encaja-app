@@ -246,6 +246,7 @@ export default function TransactionsPage() {
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState("all");
   const [searchFilter, setSearchFilter] = useState("");
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(true);
@@ -403,6 +404,18 @@ export default function TransactionsPage() {
       }));
   }, [editingRow?.payment_method_id, paymentMethods]);
 
+  const paymentMethodFilterOptions = useMemo(() => {
+    const sortedPaymentMethods = [...paymentMethods].sort((a, b) => a.name.localeCompare(b.name, "es"));
+
+    return [
+      { value: "all", label: "Todos" },
+      ...sortedPaymentMethods.map((paymentMethod) => ({
+        value: paymentMethod.id,
+        label: paymentMethod.is_active ? paymentMethod.name : `${paymentMethod.name} (inactivo)`,
+      })),
+    ];
+  }, [paymentMethods]);
+
   const formatDate = useCallback(
     (dateValue: string | null) => {
       if (!dateValue) {
@@ -523,6 +536,7 @@ export default function TransactionsPage() {
   const activeFiltersCount =
     Number(typeFilter !== "all") +
     Number(categoryFilter !== "all") +
+    Number(paymentMethodFilter !== "all") +
     Number(normalizedSearchFilter !== "");
 
   useEffect(() => {
@@ -555,6 +569,11 @@ export default function TransactionsPage() {
     const categoryFromQuery = params.get("categoryId") ?? params.get("category");
     if (categoryFromQuery && categoryFromQuery.trim() !== "") {
       setCategoryFilter(categoryFromQuery);
+    }
+
+    const paymentMethodFromQuery = params.get("paymentMethodId") ?? params.get("paymentMethod");
+    if (paymentMethodFromQuery && paymentMethodFromQuery.trim() !== "") {
+      setPaymentMethodFilter(paymentMethodFromQuery);
     }
 
     const searchFromQuery = params.get("search");
@@ -605,6 +624,24 @@ export default function TransactionsPage() {
       setCategoryFilter("all");
     }
   }, [categoryFilter, categoryFilterOptions, isBootstrapping]);
+
+  useEffect(() => {
+    if (isBootstrapping) {
+      return;
+    }
+
+    if (paymentMethodFilter === "all") {
+      return;
+    }
+
+    const isFilterAvailable = paymentMethodFilterOptions.some(
+      (option) => option.value === paymentMethodFilter,
+    );
+    if (!isFilterAvailable) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPaymentMethodFilter("all");
+    }
+  }, [isBootstrapping, paymentMethodFilter, paymentMethodFilterOptions]);
 
   const loadBaseData = useCallback(async () => {
     setIsBootstrapping(true);
@@ -691,6 +728,10 @@ export default function TransactionsPage() {
       query = query.eq("category_id", categoryFilter);
     }
 
+    if (paymentMethodFilter !== "all") {
+      query = query.eq("payment_method_id", paymentMethodFilter);
+    }
+
     const response = await query;
     setIsLoadingTransactions(false);
 
@@ -704,7 +745,15 @@ export default function TransactionsPage() {
     }
 
     setRows(response.data);
-  }, [categoryFilter, selectedMonth, selectedYear, supabase, typeFilter, workspace.id]);
+  }, [
+    categoryFilter,
+    paymentMethodFilter,
+    selectedMonth,
+    selectedYear,
+    supabase,
+    typeFilter,
+    workspace.id,
+  ]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -728,12 +777,18 @@ export default function TransactionsPage() {
   function openCreateModal() {
     const defaultType = typeFilter === "all" ? "expense" : typeFilter;
     const filteredCategory = categoryFilter !== "all" ? categoryById.get(categoryFilter) : null;
+    const filteredPaymentMethod =
+      paymentMethodFilter !== "all" ? paymentMethodById.get(paymentMethodFilter) : null;
 
     const resolvedType = filteredCategory?.is_active ? filteredCategory.type : defaultType;
     const defaults = toFormDefaults(undefined, resolvedType);
 
     if (filteredCategory?.is_active && filteredCategory.type === resolvedType) {
       defaults.categoryId = filteredCategory.id;
+    }
+
+    if (filteredPaymentMethod?.is_active) {
+      defaults.paymentMethodId = filteredPaymentMethod.id;
     }
 
     setEditingRow(null);
@@ -973,6 +1028,14 @@ export default function TransactionsPage() {
               data={categoryFilterOptions}
               value={categoryFilter}
               onChange={(event) => setCategoryFilter(event.currentTarget.value)}
+              style={{ minWidth: 180 }}
+            />
+
+            <NativeSelect
+              label="Medio"
+              data={paymentMethodFilterOptions}
+              value={paymentMethodFilter}
+              onChange={(event) => setPaymentMethodFilter(event.currentTarget.value)}
               style={{ minWidth: 180 }}
             />
 

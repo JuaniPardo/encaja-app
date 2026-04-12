@@ -19,6 +19,7 @@ import {
 import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 
+import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { Database, ExpenseBehavior, TransactionType } from "@/types/database";
 
@@ -752,14 +753,12 @@ export default function InsightsPage() {
   ]);
 
   const drilldownHref = useCallback((period: PeriodRef, categoryId: string) => {
-    const params = new URLSearchParams({
-      year: String(period.year),
-      month: String(period.month),
+    return buildTransactionsDrilldownHref({
+      year: period.year,
+      month: period.month,
       categoryId,
       type: "expense",
     });
-
-    return `/app/transactions?${params.toString()}`;
   }, []);
 
   const currentMonthBadge = periodLabel(currentPeriod);
