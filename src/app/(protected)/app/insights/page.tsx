@@ -187,27 +187,6 @@ function sortCategories(a: CategoryRow, b: CategoryRow) {
   return a.name.localeCompare(b.name, "es");
 }
 
-function getBudgetPaceBadge(status: BudgetPaceStatus) {
-  if (status === "exceeded") {
-    return {
-      color: "pink",
-      label: "Excedida",
-    };
-  }
-
-  if (status === "risk") {
-    return {
-      color: "yellow",
-      label: "Podría excederse",
-    };
-  }
-
-  return {
-    color: "teal",
-    label: "En línea",
-  };
-}
-
 function formatSignedCurrency(value: number, formatter: Intl.NumberFormat) {
   const rounded = roundMoney(value);
   if (Math.abs(rounded) < deviationTolerance) {
@@ -225,6 +204,26 @@ function formatSignedPercent(value: number, formatter: Intl.NumberFormat) {
 
   const absolute = formatter.format(Math.abs(value));
   return `${value > 0 ? "+" : "-"}${absolute}%`;
+}
+
+function getRoundedPercentLabel(value: number) {
+  return `${Math.round(value)}%`;
+}
+
+function getPaceMainMessage(status: BudgetPaceStatus, hasBudget: boolean) {
+  if (!hasBudget) {
+    return "Todavía no tiene presupuesto definido";
+  }
+
+  if (status === "exceeded") {
+    return "Te excediste en tu presupuesto";
+  }
+
+  if (status === "risk") {
+    return "Podrías excederte si mantenés este ritmo";
+  }
+
+  return "Viene en línea con tu presupuesto";
 }
 
 export default function InsightsPage() {
@@ -751,6 +750,7 @@ export default function InsightsPage() {
       closedMonthData.closedTotals.expense -
       closedMonthData.closedTotals.saving,
   );
+  const remainingDays = Math.max(currentMonthData.daysInMonth - currentMonthData.elapsedDays, 0);
 
   return (
     <Stack gap="sm" pos="relative">
@@ -775,57 +775,34 @@ export default function InsightsPage() {
 
         <Tabs.Panel value="current" pt="sm">
           <Stack gap="sm">
-            <Paper withBorder radius="md" p="sm">
-              <Stack gap="sm">
-                <Group justify="space-between" wrap="wrap" gap="xs">
-                  <Text fw={700}>Estado del período actual</Text>
-                  <Badge color="gray" variant="light">
-                    {currentMonthBadge}
-                  </Badge>
-                </Group>
+            <Stack gap={6}>
+              <Group justify="space-between" wrap="wrap" gap="xs">
+                <Text fw={700}>Estado del período actual</Text>
+                <Badge color="gray" variant="light">
+                  {currentMonthBadge}
+                </Badge>
+              </Group>
 
-                <SimpleGrid cols={isMobile ? 1 : 3} spacing="xs">
-                  <Paper withBorder radius="sm" p="xs">
-                    <Stack gap={5}>
-                      <Text size="xs" c="dimmed">
-                        Progreso del mes
-                      </Text>
-                      <Text fw={700}>
-                        Día {currentMonthData.elapsedDays} de {currentMonthData.daysInMonth}
-                      </Text>
-                      <Progress value={currentMonthData.progressPercent} color="teal" size="sm" />
-                      <Text size="xs" c="dimmed">
-                        {percentageFormatter.format(currentMonthData.progressPercent)}% transcurrido
-                      </Text>
-                    </Stack>
-                  </Paper>
+              <Text fw={700}>
+                Día {currentMonthData.elapsedDays} de {currentMonthData.daysInMonth}
+              </Text>
+              <Progress value={currentMonthData.progressPercent} color="teal" size="sm" />
+              <Text size="sm">
+                Gastaste {currencyFormatter.format(currentMonthData.totalExpense)} hasta hoy.
+              </Text>
+              <Text size="sm" c="dimmed">
+                Quedan {remainingDays} días para ajustar el ritmo.
+              </Text>
+            </Stack>
 
-                  <Paper withBorder radius="sm" p="xs">
-                    <Stack gap={5}>
-                      <Text size="xs" c="dimmed">
-                        Gasto acumulado
-                      </Text>
-                      <Text fw={700}>{currencyFormatter.format(currentMonthData.totalExpense)}</Text>
-                      <Text size="xs" c="dimmed">
-                        Total de gastos registrados hasta hoy
-                      </Text>
-                    </Stack>
-                  </Paper>
-
-                  <Paper withBorder radius="sm" p="xs">
-                    <Stack gap={5}>
-                      <Text size="xs" c="dimmed">
-                        Días restantes
-                      </Text>
-                      <Text fw={700}>{Math.max(currentMonthData.daysInMonth - currentMonthData.elapsedDays, 0)}</Text>
-                      <Text size="xs" c="dimmed">
-                        Quedan días para ajustar el ritmo del período
-                      </Text>
-                    </Stack>
-                  </Paper>
-                </SimpleGrid>
-              </Stack>
-            </Paper>
+            <Stack gap={6}>
+              <Text fw={700}>Señales principales</Text>
+              {currentInsights.map((message) => (
+                <Text key={message} size="sm">
+                  • {message}
+                </Text>
+              ))}
+            </Stack>
 
             <Paper withBorder radius="md" p="sm">
               <Stack gap="xs">
@@ -845,7 +822,7 @@ export default function InsightsPage() {
                               {row.categoryName}
                             </Text>
                             <Text size="xs" c="dimmed">
-                              {percentageFormatter.format(row.sharePercent)}% del gasto actual
+                              {getRoundedPercentLabel(row.sharePercent)} de tu gasto hasta ahora
                             </Text>
                           </Stack>
 
@@ -880,61 +857,73 @@ export default function InsightsPage() {
                 ) : (
                   <Stack gap={6}>
                     {currentMonthData.paceRows.map((row) => {
-                      const badge = getBudgetPaceBadge(row.status);
+                      const hasBudget = row.budgetAmount > deviationTolerance;
+                      const paceMessage = getPaceMainMessage(row.status, hasBudget);
+                      const mainDelta =
+                        hasBudget && row.status === "risk"
+                          ? row.projectedAmount - row.budgetAmount
+                          : row.currentAmount - row.budgetAmount;
+                      const deltaColor =
+                        row.status === "exceeded"
+                          ? "pink.7"
+                          : row.status === "risk"
+                            ? "yellow.8"
+                            : "teal.7";
 
                       return (
                         <Paper key={row.categoryId} withBorder radius="sm" p="xs">
-                          <Stack gap={5}>
+                          <Stack gap={4}>
                             <Group justify="space-between" align="center" wrap="wrap" gap="xs">
                               <Text fw={600} size="sm">
                                 {row.categoryName}
                               </Text>
-                              <Badge color={badge.color} variant="light">
-                                {badge.label}
-                              </Badge>
-                            </Group>
-
-                            {row.budgetAmount <= deviationTolerance ? (
-                              <Text size="xs" c="dimmed">
-                                Lleva {currencyFormatter.format(row.currentAmount)} y todavía no tiene presupuesto cargado para este mes.
-                              </Text>
-                            ) : (
-                              <Text size="xs" c="dimmed">
-                                Lleva {currencyFormatter.format(row.currentAmount)} de {currencyFormatter.format(row.budgetAmount)}. Proyección simple: {currencyFormatter.format(row.projectedAmount)}.
-                              </Text>
-                            )}
-
-                            <Group justify="space-between" align="center" gap="xs" wrap="wrap">
-                              <Text size="xs" c="dimmed">
-                                Diferencia proyectada: {formatSignedCurrency(row.projectedAmount - row.budgetAmount, currencyFormatter)}
-                              </Text>
                               <Button
                                 component={Link}
                                 href={drilldownHref(currentPeriod, row.categoryId)}
-                                size="xs"
+                                size="compact-xs"
                                 variant="subtle"
                                 color="gray"
                               >
                                 Ver transacciones
                               </Button>
                             </Group>
+
+                            <Text size="sm" fw={600}>
+                              {paceMessage}
+                            </Text>
+                            <Text
+                              fw={800}
+                              c={deltaColor}
+                              style={{
+                                fontSize: isMobile ? "1.25rem" : "1.45rem",
+                                lineHeight: 1,
+                                fontVariantNumeric: "tabular-nums",
+                              }}
+                            >
+                              {formatSignedCurrency(mainDelta, currencyFormatter)}
+                            </Text>
+
+                            {hasBudget ? (
+                              <Text size="sm" c="dimmed">
+                                Llevás {currencyFormatter.format(row.currentAmount)} de{" "}
+                                {currencyFormatter.format(row.budgetAmount)}.
+                              </Text>
+                            ) : (
+                              <Text size="xs" c="dimmed">
+                                Llevás {currencyFormatter.format(row.currentAmount)} y todavía no tiene
+                                presupuesto definido para este mes.
+                              </Text>
+                            )}
+
+                            <Text size="xs" c="dimmed">
+                              Proyección: {currencyFormatter.format(row.projectedAmount)}
+                            </Text>
                           </Stack>
                         </Paper>
                       );
                     })}
                   </Stack>
                 )}
-              </Stack>
-            </Paper>
-
-            <Paper withBorder radius="md" p="sm">
-              <Stack gap={6}>
-                <Text fw={700}>Señales principales</Text>
-                {currentInsights.map((message) => (
-                  <Text key={message} size="sm">
-                    {message}
-                  </Text>
-                ))}
               </Stack>
             </Paper>
           </Stack>
@@ -992,9 +981,23 @@ export default function InsightsPage() {
                 <Text fw={700}>Top categorías del mes cerrado</Text>
 
                 {closedMonthData.topClosedCategories.length === 0 ? (
-                  <Text size="sm" c="dimmed">
-                    No hay gastos registrados para {closedMonthBadge}.
-                  </Text>
+                  <Stack gap={5}>
+                    <Text size="sm">
+                      Todavía no hay suficiente información para analizar este período.
+                    </Text>
+                    <Text size="sm" c="dimmed">
+                      Cuando completes un mes, vas a poder ver:
+                    </Text>
+                    <Text size="sm" c="dimmed">
+                      • tus principales categorías de gasto
+                    </Text>
+                    <Text size="sm" c="dimmed">
+                      • qué aumentó o bajó respecto al mes anterior
+                    </Text>
+                    <Text size="sm" c="dimmed">
+                      • cómo evoluciona tu dinero mes a mes
+                    </Text>
+                  </Stack>
                 ) : (
                   <Stack gap={6}>
                     {closedMonthData.topClosedCategories.map((row) => (
