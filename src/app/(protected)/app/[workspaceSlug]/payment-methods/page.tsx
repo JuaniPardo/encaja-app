@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  Alert,
   ActionIcon,
   Badge,
   Button,
@@ -29,6 +30,7 @@ import {
   type PaymentMethodFormValues,
 } from "@/features/payment-methods/schema";
 import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
+import { canManagePaymentMethods } from "@/features/workspace/permissions";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { Database, PaymentMethodType, TransactionType } from "@/types/database";
 
@@ -134,6 +136,7 @@ function toDefaults(row?: PaymentMethodRow): PaymentMethodFormValues {
 
 export default function PaymentMethodsPage() {
   const { supabase, workspace, user } = useWorkspace();
+  const canManageStructure = canManagePaymentMethods(workspace.role);
   const now = useMemo(() => new Date(), []);
   const [rows, setRows] = useState<PaymentMethodRow[]>([]);
   const [movementByMethodId, setMovementByMethodId] = useState<Record<string, number>>({});
@@ -265,12 +268,30 @@ export default function PaymentMethodsPage() {
   }, [loadRows]);
 
   function openCreateModal() {
+    if (!canManageStructure) {
+      notifications.show({
+        color: "red",
+        title: "Acción no permitida",
+        message: "Solo el owner puede administrar medios de pago.",
+      });
+      return;
+    }
+
     setEditingRow(null);
     reset(toDefaults());
     setIsModalOpen(true);
   }
 
   function openEditModal(row: PaymentMethodRow) {
+    if (!canManageStructure) {
+      notifications.show({
+        color: "red",
+        title: "Acción no permitida",
+        message: "Solo el owner puede administrar medios de pago.",
+      });
+      return;
+    }
+
     setEditingRow(row);
     reset(toDefaults(row));
     setIsModalOpen(true);
@@ -324,6 +345,15 @@ export default function PaymentMethodsPage() {
   );
 
   const onSubmit = handleSubmit(async (values) => {
+    if (!canManageStructure) {
+      notifications.show({
+        color: "red",
+        title: "Acción no permitida",
+        message: "Solo el owner puede administrar medios de pago.",
+      });
+      return;
+    }
+
     const normalizedCurrentBalance = normalizeBalanceByType(values.type, values.currentBalance);
     const isCreditCard = values.type === "credit_card";
 
@@ -394,6 +424,15 @@ export default function PaymentMethodsPage() {
   });
 
   async function toggleActive(row: PaymentMethodRow) {
+    if (!canManageStructure) {
+      notifications.show({
+        color: "red",
+        title: "Acción no permitida",
+        message: "Solo el owner puede administrar medios de pago.",
+      });
+      return;
+    }
+
     const response = await supabase
       .from("payment_methods")
       .update({
@@ -433,8 +472,16 @@ export default function PaymentMethodsPage() {
           </Text>
         </Stack>
 
-        <Button onClick={openCreateModal}>Nuevo medio</Button>
+        <Button onClick={openCreateModal} disabled={!canManageStructure}>
+          Nuevo medio
+        </Button>
       </Group>
+
+      {!canManageStructure ? (
+        <Alert color="yellow" variant="light" title="Acceso de solo lectura">
+          Tenés rol <b>{workspace.role}</b>. Solo el owner puede crear o editar medios de pago.
+        </Alert>
+      ) : null}
 
       <Paper withBorder radius="md" p="md">
         <NativeSelect
@@ -506,9 +553,12 @@ export default function PaymentMethodsPage() {
                       </Menu.Target>
 
                       <Menu.Dropdown>
-                        <Menu.Item onClick={() => openEditModal(row)}>Editar</Menu.Item>
+                        <Menu.Item disabled={!canManageStructure} onClick={() => openEditModal(row)}>
+                          Editar
+                        </Menu.Item>
                         <Menu.Item
                           color={row.is_active ? "gray" : "teal"}
+                          disabled={!canManageStructure}
                           onClick={() => void toggleActive(row)}
                         >
                           {row.is_active ? "Desactivar" : "Activar"}
@@ -571,6 +621,7 @@ export default function PaymentMethodsPage() {
             <TextInput
               label="Nombre"
               placeholder="Ej: Tarjeta Galicia"
+              disabled={!canManageStructure}
               error={errors.name?.message}
               {...register("name")}
             />
@@ -578,6 +629,7 @@ export default function PaymentMethodsPage() {
             <NativeSelect
               label="Tipo"
               data={paymentTypeSelectData}
+              disabled={!canManageStructure}
               error={errors.type?.message}
               {...register("type")}
             />
@@ -587,6 +639,7 @@ export default function PaymentMethodsPage() {
               type="number"
               step="0.01"
               placeholder={selectedType === "credit_card" ? "Ej: 250000" : "Ej: 120000"}
+              disabled={!canManageStructure}
               error={errors.currentBalance?.message}
               {...register("currentBalance")}
             />
@@ -600,6 +653,7 @@ export default function PaymentMethodsPage() {
             <Checkbox
               label="Incluir en balance principal"
               description="Si lo desactivás, el medio no se suma al balance consolidado del dashboard."
+              disabled={!canManageStructure}
               {...register("includeInBalance")}
             />
 
@@ -607,7 +661,7 @@ export default function PaymentMethodsPage() {
               label="Día de cierre (opcional)"
               type="number"
               placeholder="Ej: 20"
-              disabled={selectedType !== "credit_card"}
+              disabled={!canManageStructure || selectedType !== "credit_card"}
               error={errors.closingDay?.message}
               {...register("closingDay")}
             />
@@ -616,7 +670,7 @@ export default function PaymentMethodsPage() {
               label="Día de vencimiento (opcional)"
               type="number"
               placeholder="Ej: 10"
-              disabled={selectedType !== "credit_card"}
+              disabled={!canManageStructure || selectedType !== "credit_card"}
               error={errors.dueDay?.message}
               {...register("dueDay")}
             />
@@ -630,7 +684,7 @@ export default function PaymentMethodsPage() {
               >
                 Cancelar
               </Button>
-              <Button type="submit" loading={isSubmitting}>
+              <Button type="submit" loading={isSubmitting} disabled={!canManageStructure}>
                 {editingRow ? "Guardar" : "Crear"}
               </Button>
             </Group>

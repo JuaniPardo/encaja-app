@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  Alert,
   ActionIcon,
   Button,
   Group,
@@ -28,6 +29,7 @@ import {
   type CategoryFormValues,
 } from "@/features/categories/schema";
 import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
+import { canManageCategories } from "@/features/workspace/permissions";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { Database, ExpenseBehavior, TransactionType } from "@/types/database";
 
@@ -196,6 +198,7 @@ function ToggleActiveIcon({ size = 14 }: { size?: number }) {
 
 export default function CategoriesPage() {
   const { supabase, workspace, user } = useWorkspace();
+  const canManageStructure = canManageCategories(workspace.role);
   const isMobile = useMediaQuery("(max-width: 48em)");
   const [rows, setRows] = useState<CategoryRow[]>([]);
   const [usageByCategoryId, setUsageByCategoryId] = useState<Record<string, number>>({});
@@ -269,12 +272,30 @@ export default function CategoriesPage() {
   }, [loadRows]);
 
   function openCreateModal() {
+    if (!canManageStructure) {
+      notifications.show({
+        color: "red",
+        title: "Acción no permitida",
+        message: "Solo el owner puede administrar categorías.",
+      });
+      return;
+    }
+
     setEditingRow(null);
     reset(toCategoryDefaults());
     setIsModalOpen(true);
   }
 
   function openEditModal(row: CategoryRow) {
+    if (!canManageStructure) {
+      notifications.show({
+        color: "red",
+        title: "Acción no permitida",
+        message: "Solo el owner puede administrar categorías.",
+      });
+      return;
+    }
+
     setEditingRow(row);
     reset(toCategoryDefaults(row));
     setIsModalOpen(true);
@@ -347,6 +368,15 @@ export default function CategoriesPage() {
   );
 
   const onSubmit = handleSubmit(async (values) => {
+    if (!canManageStructure) {
+      notifications.show({
+        color: "red",
+        title: "Acción no permitida",
+        message: "Solo el owner puede administrar categorías.",
+      });
+      return;
+    }
+
     const expenseBehavior = values.type === "expense" ? values.expenseBehavior : null;
     const payload = {
       name: values.name.trim(),
@@ -412,6 +442,15 @@ export default function CategoriesPage() {
   });
 
   async function toggleActive(row: CategoryRow) {
+    if (!canManageStructure) {
+      notifications.show({
+        color: "red",
+        title: "Acción no permitida",
+        message: "Solo el owner puede administrar categorías.",
+      });
+      return;
+    }
+
     const response = await supabase
       .from("categories")
       .update({
@@ -454,6 +493,7 @@ export default function CategoriesPage() {
 
         <Button
           onClick={openCreateModal}
+          disabled={!canManageStructure}
           fullWidth={isMobile}
           radius="md"
           styles={{ root: { boxShadow: "none", border: "none" } }}
@@ -461,6 +501,12 @@ export default function CategoriesPage() {
           Nueva categoría
         </Button>
       </Group>
+
+      {!canManageStructure ? (
+        <Alert color="yellow" variant="light" title="Acceso de solo lectura">
+          Tenés rol <b>{workspace.role}</b>. Solo el owner puede crear o editar categorías.
+        </Alert>
+      ) : null}
 
       <Paper withBorder radius="md" p="sm">
         <Stack gap="xs">
@@ -620,6 +666,7 @@ export default function CategoriesPage() {
                               <Menu.Dropdown>
                                 <Menu.Item
                                   leftSection={<EditIcon size={13} />}
+                                  disabled={!canManageStructure}
                                   onClick={() => openEditModal(row)}
                                 >
                                   Editar
@@ -627,6 +674,7 @@ export default function CategoriesPage() {
                                 <Menu.Item
                                   color={row.is_active ? "gray" : "teal"}
                                   leftSection={<ToggleActiveIcon size={13} />}
+                                  disabled={!canManageStructure}
                                   onClick={() => void toggleActive(row)}
                                 >
                                   {row.is_active ? "Desactivar" : "Activar"}
@@ -657,6 +705,7 @@ export default function CategoriesPage() {
               label="Nombre"
               placeholder="Ej: Supermercado"
               autoFocus
+              disabled={!canManageStructure}
               error={errors.name?.message}
               {...register("name")}
             />
@@ -664,18 +713,20 @@ export default function CategoriesPage() {
             <NativeSelect
               label="Tipo"
               data={categoryTypeSelectData}
+              disabled={!canManageStructure}
               error={errors.type?.message}
               {...register("type")}
             />
 
             {selectedType === "expense" ? (
-              <NativeSelect
-                label="Comportamiento del gasto"
-                description="Los gastos variables se proyectan por ritmo. Los fijos no se proyectan linealmente."
-                data={categoryExpenseBehaviorSelectData}
-                error={errors.expenseBehavior?.message}
-                {...register("expenseBehavior")}
-              />
+                <NativeSelect
+                  label="Comportamiento del gasto"
+                  description="Los gastos variables se proyectan por ritmo. Los fijos no se proyectan linealmente."
+                  data={categoryExpenseBehaviorSelectData}
+                  disabled={!canManageStructure}
+                  error={errors.expenseBehavior?.message}
+                  {...register("expenseBehavior")}
+                />
             ) : null}
 
             <Paper withBorder radius="md" p="sm">
@@ -688,6 +739,7 @@ export default function CategoriesPage() {
                   description="Si no lo definís, la categoría queda al final de su tipo."
                   placeholder="0"
                   type="number"
+                  disabled={!canManageStructure}
                   error={errors.sortOrder?.message}
                   {...register("sortOrder")}
                 />
@@ -703,7 +755,7 @@ export default function CategoriesPage() {
               >
                 Cancelar
               </Button>
-              <Button type="submit" loading={isSubmitting}>
+              <Button type="submit" loading={isSubmitting} disabled={!canManageStructure}>
                 {editingRow ? "Guardar" : "Crear"}
               </Button>
             </Group>

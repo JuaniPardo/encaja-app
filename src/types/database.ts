@@ -6,7 +6,7 @@ export type PaymentMethodType =
   | "bank_transfer"
   | "other";
 export type ExpenseBehavior = "fixed" | "variable";
-export type WorkspaceRole = "owner" | "admin" | "member";
+export type WorkspaceRole = "owner" | "member";
 export type SavingsRateMode = "manual" | "percentage";
 export type BudgetPeriodStatus = "draft" | "active" | "closed";
 export type SubscriptionPlan = "free" | "pro" | "premium";

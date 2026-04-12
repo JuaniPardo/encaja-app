@@ -32,6 +32,7 @@ import {
   type BudgetFormValues,
 } from "@/features/budget/schema";
 import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
+import { canManageBudgetStructure } from "@/features/workspace/permissions";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { Database, TransactionType } from "@/types/database";
 
@@ -101,6 +102,7 @@ function monthLabel(month: number) {
 
 export default function BudgetPage() {
   const { supabase, workspace, user } = useWorkspace();
+  const canManageStructure = canManageBudgetStructure(workspace.role);
   const isMobile = useMediaQuery("(max-width: 48em)");
 
   const now = useMemo(() => new Date(), []);
@@ -410,6 +412,15 @@ export default function BudgetPage() {
   }, [periodId, selectedMonth, selectedYear, supabase, user.id, workspace.id]);
 
   const onSubmit = handleSubmit(async (values) => {
+    if (!canManageStructure) {
+      notifications.show({
+        color: "red",
+        title: "Acción no permitida",
+        message: "Solo el owner puede administrar la estructura de presupuesto.",
+      });
+      return;
+    }
+
     setIsSaving(true);
 
     try {
@@ -480,6 +491,15 @@ export default function BudgetPage() {
   });
 
   const copyFromPreviousMonth = async () => {
+    if (!canManageStructure) {
+      notifications.show({
+        color: "red",
+        title: "Acción no permitida",
+        message: "Solo el owner puede copiar o crear presupuesto.",
+      });
+      return;
+    }
+
     if (periodHasItems) {
       notifications.show({
         color: "red",
@@ -600,7 +620,7 @@ export default function BudgetPage() {
   };
 
   const canCopyFromPrevious =
-    categories.length > 0 && !isPeriodLoading && !isSaving && !periodHasItems;
+    canManageStructure && categories.length > 0 && !isPeriodLoading && !isSaving && !periodHasItems;
   const selectedPeriodLabel = `${selectedYear} · ${monthLabel(selectedMonth)}`;
   const categoryDrilldownHref = useCallback(
     (type: TransactionType, categoryId: string) =>
@@ -624,6 +644,12 @@ export default function BudgetPage() {
           Editá el presupuesto mensual por categoría con un resumen consolidado del resultado.
         </Text>
       </Stack>
+
+      {!canManageStructure ? (
+        <Alert color="yellow" variant="light" py={8}>
+          Tenés rol <b>{workspace.role}</b>. Solo el owner puede crear o editar presupuesto.
+        </Alert>
+      ) : null}
 
       <Paper withBorder radius="md" p="sm">
         <Stack gap="xs">
@@ -768,6 +794,7 @@ export default function BudgetPage() {
                                   onFocus={(event) => {
                                     event.currentTarget.select();
                                   }}
+                                  disabled={!canManageStructure}
                                   error={errors.items?.[index]?.amount?.message}
                                   rightSection={
                                     <Text size="10px" c="dimmed" fw={500}>
@@ -964,7 +991,12 @@ export default function BudgetPage() {
                   >
                     Revertir
                   </Button>
-                  <Button type="submit" loading={isSaving} disabled={isCopying} size="sm">
+                  <Button
+                    type="submit"
+                    loading={isSaving}
+                    disabled={!canManageStructure || isCopying}
+                    size="sm"
+                  >
                     Guardar presupuesto
                   </Button>
                 </Group>

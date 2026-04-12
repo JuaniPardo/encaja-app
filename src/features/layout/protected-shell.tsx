@@ -26,6 +26,7 @@ import {
   stripWorkspaceSlugFromPathname,
 } from "@/features/workspace/routing";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
+import type { WorkspaceRole } from "@/types/database";
 
 const navItems = [
   {
@@ -132,12 +133,8 @@ function ShellIcon({ children }: { children: React.ReactNode }) {
   );
 }
 
-function formatRoleLabel(role: string) {
-  if (role === "owner") {
-    return "owner";
-  }
-
-  return "member";
+function formatRoleLabel(role: WorkspaceRole) {
+  return role === "owner" ? "owner" : "member";
 }
 
 export function ProtectedShell({ children }: { children: React.ReactNode }) {

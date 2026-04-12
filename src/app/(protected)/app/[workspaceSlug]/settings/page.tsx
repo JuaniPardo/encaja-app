@@ -42,7 +42,7 @@ import {
   canManageWorkspaceSettings,
 } from "@/features/workspace/permissions";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
-import type { Database } from "@/types/database";
+import type { Database, WorkspaceRole } from "@/types/database";
 
 const savingsRateModeSelectData = [
   { value: "manual", label: "Manual" },
@@ -52,12 +52,8 @@ const savingsRateModeSelectData = [
 type WorkspaceMemberSummary =
   Database["public"]["Functions"]["list_workspace_members"]["Returns"][number];
 
-function normalizeRoleLabel(role: string) {
-  if (role === "owner") {
-    return "owner";
-  }
-
-  return "member";
+function normalizeRoleLabel(role: WorkspaceRole) {
+  return role === "owner" ? "owner" : "member";
 }
 
 function getMemberDisplayName(member: WorkspaceMemberSummary) {
