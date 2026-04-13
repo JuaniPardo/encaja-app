@@ -1,6 +1,6 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 
-import { normalizeLocale, type Locale } from "@/features/i18n/config";
+import { defaultLocale, normalizeLocale, type Locale } from "@/features/i18n/config";
 import type {
   Database,
   SubscriptionPlan,
@@ -65,16 +65,42 @@ interface DeleteWorkspaceOptions {
   workspaceId: string;
 }
 
-function buildWorkspaceName(fullNameHint: string | undefined, email: string | undefined) {
+const workspaceBootstrapMessages = {
+  es: {
+    workspacePrefix: "Workspace de",
+    defaultWorkspaceName: "Mi Workspace",
+    createWorkspaceFailed: "No pudimos crear el workspace.",
+    workspaceNameMinLength: "El nombre del workspace debe tener al menos 2 caracteres.",
+  },
+  en: {
+    workspacePrefix: "Workspace for",
+    defaultWorkspaceName: "My Workspace",
+    createWorkspaceFailed: "We couldn't create the workspace.",
+    workspaceNameMinLength: "Workspace name must be at least 2 characters.",
+  },
+} as const;
+
+function resolveWorkspaceBootstrapMessages(preferredLanguageHint?: Locale) {
+  const locale = normalizeLocale(preferredLanguageHint ?? null) ?? defaultLocale;
+  return workspaceBootstrapMessages[locale];
+}
+
+function buildWorkspaceName(
+  fullNameHint: string | undefined,
+  email: string | undefined,
+  preferredLanguageHint?: Locale,
+) {
+  const messages = resolveWorkspaceBootstrapMessages(preferredLanguageHint);
+
   if (fullNameHint && fullNameHint.trim().length > 0) {
-    return `Workspace de ${fullNameHint.trim()}`;
+    return `${messages.workspacePrefix} ${fullNameHint.trim()}`;
   }
 
   if (email && email.includes("@")) {
-    return `Workspace de ${email.split("@")[0]}`;
+    return `${messages.workspacePrefix} ${email.split("@")[0]}`;
   }
 
-  return "Mi Workspace";
+  return messages.defaultWorkspaceName;
 }
 
 function toWorkspaceSummary(
@@ -151,6 +177,7 @@ async function ensureUserProfile(
 async function createWorkspaceWithDefaults(
   supabase: SupabaseClient<Database>,
   workspaceName: string,
+  preferredLanguageHint?: Locale,
 ): Promise<WorkspaceSummary> {
   const rpcResponse = await supabase.rpc("create_workspace_with_defaults", {
     p_workspace_name: workspaceName,
@@ -162,7 +189,8 @@ async function createWorkspaceWithDefaults(
 
   const createdRow = (rpcResponse.data ?? [])[0] as CreateWorkspaceRpcRow | undefined;
   if (!createdRow) {
-    throw new Error("No pudimos crear el workspace.");
+    const messages = resolveWorkspaceBootstrapMessages(preferredLanguageHint);
+    throw new Error(messages.createWorkspaceFailed);
   }
 
   return toWorkspaceSummaryFromRpc(createdRow);
@@ -175,13 +203,14 @@ export async function createWorkspaceForUser({
   preferredLanguageHint,
 }: CreateWorkspaceOptions): Promise<WorkspaceSummary> {
   await ensureUserProfile(supabase, user, undefined, preferredLanguageHint);
+  const messages = resolveWorkspaceBootstrapMessages(preferredLanguageHint);
 
   const workspaceName = name.trim();
   if (workspaceName.length < 2) {
-    throw new Error("El nombre del workspace debe tener al menos 2 caracteres.");
+    throw new Error(messages.workspaceNameMinLength);
   }
 
-  return createWorkspaceWithDefaults(supabase, workspaceName);
+  return createWorkspaceWithDefaults(supabase, workspaceName, preferredLanguageHint);
 }
 
 export async function deleteWorkspaceForUser({
@@ -278,6 +307,6 @@ export async function bootstrapUserWorkspace({
     return existingWorkspaces[0];
   }
 
-  const workspaceName = buildWorkspaceName(fullNameHint, user.email);
-  return createWorkspaceWithDefaults(supabase, workspaceName);
+  const workspaceName = buildWorkspaceName(fullNameHint, user.email, preferredLanguageHint);
+  return createWorkspaceWithDefaults(supabase, workspaceName, preferredLanguageHint);
 }

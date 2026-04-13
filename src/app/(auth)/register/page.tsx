@@ -17,6 +17,7 @@ import {
 import { notifications } from "@mantine/notifications";
 import { useForm } from "react-hook-form";
 
+import { getLocalizedAuthErrorMessage } from "@/features/auth/error-messages";
 import { createRegisterSchema, type RegisterValues } from "@/features/auth/schemas";
 import { useI18n } from "@/features/i18n/provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
@@ -64,7 +65,7 @@ export default function RegisterPage() {
       notifications.show({
         color: "red",
         title: t("auth.register.createErrorTitle"),
-        message: response.error.message,
+        message: getLocalizedAuthErrorMessage(response.error, t),
       });
       return;
     }

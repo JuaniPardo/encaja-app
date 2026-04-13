@@ -249,6 +249,9 @@ const dictionaries = {
       },
     },
     auth: {
+      language: {
+        switchAriaLabel: "Cambiar idioma del formulario de acceso",
+      },
       login: {
         title: "Ingresar",
         subtitle: "Entrá a Encaja para administrar tu presupuesto familiar.",
@@ -288,26 +291,13 @@ const dictionaries = {
         passwordMinLength: "La contraseña debe tener al menos 6 caracteres.",
         fullNameMaxLength: "El nombre no puede superar 120 caracteres.",
       },
-      domain: {
-        transactionType: {
-          income: "Income",
-          expense: "Expense",
-          saving: "Saving",
-          incomes: "Income",
-          expenses: "Expenses",
-          savings: "Savings",
-        },
-        paymentMethodType: {
-          cash: "Cash",
-          debit_card: "Debit card",
-          credit_card: "Credit card",
-          bank_transfer: "Bank transfer",
-          other: "Other",
-        },
-        expenseBehavior: {
-          fixed: "Fixed",
-          variable: "Variable",
-        },
+      errors: {
+        invalidCredentials: "Email o contraseña inválidos.",
+        emailNotConfirmed: "Confirmá tu email antes de ingresar.",
+        userAlreadyExists: "Ese email ya está registrado.",
+        weakPassword: "La contraseña es demasiado débil.",
+        emailRateLimit: "Esperá un momento antes de volver a intentar.",
+        signupDisabled: "El registro está deshabilitado temporalmente.",
       },
     },
     workspace: {
@@ -1041,6 +1031,9 @@ const dictionaries = {
       },
     },
     auth: {
+      language: {
+        switchAriaLabel: "Change auth form language",
+      },
       login: {
         title: "Log in",
         subtitle: "Sign in to Encaja to manage your household budget.",
@@ -1079,6 +1072,14 @@ const dictionaries = {
         invalidEmail: "Enter a valid email.",
         passwordMinLength: "Password must be at least 6 characters.",
         fullNameMaxLength: "Name cannot exceed 120 characters.",
+      },
+      errors: {
+        invalidCredentials: "Invalid email or password.",
+        emailNotConfirmed: "Confirm your email before signing in.",
+        userAlreadyExists: "That email is already registered.",
+        weakPassword: "Password is too weak.",
+        emailRateLimit: "Please wait a moment before trying again.",
+        signupDisabled: "Sign-up is temporarily disabled.",
       },
     },
     workspace: {

@@ -18,6 +18,7 @@ import { notifications } from "@mantine/notifications";
 import { useForm } from "react-hook-form";
 
 import { createLoginSchema, type LoginValues } from "@/features/auth/schemas";
+import { getLocalizedAuthErrorMessage } from "@/features/auth/error-messages";
 import { useI18n } from "@/features/i18n/provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
@@ -73,7 +74,7 @@ function LoginPageContent() {
       notifications.show({
         color: "red",
         title: t("auth.login.errorTitle"),
-        message: response.error.message,
+        message: getLocalizedAuthErrorMessage(response.error, t),
       });
       return;
     }
