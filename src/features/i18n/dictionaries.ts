@@ -341,6 +341,13 @@ const dictionaries = {
       title: "Settings del workspace",
       subtitle: "Estás en {{workspaceName}} con rol {{role}}.",
       notApplicable: "N/A",
+      tabs: {
+        workspace: "Workspace",
+        collaboration: "Colaboración",
+        links: "Vínculos",
+        personal: "Personal",
+        advanced: "Avanzado",
+      },
       sections: {
         personal: {
           title: "Preferencias personales",
@@ -1105,6 +1112,13 @@ const dictionaries = {
       title: "Workspace settings",
       subtitle: "You are in {{workspaceName}} with role {{role}}.",
       notApplicable: "N/A",
+      tabs: {
+        workspace: "Workspace",
+        collaboration: "Collaboration",
+        links: "Links",
+        personal: "Personal",
+        advanced: "Advanced",
+      },
       sections: {
         personal: {
           title: "Personal preferences",

@@ -15,11 +15,12 @@ import {
   Select,
   SimpleGrid,
   Stack,
+  Tabs,
   Text,
   TextInput,
   Title,
 } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { Controller, useForm, useWatch } from "react-hook-form";
 
@@ -95,6 +96,7 @@ export default function SettingsPage() {
   const canCreateWorkspace = canUseMultiWorkspace && canEditWorkspaceSettings;
   const canDeleteCurrentWorkspace =
     canUseMultiWorkspace && canDeleteWorkspace(workspace.role) && workspaces.length > 1;
+  const isMobile = useMediaQuery("(max-width: 48em)");
   const currentRoleLabel = t(`common.role.${workspace.role}`, workspace.role);
   const [isCreateWorkspaceOpen, { open: openCreateWorkspace, close: closeCreateWorkspace }] =
     useDisclosure(false);
@@ -1027,64 +1029,33 @@ export default function SettingsPage() {
         </Alert>
       ) : null}
 
-      <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md">
-        <Paper withBorder radius="md" p="md">
-          <Stack gap="sm">
-            <Group justify="space-between" align="flex-start" wrap="wrap">
-              <Stack gap={2}>
-                <Text fw={600}>{t("workspaceSettings.sections.personal.title")}</Text>
-                <Text size="sm" c="dimmed">
-                  {t("workspaceSettings.sections.personal.description")}
-                </Text>
-              </Stack>
-              <Badge variant="light" color="indigo">
-                {t("workspaceSettings.sections.personal.scope")}
-              </Badge>
-            </Group>
+      <Tabs defaultValue="workspace" variant="outline" keepMounted={false}>
+        <Tabs.List
+          style={
+            isMobile
+              ? {
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 20,
+                  background: "var(--mantine-color-body)",
+                  paddingTop: 6,
+                  paddingBottom: 6,
+                  overflowX: "auto",
+                  flexWrap: "nowrap",
+                }
+              : undefined
+          }
+        >
+          <Tabs.Tab value="workspace">{t("workspaceSettings.tabs.workspace")}</Tabs.Tab>
+          <Tabs.Tab value="collaboration">{t("workspaceSettings.tabs.collaboration")}</Tabs.Tab>
+          <Tabs.Tab value="links">{t("workspaceSettings.tabs.links")}</Tabs.Tab>
+          <Tabs.Tab value="personal">{t("workspaceSettings.tabs.personal")}</Tabs.Tab>
+          <Tabs.Tab value="advanced">{t("workspaceSettings.tabs.advanced")}</Tabs.Tab>
+        </Tabs.List>
 
-            <Paper withBorder radius="sm" p="sm">
-              <Stack gap="sm">
-                <Text fw={600}>{t("settings.language.title")}</Text>
-                <Text size="sm" c="dimmed">
-                  {t("settings.language.description")}
-                </Text>
-                <Group align="flex-end" wrap="wrap">
-                  <NativeSelect
-                    label={t("settings.language.fieldLabel")}
-                    data={languageOptions}
-                    value={selectedLanguage}
-                    onChange={(event) => setSelectedLanguage(event.currentTarget.value as Locale)}
-                    style={{ minWidth: 220, flex: 1 }}
-                  />
-                  <Button
-                    type="button"
-                    onClick={() => void onSaveLanguage()}
-                    loading={isUpdatingLanguage}
-                    disabled={selectedLanguage === locale}
-                  >
-                    {t("settings.language.saveButton")}
-                  </Button>
-                </Group>
-              </Stack>
-            </Paper>
-          </Stack>
-        </Paper>
-
-        <Paper withBorder radius="md" p="md">
-          <Stack gap="sm">
-            <Group justify="space-between" align="flex-start" wrap="wrap">
-              <Stack gap={2}>
-                <Text fw={600}>{t("workspaceSettings.sections.workspace.title")}</Text>
-                <Text size="sm" c="dimmed">
-                  {t("workspaceSettings.sections.workspace.description")}
-                </Text>
-              </Stack>
-              <Badge variant="light" color="teal">
-                {t("workspaceSettings.sections.workspace.scope")}
-              </Badge>
-            </Group>
-
-            <Paper withBorder radius="sm" p="sm">
+        <Tabs.Panel value="workspace" pt="sm">
+          <Stack gap="md">
+            <Paper withBorder radius="md" p="md">
               <form onSubmit={onSubmitWorkspace}>
                 <Stack gap="sm">
                   <Group justify="space-between" align="center">
@@ -1115,7 +1086,7 @@ export default function SettingsPage() {
               </form>
             </Paper>
 
-            <Paper withBorder radius="sm" p="sm">
+            <Paper withBorder radius="md" p="md">
               <form onSubmit={onSubmit}>
                 <Stack gap="sm">
                   <NativeSelect
@@ -1204,324 +1175,320 @@ export default function SettingsPage() {
               </form>
             </Paper>
           </Stack>
-        </Paper>
-      </SimpleGrid>
+        </Tabs.Panel>
 
-      <Paper withBorder radius="md" p="md">
-        <Stack gap="sm">
-          <Group justify="space-between" align="flex-start" wrap="wrap">
-            <Stack gap={2}>
-              <Text fw={600}>{t("workspaceSettings.sections.collaboration.title")}</Text>
+        <Tabs.Panel value="collaboration" pt="sm">
+          <Paper withBorder radius="md" p="md">
+            <Stack gap="sm">
+              <Group justify="space-between" align="center">
+                <Text fw={600}>{t("workspaceSettings.members.title")}</Text>
+                <Badge variant="light" color="gray">
+                  {t("workspaceSettings.members.count", undefined, {
+                    count: members.length,
+                    pluralSuffix: members.length === 1 ? "" : "s",
+                  })}
+                </Badge>
+              </Group>
               <Text size="sm" c="dimmed">
-                {t("workspaceSettings.sections.collaboration.description")}
+                {t("workspaceSettings.members.description")}
               </Text>
+
+              {!canManageMembers ? (
+                <Alert color="blue" variant="light" title={t("workspaceSettings.members.noAdminTitle")}>
+                  {t("workspaceSettings.members.noAdminMessage")}
+                </Alert>
+              ) : null}
+
+              <form onSubmit={onSubmitInviteMember}>
+                <Group align="flex-end" wrap="wrap">
+                  <TextInput
+                    label={t("workspaceSettings.members.inviteEmailLabel")}
+                    placeholder={t("workspaceSettings.members.inviteEmailPlaceholder")}
+                    error={inviteMemberErrors.email?.message}
+                    disabled={!canManageMembers}
+                    style={{ flex: 1, minWidth: 220 }}
+                    {...registerInviteMember("email")}
+                  />
+                  <Button type="submit" loading={isInvitingMember} disabled={!canManageMembers}>
+                    {t("workspaceSettings.members.inviteButton")}
+                  </Button>
+                </Group>
+              </form>
+
+              {isMembersLoading ? (
+                <Text size="sm" c="dimmed">
+                  {t("workspaceSettings.members.loading")}
+                </Text>
+              ) : members.length === 0 ? (
+                <Text size="sm" c="dimmed">
+                  {t("workspaceSettings.members.empty")}
+                </Text>
+              ) : (
+                <Stack gap="xs">
+                  {members.map((member) => {
+                    const canRemoveMember = canManageMembers && member.role !== "owner";
+
+                    return (
+                      <Paper key={member.member_id} withBorder radius="sm" p="sm">
+                        <Group justify="space-between" align="center" wrap="wrap">
+                          <Stack gap={2}>
+                            <Text fw={600}>{getMemberDisplayName(member)}</Text>
+                            <Text size="sm" c="dimmed">
+                              {member.email}
+                            </Text>
+                          </Stack>
+                          <Group gap="xs" align="center">
+                            <Badge variant="light" color={member.role === "owner" ? "teal" : "gray"}>
+                              {t(`common.role.${member.role}`, member.role)}
+                            </Badge>
+                            {canRemoveMember ? (
+                              <Button
+                                type="button"
+                                size="xs"
+                                color="red"
+                                variant="light"
+                                loading={removingMemberUserId === member.user_id}
+                                onClick={() => void onRemoveMember(member)}
+                              >
+                                {t("workspaceSettings.members.removeButton")}
+                              </Button>
+                            ) : null}
+                          </Group>
+                        </Group>
+                      </Paper>
+                    );
+                  })}
+                </Stack>
+              )}
             </Stack>
-            <Badge variant="light" color="blue">
-              {t("workspaceSettings.sections.collaboration.scope")}
-            </Badge>
-          </Group>
+          </Paper>
+        </Tabs.Panel>
 
-          <Group justify="space-between" align="center">
-            <Text fw={600}>{t("workspaceSettings.members.title")}</Text>
-            <Badge variant="light" color="gray">
-              {t("workspaceSettings.members.count", undefined, {
-                count: members.length,
-                pluralSuffix: members.length === 1 ? "" : "s",
-              })}
-            </Badge>
-          </Group>
-          <Text size="sm" c="dimmed">
-            {t("workspaceSettings.members.description")}
-          </Text>
-
-          {!canManageMembers ? (
-            <Alert color="blue" variant="light" title={t("workspaceSettings.members.noAdminTitle")}>
-              {t("workspaceSettings.members.noAdminMessage")}
-            </Alert>
-          ) : null}
-
-          <form onSubmit={onSubmitInviteMember}>
-            <Group align="flex-end" wrap="wrap">
-              <TextInput
-                label={t("workspaceSettings.members.inviteEmailLabel")}
-                placeholder={t("workspaceSettings.members.inviteEmailPlaceholder")}
-                error={inviteMemberErrors.email?.message}
-                disabled={!canManageMembers}
-                style={{ flex: 1, minWidth: 220 }}
-                {...registerInviteMember("email")}
-              />
-              <Button type="submit" loading={isInvitingMember} disabled={!canManageMembers}>
-                {t("workspaceSettings.members.inviteButton")}
-              </Button>
-            </Group>
-          </form>
-
-          {isMembersLoading ? (
-            <Text size="sm" c="dimmed">
-              {t("workspaceSettings.members.loading")}
-            </Text>
-          ) : members.length === 0 ? (
-            <Text size="sm" c="dimmed">
-              {t("workspaceSettings.members.empty")}
-            </Text>
-          ) : (
-            <Stack gap="xs">
-              {members.map((member) => {
-                const canRemoveMember = canManageMembers && member.role !== "owner";
-
-                return (
-                  <Paper key={member.member_id} withBorder radius="sm" p="sm">
-                    <Group justify="space-between" align="center" wrap="wrap">
-                      <Stack gap={2}>
-                        <Text fw={600}>{getMemberDisplayName(member)}</Text>
-                        <Text size="sm" c="dimmed">
-                          {member.email}
-                        </Text>
-                      </Stack>
-                      <Group gap="xs" align="center">
-                        <Badge variant="light" color={member.role === "owner" ? "teal" : "gray"}>
-                          {t(`common.role.${member.role}`, member.role)}
-                        </Badge>
-                        {canRemoveMember ? (
-                          <Button
-                            type="button"
-                            size="xs"
-                            color="red"
-                            variant="light"
-                            loading={removingMemberUserId === member.user_id}
-                            onClick={() => void onRemoveMember(member)}
-                          >
-                            {t("workspaceSettings.members.removeButton")}
-                          </Button>
-                        ) : null}
-                      </Group>
-                    </Group>
-                  </Paper>
-                );
-              })}
-            </Stack>
-          )}
-        </Stack>
-      </Paper>
-
-      <Paper withBorder radius="md" p="md">
-        <Stack gap="sm">
-          <Group justify="space-between" align="flex-start" wrap="wrap">
-            <Stack gap={2}>
-              <Text fw={600}>{t("workspaceSettings.sections.links.title")}</Text>
+        <Tabs.Panel value="links" pt="sm">
+          <Paper withBorder radius="md" p="md">
+            <Stack gap="sm">
+              <Group justify="space-between" align="center">
+                <Text fw={600}>{t("workspaceSettings.workspaceLinks.title")}</Text>
+                <Badge variant="light" color="blue">
+                  {t("workspaceSettings.workspaceLinks.activeCount", undefined, {
+                    count: activeWorkspaceLinksCount,
+                  })}
+                </Badge>
+              </Group>
               <Text size="sm" c="dimmed">
-                {t("workspaceSettings.sections.links.description")}
+                {t("workspaceSettings.workspaceLinks.description")}
               </Text>
-            </Stack>
-            <Badge variant="light" color="cyan">
-              {t("workspaceSettings.sections.links.scope")}
-            </Badge>
-          </Group>
+              <Text size="sm" c="dimmed">
+                {t("workspaceSettings.workspaceLinks.currentCurrency", undefined, {
+                  currencyCode: sourceWorkspaceCurrency,
+                })}
+              </Text>
 
-          <Group justify="space-between" align="center">
-            <Text fw={600}>{t("workspaceSettings.workspaceLinks.title")}</Text>
-            <Badge variant="light" color="blue">
-              {t("workspaceSettings.workspaceLinks.activeCount", undefined, {
-                count: activeWorkspaceLinksCount,
-              })}
-            </Badge>
-          </Group>
-          <Text size="sm" c="dimmed">
-            {t("workspaceSettings.workspaceLinks.description")}
-          </Text>
-          <Text size="sm" c="dimmed">
-            {t("workspaceSettings.workspaceLinks.currentCurrency", undefined, {
-              currencyCode: sourceWorkspaceCurrency,
-            })}
-          </Text>
+              {!canManageLinks ? (
+                <Alert
+                  color="blue"
+                  variant="light"
+                  title={t("workspaceSettings.workspaceLinks.noAdminTitle")}
+                >
+                  {t("workspaceSettings.workspaceLinks.noAdminMessage")}
+                </Alert>
+              ) : null}
 
-          {!canManageLinks ? (
-            <Alert
-              color="blue"
-              variant="light"
-              title={t("workspaceSettings.workspaceLinks.noAdminTitle")}
-            >
-              {t("workspaceSettings.workspaceLinks.noAdminMessage")}
-            </Alert>
-          ) : null}
-
-          <form onSubmit={onSubmitWorkspaceLink}>
-            <Group align="flex-end" wrap="wrap">
-              <Controller
-                control={workspaceLinkControl}
-                name="targetWorkspaceId"
-                render={({ field }) => (
-                  <Select
-                    label={t("workspaceSettings.workspaceLinks.targetWorkspaceLabel")}
-                    placeholder={
-                      canUseMultiWorkspace
-                        ? t("workspaceSettings.workspaceLinks.targetWorkspacePlaceholder")
-                        : t("workspaceSettings.workspaceLinks.planWithoutAccess")
-                    }
-                    data={workspaceLinkTargetOptions}
-                    error={workspaceLinkErrors.targetWorkspaceId?.message}
+              <form onSubmit={onSubmitWorkspaceLink}>
+                <Group align="flex-end" wrap="wrap">
+                  <Controller
+                    control={workspaceLinkControl}
+                    name="targetWorkspaceId"
+                    render={({ field }) => (
+                      <Select
+                        label={t("workspaceSettings.workspaceLinks.targetWorkspaceLabel")}
+                        placeholder={
+                          canUseMultiWorkspace
+                            ? t("workspaceSettings.workspaceLinks.targetWorkspacePlaceholder")
+                            : t("workspaceSettings.workspaceLinks.planWithoutAccess")
+                        }
+                        data={workspaceLinkTargetOptions}
+                        error={workspaceLinkErrors.targetWorkspaceId?.message}
+                        disabled={
+                          !canUseMultiWorkspace ||
+                          !canManageLinks ||
+                          isWorkspaceCurrenciesLoading ||
+                          !canCreateAnyWorkspaceLink
+                        }
+                        style={{ flex: 1, minWidth: 260 }}
+                        searchable
+                        value={field.value}
+                        onChange={(value) => field.onChange(value ?? "")}
+                        onBlur={field.onBlur}
+                      />
+                    )}
+                  />
+                  <Button
+                    type="submit"
+                    loading={isWorkspaceLinkSubmitting}
                     disabled={
                       !canUseMultiWorkspace ||
                       !canManageLinks ||
                       isWorkspaceCurrenciesLoading ||
                       !canCreateAnyWorkspaceLink
                     }
-                    style={{ flex: 1, minWidth: 260 }}
-                    searchable
-                    value={field.value}
-                    onChange={(value) => field.onChange(value ?? "")}
-                    onBlur={field.onBlur}
-                  />
-                )}
-              />
-              <Button
-                type="submit"
-                loading={isWorkspaceLinkSubmitting}
-                disabled={
-                  !canUseMultiWorkspace ||
-                  !canManageLinks ||
-                  isWorkspaceCurrenciesLoading ||
-                  !canCreateAnyWorkspaceLink
-                }
-              >
-                {t("workspaceSettings.workspaceLinks.linkButton")}
-              </Button>
-            </Group>
-          </form>
+                  >
+                    {t("workspaceSettings.workspaceLinks.linkButton")}
+                  </Button>
+                </Group>
+              </form>
 
-          {!canUseMultiWorkspace ? (
-            <Text size="sm" c="dimmed">
-              {t("workspaceSettings.workspaceLinks.planWithoutMultiWorkspace")}
-            </Text>
-          ) : null}
+              {!canUseMultiWorkspace ? (
+                <Text size="sm" c="dimmed">
+                  {t("workspaceSettings.workspaceLinks.planWithoutMultiWorkspace")}
+                </Text>
+              ) : null}
 
-          {canUseMultiWorkspace &&
-          canManageLinks &&
-          !isWorkspaceCurrenciesLoading &&
-          !canCreateAnyWorkspaceLink ? (
-            <Text size="sm" c="dimmed">
-              {t("workspaceSettings.workspaceLinks.noCompatibleWorkspaces")}
-            </Text>
-          ) : null}
+              {canUseMultiWorkspace &&
+              canManageLinks &&
+              !isWorkspaceCurrenciesLoading &&
+              !canCreateAnyWorkspaceLink ? (
+                <Text size="sm" c="dimmed">
+                  {t("workspaceSettings.workspaceLinks.noCompatibleWorkspaces")}
+                </Text>
+              ) : null}
 
-          {isWorkspaceLinksLoading ? (
-            <Text size="sm" c="dimmed">
-              {t("workspaceSettings.workspaceLinks.loading")}
-            </Text>
-          ) : workspaceLinks.length === 0 ? (
-            <Text size="sm" c="dimmed">
-              {t("workspaceSettings.workspaceLinks.empty")}
-            </Text>
-          ) : (
-            <Stack gap="xs">
-              {workspaceLinks.map((workspaceLink) => {
-                const linkName =
-                  workspaceLink.target_workspace_name ??
-                  t("workspaceSettings.workspaceLinks.workspaceWithoutAccess");
-                const linkSlug = workspaceLink.target_workspace_slug;
-                const linkCurrency =
-                  workspaceLink.target_currency_code ?? t("workspaceSettings.notApplicable");
-                const canDeactivateLink = canManageLinks && workspaceLink.is_active;
+              {isWorkspaceLinksLoading ? (
+                <Text size="sm" c="dimmed">
+                  {t("workspaceSettings.workspaceLinks.loading")}
+                </Text>
+              ) : workspaceLinks.length === 0 ? (
+                <Text size="sm" c="dimmed">
+                  {t("workspaceSettings.workspaceLinks.empty")}
+                </Text>
+              ) : (
+                <Stack gap="xs">
+                  {workspaceLinks.map((workspaceLink) => {
+                    const linkName =
+                      workspaceLink.target_workspace_name ??
+                      t("workspaceSettings.workspaceLinks.workspaceWithoutAccess");
+                    const linkSlug = workspaceLink.target_workspace_slug;
+                    const linkCurrency =
+                      workspaceLink.target_currency_code ?? t("workspaceSettings.notApplicable");
+                    const canDeactivateLink = canManageLinks && workspaceLink.is_active;
 
-                return (
-                  <Paper key={workspaceLink.link_id} withBorder radius="sm" p="sm">
-                    <Stack gap={6}>
-                      <Group justify="space-between" align="center" wrap="wrap">
-                        <Stack gap={2}>
-                          <Text fw={600}>{linkName}</Text>
-                          <Text size="sm" c="dimmed">
-                            {t("workspaceSettings.workspaceLinks.linkMeta", undefined, {
-                              slugPrefix: linkSlug ? `${linkSlug} · ` : "",
-                              currencyCode: linkCurrency,
-                              visibilityMode: workspaceLink.visibility_mode,
-                            })}
-                          </Text>
-                        </Stack>
-                        <Group gap="xs" align="center">
-                          <Badge
-                            variant="light"
-                            color={workspaceLink.is_active ? "teal" : "gray"}
-                          >
-                            {workspaceLink.is_active
-                              ? t("workspaceSettings.status.active")
-                              : t("workspaceSettings.status.inactive")}
-                          </Badge>
-                          {canDeactivateLink ? (
-                            <Button
-                              type="button"
-                              size="xs"
-                              color="gray"
+                    return (
+                      <Paper key={workspaceLink.link_id} withBorder radius="sm" p="sm">
+                        <Stack gap={6}>
+                          <Group justify="space-between" align="center" wrap="wrap">
+                            <Stack gap={2}>
+                              <Text fw={600}>{linkName}</Text>
+                              <Text size="sm" c="dimmed">
+                                {t("workspaceSettings.workspaceLinks.linkMeta", undefined, {
+                                  slugPrefix: linkSlug ? `${linkSlug} · ` : "",
+                                  currencyCode: linkCurrency,
+                                  visibilityMode: workspaceLink.visibility_mode,
+                                })}
+                              </Text>
+                            </Stack>
+                            <Group gap="xs" align="center">
+                              <Badge
+                                variant="light"
+                                color={workspaceLink.is_active ? "teal" : "gray"}
+                              >
+                                {workspaceLink.is_active
+                                  ? t("workspaceSettings.status.active")
+                                  : t("workspaceSettings.status.inactive")}
+                              </Badge>
+                              {canDeactivateLink ? (
+                                <Button
+                                  type="button"
+                                  size="xs"
+                                  color="gray"
+                                  variant="light"
+                                  loading={deactivatingLinkId === workspaceLink.link_id}
+                                  onClick={() => void onDeactivateWorkspaceLink(workspaceLink)}
+                                >
+                                  {t("workspaceSettings.workspaceLinks.deactivateButton")}
+                                </Button>
+                              ) : null}
+                            </Group>
+                          </Group>
+                          {!workspaceLink.has_target_access ? (
+                            <Alert
+                              color="yellow"
                               variant="light"
-                              loading={deactivatingLinkId === workspaceLink.link_id}
-                              onClick={() => void onDeactivateWorkspaceLink(workspaceLink)}
+                              title={t("workspaceSettings.workspaceLinks.noTargetAccessTitle")}
                             >
-                              {t("workspaceSettings.workspaceLinks.deactivateButton")}
-                            </Button>
+                              {t("workspaceSettings.workspaceLinks.noTargetAccessMessage")}
+                            </Alert>
                           ) : null}
-                        </Group>
-                      </Group>
-                      {!workspaceLink.has_target_access ? (
-                        <Alert
-                          color="yellow"
-                          variant="light"
-                          title={t("workspaceSettings.workspaceLinks.noTargetAccessTitle")}
-                        >
-                          {t("workspaceSettings.workspaceLinks.noTargetAccessMessage")}
-                        </Alert>
-                      ) : null}
-                    </Stack>
-                  </Paper>
-                );
-              })}
+                        </Stack>
+                      </Paper>
+                    );
+                  })}
+                </Stack>
+              )}
             </Stack>
-          )}
-        </Stack>
-      </Paper>
+          </Paper>
+        </Tabs.Panel>
 
-      <Paper withBorder radius="md" p="md">
-        <Stack gap="sm">
-          <Group justify="space-between" align="flex-start" wrap="wrap">
-            <Stack gap={2}>
+        <Tabs.Panel value="personal" pt="sm">
+          <Paper withBorder radius="md" p="md">
+            <Stack gap="sm">
+              <Text fw={600}>{t("settings.language.title")}</Text>
+              <Text size="sm" c="dimmed">
+                {t("settings.language.description")}
+              </Text>
+              <Group align="flex-end" wrap="wrap">
+                <NativeSelect
+                  label={t("settings.language.fieldLabel")}
+                  data={languageOptions}
+                  value={selectedLanguage}
+                  onChange={(event) => setSelectedLanguage(event.currentTarget.value as Locale)}
+                  style={{ minWidth: 220, flex: 1 }}
+                />
+                <Button
+                  type="button"
+                  onClick={() => void onSaveLanguage()}
+                  loading={isUpdatingLanguage}
+                  disabled={selectedLanguage === locale}
+                >
+                  {t("settings.language.saveButton")}
+                </Button>
+              </Group>
+            </Stack>
+          </Paper>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="advanced" pt="sm">
+          <Paper withBorder radius="md" p="md">
+            <Stack gap="sm">
               <Text fw={600} c="red.7">
-                {t("workspaceSettings.sections.advanced.title")}
+                {t("workspaceSettings.dangerZone.title")}
               </Text>
               <Text size="sm" c="dimmed">
-                {t("workspaceSettings.sections.advanced.description")}
+                {t("workspaceSettings.dangerZone.description")}
               </Text>
+              {!canDeleteWorkspace(workspace.role) ? (
+                <Text size="sm" c="dimmed">
+                  {t("workspaceSettings.dangerZone.ownerOnlyMessage")}
+                </Text>
+              ) : null}
+              {workspaces.length <= 1 ? (
+                <Text size="sm" c="dimmed">
+                  {t("workspaceSettings.dangerZone.needAnotherWorkspaceMessage")}
+                </Text>
+              ) : null}
+              <Group justify="flex-end">
+                <Button
+                  color="red"
+                  variant="light"
+                  onClick={openDeleteWorkspace}
+                  disabled={!canDeleteCurrentWorkspace}
+                >
+                  {t("workspaceSettings.dangerZone.deleteWorkspaceButton")}
+                </Button>
+              </Group>
             </Stack>
-            <Badge variant="light" color="red">
-              {t("workspaceSettings.sections.advanced.scope")}
-            </Badge>
-          </Group>
-
-          <Text fw={600} c="red.7">
-            {t("workspaceSettings.dangerZone.title")}
-          </Text>
-          <Text size="sm" c="dimmed">
-            {t("workspaceSettings.dangerZone.description")}
-          </Text>
-          {!canDeleteWorkspace(workspace.role) ? (
-            <Text size="sm" c="dimmed">
-              {t("workspaceSettings.dangerZone.ownerOnlyMessage")}
-            </Text>
-          ) : null}
-          {workspaces.length <= 1 ? (
-            <Text size="sm" c="dimmed">
-              {t("workspaceSettings.dangerZone.needAnotherWorkspaceMessage")}
-            </Text>
-          ) : null}
-          <Group justify="flex-end">
-            <Button
-              color="red"
-              variant="light"
-              onClick={openDeleteWorkspace}
-              disabled={!canDeleteCurrentWorkspace}
-            >
-              {t("workspaceSettings.dangerZone.deleteWorkspaceButton")}
-            </Button>
-          </Group>
-        </Stack>
-      </Paper>
+          </Paper>
+        </Tabs.Panel>
+      </Tabs>
     </Stack>
   );
 }
