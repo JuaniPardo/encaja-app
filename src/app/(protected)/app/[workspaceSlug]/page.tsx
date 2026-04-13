@@ -758,7 +758,7 @@ export default function DashboardPage() {
   const selectedPeriodLabel = `${monthLabelFromOptions(
     selectedMonth,
     monthOptions,
-    t("common.messages.month", "Mes"),
+    t("common.messages.month"),
   )} ${selectedYear}`;
   const isMobile = useMediaQuery("(max-width: 47.99em)");
   const isNarrowMobile = useMediaQuery("(max-width: 33.99em)");

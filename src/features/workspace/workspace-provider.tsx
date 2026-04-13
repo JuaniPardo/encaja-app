@@ -286,7 +286,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         (workspaceItem) => workspaceItem.id === workspaceId,
       );
       if (!workspaceToDelete) {
-        throw new Error("No encontramos el workspace que querés eliminar.");
+        throw new Error(t("workspace.deleteWorkspaceNotFound"));
       }
 
       await deleteWorkspaceForUser({

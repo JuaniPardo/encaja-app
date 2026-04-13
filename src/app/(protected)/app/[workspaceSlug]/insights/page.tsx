@@ -231,7 +231,7 @@ export default function InsightsPage() {
   const monthOptions = useMemo(() => buildMonthOptions(intlLocale), [intlLocale]);
   const periodLabel = useCallback(
     (period: PeriodRef) =>
-      `${monthLabelFromOptions(period.month, monthOptions, t("common.messages.month", "Mes"))} ${
+      `${monthLabelFromOptions(period.month, monthOptions, t("common.messages.month"))} ${
         period.year
       }`,
     [monthOptions, t],

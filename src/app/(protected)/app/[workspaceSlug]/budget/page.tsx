@@ -478,7 +478,7 @@ export default function BudgetPage() {
           monthYear: `${monthLabelFromOptions(
             selectedMonth,
             monthOptions,
-            t("common.messages.month", "Mes"),
+            t("common.messages.month"),
           )} ${selectedYear}`,
         }),
       });
@@ -540,7 +540,7 @@ export default function BudgetPage() {
             monthYear: `${monthLabelFromOptions(
               previous.month,
               monthOptions,
-              t("common.messages.month", "Mes"),
+              t("common.messages.month"),
             )} ${previous.year}`,
           }),
         });
@@ -617,7 +617,7 @@ export default function BudgetPage() {
           monthYear: `${monthLabelFromOptions(
             previous.month,
             monthOptions,
-            t("common.messages.month", "Mes"),
+            t("common.messages.month"),
           )} ${previous.year}`,
         }),
       });
@@ -639,7 +639,7 @@ export default function BudgetPage() {
   const selectedPeriodLabel = `${selectedYear} · ${monthLabelFromOptions(
     selectedMonth,
     monthOptions,
-    t("common.messages.month", "Mes"),
+    t("common.messages.month"),
   )}`;
   const categoryDrilldownHref = useCallback(
     (type: TransactionType, categoryId: string) =>
@@ -860,13 +860,13 @@ export default function BudgetPage() {
               <Stack gap="xs">
                 <Group justify="space-between" align="center" wrap="wrap">
                   <Stack gap={0}>
-                    <Title order={4}>Resultado del período</Title>
+                    <Title order={4}>{t("budget.periodResultTitle")}</Title>
                     <Text size="xs" c="dimmed">
                       {t("budget.periodSummary", undefined, {
                         monthYear: `${monthLabelFromOptions(
                           selectedMonth,
                           monthOptions,
-                          t("common.messages.month", "Mes"),
+                          t("common.messages.month"),
                         )} ${selectedYear}`,
                       })}
                     </Text>

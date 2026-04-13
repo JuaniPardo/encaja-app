@@ -318,6 +318,7 @@ const dictionaries = {
       noSessionAvailable: "Tu sesión no está disponible.",
       noWorkspaceAssociated: "No encontramos un workspace asociado.",
       needActiveWorkspace: "Necesitás al menos un workspace activo.",
+      deleteWorkspaceNotFound: "No encontramos el workspace que querés eliminar.",
       openWorkspace: "Abriendo tu workspace...",
       developedBy: "Desarrollado por Juan Pardo",
       signOutTooltip: "Salir",
@@ -592,6 +593,7 @@ const dictionaries = {
       viewMovements: "Ver movimientos",
       amountForCategory: "Monto de {{categoryName}}",
       periodSummary: "Resumen de montos para {{monthYear}}.",
+      periodResultTitle: "Resultado del período",
       balanceStatus: {
         balanced: "Balanceado",
         remaining: "Falta asignar",
@@ -1036,6 +1038,7 @@ const dictionaries = {
       noSessionAvailable: "Your session is not available.",
       noWorkspaceAssociated: "We couldn't find an associated workspace.",
       needActiveWorkspace: "You need at least one active workspace.",
+      deleteWorkspaceNotFound: "We couldn't find the workspace you want to delete.",
       openWorkspace: "Opening your workspace...",
       developedBy: "Developed by Juan Pardo",
       signOutTooltip: "Sign out",
@@ -1312,6 +1315,7 @@ const dictionaries = {
       viewMovements: "View movements",
       amountForCategory: "Amount for {{categoryName}}",
       periodSummary: "Amount summary for {{monthYear}}.",
+      periodResultTitle: "Period result",
       balanceStatus: {
         balanced: "Balanced",
         remaining: "Unassigned",

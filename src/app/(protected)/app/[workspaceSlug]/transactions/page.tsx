@@ -1087,7 +1087,7 @@ export default function TransactionsPage() {
 
           <Text size="xs" c="dimmed">
             {t("transactions.summaryMovements", undefined, {
-              monthYear: `${monthLabelFromOptions(selectedMonth, monthOptions, t("common.messages.month", "Mes"))} ${selectedYear}`,
+              monthYear: `${monthLabelFromOptions(selectedMonth, monthOptions, t("common.messages.month"))} ${selectedYear}`,
               count: filteredRows.length,
               pluralSuffix: filteredRows.length === 1 ? "" : "s",
               filtersText:
