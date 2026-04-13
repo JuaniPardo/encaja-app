@@ -707,8 +707,6 @@ export default function DashboardPage() {
     const totalBalance = roundMoney(
       activeIncludedRows.reduce((sum, row) => sum + row.currentBalance, 0),
     );
-    const positiveCount = activeIncludedRows.filter((row) => row.currentBalance > 0).length;
-    const negativeCount = activeIncludedRows.filter((row) => row.currentBalance < 0).length;
     const excludedActiveCount = paymentMethodRows.filter(
       (row) => row.is_active && !row.include_in_balance,
     ).length;
@@ -717,8 +715,6 @@ export default function DashboardPage() {
     return {
       activeIncludedRows,
       totalBalance,
-      positiveCount,
-      negativeCount,
       excludedActiveCount,
       inactiveCount,
     };
@@ -871,14 +867,6 @@ export default function DashboardPage() {
               })}
             </Text>
           </Stack>
-          <Group gap={6} wrap="wrap">
-            <Badge color="teal" variant={financialSummary.positiveCount > 0 ? "light" : "outline"}>
-              {t("dashboard.positivesCount", undefined, { count: financialSummary.positiveCount })}
-            </Badge>
-            <Badge color="red" variant={financialSummary.negativeCount > 0 ? "light" : "outline"}>
-              {t("dashboard.negativesCount", undefined, { count: financialSummary.negativeCount })}
-            </Badge>
-          </Group>
         </Group>
 
         {financialSummary.activeIncludedRows.length === 0 ? (
