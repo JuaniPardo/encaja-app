@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Alert,
-  Badge,
   Button,
   Group,
   LoadingOverlay,
@@ -63,6 +62,12 @@ const transactionTypeColors: Record<TransactionType, string> = {
   income: "teal",
   expense: "pink",
   saving: "indigo",
+};
+
+const transactionTypeCardBackgrounds: Record<TransactionType, string> = {
+  income: "var(--mantine-color-teal-0)",
+  expense: "var(--mantine-color-pink-0)",
+  saving: "var(--mantine-color-indigo-0)",
 };
 
 function toDateInputValue(date: Date) {
@@ -1171,7 +1176,16 @@ export default function TransactionsPage() {
                     }
 
                     return (
-                      <Paper key={row.id} withBorder radius={6} p={isMobile ? 7 : 8}>
+                      <Paper
+                        key={row.id}
+                        withBorder
+                        radius={6}
+                        p={isMobile ? 7 : 8}
+                        style={{
+                          backgroundColor: transactionTypeCardBackgrounds[row.type],
+                          borderColor: "var(--mantine-color-gray-3)",
+                        }}
+                      >
                         <Stack gap={3}>
                           <Group justify="space-between" align="flex-start" wrap="nowrap" gap={6}>
                             <Stack gap={1} style={{ flex: 1, minWidth: 0 }}>
@@ -1203,9 +1217,6 @@ export default function TransactionsPage() {
                               >
                                 {visibleAmountFormatter.format(row.amount)}
                               </Text>
-                              <Badge size="xs" variant="light" color={transactionTypeColors[row.type]}>
-                                {transactionTypeLabels[row.type]}
-                              </Badge>
                             </Stack>
                           </Group>
 
