@@ -346,17 +346,17 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
               </UnstyledButton>
             </Tooltip>
 
-            {!desktopCollapsed || isMobile ? (
-              <Text size="10px" c="#98a2b3" mt="sm" ta={isMobile ? "center" : "left"}>
-                {t("workspace.developedBy", "Developed by Juan Pardo")}
-              </Text>
-            ) : null}
         </Box>
       </AppShell.Navbar>
 
       <AppShell.Main>
         <Container size="xl" py={isMobile ? "xs" : "md"}>
           {children}
+          <Box component="footer" mt={isMobile ? 36 : 56} pb={isMobile ? "sm" : "md"}>
+            <Text size="xs" c="gray.5" fw={400} ta="center">
+              Built by Juan Pardo
+            </Text>
+          </Box>
         </Container>
       </AppShell.Main>
     </AppShell>
