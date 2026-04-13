@@ -117,6 +117,31 @@ const typeLabels: Record<TransactionType, string> = {
   saving: "Ahorro",
 };
 
+const compactSummaryTheme: Record<
+  TransactionType,
+  {
+    color: string;
+    label: string;
+    textColor: string;
+  }
+> = {
+  income: {
+    color: "#00a552",
+    label: "Ingresos",
+    textColor: "#087f5b",
+  },
+  expense: {
+    color: "#e03131",
+    label: "Gastos",
+    textColor: "#c92a2a",
+  },
+  saving: {
+    color: "#868e96",
+    label: "Ahorro",
+    textColor: "#495057",
+  },
+};
+
 const paymentMethodTypeLabels: Record<PaymentMethodType, string> = {
   cash: "Efectivo",
   debit_card: "Tarjeta débito",
@@ -735,6 +760,8 @@ export default function DashboardPage() {
   const executionBarWidth = isMobile ? "100%" : isTablet ? 88 : 96;
   const donutSize = isMobile ? 76 : isTablet ? 84 : 96;
   const donutThickness = isMobile ? 9 : 11;
+  const compactSummaryDonutSize = isNarrowMobile ? 80 : 96;
+  const compactSummaryDonutThickness = isNarrowMobile ? 10 : 12;
   const tableColumnWidths = isMobile
     ? {
         category: "30%",
@@ -1022,6 +1049,64 @@ export default function DashboardPage() {
           </Group>
         </Group>
       </Paper>
+
+      {isMobile ? (
+        <Paper
+          p="xs"
+          radius="sm"
+          style={{
+            border: "1px solid #d6dde7",
+            backgroundColor: "#ffffff",
+          }}
+        >
+          <SimpleGrid cols={3} spacing={8}>
+            {(Object.keys(compactSummaryTheme) as TransactionType[]).map((type) => {
+              const value = roundMoney(metrics.totalsByType[type].real);
+              const theme = compactSummaryTheme[type];
+
+              return (
+                <Paper
+                  key={`compact-summary-${type}`}
+                  radius="sm"
+                  p={6}
+                  style={{
+                    border: "1px solid #e4e7ec",
+                    backgroundColor: "#f8fafc",
+                    minWidth: 0,
+                  }}
+                >
+                  <Stack gap={4} align="center">
+                    <RingProgress
+                      size={compactSummaryDonutSize}
+                      thickness={compactSummaryDonutThickness}
+                      roundCaps
+                      sections={[{ value: 100, color: theme.color }]}
+                      label={
+                        <Text
+                          size={isNarrowMobile ? "9px" : "10px"}
+                          fw={800}
+                          ta="center"
+                          c="#1f2937"
+                        >
+                          {compactCurrencyFormatter.format(value)}
+                        </Text>
+                      }
+                    />
+                    <Text
+                      size={isNarrowMobile ? "9px" : "10px"}
+                      fw={700}
+                      c={theme.textColor}
+                      ta="center"
+                    >
+                      {theme.label}
+                    </Text>
+                  </Stack>
+                </Paper>
+              );
+            })}
+          </SimpleGrid>
+        </Paper>
+      ) : null}
 
       {isDesktop ? (
         <Grid gap="sm" align="stretch">
@@ -1356,23 +1441,24 @@ export default function DashboardPage() {
         })}
       </Stack>
 
-      <Paper
-        p={cardPadding}
-        radius="sm"
-        style={{
-          border: "1px solid #d6dde7",
-          backgroundColor: "#ffffff",
-        }}
-      >
-        <Stack gap={isMobile ? 6 : "xs"}>
-          <Text size="xs" fw={800} c="#344054">
-            Distribución real por tipo
-          </Text>
+      {!isMobile ? (
+        <Paper
+          p={cardPadding}
+          radius="sm"
+          style={{
+            border: "1px solid #d6dde7",
+            backgroundColor: "#ffffff",
+          }}
+        >
+          <Stack gap={isMobile ? 6 : "xs"}>
+            <Text size="xs" fw={800} c="#344054">
+              Distribución real por tipo
+            </Text>
 
-          <SimpleGrid cols={distributionColumns} spacing={isMobile ? 6 : "xs"}>
-            {(Object.keys(typeLabels) as TransactionType[]).map((type) => {
-              const donut = donutData[type];
-              const hasData = donut.slices.length > 0;
+            <SimpleGrid cols={distributionColumns} spacing={isMobile ? 6 : "xs"}>
+              {(Object.keys(typeLabels) as TransactionType[]).map((type) => {
+                const donut = donutData[type];
+                const hasData = donut.slices.length > 0;
 
               return (
                 <Paper
@@ -1452,10 +1538,11 @@ export default function DashboardPage() {
                   </Box>
                 </Paper>
               );
-            })}
-          </SimpleGrid>
-        </Stack>
-      </Paper>
+              })}
+            </SimpleGrid>
+          </Stack>
+        </Paper>
+      ) : null}
     </Stack>
   );
 }
