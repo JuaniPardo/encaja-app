@@ -120,6 +120,7 @@ Tomar como referencia principal los archivos dentro de `/docs`, especialmente:
 - `02-modelo_de_datos-v1.md`
 - `03-reglas_de_negocio-v1.md`
 - `01-mvp1-definition.md`
+- `04-lineamientos-ui-v1.md`
 
 Si hay contradicción entre código y documentación, preferir alinear el código a la documentación vigente, salvo que se esté haciendo una refactorización explícita de los documentos.
 

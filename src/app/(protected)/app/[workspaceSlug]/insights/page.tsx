@@ -826,7 +826,7 @@ export default function InsightsPage() {
       <Tabs
         value={activeTab}
         onChange={(value) => setActiveTab((value as TabValue) ?? "current")}
-        variant="outline"
+        keepMounted={false}
       >
         <Tabs.List>
           <Tabs.Tab value="current">{t("insights.tabs.current")}</Tabs.Tab>
