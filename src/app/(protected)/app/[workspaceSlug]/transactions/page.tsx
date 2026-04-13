@@ -1228,7 +1228,7 @@ export default function TransactionsPage() {
             </Group>
           ) : null}
 
-          <Collapse in={!isMobile || mobileFiltersOpened}>
+          <Collapse expanded={!isMobile || mobileFiltersOpened}>
             <Group align="end" wrap="wrap" gap="xs">
               <NativeSelect
                 label={t("transactions.year")}
