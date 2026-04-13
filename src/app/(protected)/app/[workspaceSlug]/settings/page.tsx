@@ -51,12 +51,7 @@ import {
   canManageWorkspaceSettings,
 } from "@/features/workspace/permissions";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
-import type { Database, WorkspaceRole } from "@/types/database";
-
-const savingsRateModeSelectData = [
-  { value: "manual", label: "Manual" },
-  { value: "percentage", label: "Porcentaje objetivo" },
-];
+import type { Database } from "@/types/database";
 
 type WorkspaceMemberSummary =
   Database["public"]["Functions"]["list_workspace_members"]["Returns"][number];
@@ -66,10 +61,6 @@ type WorkspaceSettingsCurrencyRow = Pick<
   Database["public"]["Tables"]["workspace_settings"]["Row"],
   "workspace_id" | "currency_code"
 >;
-
-function normalizeRoleLabel(role: WorkspaceRole) {
-  return role === "owner" ? "owner" : "member";
-}
 
 function getMemberDisplayName(member: WorkspaceMemberSummary) {
   if (member.full_name && member.full_name.trim().length > 0) {
@@ -100,6 +91,7 @@ export default function SettingsPage() {
   const canCreateWorkspace = canUseMultiWorkspace && canEditWorkspaceSettings;
   const canDeleteCurrentWorkspace =
     canUseMultiWorkspace && canDeleteWorkspace(workspace.role) && workspaces.length > 1;
+  const currentRoleLabel = t(`common.role.${workspace.role}`, workspace.role);
   const [isCreateWorkspaceOpen, { open: openCreateWorkspace, close: closeCreateWorkspace }] =
     useDisclosure(false);
   const [isDeleteWorkspaceOpen, { open: openDeleteWorkspace, close: closeDeleteWorkspace }] =
@@ -121,6 +113,13 @@ export default function SettingsPage() {
   const [settingsId, setSettingsId] = useState<string | null>(null);
   const [selectedLanguage, setSelectedLanguage] = useState<Locale>(locale);
   const [isUpdatingLanguage, setIsUpdatingLanguage] = useState(false);
+  const savingsRateModeSelectData = useMemo(
+    () => [
+      { value: "manual", label: t("workspaceSettings.savingsRateMode.manual") },
+      { value: "percentage", label: t("workspaceSettings.savingsRateMode.percentage") },
+    ],
+    [t],
+  );
 
   const languageOptions = useMemo(
     () => [
@@ -283,7 +282,7 @@ export default function SettingsPage() {
     if (response.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar settings",
+        title: t("workspaceSettings.notifications.loadSettingsError"),
         message: response.error.message,
       });
       return;
@@ -313,7 +312,7 @@ export default function SettingsPage() {
       showCents: response.data.show_cents ?? false,
       currencyCode: response.data.currency_code,
     });
-  }, [reset, supabase, workspace.id]);
+  }, [reset, supabase, t, workspace.id]);
 
   useEffect(() => {
     void loadSettings();
@@ -331,7 +330,7 @@ export default function SettingsPage() {
     if (response.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar miembros",
+        title: t("workspaceSettings.notifications.loadMembersError"),
         message: response.error.message,
       });
       return;
@@ -339,7 +338,7 @@ export default function SettingsPage() {
 
     const rows = (response.data ?? []) as WorkspaceMemberSummary[];
     setMembers(rows);
-  }, [supabase, workspace.id]);
+  }, [supabase, t, workspace.id]);
 
   useEffect(() => {
     void loadMembers();
@@ -365,7 +364,7 @@ export default function SettingsPage() {
     if (response.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar monedas de workspaces",
+        title: t("workspaceSettings.notifications.loadWorkspaceCurrenciesError"),
         message: response.error.message,
       });
       return;
@@ -382,7 +381,7 @@ export default function SettingsPage() {
     if (nextCurrenciesById[workspace.id]) {
       setWorkspaceCurrencyCode(nextCurrenciesById[workspace.id]);
     }
-  }, [supabase, workspace.id, workspaces]);
+  }, [supabase, t, workspace.id, workspaces]);
 
   useEffect(() => {
     void loadWorkspaceCurrencies();
@@ -400,7 +399,7 @@ export default function SettingsPage() {
     if (response.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar vínculos",
+        title: t("workspaceSettings.notifications.loadLinksError"),
         message: response.error.message,
       });
       return;
@@ -408,7 +407,7 @@ export default function SettingsPage() {
 
     const rows = (response.data ?? []) as WorkspaceLinkSummary[];
     setWorkspaceLinks(rows);
-  }, [supabase, workspace.id]);
+  }, [supabase, t, workspace.id]);
 
   useEffect(() => {
     void loadWorkspaceLinks();
@@ -430,8 +429,8 @@ export default function SettingsPage() {
     if (!canEditWorkspaceSettings) {
       notifications.show({
         color: "red",
-        title: "Acción no permitida",
-        message: "Solo el owner puede modificar la configuración del workspace.",
+        title: t("workspaceSettings.notifications.permissionDeniedTitle"),
+        message: t("workspaceSettings.notifications.editSettingsPermissionDenied"),
       });
       return;
     }
@@ -456,7 +455,7 @@ export default function SettingsPage() {
       if (updateResponse.error) {
         notifications.show({
           color: "red",
-          title: "No pudimos actualizar settings",
+          title: t("workspaceSettings.notifications.updateSettingsError"),
           message: updateResponse.error.message,
         });
         return;
@@ -479,7 +478,7 @@ export default function SettingsPage() {
       if (insertResponse.error) {
         notifications.show({
           color: "red",
-          title: "No pudimos crear settings",
+          title: t("workspaceSettings.notifications.createSettingsError"),
           message: insertResponse.error.message,
         });
         return;
@@ -490,8 +489,8 @@ export default function SettingsPage() {
 
     notifications.show({
       color: "green",
-      title: "Settings guardados",
-      message: "La configuración del workspace se actualizó correctamente.",
+      title: t("workspaceSettings.notifications.settingsSavedTitle"),
+      message: t("workspaceSettings.notifications.settingsSavedMessage"),
     });
 
     setWorkspaceCurrencyCode(payload.currency_code);
@@ -523,8 +522,8 @@ export default function SettingsPage() {
     if (!canEditWorkspaceSettings) {
       notifications.show({
         color: "red",
-        title: "Acción no permitida",
-        message: "Solo el owner puede editar la identidad del workspace.",
+        title: t("workspaceSettings.notifications.permissionDeniedTitle"),
+        message: t("workspaceSettings.notifications.editWorkspaceIdentityPermissionDenied"),
       });
       return;
     }
@@ -540,7 +539,7 @@ export default function SettingsPage() {
     if (response.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos actualizar el workspace",
+        title: t("workspaceSettings.notifications.updateWorkspaceError"),
         message: response.error.message,
       });
       return;
@@ -550,8 +549,8 @@ export default function SettingsPage() {
 
     notifications.show({
       color: "green",
-      title: "Workspace actualizado",
-      message: "La identidad del workspace se actualizó correctamente.",
+      title: t("workspaceSettings.notifications.workspaceUpdatedTitle"),
+      message: t("workspaceSettings.notifications.workspaceUpdatedMessage"),
     });
   });
 
@@ -559,8 +558,8 @@ export default function SettingsPage() {
     if (!canCreateWorkspace) {
       notifications.show({
         color: "red",
-        title: "Acción no permitida",
-        message: "Solo el owner puede crear workspaces.",
+        title: t("workspaceSettings.notifications.permissionDeniedTitle"),
+        message: t("workspaceSettings.notifications.createWorkspacePermissionDenied"),
       });
       return;
     }
@@ -569,19 +568,21 @@ export default function SettingsPage() {
       const createdWorkspace = await createWorkspace(values.name);
       notifications.show({
         color: "green",
-        title: "Workspace creado",
-        message: `${createdWorkspace.name} ya está disponible.`,
+        title: t("workspaceSettings.notifications.workspaceCreatedTitle"),
+        message: t("workspaceSettings.notifications.workspaceCreatedMessage", undefined, {
+          workspaceName: createdWorkspace.name,
+        }),
       });
       closeCreateWorkspace();
       switchWorkspace(createdWorkspace.slug, "/settings");
     } catch (error) {
       notifications.show({
         color: "red",
-        title: "No pudimos crear el workspace",
+        title: t("workspaceSettings.notifications.createWorkspaceError"),
         message:
           error instanceof Error
             ? error.message
-            : "Ocurrió un error inesperado al crear el workspace.",
+            : t("workspaceSettings.notifications.unexpectedCreateWorkspaceError"),
       });
     }
   });
@@ -590,8 +591,8 @@ export default function SettingsPage() {
     if (!canDeleteCurrentWorkspace) {
       notifications.show({
         color: "red",
-        title: "Acción no permitida",
-        message: "Necesitás ser owner y tener al menos otro workspace disponible.",
+        title: t("workspaceSettings.notifications.permissionDeniedTitle"),
+        message: t("workspaceSettings.notifications.deleteWorkspacePermissionDenied"),
       });
       return;
     }
@@ -599,8 +600,8 @@ export default function SettingsPage() {
     if (deleteWorkspaceConfirmation.trim() !== workspace.name.trim()) {
       notifications.show({
         color: "red",
-        title: "Confirmación inválida",
-        message: "Escribí el nombre exacto del workspace para confirmar la eliminación.",
+        title: t("workspaceSettings.notifications.invalidConfirmationTitle"),
+        message: t("workspaceSettings.notifications.invalidConfirmationMessage"),
       });
       return;
     }
@@ -612,17 +613,19 @@ export default function SettingsPage() {
       closeDeleteWorkspace();
       notifications.show({
         color: "green",
-        title: "Workspace eliminado",
-        message: `Te movimos a ${fallbackWorkspace.name}.`,
+        title: t("workspaceSettings.notifications.workspaceDeletedTitle"),
+        message: t("workspaceSettings.notifications.workspaceDeletedMessage", undefined, {
+          workspaceName: fallbackWorkspace.name,
+        }),
       });
     } catch (error) {
       notifications.show({
         color: "red",
-        title: "No pudimos eliminar el workspace",
+        title: t("workspaceSettings.notifications.deleteWorkspaceError"),
         message:
           error instanceof Error
             ? error.message
-            : "Ocurrió un error inesperado al eliminar el workspace.",
+            : t("workspaceSettings.notifications.unexpectedDeleteWorkspaceError"),
       });
     } finally {
       setIsDeletingWorkspace(false);
@@ -633,8 +636,8 @@ export default function SettingsPage() {
     if (!canManageMembers) {
       notifications.show({
         color: "red",
-        title: "Acción no permitida",
-        message: "Solo el owner puede invitar miembros.",
+        title: t("workspaceSettings.notifications.permissionDeniedTitle"),
+        message: t("workspaceSettings.notifications.inviteMemberPermissionDenied"),
       });
       return;
     }
@@ -647,7 +650,7 @@ export default function SettingsPage() {
     if (response.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos invitar al miembro",
+        title: t("workspaceSettings.notifications.inviteMemberError"),
         message: response.error.message,
       });
       return;
@@ -657,18 +660,24 @@ export default function SettingsPage() {
     if (!invitedMember) {
       notifications.show({
         color: "red",
-        title: "No pudimos invitar al miembro",
-        message: "No recibimos confirmación del backend.",
+        title: t("workspaceSettings.notifications.inviteMemberError"),
+        message: t("workspaceSettings.notifications.inviteMemberMissingBackendConfirmation"),
       });
       return;
     }
 
     notifications.show({
       color: invitedMember.was_created ? "green" : "blue",
-      title: invitedMember.was_created ? "Miembro invitado" : "Miembro ya existente",
+      title: invitedMember.was_created
+        ? t("workspaceSettings.notifications.memberInvitedTitle")
+        : t("workspaceSettings.notifications.memberAlreadyExistsTitle"),
       message: invitedMember.was_created
-        ? `${invitedMember.email} ya forma parte del workspace.`
-        : `${invitedMember.email} ya tenía acceso al workspace.`,
+        ? t("workspaceSettings.notifications.memberInvitedMessage", undefined, {
+            email: invitedMember.email,
+          })
+        : t("workspaceSettings.notifications.memberAlreadyExistsMessage", undefined, {
+            email: invitedMember.email,
+          }),
     });
 
     resetInviteMember({
@@ -681,8 +690,8 @@ export default function SettingsPage() {
     if (!canManageMembers) {
       notifications.show({
         color: "red",
-        title: "Acción no permitida",
-        message: "Solo el owner puede remover miembros.",
+        title: t("workspaceSettings.notifications.permissionDeniedTitle"),
+        message: t("workspaceSettings.notifications.removeMemberPermissionDenied"),
       });
       return;
     }
@@ -699,7 +708,7 @@ export default function SettingsPage() {
     if (response.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos remover al miembro",
+        title: t("workspaceSettings.notifications.removeMemberError"),
         message: response.error.message,
       });
       return;
@@ -707,8 +716,10 @@ export default function SettingsPage() {
 
     notifications.show({
       color: "green",
-      title: "Acceso removido",
-      message: `${member.email} ya no tiene acceso a este workspace.`,
+      title: t("workspaceSettings.notifications.memberAccessRemovedTitle"),
+      message: t("workspaceSettings.notifications.memberAccessRemovedMessage", undefined, {
+        email: member.email,
+      }),
     });
 
     await loadMembers();
@@ -738,15 +749,19 @@ export default function SettingsPage() {
 
         let disabledReason: string | null = null;
         if (!hasCurrencyConfigured) {
-          disabledReason = "sin moneda configurada";
+          disabledReason = t("workspaceSettings.workspaceLinks.disabledReason.noCurrencyConfigured");
         } else if (!hasCurrencyCompatibility) {
-          disabledReason = `moneda distinta (${targetCurrency})`;
+          disabledReason = t(
+            "workspaceSettings.workspaceLinks.disabledReason.differentCurrency",
+            undefined,
+            { currency: targetCurrency ?? "-" },
+          );
         } else if (hasActiveLink) {
-          disabledReason = "ya vinculado";
+          disabledReason = t("workspaceSettings.workspaceLinks.disabledReason.alreadyLinked");
         }
 
-        const roleLabel = normalizeRoleLabel(workspaceItem.role);
-        const currencyLabel = targetCurrency ?? "N/A";
+        const roleLabel = t(`common.role.${workspaceItem.role}`, workspaceItem.role);
+        const currencyLabel = targetCurrency ?? t("workspaceSettings.notApplicable");
 
         return {
           value: workspaceItem.id,
@@ -757,6 +772,7 @@ export default function SettingsPage() {
   }, [
     activeLinksByTargetWorkspaceId,
     sourceWorkspaceCurrency,
+    t,
     workspace.id,
     workspaceCurrenciesById,
     workspaces,
@@ -768,8 +784,8 @@ export default function SettingsPage() {
     if (!canManageLinks) {
       notifications.show({
         color: "red",
-        title: "Acción no permitida",
-        message: "Solo el owner puede crear vínculos entre workspaces.",
+        title: t("workspaceSettings.notifications.permissionDeniedTitle"),
+        message: t("workspaceSettings.notifications.createWorkspaceLinkPermissionDenied"),
       });
       return;
     }
@@ -780,8 +796,8 @@ export default function SettingsPage() {
     if (!selectedTargetWorkspace) {
       notifications.show({
         color: "red",
-        title: "Workspace inválido",
-        message: "Seleccioná un workspace destino válido.",
+        title: t("workspaceSettings.notifications.invalidWorkspaceTitle"),
+        message: t("workspaceSettings.notifications.invalidWorkspaceMessage"),
       });
       return;
     }
@@ -789,8 +805,8 @@ export default function SettingsPage() {
     if (selectedTargetWorkspace.id === workspace.id) {
       notifications.show({
         color: "red",
-        title: "Vínculo inválido",
-        message: "No podés vincular un workspace consigo mismo.",
+        title: t("workspaceSettings.notifications.invalidLinkTitle"),
+        message: t("workspaceSettings.notifications.invalidLinkMessage"),
       });
       return;
     }
@@ -799,8 +815,8 @@ export default function SettingsPage() {
     if (!selectedTargetCurrency) {
       notifications.show({
         color: "red",
-        title: "Workspace sin moneda",
-        message: "El workspace destino no tiene moneda configurada.",
+        title: t("workspaceSettings.notifications.workspaceWithoutCurrencyTitle"),
+        message: t("workspaceSettings.notifications.workspaceWithoutCurrencyMessage"),
       });
       return;
     }
@@ -808,8 +824,10 @@ export default function SettingsPage() {
     if (selectedTargetCurrency.toUpperCase() !== sourceWorkspaceCurrency) {
       notifications.show({
         color: "red",
-        title: "Moneda incompatible",
-        message: `Solo podés vincular workspaces en ${sourceWorkspaceCurrency}.`,
+        title: t("workspaceSettings.notifications.incompatibleCurrencyTitle"),
+        message: t("workspaceSettings.notifications.incompatibleCurrencyMessage", undefined, {
+          currencyCode: sourceWorkspaceCurrency,
+        }),
       });
       return;
     }
@@ -817,8 +835,8 @@ export default function SettingsPage() {
     if (activeLinksByTargetWorkspaceId.has(selectedTargetWorkspace.id)) {
       notifications.show({
         color: "yellow",
-        title: "Ya existe un vínculo activo",
-        message: "Ese workspace ya está vinculado.",
+        title: t("workspaceSettings.notifications.activeLinkAlreadyExistsTitle"),
+        message: t("workspaceSettings.notifications.activeLinkAlreadyExistsMessage"),
       });
       return;
     }
@@ -832,7 +850,7 @@ export default function SettingsPage() {
     if (response.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos crear el vínculo",
+        title: t("workspaceSettings.notifications.createLinkError"),
         message: response.error.message,
       });
       return;
@@ -840,8 +858,10 @@ export default function SettingsPage() {
 
     notifications.show({
       color: "green",
-      title: "Workspace vinculado",
-      message: `${selectedTargetWorkspace.name} ya está disponible como resumen externo.`,
+      title: t("workspaceSettings.notifications.workspaceLinkedTitle"),
+      message: t("workspaceSettings.notifications.workspaceLinkedMessage", undefined, {
+        workspaceName: selectedTargetWorkspace.name,
+      }),
     });
 
     resetWorkspaceLink({
@@ -854,8 +874,8 @@ export default function SettingsPage() {
     if (!canManageLinks) {
       notifications.show({
         color: "red",
-        title: "Acción no permitida",
-        message: "Solo el owner puede desactivar vínculos.",
+        title: t("workspaceSettings.notifications.permissionDeniedTitle"),
+        message: t("workspaceSettings.notifications.deactivateLinkPermissionDenied"),
       });
       return;
     }
@@ -872,7 +892,7 @@ export default function SettingsPage() {
     if (response.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos desactivar el vínculo",
+        title: t("workspaceSettings.notifications.deactivateLinkError"),
         message: response.error.message,
       });
       return;
@@ -880,8 +900,8 @@ export default function SettingsPage() {
 
     notifications.show({
       color: "green",
-      title: "Vínculo desactivado",
-      message: "El workspace dejó de mostrarse como resumen externo.",
+      title: t("workspaceSettings.notifications.linkDeactivatedTitle"),
+      message: t("workspaceSettings.notifications.linkDeactivatedMessage"),
     });
 
     await loadWorkspaceLinks();
@@ -893,23 +913,23 @@ export default function SettingsPage() {
       <Modal
         opened={isCreateWorkspaceOpen}
         onClose={closeCreateWorkspace}
-        title="Crear workspace"
+        title={t("workspaceSettings.modals.createWorkspace.title")}
         centered
       >
         <form onSubmit={onSubmitCreateWorkspace}>
           <Stack gap="sm">
             <TextInput
-              label="Nombre visible"
-              placeholder="Ej: Hogar, Consultorio, Negocio"
+              label={t("workspaceSettings.forms.workspaceDisplayName")}
+              placeholder={t("workspaceSettings.forms.workspaceDisplayNamePlaceholderLong")}
               error={createWorkspaceErrors.name?.message}
               {...registerCreateWorkspace("name")}
             />
             <Group justify="flex-end">
               <Button type="button" variant="light" color="gray" onClick={closeCreateWorkspace}>
-                Cancelar
+                {t("common.actions.cancel")}
               </Button>
               <Button type="submit" loading={isCreatingWorkspace}>
-                Crear
+                {t("common.actions.create")}
               </Button>
             </Group>
           </Stack>
@@ -918,15 +938,17 @@ export default function SettingsPage() {
       <Modal
         opened={isDeleteWorkspaceOpen}
         onClose={closeDeleteWorkspace}
-        title="Eliminar workspace"
+        title={t("workspaceSettings.modals.deleteWorkspace.title")}
         centered
       >
         <Stack gap="sm">
-          <Alert color="red" variant="light" title="Acción irreversible">
-            Se eliminarán categorías, transacciones, presupuestos y settings del workspace.
+          <Alert color="red" variant="light" title={t("workspaceSettings.modals.deleteWorkspace.irreversibleTitle")}>
+            {t("workspaceSettings.modals.deleteWorkspace.irreversibleBody")}
           </Alert>
           <Text size="sm">
-            Escribí <b>{workspace.name}</b> para confirmar.
+            {t("workspaceSettings.modals.deleteWorkspace.confirmPrompt", undefined, {
+              workspaceName: workspace.name,
+            })}
           </Text>
           <TextInput
             value={deleteWorkspaceConfirmation}
@@ -941,7 +963,7 @@ export default function SettingsPage() {
               onClick={closeDeleteWorkspace}
               disabled={isDeletingWorkspace}
             >
-              Cancelar
+              {t("common.actions.cancel")}
             </Button>
             <Button
               type="button"
@@ -950,22 +972,26 @@ export default function SettingsPage() {
               disabled={deleteWorkspaceConfirmation.trim() !== workspace.name.trim()}
               onClick={() => void onDeleteWorkspace()}
             >
-              Eliminar workspace
+              {t("workspaceSettings.modals.deleteWorkspace.confirmButton")}
             </Button>
           </Group>
         </Stack>
       </Modal>
 
       <Stack gap={2}>
-        <Title order={2}>Settings del workspace</Title>
+        <Title order={2}>{t("workspaceSettings.title")}</Title>
         <Text c="dimmed" size="sm">
-          Estás en <b>{workspace.name}</b> con rol <b>{normalizeRoleLabel(workspace.role)}</b>.
+          {t("workspaceSettings.subtitle", undefined, {
+            workspaceName: workspace.name,
+            role: currentRoleLabel,
+          })}
         </Text>
       </Stack>
       {!canEditWorkspaceSettings ? (
-        <Alert color="yellow" variant="light" title="Acceso de solo lectura">
-          Tenés rol <b>{normalizeRoleLabel(workspace.role)}</b>. Solo el owner puede modificar la
-          configuración del workspace.
+        <Alert color="yellow" variant="light" title={t("workspaceSettings.readOnly.title")}>
+          {t("workspaceSettings.readOnly.message", undefined, {
+            role: currentRoleLabel,
+          })}
         </Alert>
       ) : null}
 
@@ -998,44 +1024,47 @@ export default function SettingsPage() {
       <Paper withBorder radius="md" p="md">
         <Stack gap="sm">
           <Group justify="space-between" align="center">
-            <Text fw={600}>Miembros del workspace</Text>
+            <Text fw={600}>{t("workspaceSettings.members.title")}</Text>
             <Badge variant="light" color="gray">
-              {members.length} {members.length === 1 ? "miembro" : "miembros"}
+              {t("workspaceSettings.members.count", undefined, {
+                count: members.length,
+                pluralSuffix: members.length === 1 ? "" : "s",
+              })}
             </Badge>
           </Group>
           <Text size="sm" c="dimmed">
-            Invitá personas por email para colaborar en este workspace compartido.
+            {t("workspaceSettings.members.description")}
           </Text>
 
           {!canManageMembers ? (
-            <Alert color="blue" variant="light" title="Sin permisos de administración">
-              Podés ver miembros, pero solo el owner puede invitar o remover acceso.
+            <Alert color="blue" variant="light" title={t("workspaceSettings.members.noAdminTitle")}>
+              {t("workspaceSettings.members.noAdminMessage")}
             </Alert>
           ) : null}
 
           <form onSubmit={onSubmitInviteMember}>
             <Group align="flex-end" wrap="wrap">
               <TextInput
-                label="Invitar por email"
-                placeholder="persona@ejemplo.com"
+                label={t("workspaceSettings.members.inviteEmailLabel")}
+                placeholder={t("workspaceSettings.members.inviteEmailPlaceholder")}
                 error={inviteMemberErrors.email?.message}
                 disabled={!canManageMembers}
                 style={{ flex: 1, minWidth: 220 }}
                 {...registerInviteMember("email")}
               />
               <Button type="submit" loading={isInvitingMember} disabled={!canManageMembers}>
-                Invitar
+                {t("workspaceSettings.members.inviteButton")}
               </Button>
             </Group>
           </form>
 
           {isMembersLoading ? (
             <Text size="sm" c="dimmed">
-              Cargando miembros...
+              {t("workspaceSettings.members.loading")}
             </Text>
           ) : members.length === 0 ? (
             <Text size="sm" c="dimmed">
-              Este workspace todavía no tiene miembros.
+              {t("workspaceSettings.members.empty")}
             </Text>
           ) : (
             <Stack gap="xs">
@@ -1053,7 +1082,7 @@ export default function SettingsPage() {
                       </Stack>
                       <Group gap="xs" align="center">
                         <Badge variant="light" color={member.role === "owner" ? "teal" : "gray"}>
-                          {normalizeRoleLabel(member.role)}
+                          {t(`common.role.${member.role}`, member.role)}
                         </Badge>
                         {canRemoveMember ? (
                           <Button
@@ -1064,7 +1093,7 @@ export default function SettingsPage() {
                             loading={removingMemberUserId === member.user_id}
                             onClick={() => void onRemoveMember(member)}
                           >
-                            Remover
+                            {t("workspaceSettings.members.removeButton")}
                           </Button>
                         ) : null}
                       </Group>
@@ -1080,22 +1109,29 @@ export default function SettingsPage() {
       <Paper withBorder radius="md" p="md">
         <Stack gap="sm">
           <Group justify="space-between" align="center">
-            <Text fw={600}>Workspaces vinculados</Text>
+            <Text fw={600}>{t("workspaceSettings.workspaceLinks.title")}</Text>
             <Badge variant="light" color="blue">
-              {workspaceLinks.filter((workspaceLink) => workspaceLink.is_active).length} activos
+              {t("workspaceSettings.workspaceLinks.activeCount", undefined, {
+                count: workspaceLinks.filter((workspaceLink) => workspaceLink.is_active).length,
+              })}
             </Badge>
           </Group>
           <Text size="sm" c="dimmed">
-            Vinculá workspaces para ver un <b>resumen externo</b> (ingresos, gastos, ahorro y
-            balance) sin mezclar transacciones ni categorías con este workspace.
+            {t("workspaceSettings.workspaceLinks.description")}
           </Text>
           <Text size="sm" c="dimmed">
-            Moneda del workspace actual: <b>{sourceWorkspaceCurrency}</b>.
+            {t("workspaceSettings.workspaceLinks.currentCurrency", undefined, {
+              currencyCode: sourceWorkspaceCurrency,
+            })}
           </Text>
 
           {!canManageLinks ? (
-            <Alert color="blue" variant="light" title="Sin permisos de administración">
-              Podés ver vínculos existentes, pero solo el owner puede crear o desactivar vínculos.
+            <Alert
+              color="blue"
+              variant="light"
+              title={t("workspaceSettings.workspaceLinks.noAdminTitle")}
+            >
+              {t("workspaceSettings.workspaceLinks.noAdminMessage")}
             </Alert>
           ) : null}
 
@@ -1106,9 +1142,11 @@ export default function SettingsPage() {
                 name="targetWorkspaceId"
                 render={({ field }) => (
                   <Select
-                    label="Workspace destino"
+                    label={t("workspaceSettings.workspaceLinks.targetWorkspaceLabel")}
                     placeholder={
-                      canUseMultiWorkspace ? "Seleccioná workspace destino" : "Plan sin acceso"
+                      canUseMultiWorkspace
+                        ? t("workspaceSettings.workspaceLinks.targetWorkspacePlaceholder")
+                        : t("workspaceSettings.workspaceLinks.planWithoutAccess")
                     }
                     data={workspaceLinkTargetOptions}
                     error={workspaceLinkErrors.targetWorkspaceId?.message}
@@ -1136,14 +1174,14 @@ export default function SettingsPage() {
                   !canCreateAnyWorkspaceLink
                 }
               >
-                Vincular
+                {t("workspaceSettings.workspaceLinks.linkButton")}
               </Button>
             </Group>
           </form>
 
           {!canUseMultiWorkspace ? (
             <Text size="sm" c="dimmed">
-              Tu plan actual no incluye múltiples workspaces, por eso no podés crear vínculos.
+              {t("workspaceSettings.workspaceLinks.planWithoutMultiWorkspace")}
             </Text>
           ) : null}
 
@@ -1152,25 +1190,27 @@ export default function SettingsPage() {
           !isWorkspaceCurrenciesLoading &&
           !canCreateAnyWorkspaceLink ? (
             <Text size="sm" c="dimmed">
-              No hay workspaces compatibles para vincular. Revisá que exista otro workspace con la
-              misma moneda.
+              {t("workspaceSettings.workspaceLinks.noCompatibleWorkspaces")}
             </Text>
           ) : null}
 
           {isWorkspaceLinksLoading ? (
             <Text size="sm" c="dimmed">
-              Cargando vínculos...
+              {t("workspaceSettings.workspaceLinks.loading")}
             </Text>
           ) : workspaceLinks.length === 0 ? (
             <Text size="sm" c="dimmed">
-              Todavía no hay workspaces vinculados.
+              {t("workspaceSettings.workspaceLinks.empty")}
             </Text>
           ) : (
             <Stack gap="xs">
               {workspaceLinks.map((workspaceLink) => {
-                const linkName = workspaceLink.target_workspace_name ?? "Workspace sin acceso";
+                const linkName =
+                  workspaceLink.target_workspace_name ??
+                  t("workspaceSettings.workspaceLinks.workspaceWithoutAccess");
                 const linkSlug = workspaceLink.target_workspace_slug;
-                const linkCurrency = workspaceLink.target_currency_code ?? "N/A";
+                const linkCurrency =
+                  workspaceLink.target_currency_code ?? t("workspaceSettings.notApplicable");
                 const canDeactivateLink = canManageLinks && workspaceLink.is_active;
 
                 return (
@@ -1180,8 +1220,11 @@ export default function SettingsPage() {
                         <Stack gap={2}>
                           <Text fw={600}>{linkName}</Text>
                           <Text size="sm" c="dimmed">
-                            {linkSlug ? `${linkSlug} · ` : ""}Moneda {linkCurrency} · Modo{" "}
-                            {workspaceLink.visibility_mode}
+                            {t("workspaceSettings.workspaceLinks.linkMeta", undefined, {
+                              slugPrefix: linkSlug ? `${linkSlug} · ` : "",
+                              currencyCode: linkCurrency,
+                              visibilityMode: workspaceLink.visibility_mode,
+                            })}
                           </Text>
                         </Stack>
                         <Group gap="xs" align="center">
@@ -1189,7 +1232,9 @@ export default function SettingsPage() {
                             variant="light"
                             color={workspaceLink.is_active ? "teal" : "gray"}
                           >
-                            {workspaceLink.is_active ? "Activo" : "Inactivo"}
+                            {workspaceLink.is_active
+                              ? t("workspaceSettings.status.active")
+                              : t("workspaceSettings.status.inactive")}
                           </Badge>
                           {canDeactivateLink ? (
                             <Button
@@ -1200,15 +1245,18 @@ export default function SettingsPage() {
                               loading={deactivatingLinkId === workspaceLink.link_id}
                               onClick={() => void onDeactivateWorkspaceLink(workspaceLink)}
                             >
-                              Desactivar
+                              {t("workspaceSettings.workspaceLinks.deactivateButton")}
                             </Button>
                           ) : null}
                         </Group>
                       </Group>
                       {!workspaceLink.has_target_access ? (
-                        <Alert color="yellow" variant="light" title="Sin acceso al destino">
-                          Este vínculo existe, pero ya no tenés permisos sobre el workspace
-                          destino, así que no se mostrará su resumen.
+                        <Alert
+                          color="yellow"
+                          variant="light"
+                          title={t("workspaceSettings.workspaceLinks.noTargetAccessTitle")}
+                        >
+                          {t("workspaceSettings.workspaceLinks.noTargetAccessMessage")}
                         </Alert>
                       ) : null}
                     </Stack>
@@ -1224,16 +1272,16 @@ export default function SettingsPage() {
         <form onSubmit={onSubmitWorkspace}>
           <Stack>
             <Group justify="space-between" align="center">
-              <Text fw={600}>Identidad del workspace</Text>
+              <Text fw={600}>{t("workspaceSettings.identity.title")}</Text>
               {canCreateWorkspace ? (
                 <Button variant="subtle" size="xs" onClick={openCreateWorkspace}>
-                  Crear workspace
+                  {t("workspaceSettings.identity.createWorkspaceButton")}
                 </Button>
               ) : null}
             </Group>
             <TextInput
-              label="Nombre visible"
-              placeholder="Ej: Hogar"
+              label={t("workspaceSettings.forms.workspaceDisplayName")}
+              placeholder={t("workspaceSettings.forms.workspaceDisplayNamePlaceholderShort")}
               disabled={!canEditWorkspaceSettings}
               error={workspaceErrors.name?.message}
               {...registerWorkspace("name")}
@@ -1244,7 +1292,7 @@ export default function SettingsPage() {
                 loading={isWorkspaceSubmitting}
                 disabled={!canEditWorkspaceSettings}
               >
-                Guardar nombre
+                {t("workspaceSettings.identity.saveNameButton")}
               </Button>
             </Group>
           </Stack>
@@ -1255,7 +1303,7 @@ export default function SettingsPage() {
         <form onSubmit={onSubmit}>
           <Stack>
             <TextInput
-              label="Año de inicio"
+              label={t("workspaceSettings.forms.startYear")}
               type="number"
               placeholder="2026"
               error={errors.startYear?.message}
@@ -1263,7 +1311,7 @@ export default function SettingsPage() {
             />
 
             <NativeSelect
-              label="Modo de ahorro"
+              label={t("workspaceSettings.forms.savingsMode")}
               data={savingsRateModeSelectData}
               disabled={!canEditWorkspaceSettings}
               error={errors.savingsRateMode?.message}
@@ -1278,13 +1326,13 @@ export default function SettingsPage() {
                   checked={field.value}
                   disabled={!canEditWorkspaceSettings}
                   onChange={(event) => field.onChange(event.currentTarget.checked)}
-                  label="Habilitar ingreso diferido"
+                  label={t("workspaceSettings.forms.enableDeferredIncome")}
                 />
               )}
             />
 
             <TextInput
-              label="Día de diferimiento"
+              label={t("workspaceSettings.forms.deferredIncomeDay")}
               type="number"
               placeholder="Ej: 5"
               disabled={!deferredIncomeEnabled}
@@ -1294,7 +1342,7 @@ export default function SettingsPage() {
             />
 
             <TextInput
-              label="Moneda"
+              label={t("workspaceSettings.forms.currency")}
               placeholder="ARS"
               maxLength={3}
               readOnly={!canEditWorkspaceSettings}
@@ -1310,17 +1358,17 @@ export default function SettingsPage() {
                   checked={field.value}
                   disabled={!canEditWorkspaceSettings}
                   onChange={(event) => field.onChange(event.currentTarget.checked)}
-                  label="Mostrar centavos en la UI"
+                  label={t("workspaceSettings.forms.showCents")}
                 />
               )}
             />
 
             <Group justify="flex-end" mt="sm">
               <Button type="button" variant="light" color="gray" onClick={() => void loadSettings()}>
-                Revertir
+                {t("workspaceSettings.forms.revertButton")}
               </Button>
               <Button type="submit" loading={isSubmitting} disabled={!canEditWorkspaceSettings}>
-                Guardar settings
+                {t("workspaceSettings.forms.saveSettingsButton")}
               </Button>
             </Group>
           </Stack>
@@ -1330,19 +1378,19 @@ export default function SettingsPage() {
       <Paper withBorder radius="md" p="md">
         <Stack gap="sm">
           <Text fw={600} c="red.7">
-            Zona de peligro
+            {t("workspaceSettings.dangerZone.title")}
           </Text>
           <Text size="sm" c="dimmed">
-            Podés eliminar este workspace si tenés otro disponible. Esta acción es irreversible.
+            {t("workspaceSettings.dangerZone.description")}
           </Text>
           {!canDeleteWorkspace(workspace.role) ? (
             <Text size="sm" c="dimmed">
-              Solo el owner puede eliminar workspaces.
+              {t("workspaceSettings.dangerZone.ownerOnlyMessage")}
             </Text>
           ) : null}
           {workspaces.length <= 1 ? (
             <Text size="sm" c="dimmed">
-              Necesitás al menos otro workspace antes de eliminar este.
+              {t("workspaceSettings.dangerZone.needAnotherWorkspaceMessage")}
             </Text>
           ) : null}
           <Group justify="flex-end">
@@ -1352,7 +1400,7 @@ export default function SettingsPage() {
               onClick={openDeleteWorkspace}
               disabled={!canDeleteCurrentWorkspace}
             >
-              Eliminar workspace
+              {t("workspaceSettings.dangerZone.deleteWorkspaceButton")}
             </Button>
           </Group>
         </Stack>

@@ -336,6 +336,175 @@ const dictionaries = {
         errorTitle: "No pudimos actualizar idioma",
       },
     },
+    workspaceSettings: {
+      title: "Settings del workspace",
+      subtitle: "Estás en {{workspaceName}} con rol {{role}}.",
+      notApplicable: "N/A",
+      readOnly: {
+        title: "Acceso de solo lectura",
+        message:
+          "Tenés rol {{role}}. Solo el owner puede modificar la configuración del workspace.",
+      },
+      status: {
+        active: "Activo",
+        inactive: "Inactivo",
+      },
+      savingsRateMode: {
+        manual: "Manual",
+        percentage: "Porcentaje objetivo",
+      },
+      forms: {
+        workspaceDisplayName: "Nombre visible",
+        workspaceDisplayNamePlaceholderLong: "Ej: Hogar, Consultorio, Negocio",
+        workspaceDisplayNamePlaceholderShort: "Ej: Hogar",
+        startYear: "Año de inicio",
+        savingsMode: "Modo de ahorro",
+        enableDeferredIncome: "Habilitar ingreso diferido",
+        deferredIncomeDay: "Día de diferimiento",
+        currency: "Moneda",
+        showCents: "Mostrar centavos en la UI",
+        revertButton: "Revertir",
+        saveSettingsButton: "Guardar settings",
+      },
+      identity: {
+        title: "Identidad del workspace",
+        createWorkspaceButton: "Crear workspace",
+        saveNameButton: "Guardar nombre",
+      },
+      members: {
+        title: "Miembros del workspace",
+        count: "{{count}} miembro{{pluralSuffix}}",
+        description: "Invitá personas por email para colaborar en este workspace compartido.",
+        noAdminTitle: "Sin permisos de administración",
+        noAdminMessage:
+          "Podés ver miembros, pero solo el owner puede invitar o remover acceso.",
+        inviteEmailLabel: "Invitar por email",
+        inviteEmailPlaceholder: "persona@ejemplo.com",
+        inviteButton: "Invitar",
+        loading: "Cargando miembros...",
+        empty: "Este workspace todavía no tiene miembros.",
+        removeButton: "Remover",
+      },
+      workspaceLinks: {
+        title: "Workspaces vinculados",
+        activeCount: "{{count}} activos",
+        description:
+          "Vinculá workspaces para ver un resumen externo (ingresos, gastos, ahorro y balance) sin mezclar transacciones ni categorías con este workspace.",
+        currentCurrency: "Moneda del workspace actual: {{currencyCode}}.",
+        noAdminTitle: "Sin permisos de administración",
+        noAdminMessage:
+          "Podés ver vínculos existentes, pero solo el owner puede crear o desactivar vínculos.",
+        targetWorkspaceLabel: "Workspace destino",
+        targetWorkspacePlaceholder: "Seleccioná workspace destino",
+        planWithoutAccess: "Plan sin acceso",
+        linkButton: "Vincular",
+        planWithoutMultiWorkspace:
+          "Tu plan actual no incluye múltiples workspaces, por eso no podés crear vínculos.",
+        noCompatibleWorkspaces:
+          "No hay workspaces compatibles para vincular. Revisá que exista otro workspace con la misma moneda.",
+        loading: "Cargando vínculos...",
+        empty: "Todavía no hay workspaces vinculados.",
+        workspaceWithoutAccess: "Workspace sin acceso",
+        deactivateButton: "Desactivar",
+        noTargetAccessTitle: "Sin acceso al destino",
+        noTargetAccessMessage:
+          "Este vínculo existe, pero ya no tenés permisos sobre el workspace destino, así que no se mostrará su resumen.",
+        linkMeta: "{{slugPrefix}}Moneda {{currencyCode}} · Modo {{visibilityMode}}",
+        disabledReason: {
+          noCurrencyConfigured: "sin moneda configurada",
+          differentCurrency: "moneda distinta ({{currency}})",
+          alreadyLinked: "ya vinculado",
+        },
+      },
+      modals: {
+        createWorkspace: {
+          title: "Crear workspace",
+        },
+        deleteWorkspace: {
+          title: "Eliminar workspace",
+          irreversibleTitle: "Acción irreversible",
+          irreversibleBody:
+            "Se eliminarán categorías, transacciones, presupuestos y settings del workspace.",
+          confirmPrompt: "Escribí {{workspaceName}} para confirmar.",
+          confirmButton: "Eliminar workspace",
+        },
+      },
+      dangerZone: {
+        title: "Zona de peligro",
+        description:
+          "Podés eliminar este workspace si tenés otro disponible. Esta acción es irreversible.",
+        ownerOnlyMessage: "Solo el owner puede eliminar workspaces.",
+        needAnotherWorkspaceMessage: "Necesitás al menos otro workspace antes de eliminar este.",
+        deleteWorkspaceButton: "Eliminar workspace",
+      },
+      notifications: {
+        permissionDeniedTitle: "Acción no permitida",
+        loadSettingsError: "No pudimos cargar settings",
+        loadMembersError: "No pudimos cargar miembros",
+        loadWorkspaceCurrenciesError: "No pudimos cargar monedas de workspaces",
+        loadLinksError: "No pudimos cargar vínculos",
+        editSettingsPermissionDenied:
+          "Solo el owner puede modificar la configuración del workspace.",
+        updateSettingsError: "No pudimos actualizar settings",
+        createSettingsError: "No pudimos crear settings",
+        settingsSavedTitle: "Settings guardados",
+        settingsSavedMessage: "La configuración del workspace se actualizó correctamente.",
+        editWorkspaceIdentityPermissionDenied:
+          "Solo el owner puede editar la identidad del workspace.",
+        updateWorkspaceError: "No pudimos actualizar el workspace",
+        workspaceUpdatedTitle: "Workspace actualizado",
+        workspaceUpdatedMessage: "La identidad del workspace se actualizó correctamente.",
+        createWorkspacePermissionDenied: "Solo el owner puede crear workspaces.",
+        workspaceCreatedTitle: "Workspace creado",
+        workspaceCreatedMessage: "{{workspaceName}} ya está disponible.",
+        createWorkspaceError: "No pudimos crear el workspace",
+        unexpectedCreateWorkspaceError:
+          "Ocurrió un error inesperado al crear el workspace.",
+        deleteWorkspacePermissionDenied:
+          "Necesitás ser owner y tener al menos otro workspace disponible.",
+        invalidConfirmationTitle: "Confirmación inválida",
+        invalidConfirmationMessage:
+          "Escribí el nombre exacto del workspace para confirmar la eliminación.",
+        workspaceDeletedTitle: "Workspace eliminado",
+        workspaceDeletedMessage: "Te movimos a {{workspaceName}}.",
+        deleteWorkspaceError: "No pudimos eliminar el workspace",
+        unexpectedDeleteWorkspaceError:
+          "Ocurrió un error inesperado al eliminar el workspace.",
+        inviteMemberPermissionDenied: "Solo el owner puede invitar miembros.",
+        inviteMemberError: "No pudimos invitar al miembro",
+        inviteMemberMissingBackendConfirmation: "No recibimos confirmación del backend.",
+        memberInvitedTitle: "Miembro invitado",
+        memberAlreadyExistsTitle: "Miembro ya existente",
+        memberInvitedMessage: "{{email}} ya forma parte del workspace.",
+        memberAlreadyExistsMessage: "{{email}} ya tenía acceso al workspace.",
+        removeMemberPermissionDenied: "Solo el owner puede remover miembros.",
+        removeMemberError: "No pudimos remover al miembro",
+        memberAccessRemovedTitle: "Acceso removido",
+        memberAccessRemovedMessage: "{{email}} ya no tiene acceso a este workspace.",
+        createWorkspaceLinkPermissionDenied:
+          "Solo el owner puede crear vínculos entre workspaces.",
+        invalidWorkspaceTitle: "Workspace inválido",
+        invalidWorkspaceMessage: "Seleccioná un workspace destino válido.",
+        invalidLinkTitle: "Vínculo inválido",
+        invalidLinkMessage: "No podés vincular un workspace consigo mismo.",
+        workspaceWithoutCurrencyTitle: "Workspace sin moneda",
+        workspaceWithoutCurrencyMessage:
+          "El workspace destino no tiene moneda configurada.",
+        incompatibleCurrencyTitle: "Moneda incompatible",
+        incompatibleCurrencyMessage: "Solo podés vincular workspaces en {{currencyCode}}.",
+        activeLinkAlreadyExistsTitle: "Ya existe un vínculo activo",
+        activeLinkAlreadyExistsMessage: "Ese workspace ya está vinculado.",
+        createLinkError: "No pudimos crear el vínculo",
+        workspaceLinkedTitle: "Workspace vinculado",
+        workspaceLinkedMessage:
+          "{{workspaceName}} ya está disponible como resumen externo.",
+        deactivateLinkPermissionDenied: "Solo el owner puede desactivar vínculos.",
+        deactivateLinkError: "No pudimos desactivar el vínculo",
+        linkDeactivatedTitle: "Vínculo desactivado",
+        linkDeactivatedMessage:
+          "El workspace dejó de mostrarse como resumen externo.",
+      },
+    },
     transactions: {
       title: "Transacciones",
       subtitle: "Vista operativa de movimientos reales del período.",
@@ -882,6 +1051,178 @@ const dictionaries = {
         savedTitle: "Language updated",
         savedMessage: "Your language preference was saved successfully.",
         errorTitle: "We couldn't update your language",
+      },
+    },
+    workspaceSettings: {
+      title: "Workspace settings",
+      subtitle: "You are in {{workspaceName}} with role {{role}}.",
+      notApplicable: "N/A",
+      readOnly: {
+        title: "Read-only access",
+        message:
+          "Your role is {{role}}. Only the owner can modify workspace settings.",
+      },
+      status: {
+        active: "Active",
+        inactive: "Inactive",
+      },
+      savingsRateMode: {
+        manual: "Manual",
+        percentage: "Target percentage",
+      },
+      forms: {
+        workspaceDisplayName: "Display name",
+        workspaceDisplayNamePlaceholderLong: "e.g. Home, Clinic, Business",
+        workspaceDisplayNamePlaceholderShort: "e.g. Home",
+        startYear: "Start year",
+        savingsMode: "Savings mode",
+        enableDeferredIncome: "Enable deferred income",
+        deferredIncomeDay: "Deferral day",
+        currency: "Currency",
+        showCents: "Show cents in UI",
+        revertButton: "Revert",
+        saveSettingsButton: "Save settings",
+      },
+      identity: {
+        title: "Workspace identity",
+        createWorkspaceButton: "Create workspace",
+        saveNameButton: "Save name",
+      },
+      members: {
+        title: "Workspace members",
+        count: "{{count}} member{{pluralSuffix}}",
+        description: "Invite people by email to collaborate in this shared workspace.",
+        noAdminTitle: "No admin permissions",
+        noAdminMessage:
+          "You can view members, but only the owner can invite or remove access.",
+        inviteEmailLabel: "Invite by email",
+        inviteEmailPlaceholder: "person@example.com",
+        inviteButton: "Invite",
+        loading: "Loading members...",
+        empty: "This workspace has no members yet.",
+        removeButton: "Remove",
+      },
+      workspaceLinks: {
+        title: "Linked workspaces",
+        activeCount: "{{count}} active",
+        description:
+          "Link workspaces to see an external summary (income, expenses, savings, and balance) without mixing transactions or categories with this workspace.",
+        currentCurrency: "Current workspace currency: {{currencyCode}}.",
+        noAdminTitle: "No admin permissions",
+        noAdminMessage:
+          "You can view existing links, but only the owner can create or deactivate links.",
+        targetWorkspaceLabel: "Target workspace",
+        targetWorkspacePlaceholder: "Select target workspace",
+        planWithoutAccess: "Plan without access",
+        linkButton: "Link",
+        planWithoutMultiWorkspace:
+          "Your current plan does not include multiple workspaces, so you cannot create links.",
+        noCompatibleWorkspaces:
+          "There are no compatible workspaces to link. Make sure another workspace exists with the same currency.",
+        loading: "Loading links...",
+        empty: "There are no linked workspaces yet.",
+        workspaceWithoutAccess: "Workspace without access",
+        deactivateButton: "Deactivate",
+        noTargetAccessTitle: "No access to target",
+        noTargetAccessMessage:
+          "This link exists, but you no longer have permission on the target workspace, so its summary will not be shown.",
+        linkMeta: "{{slugPrefix}}Currency {{currencyCode}} · Mode {{visibilityMode}}",
+        disabledReason: {
+          noCurrencyConfigured: "no configured currency",
+          differentCurrency: "different currency ({{currency}})",
+          alreadyLinked: "already linked",
+        },
+      },
+      modals: {
+        createWorkspace: {
+          title: "Create workspace",
+        },
+        deleteWorkspace: {
+          title: "Delete workspace",
+          irreversibleTitle: "Irreversible action",
+          irreversibleBody:
+            "Categories, transactions, budgets, and workspace settings will be deleted.",
+          confirmPrompt: "Type {{workspaceName}} to confirm.",
+          confirmButton: "Delete workspace",
+        },
+      },
+      dangerZone: {
+        title: "Danger zone",
+        description:
+          "You can delete this workspace if you have another available. This action is irreversible.",
+        ownerOnlyMessage: "Only the owner can delete workspaces.",
+        needAnotherWorkspaceMessage:
+          "You need at least one other workspace before deleting this one.",
+        deleteWorkspaceButton: "Delete workspace",
+      },
+      notifications: {
+        permissionDeniedTitle: "Action not allowed",
+        loadSettingsError: "We couldn't load settings",
+        loadMembersError: "We couldn't load members",
+        loadWorkspaceCurrenciesError: "We couldn't load workspace currencies",
+        loadLinksError: "We couldn't load links",
+        editSettingsPermissionDenied:
+          "Only the owner can modify workspace settings.",
+        updateSettingsError: "We couldn't update settings",
+        createSettingsError: "We couldn't create settings",
+        settingsSavedTitle: "Settings saved",
+        settingsSavedMessage: "Workspace settings were updated successfully.",
+        editWorkspaceIdentityPermissionDenied:
+          "Only the owner can edit workspace identity.",
+        updateWorkspaceError: "We couldn't update workspace",
+        workspaceUpdatedTitle: "Workspace updated",
+        workspaceUpdatedMessage: "Workspace identity was updated successfully.",
+        createWorkspacePermissionDenied: "Only the owner can create workspaces.",
+        workspaceCreatedTitle: "Workspace created",
+        workspaceCreatedMessage: "{{workspaceName}} is now available.",
+        createWorkspaceError: "We couldn't create workspace",
+        unexpectedCreateWorkspaceError:
+          "An unexpected error occurred while creating workspace.",
+        deleteWorkspacePermissionDenied:
+          "You must be owner and have at least one other workspace available.",
+        invalidConfirmationTitle: "Invalid confirmation",
+        invalidConfirmationMessage:
+          "Type the exact workspace name to confirm deletion.",
+        workspaceDeletedTitle: "Workspace deleted",
+        workspaceDeletedMessage: "We moved you to {{workspaceName}}.",
+        deleteWorkspaceError: "We couldn't delete workspace",
+        unexpectedDeleteWorkspaceError:
+          "An unexpected error occurred while deleting workspace.",
+        inviteMemberPermissionDenied: "Only the owner can invite members.",
+        inviteMemberError: "We couldn't invite member",
+        inviteMemberMissingBackendConfirmation:
+          "We didn't receive backend confirmation.",
+        memberInvitedTitle: "Member invited",
+        memberAlreadyExistsTitle: "Member already existed",
+        memberInvitedMessage: "{{email}} is now part of the workspace.",
+        memberAlreadyExistsMessage: "{{email}} already had access to the workspace.",
+        removeMemberPermissionDenied: "Only the owner can remove members.",
+        removeMemberError: "We couldn't remove member",
+        memberAccessRemovedTitle: "Access removed",
+        memberAccessRemovedMessage: "{{email}} no longer has access to this workspace.",
+        createWorkspaceLinkPermissionDenied:
+          "Only the owner can create links between workspaces.",
+        invalidWorkspaceTitle: "Invalid workspace",
+        invalidWorkspaceMessage: "Select a valid target workspace.",
+        invalidLinkTitle: "Invalid link",
+        invalidLinkMessage: "You cannot link a workspace to itself.",
+        workspaceWithoutCurrencyTitle: "Workspace without currency",
+        workspaceWithoutCurrencyMessage:
+          "Target workspace has no configured currency.",
+        incompatibleCurrencyTitle: "Incompatible currency",
+        incompatibleCurrencyMessage:
+          "You can only link workspaces in {{currencyCode}}.",
+        activeLinkAlreadyExistsTitle: "An active link already exists",
+        activeLinkAlreadyExistsMessage: "That workspace is already linked.",
+        createLinkError: "We couldn't create link",
+        workspaceLinkedTitle: "Workspace linked",
+        workspaceLinkedMessage:
+          "{{workspaceName}} is now available as external summary.",
+        deactivateLinkPermissionDenied: "Only the owner can deactivate links.",
+        deactivateLinkError: "We couldn't deactivate link",
+        linkDeactivatedTitle: "Link deactivated",
+        linkDeactivatedMessage:
+          "The workspace is no longer shown as external summary.",
       },
     },
     transactions: {
