@@ -203,24 +203,25 @@ function getPaceMainMessage(
   status: BudgetPaceStatus,
   hasBudget: boolean,
   expenseBehavior: ExpenseBehavior,
+  t: (key: string, fallback?: string, values?: Record<string, string | number>) => string,
 ) {
   if (!hasBudget) {
-    return "Todavía no tiene presupuesto definido";
+    return t("insights.pace.main.noBudget");
   }
 
   if (status === "exceeded") {
-    return "Te excediste en tu presupuesto";
+    return t("insights.pace.main.exceeded");
   }
 
   if (status === "risk") {
-    return "Podrías excederte si mantenés este ritmo";
+    return t("insights.pace.main.risk");
   }
 
   if (expenseBehavior === "fixed") {
-    return "Gasto fijo en línea con tu presupuesto";
+    return t("insights.pace.main.fixedInline");
   }
 
-  return "Viene en línea con tu presupuesto";
+  return t("insights.pace.main.inline");
 }
 
 export default function InsightsPage() {
@@ -324,7 +325,7 @@ export default function InsightsPage() {
     if (categoriesResponse.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar categorías",
+        title: t("insights.notifications.loadCategoriesError"),
         message: categoriesResponse.error.message,
       });
       setCategories([]);
@@ -338,7 +339,7 @@ export default function InsightsPage() {
     if (settingsResponse.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar settings",
+        title: t("insights.notifications.loadSettingsError"),
         message: settingsResponse.error.message,
       });
       setCurrencyCode("ARS");
@@ -352,7 +353,7 @@ export default function InsightsPage() {
     if (currentTransactionsResponse.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar transacciones del mes actual",
+        title: t("insights.notifications.loadCurrentTransactionsError"),
         message: currentTransactionsResponse.error.message,
       });
       setCurrentTransactions([]);
@@ -363,7 +364,7 @@ export default function InsightsPage() {
     if (historicalTransactionsResponse.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar transacciones históricas",
+        title: t("insights.notifications.loadHistoricalTransactionsError"),
         message: historicalTransactionsResponse.error.message,
       });
       setHistoricalTransactions([]);
@@ -374,7 +375,7 @@ export default function InsightsPage() {
     if (periodResponse.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar el presupuesto del mes actual",
+        title: t("insights.notifications.loadCurrentBudgetError"),
         message: periodResponse.error.message,
       });
       setBudgetItems([]);
@@ -397,7 +398,7 @@ export default function InsightsPage() {
     if (budgetItemsResponse.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar ítems de presupuesto",
+        title: t("insights.notifications.loadBudgetItemsError"),
         message: budgetItemsResponse.error.message,
       });
       setBudgetItems([]);
@@ -415,6 +416,7 @@ export default function InsightsPage() {
     currentPeriod.year,
     locale,
     supabase,
+    t,
     workspace.id,
   ]);
 
@@ -459,7 +461,7 @@ export default function InsightsPage() {
     const topCategories: CategorySpendRow[] = Array.from(expenseByCategoryId.entries())
       .map(([categoryId, amount]) => ({
         categoryId,
-        categoryName: categoryById.get(categoryId)?.name ?? "Categoría sin nombre",
+        categoryName: categoryById.get(categoryId)?.name ?? t("insights.categoryWithoutName"),
         amount: roundMoney(amount),
         sharePercent: totalExpense > deviationTolerance ? (amount / totalExpense) * 100 : 0,
       }))
@@ -544,7 +546,7 @@ export default function InsightsPage() {
       topCategories,
       paceRows: paceRows.slice(0, 3),
     };
-  }, [budgetItems, categoryById, currentPeriod.month, currentPeriod.year, currentTransactions, now]);
+  }, [budgetItems, categoryById, currentPeriod.month, currentPeriod.year, currentTransactions, now, t]);
 
   const currentInsights = useMemo(() => {
     const messages: string[] = [];
@@ -552,7 +554,10 @@ export default function InsightsPage() {
     const topCategory = currentMonthData.topCategories[0];
     if (topCategory && currentMonthData.totalExpense > deviationTolerance) {
       messages.push(
-        `Hasta ahora, ${topCategory.categoryName} representa ${percentageFormatter.format(topCategory.sharePercent)}% de tus gastos.`,
+        t("insights.current.messages.topCategoryShare", undefined, {
+          categoryName: topCategory.categoryName,
+          sharePercent: percentageFormatter.format(topCategory.sharePercent),
+        }),
       );
     }
 
@@ -560,24 +565,40 @@ export default function InsightsPage() {
     if (exceededRow) {
       if (exceededRow.budgetAmount <= deviationTolerance) {
         messages.push(
-          `${exceededRow.categoryName} ya acumula gasto sin presupuesto cargado este mes.`,
+          t("insights.current.messages.exceededNoBudget", undefined, {
+            categoryName: exceededRow.categoryName,
+          }),
         );
       } else {
-        messages.push(`Ya superaste tu presupuesto en ${exceededRow.categoryName}.`);
+        messages.push(
+          t("insights.current.messages.exceeded", undefined, {
+            categoryName: exceededRow.categoryName,
+          }),
+        );
       }
     }
 
     const riskRow = currentMonthData.paceRows.find((row) => row.status === "risk");
     if (riskRow) {
-      messages.push(`Podrías excederte en ${riskRow.categoryName} si mantenés este ritmo.`);
+      messages.push(
+        t("insights.current.messages.risk", undefined, {
+          categoryName: riskRow.categoryName,
+        }),
+      );
     }
 
     if (messages.length === 0) {
-      messages.push("Todavía no hay señales fuertes en este mes. Cuando haya más movimiento, vas a ver insights acá.");
+      messages.push(t("insights.current.messages.noStrongSignals"));
     }
 
     return messages.slice(0, 3);
-  }, [currentMonthData.paceRows, currentMonthData.topCategories, currentMonthData.totalExpense, percentageFormatter]);
+  }, [
+    currentMonthData.paceRows,
+    currentMonthData.topCategories,
+    currentMonthData.totalExpense,
+    percentageFormatter,
+    t,
+  ]);
 
   const closedMonthData = useMemo(() => {
     const closedKey = getPeriodKey(closedPeriod);
@@ -629,7 +650,7 @@ export default function InsightsPage() {
     const topClosedCategories: CategorySpendRow[] = Array.from(closedExpenseByCategoryId.entries())
       .map(([categoryId, amount]) => ({
         categoryId,
-        categoryName: categoryById.get(categoryId)?.name ?? "Categoría sin nombre",
+        categoryName: categoryById.get(categoryId)?.name ?? t("insights.categoryWithoutName"),
         amount: roundMoney(amount),
         sharePercent:
           closedTotals.expense > deviationTolerance ? (amount / closedTotals.expense) * 100 : 0,
@@ -648,7 +669,7 @@ export default function InsightsPage() {
 
       return {
         categoryId,
-        categoryName: categoryById.get(categoryId)?.name ?? "Categoría sin nombre",
+        categoryName: categoryById.get(categoryId)?.name ?? t("insights.categoryWithoutName"),
         closedAmount,
         previousAmount,
         deltaAmount,
@@ -681,7 +702,7 @@ export default function InsightsPage() {
       increases,
       reductions,
     };
-  }, [categoryById, closedPeriod, comparisonPeriod, historicalTransactions]);
+  }, [categoryById, closedPeriod, comparisonPeriod, historicalTransactions, t]);
 
   const closedInsights = useMemo(() => {
     const messages: string[] = [];
@@ -691,16 +712,25 @@ export default function InsightsPage() {
     );
 
     if (Math.abs(totalDelta) > deviationTolerance) {
-      const direction = totalDelta > 0 ? "más" : "menos";
       messages.push(
-        `Gastaste ${currencyFormatter.format(Math.abs(totalDelta))} ${direction} que en ${periodLabel(comparisonPeriod)}.`,
+        t("insights.closed.messages.totalDelta", undefined, {
+          amount: currencyFormatter.format(Math.abs(totalDelta)),
+          direction:
+            totalDelta > 0
+              ? t("insights.closed.direction.more")
+              : t("insights.closed.direction.less"),
+          comparisonPeriod: periodLabel(comparisonPeriod),
+        }),
       );
     }
 
     const topCategory = closedMonthData.topClosedCategories[0];
     if (topCategory) {
       messages.push(
-        `${topCategory.categoryName} fue tu mayor categoría de gasto en ${periodLabel(closedPeriod)}.`,
+        t("insights.closed.messages.topCategory", undefined, {
+          categoryName: topCategory.categoryName,
+          closedPeriod: periodLabel(closedPeriod),
+        }),
       );
     }
 
@@ -708,11 +738,17 @@ export default function InsightsPage() {
     if (topIncrease) {
       if (topIncrease.deltaPercent === null) {
         messages.push(
-          `${topIncrease.categoryName} subió respecto al mes anterior (${currencyFormatter.format(topIncrease.deltaAmount)}).`,
+          t("insights.closed.messages.topIncreaseAmount", undefined, {
+            categoryName: topIncrease.categoryName,
+            amount: currencyFormatter.format(topIncrease.deltaAmount),
+          }),
         );
       } else {
         messages.push(
-          `${topIncrease.categoryName} aumentó ${percentageFormatter.format(Math.abs(topIncrease.deltaPercent))}% respecto al mes anterior.`,
+          t("insights.closed.messages.topIncreasePercent", undefined, {
+            categoryName: topIncrease.categoryName,
+            percent: percentageFormatter.format(Math.abs(topIncrease.deltaPercent)),
+          }),
         );
       }
     } else {
@@ -720,18 +756,24 @@ export default function InsightsPage() {
       if (topReduction) {
         if (topReduction.deltaPercent === null) {
           messages.push(
-            `Reduciste ${topReduction.categoryName} en ${currencyFormatter.format(Math.abs(topReduction.deltaAmount))}.`,
+            t("insights.closed.messages.topReductionAmount", undefined, {
+              categoryName: topReduction.categoryName,
+              amount: currencyFormatter.format(Math.abs(topReduction.deltaAmount)),
+            }),
           );
         } else {
           messages.push(
-            `Reduciste ${topReduction.categoryName} en ${percentageFormatter.format(Math.abs(topReduction.deltaPercent))}% respecto al mes anterior.`,
+            t("insights.closed.messages.topReductionPercent", undefined, {
+              categoryName: topReduction.categoryName,
+              percent: percentageFormatter.format(Math.abs(topReduction.deltaPercent)),
+            }),
           );
         }
       }
     }
 
     if (messages.length === 0) {
-      messages.push("Todavía no hay suficiente historial para comparar el último mes cerrado.");
+      messages.push(t("insights.closed.messages.noHistory"));
     }
 
     return messages.slice(0, 3);
@@ -746,6 +788,7 @@ export default function InsightsPage() {
     currencyFormatter,
     periodLabel,
     percentageFormatter,
+    t,
   ]);
 
   const drilldownHref = useCallback((period: PeriodRef, categoryId: string) => {
@@ -774,9 +817,9 @@ export default function InsightsPage() {
       <LoadingOverlay visible={isLoading} />
 
       <Stack gap={2}>
-        <Title order={2}>Insights</Title>
+        <Title order={2}>{t("insights.title")}</Title>
         <Text c="dimmed" size="sm">
-          Vista analítica para entender tu ritmo del mes y comparar cómo cerró el período anterior.
+          {t("insights.subtitle")}
         </Text>
       </Stack>
 
@@ -786,34 +829,39 @@ export default function InsightsPage() {
         variant="outline"
       >
         <Tabs.List>
-          <Tabs.Tab value="current">Este mes</Tabs.Tab>
-          <Tabs.Tab value="closed">Mes cerrado</Tabs.Tab>
+          <Tabs.Tab value="current">{t("insights.tabs.current")}</Tabs.Tab>
+          <Tabs.Tab value="closed">{t("insights.tabs.closed")}</Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="current" pt="sm">
           <Stack gap="sm">
             <Stack gap={6}>
               <Group justify="space-between" wrap="wrap" gap="xs">
-                <Text fw={700}>Estado del período actual</Text>
+                <Text fw={700}>{t("insights.current.periodStatus")}</Text>
                 <Badge color="gray" variant="light">
                   {currentMonthBadge}
                 </Badge>
               </Group>
 
               <Text fw={700}>
-                Día {currentMonthData.elapsedDays} de {currentMonthData.daysInMonth}
+                {t("insights.current.dayProgress", undefined, {
+                  day: currentMonthData.elapsedDays,
+                  daysInMonth: currentMonthData.daysInMonth,
+                })}
               </Text>
               <Progress value={currentMonthData.progressPercent} color="teal" size="sm" />
               <Text size="sm">
-                Gastaste {currencyFormatter.format(currentMonthData.totalExpense)} hasta hoy.
+                {t("insights.current.spentUntilToday", undefined, {
+                  amount: currencyFormatter.format(currentMonthData.totalExpense),
+                })}
               </Text>
               <Text size="sm" c="dimmed">
-                Quedan {remainingDays} días para ajustar el ritmo.
+                {t("insights.current.remainingDays", undefined, { days: remainingDays })}
               </Text>
             </Stack>
 
             <Stack gap={6}>
-              <Text fw={700}>Señales principales</Text>
+              <Text fw={700}>{t("insights.current.mainSignals")}</Text>
               {currentInsights.map((message) => (
                 <Text key={message} size="sm">
                   • {message}
@@ -823,11 +871,11 @@ export default function InsightsPage() {
 
             <Paper withBorder radius="md" p="sm">
               <Stack gap="xs">
-                <Text fw={700}>Top categorías actuales</Text>
+                <Text fw={700}>{t("insights.current.topCategories")}</Text>
 
                 {currentMonthData.topCategories.length === 0 ? (
                   <Text size="sm" c="dimmed">
-                    Todavía no hay gastos suficientes para destacar categorías.
+                    {t("insights.current.noTopCategories")}
                   </Text>
                 ) : (
                   <Stack gap={6}>
@@ -839,7 +887,9 @@ export default function InsightsPage() {
                               {row.categoryName}
                             </Text>
                             <Text size="xs" c="dimmed">
-                              {getRoundedPercentLabel(row.sharePercent)} de tu gasto hasta ahora
+                              {t("insights.current.shareUntilNow", undefined, {
+                                percent: getRoundedPercentLabel(row.sharePercent),
+                              })}
                             </Text>
                           </Stack>
 
@@ -852,7 +902,7 @@ export default function InsightsPage() {
                               variant="subtle"
                               color="gray"
                             >
-                              Ver detalle
+                              {t("insights.current.viewDetail")}
                             </Button>
                           </Group>
                         </Group>
@@ -865,11 +915,11 @@ export default function InsightsPage() {
 
             <Paper withBorder radius="md" p="sm">
               <Stack gap="xs">
-                <Text fw={700}>Presupuesto vs ritmo</Text>
+                <Text fw={700}>{t("insights.pace.title")}</Text>
 
                 {currentMonthData.paceRows.length === 0 ? (
                   <Text size="sm" c="dimmed">
-                    No hay categorías con señales de ritmo para este mes.
+                    {t("insights.pace.noRows")}
                   </Text>
                 ) : (
                   <Stack gap={6}>
@@ -879,6 +929,7 @@ export default function InsightsPage() {
                         row.status,
                         hasBudget,
                         row.expenseBehavior,
+                        t,
                       );
                       const mainDelta =
                         hasBudget && row.status === "risk"
@@ -904,7 +955,9 @@ export default function InsightsPage() {
                                   variant="light"
                                   color={row.expenseBehavior === "fixed" ? "gray" : "blue"}
                                 >
-                                  {row.expenseBehavior === "fixed" ? "Fijo" : "Variable"}
+                                  {row.expenseBehavior === "fixed"
+                                    ? t("common.domain.expenseBehavior.fixed")
+                                    : t("common.domain.expenseBehavior.variable")}
                                 </Badge>
                                 <Button
                                   component={Link}
@@ -913,7 +966,7 @@ export default function InsightsPage() {
                                   variant="subtle"
                                   color="gray"
                                 >
-                                  Ver transacciones
+                                  {t("insights.current.viewTransactions")}
                                 </Button>
                               </Group>
                             </Group>
@@ -935,20 +988,25 @@ export default function InsightsPage() {
 
                             {hasBudget ? (
                               <Text size="sm" c="dimmed">
-                                Llevás {currencyFormatter.format(row.currentAmount)} de{" "}
-                                {currencyFormatter.format(row.budgetAmount)}.
+                                {t("insights.pace.progressWithBudget", undefined, {
+                                  currentAmount: currencyFormatter.format(row.currentAmount),
+                                  budgetAmount: currencyFormatter.format(row.budgetAmount),
+                                })}
                               </Text>
                             ) : (
                               <Text size="xs" c="dimmed">
-                                Llevás {currencyFormatter.format(row.currentAmount)} y todavía no tiene
-                                presupuesto definido para este mes.
+                                {t("insights.pace.progressWithoutBudget", undefined, {
+                                  currentAmount: currencyFormatter.format(row.currentAmount),
+                                })}
                               </Text>
                             )}
 
                             <Text size="xs" c="dimmed">
                               {row.expenseBehavior === "fixed"
-                                ? "Proyección: gasto fijo (sin extrapolación lineal)."
-                                : `Proyección: ${currencyFormatter.format(row.projectedAmount)}`}
+                                ? t("insights.pace.fixedProjection")
+                                : t("insights.pace.variableProjection", undefined, {
+                                    projectedAmount: currencyFormatter.format(row.projectedAmount),
+                                  })}
                             </Text>
                           </Stack>
                         </Paper>
@@ -966,7 +1024,7 @@ export default function InsightsPage() {
             <Paper withBorder radius="md" p="sm">
               <Stack gap="sm">
                 <Group justify="space-between" wrap="wrap" gap="xs">
-                  <Text fw={700}>Resumen del último mes cerrado</Text>
+                  <Text fw={700}>{t("insights.closed.summaryTitle")}</Text>
                   <Badge color="gray" variant="light">
                     {closedMonthBadge}
                   </Badge>
@@ -975,59 +1033,65 @@ export default function InsightsPage() {
                 <SimpleGrid cols={isMobile ? 2 : 4} spacing="xs">
                   <Paper withBorder radius="sm" p="xs">
                     <Text size="xs" c="dimmed">
-                      Ingresos
+                      {t("dashboard.incomeLabel")}
                     </Text>
                     <Text fw={700}>{currencyFormatter.format(closedMonthData.closedTotals.income)}</Text>
                   </Paper>
 
                   <Paper withBorder radius="sm" p="xs">
                     <Text size="xs" c="dimmed">
-                      Gastos
+                      {t("dashboard.expenseLabel")}
                     </Text>
                     <Text fw={700}>{currencyFormatter.format(closedMonthData.closedTotals.expense)}</Text>
                   </Paper>
 
                   <Paper withBorder radius="sm" p="xs">
                     <Text size="xs" c="dimmed">
-                      Ahorro
+                      {t("dashboard.savingLabel")}
                     </Text>
                     <Text fw={700}>{currencyFormatter.format(closedMonthData.closedTotals.saving)}</Text>
                   </Paper>
 
                   <Paper withBorder radius="sm" p="xs">
                     <Text size="xs" c="dimmed">
-                      Balance
+                      {t("dashboard.balanceLabel")}
                     </Text>
                     <Text fw={700}>{currencyFormatter.format(closedBalance)}</Text>
                   </Paper>
                 </SimpleGrid>
 
                 <Text size="xs" c="dimmed">
-                  Comparado con {comparisonMonthBadge}: {formatSignedCurrency(closedMonthData.closedTotals.expense - closedMonthData.previousTotals.expense, currencyFormatter)} en gastos totales.
+                  {t("insights.closed.comparedTo", undefined, {
+                    comparisonMonth: comparisonMonthBadge,
+                    deltaAmount: formatSignedCurrency(
+                      closedMonthData.closedTotals.expense - closedMonthData.previousTotals.expense,
+                      currencyFormatter,
+                    ),
+                  })}
                 </Text>
               </Stack>
             </Paper>
 
             <Paper withBorder radius="md" p="sm">
               <Stack gap="xs">
-                <Text fw={700}>Top categorías del mes cerrado</Text>
+                <Text fw={700}>{t("insights.closed.topCategoriesTitle")}</Text>
 
                 {closedMonthData.topClosedCategories.length === 0 ? (
                   <Stack gap={5}>
                     <Text size="sm">
-                      Todavía no hay suficiente información para analizar este período.
+                      {t("insights.closed.emptyState.title")}
                     </Text>
                     <Text size="sm" c="dimmed">
-                      Cuando completes un mes, vas a poder ver:
+                      {t("insights.closed.emptyState.subtitle")}
                     </Text>
                     <Text size="sm" c="dimmed">
-                      • tus principales categorías de gasto
+                      {t("insights.closed.emptyState.item1")}
                     </Text>
                     <Text size="sm" c="dimmed">
-                      • qué aumentó o bajó respecto al mes anterior
+                      {t("insights.closed.emptyState.item2")}
                     </Text>
                     <Text size="sm" c="dimmed">
-                      • cómo evoluciona tu dinero mes a mes
+                      {t("insights.closed.emptyState.item3")}
                     </Text>
                   </Stack>
                 ) : (
@@ -1040,7 +1104,9 @@ export default function InsightsPage() {
                               {row.categoryName}
                             </Text>
                             <Text size="xs" c="dimmed">
-                              {percentageFormatter.format(row.sharePercent)}% de los gastos del mes cerrado
+                              {t("insights.closed.expenseShare", undefined, {
+                                sharePercent: percentageFormatter.format(row.sharePercent),
+                              })}
                             </Text>
                           </Stack>
 
@@ -1053,7 +1119,7 @@ export default function InsightsPage() {
                               variant="subtle"
                               color="gray"
                             >
-                              Ver detalle
+                              {t("insights.current.viewDetail")}
                             </Button>
                           </Group>
                         </Group>
@@ -1066,9 +1132,12 @@ export default function InsightsPage() {
 
             <Paper withBorder radius="md" p="sm">
               <Stack gap="xs">
-                <Text fw={700}>Comparación vs mes anterior</Text>
+                <Text fw={700}>{t("insights.closed.comparisonTitle")}</Text>
                 <Text size="xs" c="dimmed">
-                  {closedMonthBadge} comparado contra {comparisonMonthBadge}
+                  {t("insights.closed.comparisonSubtitle", undefined, {
+                    closedMonth: closedMonthBadge,
+                    comparisonMonth: comparisonMonthBadge,
+                  })}
                 </Text>
 
                 <SimpleGrid cols={isMobile ? 1 : 2} spacing="xs">
@@ -1076,7 +1145,7 @@ export default function InsightsPage() {
                     <Stack gap={6}>
                       <Group justify="space-between" align="center">
                         <Text fw={600} size="sm">
-                          Mayores aumentos
+                          {t("insights.closed.increasesTitle")}
                         </Text>
                         <Badge color="pink" variant="light">
                           {closedMonthData.increases.length}
@@ -1085,7 +1154,7 @@ export default function InsightsPage() {
 
                       {closedMonthData.increases.length === 0 ? (
                         <Text size="xs" c="dimmed">
-                          No hubo aumentos relevantes.
+                          {t("insights.closed.noIncreases")}
                         </Text>
                       ) : (
                         <Stack gap={6}>
@@ -1101,8 +1170,10 @@ export default function InsightsPage() {
                               </Group>
                               <Text size="xs" c="dimmed">
                                 {row.deltaPercent === null
-                                  ? "Sin gasto comparable en el mes anterior"
-                                  : `Variación: ${formatSignedPercent(row.deltaPercent, percentageFormatter)}`}
+                                  ? t("insights.closed.noComparableExpense")
+                                  : t("insights.closed.variation", undefined, {
+                                      value: formatSignedPercent(row.deltaPercent, percentageFormatter),
+                                    })}
                               </Text>
                               <Button
                                 component={Link}
@@ -1113,7 +1184,7 @@ export default function InsightsPage() {
                                 px={0}
                                 justify="flex-start"
                               >
-                                Ver transacciones
+                                {t("insights.current.viewTransactions")}
                               </Button>
                               <Divider />
                             </Stack>
@@ -1127,7 +1198,7 @@ export default function InsightsPage() {
                     <Stack gap={6}>
                       <Group justify="space-between" align="center">
                         <Text fw={600} size="sm">
-                          Mayores reducciones
+                          {t("insights.closed.reductionsTitle")}
                         </Text>
                         <Badge color="teal" variant="light">
                           {closedMonthData.reductions.length}
@@ -1136,7 +1207,7 @@ export default function InsightsPage() {
 
                       {closedMonthData.reductions.length === 0 ? (
                         <Text size="xs" c="dimmed">
-                          No hubo reducciones relevantes.
+                          {t("insights.closed.noReductions")}
                         </Text>
                       ) : (
                         <Stack gap={6}>
@@ -1152,8 +1223,10 @@ export default function InsightsPage() {
                               </Group>
                               <Text size="xs" c="dimmed">
                                 {row.deltaPercent === null
-                                  ? "Sin gasto comparable en el mes anterior"
-                                  : `Variación: ${formatSignedPercent(row.deltaPercent, percentageFormatter)}`}
+                                  ? t("insights.closed.noComparableExpense")
+                                  : t("insights.closed.variation", undefined, {
+                                      value: formatSignedPercent(row.deltaPercent, percentageFormatter),
+                                    })}
                               </Text>
                               <Button
                                 component={Link}
@@ -1164,7 +1237,7 @@ export default function InsightsPage() {
                                 px={0}
                                 justify="flex-start"
                               >
-                                Ver transacciones
+                                {t("insights.current.viewTransactions")}
                               </Button>
                               <Divider />
                             </Stack>
@@ -1179,7 +1252,7 @@ export default function InsightsPage() {
 
             <Paper withBorder radius="md" p="sm">
               <Stack gap={6}>
-                <Text fw={700}>Conclusiones del mes cerrado</Text>
+                <Text fw={700}>{t("insights.closed.conclusionsTitle")}</Text>
                 {closedInsights.map((message) => (
                   <Text key={message} size="sm">
                     {message}

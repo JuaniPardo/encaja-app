@@ -86,6 +86,7 @@ export default function BudgetPage() {
   const { supabase, workspace, user } = useWorkspace();
   const { intlLocale, locale, t } = useI18n();
   const canManageStructure = canManageBudgetStructure(workspace.role);
+  const roleLabel = t(`common.role.${workspace.role}`, workspace.role);
   const isMobile = useMediaQuery("(max-width: 48em)");
   const monthOptions = useMemo(() => buildMonthOptions(intlLocale), [intlLocale]);
   const typeLabels = useMemo<Record<TransactionType, string>>(
@@ -242,7 +243,7 @@ export default function BudgetPage() {
     if (categoriesResponse.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar categorías activas",
+        title: t("budget.notifications.loadActiveCategoriesError"),
         message: categoriesResponse.error.message,
       });
       setCategories([]);
@@ -269,7 +270,7 @@ export default function BudgetPage() {
     if (settingsResponse.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar settings del workspace",
+        title: t("budget.notifications.loadSettingsError"),
         message: settingsResponse.error.message,
       });
       setStartYear(new Date().getFullYear());
@@ -283,7 +284,7 @@ export default function BudgetPage() {
     }
 
     setIsBootstrapping(false);
-  }, [locale, supabase, workspace.id]);
+  }, [locale, supabase, t, workspace.id]);
 
   const loadSelectedPeriod = useCallback(async () => {
     setIsPeriodLoading(true);
@@ -300,7 +301,7 @@ export default function BudgetPage() {
       setIsPeriodLoading(false);
       notifications.show({
         color: "red",
-        title: "No pudimos cargar el período",
+        title: t("budget.notifications.loadPeriodError"),
         message: periodResponse.error.message,
       });
       return;
@@ -330,7 +331,7 @@ export default function BudgetPage() {
       setIsPeriodLoading(false);
       notifications.show({
         color: "red",
-        title: "No pudimos cargar el presupuesto",
+        title: t("budget.notifications.loadBudgetError"),
         message: itemsResponse.error.message,
       });
       return;
@@ -351,7 +352,7 @@ export default function BudgetPage() {
     setPeriodId(periodRow.id);
     setPeriodHasItems(periodItems.length > 0);
     setIsPeriodLoading(false);
-  }, [categories, reset, selectedMonth, selectedYear, supabase, workspace.id]);
+  }, [categories, reset, selectedMonth, selectedYear, supabase, t, workspace.id]);
 
   useEffect(() => {
     void loadBaseData();
@@ -413,8 +414,8 @@ export default function BudgetPage() {
     if (!canManageStructure) {
       notifications.show({
         color: "red",
-        title: "Acción no permitida",
-        message: "Solo el owner puede administrar la estructura de presupuesto.",
+        title: t("budget.notifications.permissionDeniedTitle"),
+        message: t("budget.notifications.permissionDeniedMessage"),
       });
       return;
     }
@@ -472,20 +473,22 @@ export default function BudgetPage() {
 
       notifications.show({
         color: "green",
-        title: "Presupuesto guardado",
-        message: `Guardamos el presupuesto de ${monthLabelFromOptions(
-          selectedMonth,
-          monthOptions,
-          t("common.messages.month", "Mes"),
-        )} ${selectedYear}.`,
+        title: t("budget.notifications.savedTitle"),
+        message: t("budget.notifications.savedMessage", undefined, {
+          monthYear: `${monthLabelFromOptions(
+            selectedMonth,
+            monthOptions,
+            t("common.messages.month", "Mes"),
+          )} ${selectedYear}`,
+        }),
       });
 
       await loadSelectedPeriod();
     } catch (error) {
       notifications.show({
         color: "red",
-        title: "No pudimos guardar el presupuesto",
-        message: error instanceof Error ? error.message : "Ocurrió un error inesperado.",
+        title: t("budget.notifications.saveError"),
+        message: error instanceof Error ? error.message : t("budget.notifications.unexpectedError"),
       });
     } finally {
       setIsSaving(false);
@@ -496,8 +499,8 @@ export default function BudgetPage() {
     if (!canManageStructure) {
       notifications.show({
         color: "red",
-        title: "Acción no permitida",
-        message: "Solo el owner puede copiar o crear presupuesto.",
+        title: t("budget.notifications.permissionDeniedTitle"),
+        message: t("budget.notifications.copyPermissionDeniedMessage"),
       });
       return;
     }
@@ -505,9 +508,8 @@ export default function BudgetPage() {
     if (periodHasItems) {
       notifications.show({
         color: "red",
-        title: "Período no elegible para copiar",
-        message:
-          "El período actual ya tiene ítems de presupuesto. Limpiá los ítems antes de copiar.",
+        title: t("budget.notifications.copyIneligibleTitle"),
+        message: t("budget.notifications.copyIneligibleMessage"),
       });
       return;
     }
@@ -533,12 +535,14 @@ export default function BudgetPage() {
       if (!previousPeriodRow) {
         notifications.show({
           color: "yellow",
-          title: "No hay presupuesto previo",
-          message: `No existe presupuesto para ${monthLabelFromOptions(
-            previous.month,
-            monthOptions,
-            t("common.messages.month", "Mes"),
-          )} ${previous.year}.`,
+          title: t("budget.notifications.noPreviousBudgetTitle"),
+          message: t("budget.notifications.noPreviousBudgetMessage", undefined, {
+            monthYear: `${monthLabelFromOptions(
+              previous.month,
+              monthOptions,
+              t("common.messages.month", "Mes"),
+            )} ${previous.year}`,
+          }),
         });
         return;
       }
@@ -561,9 +565,8 @@ export default function BudgetPage() {
       if (copyRowsSource.length === 0) {
         notifications.show({
           color: "yellow",
-          title: "No hay datos para copiar",
-          message:
-            "El período anterior no tiene ítems en categorías activas del workspace actual.",
+          title: t("budget.notifications.noDataToCopyTitle"),
+          message: t("budget.notifications.noDataToCopyActiveCategoriesMessage"),
         });
         return;
       }
@@ -593,8 +596,8 @@ export default function BudgetPage() {
       if (copyRows.length === 0) {
         notifications.show({
           color: "yellow",
-          title: "No hay datos para copiar",
-          message: "El período anterior no tiene montos válidos para copiar.",
+          title: t("budget.notifications.noDataToCopyTitle"),
+          message: t("budget.notifications.noValidAmountsToCopyMessage"),
         });
         return;
       }
@@ -609,20 +612,22 @@ export default function BudgetPage() {
 
       notifications.show({
         color: "green",
-        title: "Presupuesto copiado",
-        message: `Copiamos los valores desde ${monthLabelFromOptions(
-          previous.month,
-          monthOptions,
-          t("common.messages.month", "Mes"),
-        )} ${previous.year}.`,
+        title: t("budget.notifications.copiedTitle"),
+        message: t("budget.notifications.copiedMessage", undefined, {
+          monthYear: `${monthLabelFromOptions(
+            previous.month,
+            monthOptions,
+            t("common.messages.month", "Mes"),
+          )} ${previous.year}`,
+        }),
       });
 
       await loadSelectedPeriod();
     } catch (error) {
       notifications.show({
         color: "red",
-        title: "No pudimos copiar el presupuesto",
-        message: error instanceof Error ? error.message : "Ocurrió un error inesperado.",
+        title: t("budget.notifications.copyError"),
+        message: error instanceof Error ? error.message : t("budget.notifications.unexpectedError"),
       });
     } finally {
       setIsCopying(false);
@@ -653,15 +658,15 @@ export default function BudgetPage() {
       <LoadingOverlay visible={isBootstrapping || isPeriodLoading} />
 
       <Stack gap={0}>
-        <Title order={2}>Presupuesto mensual</Title>
+        <Title order={2}>{t("budget.title")}</Title>
         <Text size="xs" c="dimmed">
-          Editá el presupuesto mensual por categoría con un resumen consolidado del resultado.
+          {t("budget.subtitle")}
         </Text>
       </Stack>
 
       {!canManageStructure ? (
         <Alert color="yellow" variant="light" py={8}>
-          Tenés rol <b>{workspace.role}</b>. Solo el owner puede crear o editar presupuesto.
+          {t("budget.readOnlyMessage", undefined, { role: roleLabel })}
         </Alert>
       ) : null}
 
@@ -669,7 +674,7 @@ export default function BudgetPage() {
         <Stack gap="xs">
           <Group justify="space-between" align="center" wrap="nowrap">
             <Text size="xs" c="dimmed" fw={600}>
-              Período en edición
+              {t("budget.editingPeriod")}
             </Text>
             <Badge variant="light" color="blue" size="sm">
               {selectedPeriodLabel}
@@ -678,14 +683,14 @@ export default function BudgetPage() {
 
           <SimpleGrid cols={isMobile ? 2 : 3} spacing="xs">
             <NativeSelect
-              label="Año"
+              label={t("budget.year")}
               data={yearOptions}
               value={String(selectedYear)}
               onChange={(event) => setSelectedYear(Number(event.currentTarget.value))}
               size="xs"
             />
             <NativeSelect
-              label="Mes"
+              label={t("budget.month")}
               data={monthOptions}
               value={String(selectedMonth)}
               onChange={(event) => setSelectedMonth(Number(event.currentTarget.value))}
@@ -701,14 +706,14 @@ export default function BudgetPage() {
               disabled={!canCopyFromPrevious}
               mt={isMobile ? 0 : "auto"}
             >
-              Copiar mes anterior
+              {t("budget.copyPreviousMonth")}
             </Button>
           </SimpleGrid>
 
           <Text size="xs" c="dimmed">
             {periodHasItems
-              ? "Ya tiene montos guardados; copia deshabilitada."
-              : "Copia montos del mes anterior en categorías activas."}
+              ? t("budget.copyDisabledWithExistingData")
+              : t("budget.copyHint")}
           </Text>
         </Stack>
       </Paper>
@@ -716,7 +721,7 @@ export default function BudgetPage() {
       {categories.length === 0 ? (
         <Paper withBorder radius="md" p="md">
           <Text size="sm" c="dimmed">
-            No hay categorías activas. Creá al menos una categoría para cargar presupuesto.
+            {t("budget.noActiveCategories")}
           </Text>
         </Paper>
       ) : (
@@ -724,17 +729,16 @@ export default function BudgetPage() {
           <Stack gap="sm">
             {!periodId ? (
               <Alert color="blue" variant="light" py={8}>
-                Este período todavía no tiene presupuesto guardado. Cargá montos y guardá para
-                crearlo.
+                {t("budget.noPeriodYet")}
               </Alert>
             ) : null}
 
             <Stack gap={2}>
               <Text size="xs" fw={600}>
-                Edición por categoría
+                {t("budget.editByCategory")}
               </Text>
               <Text size="xs" c="dimmed">
-                Cargá montos directos por categoría. Dejá vacío un campo para quitar su monto.
+                {t("budget.editByCategoryHint")}
               </Text>
             </Stack>
 
@@ -751,7 +755,7 @@ export default function BudgetPage() {
                   </Group>
                   {groupedCategories[typeKey].length === 0 ? (
                     <Text size="sm" c="dimmed">
-                      No hay categorías activas de este tipo.
+                      {t("budget.noActiveCategoriesForType")}
                     </Text>
                   ) : (
                     <Stack gap="xs">
@@ -771,7 +775,7 @@ export default function BudgetPage() {
                                 px={0}
                                 justify="flex-start"
                               >
-                                Ver movimientos
+                                {t("budget.viewMovements")}
                               </Button>
                             </Stack>
                             <input
@@ -783,7 +787,9 @@ export default function BudgetPage() {
                               control={control}
                               render={({ field }) => (
                                 <TextInput
-                                  aria-label={`Monto de ${category.name}`}
+                                  aria-label={t("budget.amountForCategory", undefined, {
+                                    categoryName: category.name,
+                                  })}
                                   type="text"
                                   inputMode="decimal"
                                   size="sm"
@@ -856,9 +862,13 @@ export default function BudgetPage() {
                   <Stack gap={0}>
                     <Title order={4}>Resultado del período</Title>
                     <Text size="xs" c="dimmed">
-                      Resumen de montos para{" "}
-                      {monthLabelFromOptions(selectedMonth, monthOptions, t("common.messages.month", "Mes"))}{" "}
-                      {selectedYear}.
+                      {t("budget.periodSummary", undefined, {
+                        monthYear: `${monthLabelFromOptions(
+                          selectedMonth,
+                          monthOptions,
+                          t("common.messages.month", "Mes"),
+                        )} ${selectedYear}`,
+                      })}
                     </Text>
                   </Stack>
                   <Badge
@@ -873,17 +883,17 @@ export default function BudgetPage() {
                     size="sm"
                   >
                     {balanceStatus === "balanced"
-                      ? "Balanceado"
+                      ? t("budget.balanceStatus.balanced")
                       : balanceStatus === "remaining"
-                        ? "Falta asignar"
-                        : "Sobreasignado"}
+                        ? t("budget.balanceStatus.remaining")
+                        : t("budget.balanceStatus.overassigned")}
                   </Badge>
                 </Group>
 
                 <SimpleGrid cols={3} spacing="xs">
                   <Paper withBorder radius="sm" p={6}>
                     <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                      Ingresos
+                      {mapTransactionTypeLabel("income", t, { plural: true })}
                     </Text>
                     <Text mt={1} fw={700} size="sm" c={`${typeColors.income}.7`}>
                       {currencyFormatter.format(totals.income)}
@@ -891,7 +901,7 @@ export default function BudgetPage() {
                   </Paper>
                   <Paper withBorder radius="sm" p={6}>
                     <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                      Gastos
+                      {mapTransactionTypeLabel("expense", t, { plural: true })}
                     </Text>
                     <Text mt={1} fw={700} size="sm" c={`${typeColors.expense}.7`}>
                       {currencyFormatter.format(totals.expense)}
@@ -899,7 +909,7 @@ export default function BudgetPage() {
                   </Paper>
                   <Paper withBorder radius="sm" p={6}>
                     <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                      Ahorro
+                      {mapTransactionTypeLabel("saving", t, { plural: true })}
                     </Text>
                     <Text mt={1} fw={700} size="sm" c={`${typeColors.saving}.7`}>
                       {currencyFormatter.format(totals.saving)}
@@ -910,7 +920,7 @@ export default function BudgetPage() {
                 <Paper withBorder radius="md" p="xs">
                   <Group justify="space-between" align="center">
                     <Text fw={600} size="sm">
-                      Total asignado
+                      {t("budget.assignedTotal")}
                     </Text>
                     <Text fw={700} size="sm">
                       {currencyFormatter.format(totals.assigned)}
@@ -933,7 +943,7 @@ export default function BudgetPage() {
                 >
                   <Group justify="space-between" align="center">
                     <Text fw={700} size="sm">
-                      Balance final
+                      {t("budget.finalBalance")}
                     </Text>
                     <Text
                       fw={900}
@@ -966,10 +976,14 @@ export default function BudgetPage() {
                 >
                   <Text size="xs">
                     {isBalanced
-                      ? "Presupuesto balanceado."
+                      ? t("budget.balanceMessage.balanced")
                       : roundedBalance > 0
-                        ? `Falta asignar ${formattedBalanceAbsolute} de tus ingresos.`
-                        : `Asignaste ${formattedBalanceAbsolute} por encima de tus ingresos.`}
+                        ? t("budget.balanceMessage.remaining", undefined, {
+                            amount: formattedBalanceAbsolute,
+                          })
+                        : t("budget.balanceMessage.overassigned", undefined, {
+                            amount: formattedBalanceAbsolute,
+                          })}
                   </Text>
                 </Alert>
               </Stack>
@@ -994,7 +1008,7 @@ export default function BudgetPage() {
             >
               <Stack gap="xs">
                 <Text size="xs" c="dimmed">
-                  Confirmá cambios del período actual.
+                  {t("budget.confirmChanges")}
                 </Text>
                 <Group justify="flex-end" grow={isMobile}>
                   <Button
@@ -1005,7 +1019,7 @@ export default function BudgetPage() {
                     onClick={() => void loadSelectedPeriod()}
                     disabled={isSaving || isCopying}
                   >
-                    Revertir
+                    {t("budget.revert")}
                   </Button>
                   <Button
                     type="submit"
@@ -1013,7 +1027,7 @@ export default function BudgetPage() {
                     disabled={!canManageStructure || isCopying}
                     size="sm"
                   >
-                    Guardar presupuesto
+                    {t("budget.saveBudget")}
                   </Button>
                 </Group>
               </Stack>

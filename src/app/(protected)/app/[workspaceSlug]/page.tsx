@@ -351,7 +351,7 @@ export default function DashboardPage() {
     if (categoriesResponse.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar categorías",
+        title: t("dashboard.notifications.loadCategoriesError"),
         message: categoriesResponse.error.message,
       });
       setCategories([]);
@@ -363,7 +363,7 @@ export default function DashboardPage() {
     if (settingsResponse.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar settings",
+        title: t("dashboard.notifications.loadSettingsError"),
         message: settingsResponse.error.message,
       });
       setStartYear(new Date().getFullYear());
@@ -379,7 +379,7 @@ export default function DashboardPage() {
     if (paymentMethodsResponse.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar medios financieros",
+        title: t("dashboard.notifications.loadFinancialMethodsError"),
         message: paymentMethodsResponse.error.message,
       });
       setPaymentMethodRows([]);
@@ -388,7 +388,7 @@ export default function DashboardPage() {
     }
 
     setIsBootstrapping(false);
-  }, [locale, supabase, workspace.id]);
+  }, [locale, supabase, t, workspace.id]);
 
   const loadSummaryData = useCallback(async () => {
     const { start, end } = buildMonthRange(selectedYear, selectedMonth);
@@ -426,7 +426,7 @@ export default function DashboardPage() {
     if (transactionsResponse.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar transacciones del período",
+        title: t("dashboard.notifications.loadPeriodTransactionsError"),
         message: transactionsResponse.error.message,
       });
       setTransactionRows([]);
@@ -437,7 +437,7 @@ export default function DashboardPage() {
     if (linkedWorkspaceSummaryResponse.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar resúmenes externos",
+        title: t("dashboard.notifications.loadExternalSummariesError"),
         message: linkedWorkspaceSummaryResponse.error.message,
       });
       setLinkedWorkspaceSummaries([]);
@@ -450,7 +450,7 @@ export default function DashboardPage() {
     if (periodResponse.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar el período presupuestario",
+        title: t("dashboard.notifications.loadBudgetPeriodError"),
         message: periodResponse.error.message,
       });
       setBudgetItems([]);
@@ -473,7 +473,7 @@ export default function DashboardPage() {
     if (budgetItemsResponse.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar presupuesto del período",
+        title: t("dashboard.notifications.loadPeriodBudgetError"),
         message: budgetItemsResponse.error.message,
       });
       setBudgetItems([]);
@@ -482,7 +482,7 @@ export default function DashboardPage() {
     }
 
     setIsLoadingSummary(false);
-  }, [selectedMonth, selectedYear, supabase, workspace.id]);
+  }, [selectedMonth, selectedYear, supabase, t, workspace.id]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -626,7 +626,7 @@ export default function DashboardPage() {
       if (rest.length > 0) {
         const restAmount = rest.reduce((sum, row) => sum + row.realAmount, 0);
         slices.push({
-          label: "Otras categorías",
+          label: t("dashboard.otherCategories"),
           amount: restAmount,
           value: (restAmount / total) * 100,
           color: "#b0b4bb",
@@ -637,7 +637,7 @@ export default function DashboardPage() {
     }
 
     return data;
-  }, [metrics.groupedRows]);
+  }, [metrics.groupedRows, t]);
 
   const summaryRows = useMemo(() => {
     return (Object.keys(metrics.groupedRows) as TransactionType[]).map((type) => ({
@@ -834,28 +834,30 @@ export default function DashboardPage() {
         <Group justify="space-between" align="flex-start" wrap="wrap" gap={6}>
           <Stack gap={2}>
             <Text size="xs" fw={700} c="#475467">
-              Medios financieros
+              {t("dashboard.financialMethods")}
             </Text>
             <Text fw={800} c={financialSummary.totalBalance >= 0 ? "#087f5b" : "#c92a2a"}>
-              Balance total: {currencyFormatter.format(financialSummary.totalBalance)}
+              {t("dashboard.totalBalance")}: {currencyFormatter.format(financialSummary.totalBalance)}
             </Text>
             <Text size="xs" c="#667085">
-              {financialSummary.activeIncludedRows.length} activos en balance
+              {t("dashboard.activeInBalance", undefined, {
+                count: financialSummary.activeIncludedRows.length,
+              })}
             </Text>
           </Stack>
           <Group gap={6} wrap="wrap">
             <Badge color="teal" variant={financialSummary.positiveCount > 0 ? "light" : "outline"}>
-              {financialSummary.positiveCount} positivos
+              {t("dashboard.positivesCount", undefined, { count: financialSummary.positiveCount })}
             </Badge>
             <Badge color="red" variant={financialSummary.negativeCount > 0 ? "light" : "outline"}>
-              {financialSummary.negativeCount} negativos
+              {t("dashboard.negativesCount", undefined, { count: financialSummary.negativeCount })}
             </Badge>
           </Group>
         </Group>
 
         {financialSummary.activeIncludedRows.length === 0 ? (
           <Text size="xs" c="#667085">
-            No hay medios activos incluidos en el balance principal.
+            {t("dashboard.noActiveMethodsInMainBalance")}
           </Text>
         ) : (
           <Stack gap={6}>
@@ -879,7 +881,7 @@ export default function DashboardPage() {
                       {row.name}
                     </Text>
                     <Text size="xs" c="#667085">
-                      {paymentMethodTypeLabels[row.type]} · Ver movimientos
+                      {paymentMethodTypeLabels[row.type]} · {t("dashboard.viewMovements")}
                     </Text>
                   </Stack>
                   <Text
@@ -897,8 +899,10 @@ export default function DashboardPage() {
 
         {financialSummary.excludedActiveCount > 0 || financialSummary.inactiveCount > 0 ? (
           <Text size="xs" c="#98a2b3">
-            Fuera del balance: {financialSummary.excludedActiveCount} activos excluidos y{" "}
-            {financialSummary.inactiveCount} inactivos.
+            {t("dashboard.outOfBalanceSummary", undefined, {
+              excluded: financialSummary.excludedActiveCount,
+              inactive: financialSummary.inactiveCount,
+            })}
           </Text>
         ) : null}
       </Stack>
@@ -909,16 +913,16 @@ export default function DashboardPage() {
     <Paper withBorder radius="sm" p={isDesktop ? "sm" : "xs"} bg="#ffffff">
       <Stack gap={4}>
         <Text size="xs" fw={700} c="#475467">
-          Balance período
+          {t("dashboard.periodBalance")}
         </Text>
         <Text fw={800} c={metrics.balanceReal >= 0 ? "#0ca678" : "#e03131"}>
           {currencyFormatter.format(metrics.balanceReal)}
         </Text>
         <Text size="xs" c="#667085">
-          Presup: {currencyFormatter.format(metrics.balanceBudget)}
+          {t("dashboard.budgetAbbrev")}: {currencyFormatter.format(metrics.balanceBudget)}
         </Text>
         <Text size="xs" c={metrics.balanceDelta >= 0 ? "#087f5b" : "#c92a2a"}>
-          Delta: {formatSignedCurrency(metrics.balanceDelta, currencyFormatter)}
+          {t("dashboard.delta")}: {formatSignedCurrency(metrics.balanceDelta, currencyFormatter)}
         </Text>
       </Stack>
     </Paper>
@@ -928,19 +932,19 @@ export default function DashboardPage() {
     <Paper withBorder radius="sm" p={isDesktop ? "sm" : "xs"} bg="#ffffff">
       <Stack gap={4}>
         <Text size="xs" fw={700} c="#475467">
-          Ahorro período
+          {t("dashboard.periodSavings")}
         </Text>
         <Text fw={800} c="#2b8aaf">
           {currencyFormatter.format(metrics.totalsByType.saving.real)}
         </Text>
         <Text size="xs" c="#667085">
-          Presup: {currencyFormatter.format(metrics.totalsByType.saving.budget)}
+          {t("dashboard.budgetAbbrev")}: {currencyFormatter.format(metrics.totalsByType.saving.budget)}
         </Text>
         <Text size="xs" c="#667085">
-          Ratio:{" "}
+          {t("dashboard.ratio")}:{" "}
           {savingsVsIncome === null
-            ? "N/A"
-            : `${percentageFormatter.format(savingsVsIncome)}% de ingresos`}
+            ? t("dashboard.notApplicable")
+            : t("dashboard.incomeRatio", undefined, { value: percentageFormatter.format(savingsVsIncome) })}
         </Text>
       </Stack>
     </Paper>
@@ -961,13 +965,16 @@ export default function DashboardPage() {
         <Group justify="space-between" align={isMobile ? "flex-start" : "end"} wrap="wrap" gap="xs">
           <Stack gap={1}>
             <Text size="xs" fw={700} c="#667085" style={{ textTransform: "uppercase" }}>
-              Tablero financiero
+              {t("dashboard.financialDashboard")}
             </Text>
             <Text fw={800} size="lg" c="#1f2937">
               {selectedPeriodLabel}
             </Text>
             <Text size="xs" c="#667085">
-              Workspace: {workspace.name} · Moneda: {currencyCode}
+              {t("dashboard.workspaceCurrency", undefined, {
+                workspaceName: workspace.name,
+                currencyCode,
+              })}
             </Text>
           </Stack>
           <Group gap={6} align="center" wrap="wrap">
@@ -978,7 +985,7 @@ export default function DashboardPage() {
               color="indigo"
               size="xs"
             >
-              Ver insights
+              {t("dashboard.viewInsights")}
             </Button>
             <Menu shadow="md" width={220} position="bottom-end">
               <Menu.Target>
@@ -999,7 +1006,7 @@ export default function DashboardPage() {
               </Menu.Target>
 
               <Menu.Dropdown>
-                <Menu.Label>Mes</Menu.Label>
+                <Menu.Label>{t("dashboard.month")}</Menu.Label>
                 {monthOptions.map((option) => {
                   const monthValue = Number(option.value);
                   const isSelected = monthValue === selectedMonth;
@@ -1020,7 +1027,7 @@ export default function DashboardPage() {
                         <Text size="xs">{option.label}</Text>
                         {isSelected ? (
                           <Badge variant="light" color="blue" size="xs">
-                            Actual
+                            {t("dashboard.current")}
                           </Badge>
                         ) : null}
                       </Group>
@@ -1029,7 +1036,7 @@ export default function DashboardPage() {
                 })}
 
                 <Menu.Divider />
-                <Menu.Label>Año</Menu.Label>
+                <Menu.Label>{t("dashboard.year")}</Menu.Label>
                 {yearOptions.map((option) => {
                   const yearValue = Number(option.value);
                   const isSelected = yearValue === selectedYear;
@@ -1050,7 +1057,7 @@ export default function DashboardPage() {
                         <Text size="xs">{option.label}</Text>
                         {isSelected ? (
                           <Badge variant="light" color="blue" size="xs">
-                            Actual
+                            {t("dashboard.current")}
                           </Badge>
                         ) : null}
                       </Group>
@@ -1164,15 +1171,16 @@ export default function DashboardPage() {
             <Group justify="space-between" align="center" wrap="wrap" gap={6}>
               <Stack gap={1}>
                 <Text size="xs" fw={800} c="#1d4ed8">
-                  Resumen externo de workspaces vinculados
+                  {t("dashboard.linkedWorkspacesExternalSummary")}
                 </Text>
                 <Text size="xs" c="#475467">
-                  Vista agregada externa del período. No modifica transacciones, categorías ni
-                  presupuesto de este workspace.
+                  {t("dashboard.linkedWorkspacesExternalSummaryDescription")}
                 </Text>
               </Stack>
               <Badge variant="light" color="blue">
-                {normalizedLinkedWorkspaceSummaries.length} vinculados
+                {t("dashboard.linkedCount", undefined, {
+                  count: normalizedLinkedWorkspaceSummaries.length,
+                })}
               </Badge>
             </Group>
 
@@ -1180,7 +1188,7 @@ export default function DashboardPage() {
               <Paper withBorder radius="sm" p={isMobile ? 6 : "xs"}>
                 <Stack gap={2}>
                   <Text size="xs" c="#475467">
-                    Ingresos externos
+                    {t("dashboard.externalIncome")}
                   </Text>
                   <Text size="sm" fw={800} c="#087f5b">
                     {currencyFormatter.format(linkedWorkspaceTotals.incomeTotal)}
@@ -1190,7 +1198,7 @@ export default function DashboardPage() {
               <Paper withBorder radius="sm" p={isMobile ? 6 : "xs"}>
                 <Stack gap={2}>
                   <Text size="xs" c="#475467">
-                    Gastos externos
+                    {t("dashboard.externalExpense")}
                   </Text>
                   <Text size="sm" fw={800} c="#c92a2a">
                     {currencyFormatter.format(linkedWorkspaceTotals.expenseTotal)}
@@ -1200,7 +1208,7 @@ export default function DashboardPage() {
               <Paper withBorder radius="sm" p={isMobile ? 6 : "xs"}>
                 <Stack gap={2}>
                   <Text size="xs" c="#475467">
-                    Ahorro externo
+                    {t("dashboard.externalSaving")}
                   </Text>
                   <Text size="sm" fw={800} c="#1c7ed6">
                     {currencyFormatter.format(linkedWorkspaceTotals.savingTotal)}
@@ -1210,7 +1218,7 @@ export default function DashboardPage() {
               <Paper withBorder radius="sm" p={isMobile ? 6 : "xs"}>
                 <Stack gap={2}>
                   <Text size="xs" c="#475467">
-                    Balance externo
+                    {t("dashboard.externalBalance")}
                   </Text>
                   <Text
                     size="sm"
@@ -1243,16 +1251,16 @@ export default function DashboardPage() {
                     </Group>
                     <SimpleGrid cols={isMobile ? 2 : 4} spacing={isMobile ? 6 : "xs"}>
                       <Text size="xs" c="#344054">
-                        Ingresos: {currencyFormatter.format(row.incomeTotal)}
+                        {t("dashboard.incomeLabel")}: {currencyFormatter.format(row.incomeTotal)}
                       </Text>
                       <Text size="xs" c="#344054">
-                        Gastos: {currencyFormatter.format(row.expenseTotal)}
+                        {t("dashboard.expenseLabel")}: {currencyFormatter.format(row.expenseTotal)}
                       </Text>
                       <Text size="xs" c="#344054">
-                        Ahorro: {currencyFormatter.format(row.savingTotal)}
+                        {t("dashboard.savingLabel")}: {currencyFormatter.format(row.savingTotal)}
                       </Text>
                       <Text size="xs" fw={700} c={row.balanceTotal >= 0 ? "#087f5b" : "#c92a2a"}>
-                        Balance: {currencyFormatter.format(row.balanceTotal)}
+                        {t("dashboard.balanceLabel")}: {currencyFormatter.format(row.balanceTotal)}
                       </Text>
                     </SimpleGrid>
                   </Stack>
@@ -1292,8 +1300,14 @@ export default function DashboardPage() {
                   </Text>
                   <Text size="xs" c="#667085">
                     {isMobile
-                      ? `Real ${compactFormatter.format(totals.real)} · Presup ${compactFormatter.format(totals.budget)}`
-                      : `Real: ${currencyFormatter.format(totals.real)} · Presup: ${currencyFormatter.format(totals.budget)}`}
+                      ? t("dashboard.realBudgetCompact", undefined, {
+                          real: compactFormatter.format(totals.real),
+                          budget: compactFormatter.format(totals.budget),
+                        })
+                      : t("dashboard.realBudgetFull", undefined, {
+                          real: currencyFormatter.format(totals.real),
+                          budget: currencyFormatter.format(totals.budget),
+                        })}
                   </Text>
                 </Group>
               </Box>
@@ -1306,15 +1320,15 @@ export default function DashboardPage() {
                 <Table.Thead>
                   <Table.Tr>
                     <Table.Th style={{ color: "#475467", width: tableColumnWidths.category }}>
-                      Categoría
+                      {t("dashboard.category")}
                     </Table.Th>
                     <Table.Th style={{ color: "#475467", textAlign: "right", width: tableColumnWidths.real }}>
-                      Real
+                      {t("dashboard.real")}
                     </Table.Th>
                     <Table.Th
                       style={{ color: "#475467", textAlign: "right", width: tableColumnWidths.budget }}
                     >
-                      Presup.
+                      {t("dashboard.budgetAbbrevWithDot")}
                     </Table.Th>
                     <Table.Th
                       style={{
@@ -1323,7 +1337,7 @@ export default function DashboardPage() {
                         width: tableColumnWidths.execution,
                       }}
                     >
-                      % Compl.
+                      {t("dashboard.executionAbbrev")}
                     </Table.Th>
                     <Table.Th
                       style={{
@@ -1332,7 +1346,7 @@ export default function DashboardPage() {
                         width: tableColumnWidths.deviation,
                       }}
                     >
-                      Desvío
+                      {t("dashboard.deviation")}
                     </Table.Th>
                   </Table.Tr>
                 </Table.Thead>
@@ -1341,7 +1355,7 @@ export default function DashboardPage() {
                     <Table.Tr>
                       <Table.Td colSpan={5}>
                         <Text size="xs" c="#98a2b3">
-                          Sin categorías con datos para este tipo.
+                          {t("dashboard.noCategoriesForType")}
                         </Text>
                       </Table.Td>
                     </Table.Tr>
@@ -1365,7 +1379,7 @@ export default function DashboardPage() {
                               </Text>
                               {!isMobile && !row.categoryIsActive ? (
                                 <Text size="xs" c="#98a2b3">
-                                  inactiva
+                                  {t("dashboard.inactive")}
                                 </Text>
                               ) : null}
                             </Group>
@@ -1413,7 +1427,7 @@ export default function DashboardPage() {
                   >
                     <Table.Td>
                       <Text size="xs" fw={800} c="#344054">
-                        TOTAL
+                        {t("dashboard.totalUpper")}
                       </Text>
                     </Table.Td>
                     <Table.Td style={{ textAlign: isMobile ? "left" : "right" }}>
@@ -1465,7 +1479,7 @@ export default function DashboardPage() {
         >
           <Stack gap={isMobile ? 6 : "xs"}>
             <Text size="xs" fw={800} c="#344054">
-              Distribución real por tipo
+              {t("dashboard.realDistributionByType")}
             </Text>
 
             <SimpleGrid cols={distributionColumns} spacing={isMobile ? 6 : "xs"}>
@@ -1525,7 +1539,7 @@ export default function DashboardPage() {
                       </Text>
                       {!hasData ? (
                         <Text size={isMobile ? "11px" : "xs"} c="#98a2b3">
-                          Sin datos reales en el período.
+                          {t("dashboard.noRealDataInPeriod")}
                         </Text>
                       ) : (
                         donut.slices.map((slice) => (
