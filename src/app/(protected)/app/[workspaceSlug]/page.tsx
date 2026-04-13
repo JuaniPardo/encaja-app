@@ -126,21 +126,24 @@ const compactSummaryTheme: Record<
   }
 > = {
   income: {
-    color: "#00a552",
+    color: "var(--mantine-color-teal-6)",
     label: "Ingresos",
-    textColor: "#087f5b",
+    textColor: "var(--mantine-color-teal-7)",
   },
   expense: {
-    color: "#e03131",
+    color: "var(--mantine-color-pink-6)",
     label: "Gastos",
-    textColor: "#c92a2a",
+    textColor: "var(--mantine-color-pink-7)",
   },
   saving: {
-    color: "#868e96",
+    color: "var(--mantine-color-indigo-5)",
     label: "Ahorro",
-    textColor: "#495057",
+    textColor: "var(--mantine-color-indigo-7)",
   },
 };
+
+const compactSummaryBaseColor = "var(--mantine-color-gray-3)";
+const compactSummaryNeutralColor = "var(--mantine-color-gray-5)";
 
 const paymentMethodTypeLabels: Record<PaymentMethodType, string> = {
   cash: "Efectivo",
@@ -1061,8 +1064,17 @@ export default function DashboardPage() {
         >
           <SimpleGrid cols={3} spacing={8}>
             {(Object.keys(compactSummaryTheme) as TransactionType[]).map((type) => {
-              const value = roundMoney(metrics.totalsByType[type].real);
+              const realValue = roundMoney(Math.max(0, metrics.totalsByType[type].real));
+              const budgetValue = roundMoney(Math.max(0, metrics.totalsByType[type].budget));
               const theme = compactSummaryTheme[type];
+              const hasBudget = budgetValue > deviationTolerance;
+              const ratio = hasBudget ? Math.min(realValue / budgetValue, 1) : 0;
+              const progressValue = clampToPercent(ratio * 100);
+              const sections = hasBudget
+                ? progressValue > 0
+                  ? [{ value: progressValue, color: theme.color }]
+                  : []
+                : [{ value: 100, color: compactSummaryNeutralColor }];
 
               return (
                 <Paper
@@ -1080,7 +1092,8 @@ export default function DashboardPage() {
                       size={compactSummaryDonutSize}
                       thickness={compactSummaryDonutThickness}
                       roundCaps
-                      sections={[{ value: 100, color: theme.color }]}
+                      rootColor={compactSummaryBaseColor}
+                      sections={sections}
                       label={
                         <Text
                           size={isNarrowMobile ? "9px" : "10px"}
@@ -1088,7 +1101,7 @@ export default function DashboardPage() {
                           ta="center"
                           c="#1f2937"
                         >
-                          {compactCurrencyFormatter.format(value)}
+                          {compactCurrencyFormatter.format(realValue)}
                         </Text>
                       }
                     />
