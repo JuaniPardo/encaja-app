@@ -133,6 +133,7 @@ export default function PaymentMethodsPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [currencyCode, setCurrencyCode] = useState("ARS");
   const [showCents, setShowCents] = useState(false);
+  const roleLabel = t(`common.role.${workspace.role}`, workspace.role);
   const paymentTypeLabels = useMemo<Record<PaymentMethodType, string>>(
     () => ({
       cash: mapPaymentMethodTypeLabel("cash", t),
@@ -231,7 +232,7 @@ export default function PaymentMethodsPage() {
     if (paymentMethodsResponse.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar medios de pago",
+        title: t("paymentMethods.notifications.loadError"),
         message: paymentMethodsResponse.error.message,
       });
       return;
@@ -240,7 +241,7 @@ export default function PaymentMethodsPage() {
     if (settingsResponse.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar settings de moneda",
+        title: t("paymentMethods.notifications.loadSettingsError"),
         message: settingsResponse.error.message,
       });
       setCurrencyCode("ARS");
@@ -254,7 +255,7 @@ export default function PaymentMethodsPage() {
     if (transactionsResponse.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar movimientos por medio",
+        title: t("paymentMethods.notifications.loadMovementsError"),
         message: transactionsResponse.error.message,
       });
       setMovementByMethodId({});
@@ -276,7 +277,15 @@ export default function PaymentMethodsPage() {
     }
 
     setRows(paymentMethodsResponse.data);
-  }, [currentMonth, currentYear, getSignedMovementAmount, supabase, workspace.id]);
+  }, [currentMonth, currentYear, getSignedMovementAmount, supabase, t, workspace.id]);
+
+  const showPermissionDenied = useCallback(() => {
+    notifications.show({
+      color: "red",
+      title: t("paymentMethods.notifications.permissionDeniedTitle"),
+      message: t("paymentMethods.notifications.permissionDeniedMessage"),
+    });
+  }, [t]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -285,11 +294,7 @@ export default function PaymentMethodsPage() {
 
   function openCreateModal() {
     if (!canManageStructure) {
-      notifications.show({
-        color: "red",
-        title: "Acción no permitida",
-        message: "Solo el owner puede administrar medios de pago.",
-      });
+      showPermissionDenied();
       return;
     }
 
@@ -300,11 +305,7 @@ export default function PaymentMethodsPage() {
 
   function openEditModal(row: PaymentMethodRow) {
     if (!canManageStructure) {
-      notifications.show({
-        color: "red",
-        title: "Acción no permitida",
-        message: "Solo el owner puede administrar medios de pago.",
-      });
+      showPermissionDenied();
       return;
     }
 
@@ -362,11 +363,7 @@ export default function PaymentMethodsPage() {
 
   const onSubmit = handleSubmit(async (values) => {
     if (!canManageStructure) {
-      notifications.show({
-        color: "red",
-        title: "Acción no permitida",
-        message: "Solo el owner puede administrar medios de pago.",
-      });
+      showPermissionDenied();
       return;
     }
 
@@ -393,7 +390,7 @@ export default function PaymentMethodsPage() {
       if (updateResponse.error) {
         notifications.show({
           color: "red",
-          title: "No pudimos guardar cambios",
+          title: t("paymentMethods.notifications.saveError"),
           message: updateResponse.error.message,
         });
         return;
@@ -401,8 +398,8 @@ export default function PaymentMethodsPage() {
 
       notifications.show({
         color: "green",
-        title: "Medio de pago actualizado",
-        message: "Los cambios se guardaron correctamente.",
+        title: t("paymentMethods.notifications.updatedTitle"),
+        message: t("paymentMethods.notifications.updatedMessage"),
       });
     } else {
       const insertResponse = await supabase.from("payment_methods").insert({
@@ -420,7 +417,7 @@ export default function PaymentMethodsPage() {
       if (insertResponse.error) {
         notifications.show({
           color: "red",
-          title: "No pudimos crear el medio de pago",
+          title: t("paymentMethods.notifications.createError"),
           message: insertResponse.error.message,
         });
         return;
@@ -428,8 +425,8 @@ export default function PaymentMethodsPage() {
 
       notifications.show({
         color: "green",
-        title: "Medio de pago creado",
-        message: "El medio de pago ya está disponible.",
+        title: t("paymentMethods.notifications.createdTitle"),
+        message: t("paymentMethods.notifications.createdMessage"),
       });
     }
 
@@ -441,11 +438,7 @@ export default function PaymentMethodsPage() {
 
   async function toggleActive(row: PaymentMethodRow) {
     if (!canManageStructure) {
-      notifications.show({
-        color: "red",
-        title: "Acción no permitida",
-        message: "Solo el owner puede administrar medios de pago.",
-      });
+      showPermissionDenied();
       return;
     }
 
@@ -461,7 +454,7 @@ export default function PaymentMethodsPage() {
     if (response.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos actualizar estado",
+        title: t("paymentMethods.notifications.toggleError"),
         message: response.error.message,
       });
       return;
@@ -469,8 +462,10 @@ export default function PaymentMethodsPage() {
 
     notifications.show({
       color: "green",
-      title: row.is_active ? "Medio desactivado" : "Medio activado",
-      message: "Estado actualizado correctamente.",
+      title: row.is_active
+        ? t("paymentMethods.notifications.deactivatedTitle")
+        : t("paymentMethods.notifications.activatedTitle"),
+      message: t("paymentMethods.notifications.statusUpdatedMessage"),
     });
 
     await loadRows();
@@ -482,33 +477,33 @@ export default function PaymentMethodsPage() {
 
       <Group justify="space-between" align="end">
         <Stack gap={2}>
-          <Title order={2}>Medios de pago</Title>
+          <Title order={2}>{t("paymentMethods.title")}</Title>
           <Text c="dimmed" size="sm">
-            Definí los medios operativos y su saldo actual para consolidar tu balance financiero.
+            {t("paymentMethods.subtitle")}
           </Text>
         </Stack>
 
         <Button onClick={openCreateModal} disabled={!canManageStructure}>
-          Nuevo medio
+          {t("paymentMethods.new")}
         </Button>
       </Group>
 
       {!canManageStructure ? (
-        <Alert color="yellow" variant="light" title="Acceso de solo lectura">
-          Tenés rol <b>{workspace.role}</b>. Solo el owner puede crear o editar medios de pago.
+        <Alert color="yellow" variant="light" title={t("paymentMethods.readOnlyTitle")}>
+          {t("paymentMethods.readOnlyMessage", undefined, { role: roleLabel })}
         </Alert>
       ) : null}
 
       <Paper withBorder radius="md" p="md">
         <NativeSelect
           w={220}
-          label="Estado"
+          label={t("paymentMethods.filters.status")}
           value={statusFilter}
           onChange={(event) => setStatusFilter(event.currentTarget.value as StatusFilter)}
           data={[
-            { value: "all", label: "Todos" },
-            { value: "active", label: "Activos" },
-            { value: "inactive", label: "Inactivos" },
+            { value: "all", label: t("paymentMethods.filters.all") },
+            { value: "active", label: t("paymentMethods.filters.active") },
+            { value: "inactive", label: t("paymentMethods.filters.inactive") },
           ]}
         />
       </Paper>
@@ -516,7 +511,7 @@ export default function PaymentMethodsPage() {
       <Paper withBorder radius="md" p="md">
         <Stack gap={2}>
           <Text size="xs" fw={700} c="#475467">
-            Balance total ({currentPeriodLabel})
+            {t("paymentMethods.totalBalanceTitle", undefined, { period: currentPeriodLabel })}
           </Text>
           <Text
             fw={900}
@@ -533,7 +528,7 @@ export default function PaymentMethodsPage() {
             {currencyFormatter.format(consolidatedBalance)}
           </Text>
           <Text size="xs" c="dimmed">
-            Consolidado de movimientos del mes vigente en medios activos incluidos en balance.
+            {t("paymentMethods.totalBalanceDescription")}
           </Text>
         </Stack>
       </Paper>
@@ -541,7 +536,7 @@ export default function PaymentMethodsPage() {
       <Paper withBorder radius="md" p="md">
         {visibleRows.length === 0 ? (
           <Text size="sm" c="dimmed">
-            No hay medios de pago para el filtro seleccionado.
+            {t("paymentMethods.emptyState")}
           </Text>
         ) : (
           <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="sm">
@@ -556,28 +551,34 @@ export default function PaymentMethodsPage() {
                       <Group gap={6} wrap="wrap">
                         <Badge variant="light">{paymentTypeLabels[row.type]}</Badge>
                         <Badge color={row.is_active ? "teal" : "gray"} variant="outline">
-                          {row.is_active ? "Activo" : "Inactivo"}
+                          {row.is_active
+                            ? t("paymentMethods.status.active")
+                            : t("paymentMethods.status.inactive")}
                         </Badge>
                       </Group>
                     </Stack>
 
                     <Menu position="bottom-end" withArrow>
                       <Menu.Target>
-                        <ActionIcon variant="subtle" color="gray" aria-label={`Acciones para ${row.name}`}>
+                        <ActionIcon
+                          variant="subtle"
+                          color="gray"
+                          aria-label={t("paymentMethods.actionsFor", undefined, { name: row.name })}
+                        >
                           <DotsIcon />
                         </ActionIcon>
                       </Menu.Target>
 
                       <Menu.Dropdown>
                         <Menu.Item disabled={!canManageStructure} onClick={() => openEditModal(row)}>
-                          Editar
+                          {t("paymentMethods.edit")}
                         </Menu.Item>
                         <Menu.Item
                           color={row.is_active ? "gray" : "teal"}
                           disabled={!canManageStructure}
                           onClick={() => void toggleActive(row)}
                         >
-                          {row.is_active ? "Desactivar" : "Activar"}
+                          {row.is_active ? t("paymentMethods.deactivate") : t("paymentMethods.activate")}
                         </Menu.Item>
                       </Menu.Dropdown>
                     </Menu>
@@ -600,11 +601,16 @@ export default function PaymentMethodsPage() {
 
                   <Group justify="space-between" wrap="wrap" gap={6}>
                     <Badge variant={row.include_in_balance ? "light" : "outline"} color="blue">
-                      {row.include_in_balance ? "Incluido en balance" : "Fuera de balance"}
+                      {row.include_in_balance
+                        ? t("paymentMethods.includedInBalance")
+                        : t("paymentMethods.excludedFromBalance")}
                     </Badge>
                     {row.type === "credit_card" ? (
                       <Text size="xs" c="dimmed">
-                        Cierre: {row.closing_day ?? "-"} · Venc: {row.due_day ?? "-"}
+                        {t("paymentMethods.creditCardDays", undefined, {
+                          closingDay: row.closing_day ?? "-",
+                          dueDay: row.due_day ?? "-",
+                        })}
                       </Text>
                     ) : null}
                   </Group>
@@ -618,7 +624,7 @@ export default function PaymentMethodsPage() {
                     px={0}
                     justify="flex-start"
                   >
-                    Ver movimientos
+                    {t("paymentMethods.viewMovements")}
                   </Button>
                 </Stack>
               </Paper>
@@ -630,20 +636,20 @@ export default function PaymentMethodsPage() {
       <Modal
         opened={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingRow ? "Editar medio de pago" : "Nuevo medio de pago"}
+        title={editingRow ? t("paymentMethods.edit") : t("paymentMethods.new")}
       >
         <form onSubmit={onSubmit}>
           <Stack>
             <TextInput
-              label="Nombre"
-              placeholder="Ej: Tarjeta Galicia"
+              label={t("paymentMethods.form.name")}
+              placeholder={t("paymentMethods.form.namePlaceholder")}
               disabled={!canManageStructure}
               error={errors.name?.message}
               {...register("name")}
             />
 
             <NativeSelect
-              label="Tipo"
+              label={t("paymentMethods.form.type")}
               data={paymentTypeSelectData}
               disabled={!canManageStructure}
               error={errors.type?.message}
@@ -651,10 +657,18 @@ export default function PaymentMethodsPage() {
             />
 
             <TextInput
-              label={selectedType === "credit_card" ? "Deuda actual" : "Saldo actual"}
+              label={
+                selectedType === "credit_card"
+                  ? t("paymentMethods.form.currentDebt")
+                  : t("paymentMethods.form.currentBalance")
+              }
               type="number"
               step="0.01"
-              placeholder={selectedType === "credit_card" ? "Ej: 250000" : "Ej: 120000"}
+              placeholder={
+                selectedType === "credit_card"
+                  ? t("paymentMethods.form.currentDebtPlaceholder")
+                  : t("paymentMethods.form.currentBalancePlaceholder")
+              }
               disabled={!canManageStructure}
               error={errors.currentBalance?.message}
               {...register("currentBalance")}
@@ -662,30 +676,30 @@ export default function PaymentMethodsPage() {
 
             {selectedType === "credit_card" ? (
               <Text size="xs" c="dimmed">
-                Para tarjetas de crédito, el monto se guarda como deuda (valor negativo).
+                {t("paymentMethods.form.creditCardHint")}
               </Text>
             ) : null}
 
             <Checkbox
-              label="Incluir en balance principal"
-              description="Si lo desactivás, el medio no se suma al balance consolidado del dashboard."
+              label={t("paymentMethods.form.includeInBalance")}
+              description={t("paymentMethods.form.includeInBalanceDescription")}
               disabled={!canManageStructure}
               {...register("includeInBalance")}
             />
 
             <TextInput
-              label="Día de cierre (opcional)"
+              label={t("paymentMethods.form.closingDay")}
               type="number"
-              placeholder="Ej: 20"
+              placeholder={t("paymentMethods.form.closingDayPlaceholder")}
               disabled={!canManageStructure || selectedType !== "credit_card"}
               error={errors.closingDay?.message}
               {...register("closingDay")}
             />
 
             <TextInput
-              label="Día de vencimiento (opcional)"
+              label={t("paymentMethods.form.dueDay")}
               type="number"
-              placeholder="Ej: 10"
+              placeholder={t("paymentMethods.form.dueDayPlaceholder")}
               disabled={!canManageStructure || selectedType !== "credit_card"}
               error={errors.dueDay?.message}
               {...register("dueDay")}
@@ -698,10 +712,10 @@ export default function PaymentMethodsPage() {
                 color="gray"
                 onClick={() => setIsModalOpen(false)}
               >
-                Cancelar
+                {t("common.actions.cancel")}
               </Button>
               <Button type="submit" loading={isSubmitting} disabled={!canManageStructure}>
-                {editingRow ? "Guardar" : "Crear"}
+                {editingRow ? t("common.actions.save") : t("common.actions.create")}
               </Button>
             </Group>
           </Stack>

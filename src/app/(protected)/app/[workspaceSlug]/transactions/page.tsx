@@ -30,6 +30,7 @@ import {
 } from "@/features/budget/amount-format";
 import {
   buildMonthOptions,
+  localeCompareByName,
   mapTransactionTypeLabel,
   monthLabelFromOptions,
 } from "@/features/i18n/formatting";
@@ -152,7 +153,7 @@ function toFormDefaults(
   };
 }
 
-function sortCategories(a: CategoryRow, b: CategoryRow) {
+function sortCategories(a: CategoryRow, b: CategoryRow, locale: "es" | "en") {
   const orderA = a.sort_order ?? Number.MAX_SAFE_INTEGER;
   const orderB = b.sort_order ?? Number.MAX_SAFE_INTEGER;
 
@@ -160,7 +161,7 @@ function sortCategories(a: CategoryRow, b: CategoryRow) {
     return orderA - orderB;
   }
 
-  return a.name.localeCompare(b.name, "es");
+  return localeCompareByName(a.name, b.name, locale);
 }
 
 function normalizeSearchText(value: string, locale: "es" | "en") {
@@ -379,24 +380,28 @@ export default function TransactionsPage() {
         (category) =>
           category.type === selectedType && (category.is_active || category.id === currentCategoryId),
       )
-      .sort(sortCategories)
+      .sort((a, b) => sortCategories(a, b, locale))
       .map((category) => ({
         value: category.id,
-        label: category.is_active ? category.name : `${category.name} (inactiva)`,
+        label: category.is_active
+          ? category.name
+          : `${category.name} (${t("transactions.inactiveCategorySuffix")})`,
       }));
-  }, [categories, editingRow?.category_id, selectedType]);
+  }, [categories, editingRow?.category_id, locale, selectedType, t]);
 
   const categoryFilterOptions = useMemo(() => {
-    const sortedCategories = [...categories].sort(sortCategories);
+    const sortedCategories = [...categories].sort((a, b) => sortCategories(a, b, locale));
 
     return [
-      { value: "all", label: "Todas" },
+      { value: "all", label: t("transactions.allCategories") },
       ...sortedCategories.map((category) => ({
         value: category.id,
-        label: category.is_active ? category.name : `${category.name} (inactiva)`,
+        label: category.is_active
+          ? category.name
+          : `${category.name} (${t("transactions.inactiveCategorySuffix")})`,
       })),
     ];
-  }, [categories]);
+  }, [categories, locale, t]);
 
   const paymentMethodOptions = useMemo(() => {
     const currentPaymentMethodId = editingRow?.payment_method_id ?? null;
@@ -406,24 +411,30 @@ export default function TransactionsPage() {
         (paymentMethod) =>
           paymentMethod.is_active || paymentMethod.id === currentPaymentMethodId,
       )
-      .sort((a, b) => a.name.localeCompare(b.name, "es"))
+      .sort((a, b) => localeCompareByName(a.name, b.name, locale))
       .map((paymentMethod) => ({
         value: paymentMethod.id,
-        label: paymentMethod.is_active ? paymentMethod.name : `${paymentMethod.name} (inactivo)`,
+        label: paymentMethod.is_active
+          ? paymentMethod.name
+          : `${paymentMethod.name} (${t("transactions.inactivePaymentMethodSuffix")})`,
       }));
-  }, [editingRow?.payment_method_id, paymentMethods]);
+  }, [editingRow?.payment_method_id, locale, paymentMethods, t]);
 
   const paymentMethodFilterOptions = useMemo(() => {
-    const sortedPaymentMethods = [...paymentMethods].sort((a, b) => a.name.localeCompare(b.name, "es"));
+    const sortedPaymentMethods = [...paymentMethods].sort((a, b) =>
+      localeCompareByName(a.name, b.name, locale),
+    );
 
     return [
-      { value: "all", label: "Todos" },
+      { value: "all", label: t("transactions.all") },
       ...sortedPaymentMethods.map((paymentMethod) => ({
         value: paymentMethod.id,
-        label: paymentMethod.is_active ? paymentMethod.name : `${paymentMethod.name} (inactivo)`,
+        label: paymentMethod.is_active
+          ? paymentMethod.name
+          : `${paymentMethod.name} (${t("transactions.inactivePaymentMethodSuffix")})`,
       })),
     ];
-  }, [paymentMethods]);
+  }, [locale, paymentMethods, t]);
 
   const formatDate = useCallback(
     (dateValue: string | null) => {
@@ -460,11 +471,11 @@ export default function TransactionsPage() {
   const formatGroupLabel = useCallback(
     (dateValue: string) => {
       if (dateValue === todayKey) {
-        return "Hoy";
+        return t("transactions.today");
       }
 
       if (dateValue === yesterdayKey) {
-        return "Ayer";
+        return t("transactions.yesterday");
       }
 
       const parsedDate = parseDateValue(dateValue);
@@ -478,7 +489,7 @@ export default function TransactionsPage() {
 
       return longDateWithYearFormatter.format(parsedDate);
     },
-    [longDateFormatter, longDateWithYearFormatter, now, todayKey, yesterdayKey],
+    [longDateFormatter, longDateWithYearFormatter, now, t, todayKey, yesterdayKey],
   );
 
   const normalizedSearchFilter = useMemo(
@@ -509,7 +520,7 @@ export default function TransactionsPage() {
         roundedCurrencyFormatter.format(row.amount),
       ]
         .join(" ")
-        .toLocaleLowerCase("es");
+        .toLocaleLowerCase(locale === "en" ? "en" : "es");
 
       return searchPool.includes(normalizedSearchFilter);
     });
@@ -520,6 +531,7 @@ export default function TransactionsPage() {
     formatDate,
     normalizedSearchFilter,
     paymentMethodById,
+    locale,
     roundedCurrencyFormatter,
     rows,
     transactionTypeLabels,
@@ -680,19 +692,19 @@ export default function TransactionsPage() {
     if (categoriesResponse.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar categorías",
+        title: t("transactions.notifications.loadCategoriesError"),
         message: categoriesResponse.error.message,
       });
       setCategories([]);
     } else {
-      const sorted = [...categoriesResponse.data].sort(sortCategories);
+      const sorted = [...categoriesResponse.data].sort((a, b) => sortCategories(a, b, locale));
       setCategories(sorted);
     }
 
     if (paymentMethodsResponse.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar medios de pago",
+        title: t("transactions.notifications.loadPaymentMethodsError"),
         message: paymentMethodsResponse.error.message,
       });
       setPaymentMethods([]);
@@ -703,7 +715,7 @@ export default function TransactionsPage() {
     if (settingsResponse.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar settings",
+        title: t("transactions.notifications.loadSettingsError"),
         message: settingsResponse.error.message,
       });
       setStartYear(new Date().getFullYear());
@@ -717,7 +729,7 @@ export default function TransactionsPage() {
     }
 
     setIsBootstrapping(false);
-  }, [supabase, workspace.id]);
+  }, [locale, supabase, t, workspace.id]);
 
   const loadTransactions = useCallback(async () => {
     setIsLoadingTransactions(true);
@@ -753,7 +765,7 @@ export default function TransactionsPage() {
     if (response.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar transacciones",
+        title: t("transactions.notifications.loadTransactionsError"),
         message: response.error.message,
       });
       return;
@@ -775,6 +787,7 @@ export default function TransactionsPage() {
     selectedMonth,
     selectedYear,
     supabase,
+    t,
     typeFilter,
     workspace.id,
   ]);
@@ -831,8 +844,8 @@ export default function TransactionsPage() {
     if (!category || category.workspace_id !== workspace.id) {
       notifications.show({
         color: "red",
-        title: "Categoría inválida",
-        message: "La categoría seleccionada no pertenece al workspace actual.",
+        title: t("transactions.notifications.invalidCategoryTitle"),
+        message: t("transactions.notifications.invalidCategoryMessage"),
       });
       return;
     }
@@ -840,8 +853,8 @@ export default function TransactionsPage() {
     if (category.type !== values.type) {
       notifications.show({
         color: "red",
-        title: "Tipo incompatible",
-        message: "La categoría debe coincidir con el tipo de transacción.",
+        title: t("transactions.notifications.incompatibleTypeTitle"),
+        message: t("transactions.notifications.incompatibleTypeMessage"),
       });
       return;
     }
@@ -849,8 +862,8 @@ export default function TransactionsPage() {
     if (!category.is_active && (!editingRow || editingRow.category_id !== category.id)) {
       notifications.show({
         color: "red",
-        title: "Categoría inactiva",
-        message: "Seleccioná una categoría activa para crear una nueva transacción.",
+        title: t("transactions.notifications.inactiveCategoryTitle"),
+        message: t("transactions.notifications.inactiveCategoryMessage"),
       });
       return;
     }
@@ -862,8 +875,8 @@ export default function TransactionsPage() {
     if (values.paymentMethodId && (!paymentMethod || paymentMethod.workspace_id !== workspace.id)) {
       notifications.show({
         color: "red",
-        title: "Medio de pago inválido",
-        message: "El medio de pago seleccionado no pertenece al workspace actual.",
+        title: t("transactions.notifications.invalidPaymentMethodTitle"),
+        message: t("transactions.notifications.invalidPaymentMethodMessage"),
       });
       return;
     }
@@ -875,8 +888,8 @@ export default function TransactionsPage() {
     ) {
       notifications.show({
         color: "red",
-        title: "Medio de pago inactivo",
-        message: "Seleccioná un medio de pago activo para crear una nueva transacción.",
+        title: t("transactions.notifications.inactivePaymentMethodTitle"),
+        message: t("transactions.notifications.inactivePaymentMethodMessage"),
       });
       return;
     }
@@ -903,7 +916,7 @@ export default function TransactionsPage() {
       if (updateResponse.error) {
         notifications.show({
           color: "red",
-          title: "No pudimos guardar cambios",
+          title: t("transactions.notifications.saveChangesError"),
           message: updateResponse.error.message,
         });
         return;
@@ -911,8 +924,8 @@ export default function TransactionsPage() {
 
       notifications.show({
         color: "green",
-        title: "Transacción actualizada",
-        message: "Los cambios se guardaron correctamente.",
+        title: t("transactions.notifications.updatedTitle"),
+        message: t("transactions.notifications.updatedMessage"),
       });
     } else {
       const insertResponse = await supabase.from("transactions").insert({
@@ -932,7 +945,7 @@ export default function TransactionsPage() {
       if (insertResponse.error) {
         notifications.show({
           color: "red",
-          title: "No pudimos registrar la transacción",
+          title: t("transactions.notifications.registerError"),
           message: insertResponse.error.message,
         });
         return;
@@ -940,8 +953,8 @@ export default function TransactionsPage() {
 
       notifications.show({
         color: "green",
-        title: "Transacción registrada",
-        message: "La transacción se guardó correctamente.",
+        title: t("transactions.notifications.createdTitle"),
+        message: t("transactions.notifications.createdMessage"),
       });
     }
 
@@ -964,7 +977,7 @@ export default function TransactionsPage() {
     if (response.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos eliminar la transacción",
+        title: t("transactions.notifications.deleteError"),
         message: response.error.message,
       });
       return;
@@ -972,8 +985,8 @@ export default function TransactionsPage() {
 
     notifications.show({
       color: "green",
-      title: "Transacción eliminada",
-      message: "El movimiento se eliminó correctamente.",
+      title: t("transactions.notifications.deletedTitle"),
+      message: t("transactions.notifications.deletedMessage"),
     });
 
     await loadTransactions();
@@ -981,18 +994,18 @@ export default function TransactionsPage() {
 
   function confirmDelete(row: TransactionRow) {
     modals.openConfirmModal({
-      title: "Eliminar transacción",
+      title: t("transactions.delete"),
       centered: true,
       labels: {
-        confirm: "Eliminar",
-        cancel: "Cancelar",
+        confirm: t("transactions.delete"),
+        cancel: t("common.actions.cancel"),
       },
       confirmProps: {
         color: "red",
       },
       children: (
         <Text size="sm" c="dimmed">
-          Esta acción no se puede deshacer. La transacción se eliminará del período actual.
+          {t("transactions.confirmDeleteBody")}
         </Text>
       ),
       onConfirm: () => {
@@ -1007,15 +1020,15 @@ export default function TransactionsPage() {
 
       <Group justify="space-between" align="end" wrap="wrap" gap="xs">
         <Stack gap={2}>
-          <Title order={2}>Transacciones</Title>
+          <Title order={2}>{t("transactions.title")}</Title>
           <Text c="dimmed" size="sm">
-            Vista operativa de movimientos reales del período.
+            {t("transactions.subtitle")}
           </Text>
         </Stack>
 
         {!isMobile ? (
           <Button onClick={openCreateModal} disabled={!hasAnyActiveCategory}>
-            Nueva transacción
+            {t("transactions.new")}
           </Button>
         ) : null}
       </Group>
@@ -1024,7 +1037,7 @@ export default function TransactionsPage() {
         <Stack gap="xs">
           <Group align="end" wrap="wrap" gap="xs">
             <NativeSelect
-              label="Año"
+              label={t("transactions.year")}
               data={yearOptions}
               value={String(selectedYear)}
               onChange={(event) => setSelectedYear(Number(event.currentTarget.value))}
@@ -1032,7 +1045,7 @@ export default function TransactionsPage() {
             />
 
             <NativeSelect
-              label="Mes"
+              label={t("transactions.month")}
               data={monthOptions}
               value={String(selectedMonth)}
               onChange={(event) => setSelectedMonth(Number(event.currentTarget.value))}
@@ -1040,15 +1053,15 @@ export default function TransactionsPage() {
             />
 
             <NativeSelect
-              label="Tipo"
-              data={[{ value: "all", label: "Todos" }, ...transactionTypeSelectData]}
+              label={t("transactions.type")}
+              data={[{ value: "all", label: t("transactions.all") }, ...transactionTypeSelectData]}
               value={typeFilter}
               onChange={(event) => setTypeFilter(event.currentTarget.value as TypeFilter)}
               style={{ minWidth: 132 }}
             />
 
             <NativeSelect
-              label="Categoría"
+              label={t("transactions.category")}
               data={categoryFilterOptions}
               value={categoryFilter}
               onChange={(event) => setCategoryFilter(event.currentTarget.value)}
@@ -1056,7 +1069,7 @@ export default function TransactionsPage() {
             />
 
             <NativeSelect
-              label="Medio"
+              label={t("transactions.paymentMethodShort")}
               data={paymentMethodFilterOptions}
               value={paymentMethodFilter}
               onChange={(event) => setPaymentMethodFilter(event.currentTarget.value)}
@@ -1064,8 +1077,8 @@ export default function TransactionsPage() {
             />
 
             <TextInput
-              label="Buscar"
-              placeholder="Categoría, descripción, nota..."
+              label={t("transactions.search")}
+              placeholder={t("transactions.searchPlaceholder")}
               value={searchFilter}
               onChange={(event) => setSearchFilter(event.currentTarget.value)}
               style={{ minWidth: 220, flex: "1 1 220px" }}
@@ -1073,26 +1086,33 @@ export default function TransactionsPage() {
           </Group>
 
           <Text size="xs" c="dimmed">
-            {monthLabelFromOptions(selectedMonth, monthOptions, t("common.messages.month", "Mes"))}{" "}
-            {selectedYear} · {filteredRows.length} movimiento
-            {filteredRows.length === 1 ? "" : "s"}
-            {activeFiltersCount > 0
-              ? ` · ${activeFiltersCount} filtro${activeFiltersCount === 1 ? "" : "s"} activo${activeFiltersCount === 1 ? "" : "s"}`
-              : ""}
+            {t("transactions.summaryMovements", undefined, {
+              monthYear: `${monthLabelFromOptions(selectedMonth, monthOptions, t("common.messages.month", "Mes"))} ${selectedYear}`,
+              count: filteredRows.length,
+              pluralSuffix: filteredRows.length === 1 ? "" : "s",
+              filtersText:
+                activeFiltersCount > 0
+                  ? t("transactions.activeFiltersText", undefined, {
+                      count: activeFiltersCount,
+                      pluralSuffix: activeFiltersCount === 1 ? "" : "s",
+                      activePluralSuffix: activeFiltersCount === 1 ? "" : "s",
+                    })
+                  : "",
+            })}
           </Text>
         </Stack>
       </Paper>
 
       {!hasAnyActiveCategory ? (
         <Alert color="yellow" variant="light">
-          Necesitás al menos una categoría activa para registrar transacciones.
+          {t("transactions.needActiveCategory")}
         </Alert>
       ) : null}
 
       <Paper withBorder radius="md" p={6}>
         {groupedRows.length === 0 ? (
           <Text size="sm" c="dimmed" p="xs">
-            No hay transacciones para este período y filtros.
+            {t("transactions.emptyState")}
           </Text>
         ) : (
           <Stack gap={8}>
@@ -1122,7 +1142,9 @@ export default function TransactionsPage() {
                       metaParts.push(paymentMethod.name);
                     }
                     if (row.effective_date) {
-                      metaParts.push(`Real ${formatCompactDate(row.transaction_date)}`);
+                      metaParts.push(
+                        `${t("transactions.realPrefix")} ${formatCompactDate(row.transaction_date)}`,
+                      );
                     }
 
                     return (
@@ -1131,7 +1153,7 @@ export default function TransactionsPage() {
                           <Group justify="space-between" align="flex-start" wrap="nowrap" gap={6}>
                             <Stack gap={1} style={{ flex: 1, minWidth: 0 }}>
                               <Text fw={600} size="sm" lineClamp={1} style={{ lineHeight: 1.15 }}>
-                                {category?.name ?? "Categoría no disponible"}
+                                {category?.name ?? t("transactions.categoryUnavailable")}
                               </Text>
 
                               {row.description ? (
@@ -1176,11 +1198,11 @@ export default function TransactionsPage() {
                                 color="gray"
                                 leftSection={<EditIcon size={11} />}
                                 onClick={() => openEditModal(row)}
-                                aria-label="Editar transacción"
+                                aria-label={t("transactions.edit")}
                                 px={isMobile ? 6 : 8}
                                 styles={{ label: { fontSize: "0.67rem", fontWeight: 500 } }}
                               >
-                                {isMobile ? null : "Editar"}
+                                {isMobile ? null : t("transactions.edit")}
                               </Button>
                               <Button
                                 size="xs"
@@ -1189,11 +1211,11 @@ export default function TransactionsPage() {
                                 leftSection={<TrashIcon size={11} />}
                                 loading={deletingId === row.id}
                                 onClick={() => confirmDelete(row)}
-                                aria-label="Eliminar transacción"
+                                aria-label={t("transactions.delete")}
                                 px={isMobile ? 6 : 8}
                                 styles={{ label: { fontSize: "0.67rem", fontWeight: 500 } }}
                               >
-                                {isMobile ? null : "Eliminar"}
+                                {isMobile ? null : t("transactions.delete")}
                               </Button>
                             </Group>
                           </Group>
@@ -1224,7 +1246,7 @@ export default function TransactionsPage() {
           }}
         >
           <Button onClick={openCreateModal} disabled={!hasAnyActiveCategory} fullWidth>
-            Nueva transacción
+            {t("transactions.new")}
           </Button>
         </Paper>
       ) : null}
@@ -1232,7 +1254,7 @@ export default function TransactionsPage() {
       <Modal
         opened={isModalOpen}
         onClose={closeModal}
-        title={editingRow ? "Editar transacción" : "Nueva transacción"}
+        title={editingRow ? t("transactions.edit") : t("transactions.new")}
         size="lg"
         fullScreen={isMobile}
       >
@@ -1240,7 +1262,7 @@ export default function TransactionsPage() {
           <Stack gap="sm">
             <Stack gap={4}>
               <Text size="sm" fw={600}>
-                Tipo
+                {t("transactions.type")}
               </Text>
               <Controller
                 control={control}
@@ -1263,8 +1285,8 @@ export default function TransactionsPage() {
 
             <Group grow align="start">
               <NativeSelect
-                label="Categoría"
-                data={[{ value: "", label: "Seleccionar categoría" }, ...categoryOptions]}
+                label={t("transactions.category")}
+                data={[{ value: "", label: t("transactions.form.selectCategory") }, ...categoryOptions]}
                 error={errors.categoryId?.message}
                 {...register("categoryId")}
               />
@@ -1274,7 +1296,7 @@ export default function TransactionsPage() {
                 name="amount"
                 render={({ field }) => (
                   <TextInput
-                    label="Monto"
+                    label={t("transactions.form.amount")}
                     inputMode="decimal"
                     placeholder="0"
                     autoFocus
@@ -1303,7 +1325,7 @@ export default function TransactionsPage() {
             </Group>
 
             <TextInput
-              label="Fecha de transacción"
+              label={t("transactions.form.transactionDate")}
               type="date"
               error={errors.transactionDate?.message}
               {...register("transactionDate")}
@@ -1312,35 +1334,35 @@ export default function TransactionsPage() {
             <Paper withBorder radius="md" p="sm">
               <Stack gap="xs">
                 <Text size="xs" c="dimmed" fw={600}>
-                  Campos opcionales
+                  {t("transactions.form.optionalFields")}
                 </Text>
 
                 <Group grow align="start">
                   <TextInput
-                    label="Fecha efectiva"
+                    label={t("transactions.form.effectiveDate")}
                     type="date"
                     error={errors.effectiveDate?.message}
                     {...register("effectiveDate")}
                   />
 
                   <NativeSelect
-                    label="Medio de pago"
-                    data={[{ value: "", label: "Sin medio de pago" }, ...paymentMethodOptions]}
+                    label={t("transactions.paymentMethod")}
+                    data={[{ value: "", label: t("transactions.form.noPaymentMethod") }, ...paymentMethodOptions]}
                     error={errors.paymentMethodId?.message}
                     {...register("paymentMethodId")}
                   />
                 </Group>
 
                 <TextInput
-                  label="Descripción"
-                  placeholder="Ej: Compra semanal"
+                  label={t("transactions.form.description")}
+                  placeholder={t("transactions.form.descriptionPlaceholder")}
                   error={errors.description?.message}
                   {...register("description")}
                 />
 
                 <Textarea
-                  label="Notas"
-                  placeholder="Detalle adicional del movimiento"
+                  label={t("transactions.form.notes")}
+                  placeholder={t("transactions.form.notesPlaceholder")}
                   minRows={2}
                   autosize
                   error={errors.notes?.message}
@@ -1351,10 +1373,10 @@ export default function TransactionsPage() {
 
             <Group justify="flex-end" mt="sm">
               <Button type="button" variant="light" color="gray" onClick={closeModal}>
-                Cancelar
+                {t("common.actions.cancel")}
               </Button>
               <Button type="submit" loading={isSubmitting}>
-                {editingRow ? "Guardar" : "Crear"}
+                {editingRow ? t("common.actions.save") : t("common.actions.create")}
               </Button>
             </Group>
           </Stack>

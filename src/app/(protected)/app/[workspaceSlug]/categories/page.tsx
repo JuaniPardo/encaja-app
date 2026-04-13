@@ -184,6 +184,7 @@ export default function CategoriesPage() {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [searchFilter, setSearchFilter] = useState("");
+  const roleLabel = t(`common.role.${workspace.role}`, workspace.role);
   const categoryTypeLabels = useMemo<Record<TransactionType, string>>(
     () => ({
       income: mapTransactionTypeLabel("income", t),
@@ -263,7 +264,7 @@ export default function CategoriesPage() {
     if (categoriesResponse.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos cargar categorías",
+        title: t("categories.notifications.loadError"),
         message: categoriesResponse.error.message,
       });
       setRows([]);
@@ -286,7 +287,15 @@ export default function CategoriesPage() {
 
     setRows(sorted);
     setUsageByCategoryId(usageCounter);
-  }, [locale, supabase, workspace.id]);
+  }, [locale, supabase, t, workspace.id]);
+
+  const showPermissionDenied = useCallback(() => {
+    notifications.show({
+      color: "red",
+      title: t("categories.notifications.permissionDeniedTitle"),
+      message: t("categories.notifications.permissionDeniedMessage"),
+    });
+  }, [t]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -295,11 +304,7 @@ export default function CategoriesPage() {
 
   function openCreateModal() {
     if (!canManageStructure) {
-      notifications.show({
-        color: "red",
-        title: "Acción no permitida",
-        message: "Solo el owner puede administrar categorías.",
-      });
+      showPermissionDenied();
       return;
     }
 
@@ -310,11 +315,7 @@ export default function CategoriesPage() {
 
   function openEditModal(row: CategoryRow) {
     if (!canManageStructure) {
-      notifications.show({
-        color: "red",
-        title: "Acción no permitida",
-        message: "Solo el owner puede administrar categorías.",
-      });
+      showPermissionDenied();
       return;
     }
 
@@ -346,7 +347,9 @@ export default function CategoriesPage() {
       const passesSearch =
         normalizedSearchFilter === ""
           ? true
-          : `${row.name} ${categoryTypeLabels[row.type]} ${row.is_active ? "activa" : "inactiva"} ${
+          : `${row.name} ${categoryTypeLabels[row.type]} ${
+              row.is_active ? t("categories.status.active") : t("categories.status.inactive")
+            } ${
               row.type === "expense"
                 ? categoryExpenseBehaviorLabels[row.expense_behavior ?? "variable"]
                 : ""
@@ -363,6 +366,7 @@ export default function CategoriesPage() {
     normalizedSearchFilter,
     rows,
     statusFilter,
+    t,
     typeFilter,
   ]);
 
@@ -402,11 +406,7 @@ export default function CategoriesPage() {
 
   const onSubmit = handleSubmit(async (values) => {
     if (!canManageStructure) {
-      notifications.show({
-        color: "red",
-        title: "Acción no permitida",
-        message: "Solo el owner puede administrar categorías.",
-      });
+      showPermissionDenied();
       return;
     }
 
@@ -429,7 +429,7 @@ export default function CategoriesPage() {
       if (updateResponse.error) {
         notifications.show({
           color: "red",
-          title: "No pudimos guardar cambios",
+          title: t("categories.notifications.saveError"),
           message: updateResponse.error.message,
         });
         return;
@@ -437,8 +437,8 @@ export default function CategoriesPage() {
 
       notifications.show({
         color: "green",
-        title: "Categoría actualizada",
-        message: "Los cambios se guardaron correctamente.",
+        title: t("categories.notifications.updatedTitle"),
+        message: t("categories.notifications.updatedMessage"),
       });
     } else {
       const insertResponse = await supabase.from("categories").insert({
@@ -455,9 +455,9 @@ export default function CategoriesPage() {
         const isDuplicatedName = insertResponse.error.code === "23505";
         notifications.show({
           color: "red",
-          title: "No pudimos crear la categoría",
+          title: t("categories.notifications.createError"),
           message: isDuplicatedName
-            ? "Ya existe una categoría con ese nombre en el workspace."
+            ? t("categories.notifications.duplicateName")
             : insertResponse.error.message,
         });
         return;
@@ -465,8 +465,8 @@ export default function CategoriesPage() {
 
       notifications.show({
         color: "green",
-        title: "Categoría creada",
-        message: "La categoría ya está disponible.",
+        title: t("categories.notifications.createdTitle"),
+        message: t("categories.notifications.createdMessage"),
       });
     }
 
@@ -476,11 +476,7 @@ export default function CategoriesPage() {
 
   async function toggleActive(row: CategoryRow) {
     if (!canManageStructure) {
-      notifications.show({
-        color: "red",
-        title: "Acción no permitida",
-        message: "Solo el owner puede administrar categorías.",
-      });
+      showPermissionDenied();
       return;
     }
 
@@ -496,7 +492,7 @@ export default function CategoriesPage() {
     if (response.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos actualizar estado",
+        title: t("categories.notifications.toggleError"),
         message: response.error.message,
       });
       return;
@@ -504,8 +500,10 @@ export default function CategoriesPage() {
 
     notifications.show({
       color: "green",
-      title: row.is_active ? "Categoría desactivada" : "Categoría activada",
-      message: "Estado actualizado correctamente.",
+      title: row.is_active
+        ? t("categories.notifications.deactivatedTitle")
+        : t("categories.notifications.activatedTitle"),
+      message: t("categories.notifications.statusUpdatedMessage"),
     });
 
     setIsLoading(true);
@@ -518,9 +516,9 @@ export default function CategoriesPage() {
 
       <Group justify="space-between" align="end" wrap="wrap" gap="xs">
         <Stack gap={2}>
-          <Title order={2}>Categorías</Title>
+          <Title order={2}>{t("categories.title")}</Title>
           <Text c="dimmed" size="sm">
-            Administrá el catálogo de ingresos, gastos y ahorro del workspace.
+            {t("categories.subtitle")}
           </Text>
         </Stack>
 
@@ -531,13 +529,13 @@ export default function CategoriesPage() {
           radius="md"
           styles={{ root: { boxShadow: "none", border: "none" } }}
         >
-          Nueva categoría
+          {t("categories.new")}
         </Button>
       </Group>
 
       {!canManageStructure ? (
-        <Alert color="yellow" variant="light" title="Acceso de solo lectura">
-          Tenés rol <b>{workspace.role}</b>. Solo el owner puede crear o editar categorías.
+        <Alert color="yellow" variant="light" title={t("categories.readOnlyTitle")}>
+          {t("categories.readOnlyMessage", undefined, { role: roleLabel })}
         </Alert>
       ) : null}
 
@@ -545,31 +543,31 @@ export default function CategoriesPage() {
         <Stack gap="xs">
           <Group align="end" wrap="wrap" gap="xs">
             <NativeSelect
-              label="Tipo"
+              label={t("categories.filters.type")}
               value={typeFilter}
               onChange={(event) => setTypeFilter(event.currentTarget.value as TypeFilter)}
               data={[
-                { value: "all", label: "Todos" },
+                { value: "all", label: t("categories.filters.all") },
                 ...categoryTypeSelectData,
               ]}
               style={{ minWidth: 140 }}
             />
 
             <NativeSelect
-              label="Estado"
+              label={t("categories.filters.status")}
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.currentTarget.value as StatusFilter)}
               data={[
-                { value: "all", label: "Todos" },
-                { value: "active", label: "Activas" },
-                { value: "inactive", label: "Inactivas" },
+                { value: "all", label: t("categories.filters.all") },
+                { value: "active", label: t("categories.filters.active") },
+                { value: "inactive", label: t("categories.filters.inactive") },
               ]}
               style={{ minWidth: 140 }}
             />
 
             <TextInput
-              label="Buscar"
-              placeholder="Nombre, tipo o estado"
+              label={t("categories.filters.search")}
+              placeholder={t("categories.filters.searchPlaceholder")}
               value={searchFilter}
               onChange={(event) => setSearchFilter(event.currentTarget.value)}
               style={{ minWidth: 220, flex: "1 1 220px" }}
@@ -577,10 +575,17 @@ export default function CategoriesPage() {
           </Group>
 
           <Text size="xs" c="dimmed">
-            {visibleRows.length} categoría{visibleRows.length === 1 ? "" : "s"}
-            {activeFiltersCount > 0
-              ? ` · ${activeFiltersCount} filtro${activeFiltersCount === 1 ? "" : "s"} activo${activeFiltersCount === 1 ? "" : "s"}`
-              : ""}
+            {t("categories.summary", undefined, {
+              count: visibleRows.length,
+              pluralSuffix: visibleRows.length === 1 ? "" : "s",
+              filtersText:
+                activeFiltersCount > 0
+                  ? t("categories.activeFiltersText", undefined, {
+                      count: activeFiltersCount,
+                      pluralSuffix: activeFiltersCount === 1 ? "" : "s",
+                    })
+                  : "",
+            })}
           </Text>
         </Stack>
       </Paper>
@@ -588,7 +593,7 @@ export default function CategoriesPage() {
       {groupedRows.length === 0 ? (
         <Paper withBorder radius="md" p="md">
           <Text size="sm" c="dimmed">
-            No hay categorías para los filtros seleccionados.
+            {t("categories.emptyState")}
           </Text>
         </Paper>
       ) : (
@@ -621,8 +626,12 @@ export default function CategoriesPage() {
                       {group.label}
                     </Text>
                     <Text size="xs" c="dimmed">
-                      {group.rows.length} categoría{group.rows.length === 1 ? "" : "s"} · {activeRows} activa
-                      {activeRows === 1 ? "" : "s"}
+                      {t("categories.groupSummary", undefined, {
+                        total: group.rows.length,
+                        totalPluralSuffix: group.rows.length === 1 ? "" : "s",
+                        active: activeRows,
+                        activePluralSuffix: activeRows === 1 ? "" : "s",
+                      })}
                     </Text>
                   </Stack>
 
@@ -631,8 +640,11 @@ export default function CategoriesPage() {
                       const usageCount = usageByCategoryId[row.id] ?? 0;
                       const usageLabel =
                         usageCount === 0
-                          ? "Sin uso"
-                          : `${usageCount} movimiento${usageCount === 1 ? "" : "s"}`;
+                          ? t("categories.usage.none")
+                          : t("categories.usage.count", undefined, {
+                              count: usageCount,
+                              pluralSuffix: usageCount === 1 ? "" : "s",
+                            });
 
                       return (
                         <Paper key={row.id} withBorder radius={8} p={isMobile ? "xs" : "sm"}>
@@ -658,7 +670,7 @@ export default function CategoriesPage() {
                                   px={0}
                                   justify="flex-start"
                                 >
-                                  Ver movimientos
+                                  {t("categories.viewMovements")}
                                 </Button>
                               ) : null}
 
@@ -669,7 +681,9 @@ export default function CategoriesPage() {
                                 tt="uppercase"
                                 style={{ letterSpacing: "0.03em" }}
                               >
-                                {row.is_active ? "Activa" : "Inactiva"}
+                                {row.is_active
+                                  ? t("categories.status.active")
+                                  : t("categories.status.inactive")}
                               </Text>
 
                               {row.type === "expense" ? (
@@ -690,7 +704,7 @@ export default function CategoriesPage() {
                                 <ActionIcon
                                   variant="subtle"
                                   color="gray"
-                                  aria-label={`Acciones para ${row.name}`}
+                                  aria-label={t("categories.actionsFor", undefined, { name: row.name })}
                                 >
                                   <DotsIcon />
                                 </ActionIcon>
@@ -702,7 +716,7 @@ export default function CategoriesPage() {
                                   disabled={!canManageStructure}
                                   onClick={() => openEditModal(row)}
                                 >
-                                  Editar
+                                  {t("categories.edit")}
                                 </Menu.Item>
                                 <Menu.Item
                                   color={row.is_active ? "gray" : "teal"}
@@ -710,7 +724,7 @@ export default function CategoriesPage() {
                                   disabled={!canManageStructure}
                                   onClick={() => void toggleActive(row)}
                                 >
-                                  {row.is_active ? "Desactivar" : "Activar"}
+                                  {row.is_active ? t("categories.deactivate") : t("categories.activate")}
                                 </Menu.Item>
                               </Menu.Dropdown>
                             </Menu>
@@ -729,14 +743,14 @@ export default function CategoriesPage() {
       <Modal
         opened={isModalOpen}
         onClose={closeModal}
-        title={editingRow ? "Editar categoría" : "Nueva categoría"}
+        title={editingRow ? t("categories.edit") : t("categories.new")}
         fullScreen={isMobile}
       >
         <form onSubmit={onSubmit}>
           <Stack gap="sm">
             <TextInput
-              label="Nombre"
-              placeholder="Ej: Supermercado"
+              label={t("categories.form.name")}
+              placeholder={t("categories.form.namePlaceholder")}
               autoFocus
               disabled={!canManageStructure}
               error={errors.name?.message}
@@ -744,7 +758,7 @@ export default function CategoriesPage() {
             />
 
             <NativeSelect
-              label="Tipo"
+              label={t("categories.filters.type")}
               data={categoryTypeSelectData}
               disabled={!canManageStructure}
               error={errors.type?.message}
@@ -752,24 +766,24 @@ export default function CategoriesPage() {
             />
 
             {selectedType === "expense" ? (
-                <NativeSelect
-                  label="Comportamiento del gasto"
-                  description="Los gastos variables se proyectan por ritmo. Los fijos no se proyectan linealmente."
-                  data={categoryExpenseBehaviorSelectData}
-                  disabled={!canManageStructure}
-                  error={errors.expenseBehavior?.message}
-                  {...register("expenseBehavior")}
-                />
+              <NativeSelect
+                label={t("categories.form.expenseBehavior")}
+                description={t("categories.form.expenseBehaviorDescription")}
+                data={categoryExpenseBehaviorSelectData}
+                disabled={!canManageStructure}
+                error={errors.expenseBehavior?.message}
+                {...register("expenseBehavior")}
+              />
             ) : null}
 
             <Paper withBorder radius="md" p="sm">
               <Stack gap={4}>
                 <Text size="xs" c="dimmed" fw={600}>
-                  Configuración opcional
+                  {t("categories.form.optionalConfiguration")}
                 </Text>
                 <TextInput
-                  label="Orden interno"
-                  description="Si no lo definís, la categoría queda al final de su tipo."
+                  label={t("categories.form.sortOrder")}
+                  description={t("categories.form.sortOrderDescription")}
                   placeholder="0"
                   type="number"
                   disabled={!canManageStructure}
@@ -786,10 +800,10 @@ export default function CategoriesPage() {
                 color="gray"
                 onClick={closeModal}
               >
-                Cancelar
+                {t("common.actions.cancel")}
               </Button>
               <Button type="submit" loading={isSubmitting} disabled={!canManageStructure}>
-                {editingRow ? "Guardar" : "Crear"}
+                {editingRow ? t("common.actions.save") : t("common.actions.create")}
               </Button>
             </Group>
           </Stack>
