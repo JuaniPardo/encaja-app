@@ -668,6 +668,8 @@ const dictionaries = {
         inactivePaymentMethodMessage:
           "Seleccioná un medio de pago activo para crear una nueva transacción.",
         quickPaymentCreateError: "No pudimos crear el medio de pago inicial",
+        unexpectedQuickPaymentCreateError:
+          "No recibimos un medio de pago válido al intentar crearlo.",
         saveChangesError: "No pudimos guardar cambios",
         updatedTitle: "Transacción actualizada",
         updatedMessage: "Los cambios se guardaron correctamente.",
@@ -1515,6 +1517,8 @@ const dictionaries = {
         inactivePaymentMethodMessage:
           "Select an active payment method to create a new transaction.",
         quickPaymentCreateError: "We couldn't create the starter payment method",
+        unexpectedQuickPaymentCreateError:
+          "We did not receive a valid payment method after creating it.",
         saveChangesError: "We couldn't save changes",
         updatedTitle: "Transaction updated",
         updatedMessage: "Changes were saved successfully.",

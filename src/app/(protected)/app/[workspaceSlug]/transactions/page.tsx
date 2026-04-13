@@ -991,9 +991,19 @@ export default function TransactionsPage() {
         return;
       }
 
-      quickCreatedPaymentMethod = createQuickMethodResponse.data;
-      resolvedPaymentMethodId = quickCreatedPaymentMethod.id;
-      setPaymentMethods((previousRows) => [...previousRows, quickCreatedPaymentMethod]);
+      const createdQuickMethod = createQuickMethodResponse.data;
+      if (!createdQuickMethod) {
+        notifications.show({
+          color: "red",
+          title: t("transactions.notifications.quickPaymentCreateError"),
+          message: t("transactions.notifications.unexpectedQuickPaymentCreateError"),
+        });
+        return;
+      }
+
+      quickCreatedPaymentMethod = createdQuickMethod;
+      resolvedPaymentMethodId = createdQuickMethod.id;
+      setPaymentMethods((previousRows) => [...previousRows, createdQuickMethod]);
     }
 
     const paymentMethod = resolvedPaymentMethodId
