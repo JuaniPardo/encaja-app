@@ -29,10 +29,16 @@ import {
   sanitizeBudgetTypingValue,
 } from "@/features/budget/amount-format";
 import {
-  transactionFormSchema,
+  buildMonthOptions,
+  mapTransactionTypeLabel,
+  monthLabelFromOptions,
+} from "@/features/i18n/formatting";
+import {
+  createTransactionFormSchema,
   type TransactionFormInputValues,
   type TransactionFormValues,
 } from "@/features/transactions/schema";
+import { useI18n } from "@/features/i18n/provider";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { Database, TransactionType } from "@/types/database";
 
@@ -52,38 +58,11 @@ type TransactionGroup = {
   rows: TransactionRow[];
 };
 
-const monthOptions = [
-  { value: "1", label: "Enero" },
-  { value: "2", label: "Febrero" },
-  { value: "3", label: "Marzo" },
-  { value: "4", label: "Abril" },
-  { value: "5", label: "Mayo" },
-  { value: "6", label: "Junio" },
-  { value: "7", label: "Julio" },
-  { value: "8", label: "Agosto" },
-  { value: "9", label: "Septiembre" },
-  { value: "10", label: "Octubre" },
-  { value: "11", label: "Noviembre" },
-  { value: "12", label: "Diciembre" },
-] as const;
-
-const transactionTypeLabels: Record<TransactionType, string> = {
-  income: "Ingreso",
-  expense: "Gasto",
-  saving: "Ahorro",
-};
-
 const transactionTypeColors: Record<TransactionType, string> = {
   income: "teal",
   expense: "pink",
   saving: "indigo",
 };
-
-const transactionTypeSelectData = [
-  { value: "income", label: "Ingreso" },
-  { value: "expense", label: "Gasto" },
-  { value: "saving", label: "Ahorro" },
-];
 
 function toDateInputValue(date: Date) {
   const year = date.getFullYear();
@@ -91,10 +70,6 @@ function toDateInputValue(date: Date) {
   const day = String(date.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
-}
-
-function monthLabel(month: number) {
-  return monthOptions.find((option) => Number(option.value) === month)?.label ?? `Mes ${month}`;
 }
 
 function buildMonthRange(year: number, month: number) {
@@ -188,8 +163,8 @@ function sortCategories(a: CategoryRow, b: CategoryRow) {
   return a.name.localeCompare(b.name, "es");
 }
 
-function normalizeSearchText(value: string) {
-  return value.trim().toLocaleLowerCase("es");
+function normalizeSearchText(value: string, locale: "es" | "en") {
+  return value.trim().toLocaleLowerCase(locale === "en" ? "en" : "es");
 }
 
 function EditIcon({ size = 14 }: { size?: number }) {
@@ -237,6 +212,7 @@ function TrashIcon({ size = 14 }: { size?: number }) {
 
 export default function TransactionsPage() {
   const { supabase, workspace, user } = useWorkspace();
+  const { intlLocale, locale, t } = useI18n();
   const isMobile = useMediaQuery("(max-width: 48em)");
 
   const now = useMemo(() => new Date(), []);
@@ -258,6 +234,23 @@ export default function TransactionsPage() {
   const [editingRow, setEditingRow] = useState<TransactionRow | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [didApplyUrlFilters, setDidApplyUrlFilters] = useState(false);
+  const monthOptions = useMemo(() => buildMonthOptions(intlLocale), [intlLocale]);
+  const transactionTypeLabels = useMemo<Record<TransactionType, string>>(
+    () => ({
+      income: mapTransactionTypeLabel("income", t),
+      expense: mapTransactionTypeLabel("expense", t),
+      saving: mapTransactionTypeLabel("saving", t),
+    }),
+    [t],
+  );
+  const transactionTypeSelectData = useMemo(
+    () => [
+      { value: "income", label: mapTransactionTypeLabel("income", t) },
+      { value: "expense", label: mapTransactionTypeLabel("expense", t) },
+      { value: "saving", label: mapTransactionTypeLabel("saving", t) },
+    ],
+    [t],
+  );
 
   const {
     register,
@@ -267,7 +260,19 @@ export default function TransactionsPage() {
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<TransactionFormInputValues, unknown, TransactionFormValues>({
-    resolver: zodResolver(transactionFormSchema),
+    resolver: zodResolver(
+      createTransactionFormSchema({
+        invalidAmount: t("common.validation.invalidAmount"),
+        amountGtZero: t("common.validation.amountGtZero"),
+        invalidDate: t("common.validation.invalidDate"),
+        invalidOption: t("common.validation.invalidOption"),
+        requiredCategory: t("common.forms.transaction.requiredCategory"),
+        invalidCategory: t("common.forms.transaction.invalidCategory"),
+        requiredTransactionDate: t("common.forms.transaction.requiredTransactionDate"),
+        descriptionMaxLength: t("common.forms.transaction.descriptionMaxLength"),
+        notesMaxLength: t("common.forms.transaction.notesMaxLength"),
+      }),
+    ),
     defaultValues: toFormDefaults(),
   });
 
@@ -291,22 +296,22 @@ export default function TransactionsPage() {
   );
 
   const currencyFormatter = useMemo(() => {
-    return new Intl.NumberFormat("es-AR", {
+    return new Intl.NumberFormat(intlLocale, {
       style: "currency",
       currency: currencyCode || "ARS",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
-  }, [currencyCode]);
+  }, [currencyCode, intlLocale]);
 
   const roundedCurrencyFormatter = useMemo(() => {
-    return new Intl.NumberFormat("es-AR", {
+    return new Intl.NumberFormat(intlLocale, {
       style: "currency",
       currency: currencyCode || "ARS",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     });
-  }, [currencyCode]);
+  }, [currencyCode, intlLocale]);
 
   const visibleAmountFormatter = useMemo(
     () => (showCents ? currencyFormatter : roundedCurrencyFormatter),
@@ -314,34 +319,34 @@ export default function TransactionsPage() {
   );
 
   const dateFormatter = useMemo(() => {
-    return new Intl.DateTimeFormat("es-AR", {
+    return new Intl.DateTimeFormat(intlLocale, {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
     });
-  }, []);
+  }, [intlLocale]);
 
   const shortDateFormatter = useMemo(() => {
-    return new Intl.DateTimeFormat("es-AR", {
+    return new Intl.DateTimeFormat(intlLocale, {
       day: "numeric",
       month: "short",
     });
-  }, []);
+  }, [intlLocale]);
 
   const longDateFormatter = useMemo(() => {
-    return new Intl.DateTimeFormat("es-AR", {
+    return new Intl.DateTimeFormat(intlLocale, {
       day: "numeric",
       month: "long",
     });
-  }, []);
+  }, [intlLocale]);
 
   const longDateWithYearFormatter = useMemo(() => {
-    return new Intl.DateTimeFormat("es-AR", {
+    return new Intl.DateTimeFormat(intlLocale, {
       day: "numeric",
       month: "long",
       year: "numeric",
     });
-  }, []);
+  }, [intlLocale]);
 
   const todayKey = useMemo(() => toDateInputValue(now), [now]);
   const yesterdayKey = useMemo(() => {
@@ -447,9 +452,9 @@ export default function TransactionsPage() {
         .format(parsedDate)
         .replaceAll(".", "")
         .replace(" de ", " ")
-        .toLocaleLowerCase("es");
+        .toLocaleLowerCase(locale === "en" ? "en" : "es");
     },
-    [shortDateFormatter],
+    [locale, shortDateFormatter],
   );
 
   const formatGroupLabel = useCallback(
@@ -476,7 +481,10 @@ export default function TransactionsPage() {
     [longDateFormatter, longDateWithYearFormatter, now, todayKey, yesterdayKey],
   );
 
-  const normalizedSearchFilter = useMemo(() => normalizeSearchText(searchFilter), [searchFilter]);
+  const normalizedSearchFilter = useMemo(
+    () => normalizeSearchText(searchFilter, locale),
+    [locale, searchFilter],
+  );
 
   const filteredRows = useMemo(() => {
     if (normalizedSearchFilter === "") {
@@ -514,6 +522,7 @@ export default function TransactionsPage() {
     paymentMethodById,
     roundedCurrencyFormatter,
     rows,
+    transactionTypeLabels,
   ]);
 
   const groupedRows = useMemo<TransactionGroup[]>(() => {
@@ -1064,7 +1073,8 @@ export default function TransactionsPage() {
           </Group>
 
           <Text size="xs" c="dimmed">
-            {monthLabel(selectedMonth)} {selectedYear} · {filteredRows.length} movimiento
+            {monthLabelFromOptions(selectedMonth, monthOptions, t("common.messages.month", "Mes"))}{" "}
+            {selectedYear} · {filteredRows.length} movimiento
             {filteredRows.length === 1 ? "" : "s"}
             {activeFiltersCount > 0
               ? ` · ${activeFiltersCount} filtro${activeFiltersCount === 1 ? "" : "s"} activo${activeFiltersCount === 1 ? "" : "s"}`

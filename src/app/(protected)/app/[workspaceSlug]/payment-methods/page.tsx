@@ -25,10 +25,12 @@ import { notifications } from "@mantine/notifications";
 import { useForm, useWatch } from "react-hook-form";
 
 import {
-  paymentMethodFormSchema,
+  createPaymentMethodFormSchema,
   type PaymentMethodFormInputValues,
   type PaymentMethodFormValues,
 } from "@/features/payment-methods/schema";
+import { localeCompareByName, mapPaymentMethodTypeLabel } from "@/features/i18n/formatting";
+import { useI18n } from "@/features/i18n/provider";
 import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
 import { canManagePaymentMethods } from "@/features/workspace/permissions";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
@@ -48,22 +50,6 @@ type PaymentMethodCardRow = PaymentMethodRow & {
 };
 
 type StatusFilter = "all" | "active" | "inactive";
-
-const paymentTypeLabels: Record<PaymentMethodType, string> = {
-  cash: "Efectivo",
-  debit_card: "Tarjeta débito",
-  credit_card: "Tarjeta crédito",
-  bank_transfer: "Transferencia",
-  other: "Otro",
-};
-
-const paymentTypeSelectData = [
-  { value: "cash", label: "Efectivo" },
-  { value: "debit_card", label: "Tarjeta débito" },
-  { value: "credit_card", label: "Tarjeta crédito" },
-  { value: "bank_transfer", label: "Transferencia" },
-  { value: "other", label: "Otro" },
-];
 
 function normalizeBalanceByType(type: PaymentMethodType, value: number) {
   if (Math.abs(value) < 0.005) {
@@ -136,6 +122,7 @@ function toDefaults(row?: PaymentMethodRow): PaymentMethodFormValues {
 
 export default function PaymentMethodsPage() {
   const { supabase, workspace, user } = useWorkspace();
+  const { intlLocale, locale, t } = useI18n();
   const canManageStructure = canManagePaymentMethods(workspace.role);
   const now = useMemo(() => new Date(), []);
   const [rows, setRows] = useState<PaymentMethodRow[]>([]);
@@ -146,6 +133,26 @@ export default function PaymentMethodsPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [currencyCode, setCurrencyCode] = useState("ARS");
   const [showCents, setShowCents] = useState(false);
+  const paymentTypeLabels = useMemo<Record<PaymentMethodType, string>>(
+    () => ({
+      cash: mapPaymentMethodTypeLabel("cash", t),
+      debit_card: mapPaymentMethodTypeLabel("debit_card", t),
+      credit_card: mapPaymentMethodTypeLabel("credit_card", t),
+      bank_transfer: mapPaymentMethodTypeLabel("bank_transfer", t),
+      other: mapPaymentMethodTypeLabel("other", t),
+    }),
+    [t],
+  );
+  const paymentTypeSelectData = useMemo(
+    () => [
+      { value: "cash", label: mapPaymentMethodTypeLabel("cash", t) },
+      { value: "debit_card", label: mapPaymentMethodTypeLabel("debit_card", t) },
+      { value: "credit_card", label: mapPaymentMethodTypeLabel("credit_card", t) },
+      { value: "bank_transfer", label: mapPaymentMethodTypeLabel("bank_transfer", t) },
+      { value: "other", label: mapPaymentMethodTypeLabel("other", t) },
+    ],
+    [t],
+  );
 
   const {
     register,
@@ -154,7 +161,16 @@ export default function PaymentMethodsPage() {
     control,
     formState: { errors, isSubmitting },
   } = useForm<PaymentMethodFormInputValues, unknown, PaymentMethodFormValues>({
-    resolver: zodResolver(paymentMethodFormSchema),
+    resolver: zodResolver(
+      createPaymentMethodFormSchema({
+        integerNumber: t("common.validation.integerNumber"),
+        minDay: t("common.validation.minDay1"),
+        maxDay: t("common.validation.maxDay31"),
+        invalidBalance: t("common.validation.invalidAmount"),
+        requiredName: t("common.validation.requiredName"),
+        maxNameLength: t("common.validation.maxName80"),
+      }),
+    ),
     defaultValues: toDefaults(),
   });
 
@@ -162,18 +178,18 @@ export default function PaymentMethodsPage() {
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
   const currentPeriodLabel = useMemo(() => {
-    return new Intl.DateTimeFormat("es-AR", { month: "long", year: "numeric" })
+    return new Intl.DateTimeFormat(intlLocale, { month: "long", year: "numeric" })
       .format(now)
       .replace(/^./, (value) => value.toUpperCase());
-  }, [now]);
+  }, [intlLocale, now]);
   const currencyFormatter = useMemo(() => {
-    return new Intl.NumberFormat("es-AR", {
+    return new Intl.NumberFormat(intlLocale, {
       style: "currency",
       currency: currencyCode || "ARS",
       minimumFractionDigits: showCents ? 2 : 0,
       maximumFractionDigits: showCents ? 2 : 0,
     });
-  }, [currencyCode, showCents]);
+  }, [currencyCode, intlLocale, showCents]);
 
   const getSignedMovementAmount = useCallback((type: TransactionType, amount: unknown) => {
     const parsedAmount = typeof amount === "number" ? amount : Number(amount);
@@ -322,9 +338,9 @@ export default function PaymentMethodsPage() {
           return b.displayedBalance - a.displayedBalance;
         }
 
-        return a.name.localeCompare(b.name, "es");
+        return localeCompareByName(a.name, b.name, locale);
       });
-  }, [computedRows, statusFilter]);
+  }, [computedRows, locale, statusFilter]);
 
   const consolidatedBalance = useMemo(() => {
     const total = computedRows

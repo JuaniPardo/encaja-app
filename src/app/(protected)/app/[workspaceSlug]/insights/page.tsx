@@ -19,6 +19,12 @@ import {
 import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 
+import {
+  buildMonthOptions,
+  localeCompareByName,
+  monthLabelFromOptions,
+} from "@/features/i18n/formatting";
+import { useI18n } from "@/features/i18n/provider";
 import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { Database, ExpenseBehavior, TransactionType } from "@/types/database";
@@ -75,21 +81,6 @@ type ClosedComparisonRow = {
 
 type TotalsByType = Record<TransactionType, number>;
 
-const monthOptions = [
-  { value: "1", label: "Enero" },
-  { value: "2", label: "Febrero" },
-  { value: "3", label: "Marzo" },
-  { value: "4", label: "Abril" },
-  { value: "5", label: "Mayo" },
-  { value: "6", label: "Junio" },
-  { value: "7", label: "Julio" },
-  { value: "8", label: "Agosto" },
-  { value: "9", label: "Septiembre" },
-  { value: "10", label: "Octubre" },
-  { value: "11", label: "Noviembre" },
-  { value: "12", label: "Diciembre" },
-] as const;
-
 const typeOrder: Record<TransactionType, number> = {
   income: 0,
   expense: 1,
@@ -125,14 +116,6 @@ function clampToPercent(value: number) {
   }
 
   return value;
-}
-
-function monthLabel(month: number) {
-  return monthOptions.find((option) => Number(option.value) === month)?.label ?? `Mes ${month}`;
-}
-
-function periodLabel(period: PeriodRef) {
-  return `${monthLabel(period.month)} ${period.year}`;
 }
 
 function buildMonthRange(year: number, month: number) {
@@ -174,7 +157,7 @@ function getPeriodKey(period: PeriodRef) {
   return `${period.year}-${String(period.month).padStart(2, "0")}`;
 }
 
-function sortCategories(a: CategoryRow, b: CategoryRow) {
+function sortCategories(a: CategoryRow, b: CategoryRow, locale: "es" | "en") {
   const typeDiff = typeOrder[a.type] - typeOrder[b.type];
   if (typeDiff !== 0) {
     return typeDiff;
@@ -186,7 +169,7 @@ function sortCategories(a: CategoryRow, b: CategoryRow) {
     return sortOrderA - sortOrderB;
   }
 
-  return a.name.localeCompare(b.name, "es");
+  return localeCompareByName(a.name, b.name, locale);
 }
 
 function formatSignedCurrency(value: number, formatter: Intl.NumberFormat) {
@@ -242,7 +225,16 @@ function getPaceMainMessage(
 
 export default function InsightsPage() {
   const { supabase, workspace } = useWorkspace();
+  const { intlLocale, locale, t } = useI18n();
   const isMobile = useMediaQuery("(max-width: 48em)");
+  const monthOptions = useMemo(() => buildMonthOptions(intlLocale), [intlLocale]);
+  const periodLabel = useCallback(
+    (period: PeriodRef) =>
+      `${monthLabelFromOptions(period.month, monthOptions, t("common.messages.month", "Mes"))} ${
+        period.year
+      }`,
+    [monthOptions, t],
+  );
 
   const now = useMemo(() => new Date(), []);
   const currentPeriod = useMemo<PeriodRef>(
@@ -271,20 +263,20 @@ export default function InsightsPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   const currencyFormatter = useMemo(() => {
-    return new Intl.NumberFormat("es-AR", {
+    return new Intl.NumberFormat(intlLocale, {
       style: "currency",
       currency: currencyCode || "ARS",
       minimumFractionDigits: showCents ? 2 : 0,
       maximumFractionDigits: showCents ? 2 : 0,
     });
-  }, [currencyCode, showCents]);
+  }, [currencyCode, intlLocale, showCents]);
 
   const percentageFormatter = useMemo(() => {
-    return new Intl.NumberFormat("es-AR", {
+    return new Intl.NumberFormat(intlLocale, {
       minimumFractionDigits: 1,
       maximumFractionDigits: 1,
     });
-  }, []);
+  }, [intlLocale]);
 
   const loadInsightsData = useCallback(async () => {
     setIsLoading(true);
@@ -337,7 +329,9 @@ export default function InsightsPage() {
       });
       setCategories([]);
     } else {
-      const sortedCategories = [...(categoriesResponse.data ?? [])].sort(sortCategories);
+      const sortedCategories = [...(categoriesResponse.data ?? [])].sort((a, b) =>
+        sortCategories(a, b, locale),
+      );
       setCategories(sortedCategories);
     }
 
@@ -419,6 +413,7 @@ export default function InsightsPage() {
     comparisonPeriod.year,
     currentPeriod.month,
     currentPeriod.year,
+    locale,
     supabase,
     workspace.id,
   ]);
@@ -749,6 +744,7 @@ export default function InsightsPage() {
     closedPeriod,
     comparisonPeriod,
     currencyFormatter,
+    periodLabel,
     percentageFormatter,
   ]);
 

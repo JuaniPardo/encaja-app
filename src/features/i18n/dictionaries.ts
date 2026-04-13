@@ -7,6 +7,40 @@ const dictionaries = {
         owner: "owner",
         member: "member",
       },
+      validation: {
+        requiredName: "El nombre es obligatorio.",
+        maxName80: "El nombre no puede superar 80 caracteres.",
+        integerNumber: "Debe ser un número entero.",
+        nonNegative: "No puede ser negativo.",
+        minDay1: "El día mínimo es 1.",
+        maxDay31: "El día máximo es 31.",
+        invalidAmount: "Ingresá un monto válido.",
+        amountGtZero: "El monto debe ser mayor a cero.",
+        invalidDate: "Ingresá una fecha válida.",
+        invalidOption: "Seleccioná una opción válida.",
+        invalidCategory: "Categoría inválida.",
+      },
+      domain: {
+        transactionType: {
+          income: "Ingreso",
+          expense: "Gasto",
+          saving: "Ahorro",
+          incomes: "Ingresos",
+          expenses: "Gastos",
+          savings: "Ahorro",
+        },
+        paymentMethodType: {
+          cash: "Efectivo",
+          debit_card: "Tarjeta débito",
+          credit_card: "Tarjeta crédito",
+          bank_transfer: "Transferencia",
+          other: "Otro",
+        },
+        expenseBehavior: {
+          fixed: "Fijo",
+          variable: "Variable",
+        },
+      },
       actions: {
         save: "Guardar",
         cancel: "Cancelar",
@@ -16,6 +50,34 @@ const dictionaries = {
       },
       messages: {
         loading: "Cargando...",
+        month: "Mes",
+      },
+      forms: {
+        category: {
+          requiredExpenseBehavior: "Definí si el gasto es fijo o variable.",
+        },
+        settings: {
+          startYearInteger: "El año debe ser entero.",
+          startYearMin: "Año mínimo 2000.",
+          startYearMax: "Año máximo 2200.",
+          currencyLength: "La moneda debe tener 3 letras.",
+          requiredDeferredIncomeDay: "Indicá el día de diferimiento.",
+        },
+        transaction: {
+          requiredCategory: "Seleccioná una categoría.",
+          invalidCategory: "Seleccioná una categoría válida.",
+          requiredTransactionDate: "La fecha de transacción es obligatoria.",
+          descriptionMaxLength: "La descripción no puede superar 180 caracteres.",
+          notesMaxLength: "Las notas no pueden superar 1000 caracteres.",
+        },
+        workspace: {
+          requiredEmail: "El email es obligatorio.",
+          longEmail: "El email es demasiado largo.",
+          requiredTargetWorkspace: "Seleccioná un workspace destino.",
+          invalidTargetWorkspace: "Seleccioná un workspace destino válido.",
+          minNameLength: "El nombre debe tener al menos 2 caracteres.",
+          maxNameLength: "El nombre debe tener como máximo 80 caracteres.",
+        },
       },
     },
     nav: {
@@ -70,6 +132,27 @@ const dictionaries = {
         passwordMinLength: "La contraseña debe tener al menos 6 caracteres.",
         fullNameMaxLength: "El nombre no puede superar 120 caracteres.",
       },
+      domain: {
+        transactionType: {
+          income: "Income",
+          expense: "Expense",
+          saving: "Saving",
+          incomes: "Income",
+          expenses: "Expenses",
+          savings: "Savings",
+        },
+        paymentMethodType: {
+          cash: "Cash",
+          debit_card: "Debit card",
+          credit_card: "Credit card",
+          bank_transfer: "Bank transfer",
+          other: "Other",
+        },
+        expenseBehavior: {
+          fixed: "Fixed",
+          variable: "Variable",
+        },
+      },
     },
     workspace: {
       loading: "Preparando tus workspaces...",
@@ -106,6 +189,19 @@ const dictionaries = {
         owner: "owner",
         member: "member",
       },
+      validation: {
+        requiredName: "Name is required.",
+        maxName80: "Name cannot exceed 80 characters.",
+        integerNumber: "Must be an integer number.",
+        nonNegative: "Cannot be negative.",
+        minDay1: "Minimum day is 1.",
+        maxDay31: "Maximum day is 31.",
+        invalidAmount: "Enter a valid amount.",
+        amountGtZero: "Amount must be greater than zero.",
+        invalidDate: "Enter a valid date.",
+        invalidOption: "Select a valid option.",
+        invalidCategory: "Invalid category.",
+      },
       actions: {
         save: "Save",
         cancel: "Cancel",
@@ -115,6 +211,34 @@ const dictionaries = {
       },
       messages: {
         loading: "Loading...",
+        month: "Month",
+      },
+      forms: {
+        category: {
+          requiredExpenseBehavior: "Define whether the expense is fixed or variable.",
+        },
+        settings: {
+          startYearInteger: "Year must be an integer.",
+          startYearMin: "Minimum year is 2000.",
+          startYearMax: "Maximum year is 2200.",
+          currencyLength: "Currency must have 3 letters.",
+          requiredDeferredIncomeDay: "Set the deferred income day.",
+        },
+        transaction: {
+          requiredCategory: "Select a category.",
+          invalidCategory: "Select a valid category.",
+          requiredTransactionDate: "Transaction date is required.",
+          descriptionMaxLength: "Description cannot exceed 180 characters.",
+          notesMaxLength: "Notes cannot exceed 1000 characters.",
+        },
+        workspace: {
+          requiredEmail: "Email is required.",
+          longEmail: "Email is too long.",
+          requiredTargetWorkspace: "Select a target workspace.",
+          invalidTargetWorkspace: "Select a valid target workspace.",
+          minNameLength: "Name must be at least 2 characters.",
+          maxNameLength: "Name must be at most 80 characters.",
+        },
       },
     },
     nav: {

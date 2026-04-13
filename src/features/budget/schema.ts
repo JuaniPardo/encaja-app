@@ -2,38 +2,59 @@ import { z } from "zod";
 
 import { parseBudgetAmount } from "@/features/budget/amount-format";
 
-const optionalBudgetAmount = z.preprocess(
-  (value) => {
-    if (value === "") {
-      return 0;
-    }
+export interface BudgetSchemaMessages {
+  invalidAmount: string;
+  negativeAmount: string;
+  invalidCategory: string;
+}
 
-    if (value === null || value === undefined) {
-      return null;
-    }
+const defaultMessages: BudgetSchemaMessages = {
+  invalidAmount: "Ingresá un monto válido.",
+  negativeAmount: "El monto no puede ser negativo.",
+  invalidCategory: "Categoría inválida.",
+};
 
-    const parsed = parseBudgetAmount(value);
-    if (parsed === null) {
-      return Number.NaN;
-    }
+export function createBudgetFormSchema(messages?: Partial<BudgetSchemaMessages>) {
+  const resolvedMessages = {
+    ...defaultMessages,
+    ...messages,
+  };
 
-    return parsed;
-  },
-  z
-    .number()
-    .finite("Ingresá un monto válido.")
-    .min(0, "El monto no puede ser negativo.")
-    .nullable(),
-);
+  const optionalBudgetAmount = z.preprocess(
+    (value) => {
+      if (value === "") {
+        return 0;
+      }
 
-export const budgetFormSchema = z.object({
-  items: z.array(
-    z.object({
-      categoryId: z.string().uuid("Categoría inválida."),
-      amount: optionalBudgetAmount,
-    }),
-  ),
-});
+      if (value === null || value === undefined) {
+        return null;
+      }
+
+      const parsed = parseBudgetAmount(value);
+      if (parsed === null) {
+        return Number.NaN;
+      }
+
+      return parsed;
+    },
+    z
+      .number()
+      .finite(resolvedMessages.invalidAmount)
+      .min(0, resolvedMessages.negativeAmount)
+      .nullable(),
+  );
+
+  return z.object({
+    items: z.array(
+      z.object({
+        categoryId: z.string().uuid(resolvedMessages.invalidCategory),
+        amount: optionalBudgetAmount,
+      }),
+    ),
+  });
+}
+
+export const budgetFormSchema = createBudgetFormSchema();
 
 export type BudgetFormInputValues = z.input<typeof budgetFormSchema>;
 export type BudgetFormValues = z.output<typeof budgetFormSchema>;

@@ -24,10 +24,12 @@ import { useForm, useWatch } from "react-hook-form";
 
 import {
   categoryExpenseBehaviorOptions,
-  categoryFormSchema,
+  createCategoryFormSchema,
   type CategoryFormInputValues,
   type CategoryFormValues,
 } from "@/features/categories/schema";
+import { localeCompareByName, mapTransactionTypeLabel } from "@/features/i18n/formatting";
+import { useI18n } from "@/features/i18n/provider";
 import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
 import { canManageCategories } from "@/features/workspace/permissions";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
@@ -50,19 +52,7 @@ const categoryTypeOrder: Record<TransactionType, number> = {
   saving: 2,
 };
 
-const categoryTypeSectionLabels: Record<TransactionType, string> = {
-  expense: "Gastos",
-  income: "Ingresos",
-  saving: "Ahorro",
-};
-
 const categoryTypeSectionOrder: TransactionType[] = ["expense", "income", "saving"];
-
-const categoryTypeLabels: Record<TransactionType, string> = {
-  income: "Ingreso",
-  expense: "Gasto",
-  saving: "Ahorro",
-};
 
 const categoryGroupBackgroundColor: Record<TransactionType, string> = {
   expense: "var(--mantine-color-pink-0)",
@@ -82,27 +72,11 @@ const categoryGroupBorderColor: Record<TransactionType, string> = {
   saving: "var(--mantine-color-indigo-4)",
 };
 
-const categoryTypeSelectData = [
-  { value: "income", label: "Ingreso" },
-  { value: "expense", label: "Gasto" },
-  { value: "saving", label: "Ahorro" },
-];
-
-const categoryExpenseBehaviorLabels: Record<ExpenseBehavior, string> = {
-  fixed: "Fijo",
-  variable: "Variable",
-};
-
-const categoryExpenseBehaviorSelectData = categoryExpenseBehaviorOptions.map((value) => ({
-  value,
-  label: categoryExpenseBehaviorLabels[value],
-}));
-
-function normalizeSearchText(value: string) {
-  return value.trim().toLocaleLowerCase("es");
+function normalizeSearchText(value: string, locale: "es" | "en") {
+  return value.trim().toLocaleLowerCase(locale === "en" ? "en" : "es");
 }
 
-function sortCategories(a: CategoryRow, b: CategoryRow) {
+function sortCategories(a: CategoryRow, b: CategoryRow, locale: "es" | "en") {
   const typeDiff = categoryTypeOrder[a.type] - categoryTypeOrder[b.type];
   if (typeDiff !== 0) {
     return typeDiff;
@@ -114,7 +88,7 @@ function sortCategories(a: CategoryRow, b: CategoryRow) {
     return orderA - orderB;
   }
 
-  return a.name.localeCompare(b.name, "es");
+  return localeCompareByName(a.name, b.name, locale);
 }
 
 function toCategoryDefaults(row?: CategoryRow): CategoryFormValues {
@@ -198,6 +172,7 @@ function ToggleActiveIcon({ size = 14 }: { size?: number }) {
 
 export default function CategoriesPage() {
   const { supabase, workspace, user } = useWorkspace();
+  const { locale, t } = useI18n();
   const canManageStructure = canManageCategories(workspace.role);
   const isMobile = useMediaQuery("(max-width: 48em)");
   const [rows, setRows] = useState<CategoryRow[]>([]);
@@ -209,6 +184,45 @@ export default function CategoriesPage() {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [searchFilter, setSearchFilter] = useState("");
+  const categoryTypeLabels = useMemo<Record<TransactionType, string>>(
+    () => ({
+      income: mapTransactionTypeLabel("income", t),
+      expense: mapTransactionTypeLabel("expense", t),
+      saving: mapTransactionTypeLabel("saving", t),
+    }),
+    [t],
+  );
+  const categoryTypeSectionLabels = useMemo<Record<TransactionType, string>>(
+    () => ({
+      expense: mapTransactionTypeLabel("expense", t, { plural: true }),
+      income: mapTransactionTypeLabel("income", t, { plural: true }),
+      saving: mapTransactionTypeLabel("saving", t, { plural: true }),
+    }),
+    [t],
+  );
+  const categoryTypeSelectData = useMemo(
+    () => [
+      { value: "income", label: mapTransactionTypeLabel("income", t) },
+      { value: "expense", label: mapTransactionTypeLabel("expense", t) },
+      { value: "saving", label: mapTransactionTypeLabel("saving", t) },
+    ],
+    [t],
+  );
+  const categoryExpenseBehaviorLabels = useMemo<Record<ExpenseBehavior, string>>(
+    () => ({
+      fixed: t("common.domain.expenseBehavior.fixed"),
+      variable: t("common.domain.expenseBehavior.variable"),
+    }),
+    [t],
+  );
+  const categoryExpenseBehaviorSelectData = useMemo(
+    () =>
+      categoryExpenseBehaviorOptions.map((value) => ({
+        value,
+        label: categoryExpenseBehaviorLabels[value],
+      })),
+    [categoryExpenseBehaviorLabels],
+  );
 
   const {
     register,
@@ -217,7 +231,15 @@ export default function CategoriesPage() {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<CategoryFormInputValues, unknown, CategoryFormValues>({
-    resolver: zodResolver(categoryFormSchema),
+    resolver: zodResolver(
+      createCategoryFormSchema({
+        integerNumber: t("common.validation.integerNumber"),
+        nonNegative: t("common.validation.nonNegative"),
+        requiredName: t("common.validation.requiredName"),
+        maxNameLength: t("common.validation.maxName80"),
+        requiredExpenseBehavior: t("common.forms.category.requiredExpenseBehavior"),
+      }),
+    ),
     defaultValues: toCategoryDefaults(),
   });
   const selectedType = useWatch({ control, name: "type" });
@@ -249,7 +271,7 @@ export default function CategoriesPage() {
       return;
     }
 
-    const sorted = [...categoriesResponse.data].sort(sortCategories);
+    const sorted = [...categoriesResponse.data].sort((a, b) => sortCategories(a, b, locale));
     const usageCounter: Record<string, number> = {};
 
     if (usageResponse.error) {
@@ -264,7 +286,7 @@ export default function CategoriesPage() {
 
     setRows(sorted);
     setUsageByCategoryId(usageCounter);
-  }, [supabase, workspace.id]);
+  }, [locale, supabase, workspace.id]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -307,7 +329,10 @@ export default function CategoriesPage() {
     reset(toCategoryDefaults());
   }
 
-  const normalizedSearchFilter = useMemo(() => normalizeSearchText(searchFilter), [searchFilter]);
+  const normalizedSearchFilter = useMemo(
+    () => normalizeSearchText(searchFilter, locale),
+    [locale, searchFilter],
+  );
 
   const visibleRows = useMemo(() => {
     return rows.filter((row) => {
@@ -326,12 +351,20 @@ export default function CategoriesPage() {
                 ? categoryExpenseBehaviorLabels[row.expense_behavior ?? "variable"]
                 : ""
             }`
-              .toLocaleLowerCase("es")
+              .toLocaleLowerCase(locale === "en" ? "en" : "es")
               .includes(normalizedSearchFilter);
 
       return passesType && passesStatus && passesSearch;
     });
-  }, [normalizedSearchFilter, rows, statusFilter, typeFilter]);
+  }, [
+    categoryExpenseBehaviorLabels,
+    categoryTypeLabels,
+    locale,
+    normalizedSearchFilter,
+    rows,
+    statusFilter,
+    typeFilter,
+  ]);
 
   const groupedRows = useMemo<GroupedCategoryRows[]>(() => {
     const grouped: Record<TransactionType, CategoryRow[]> = {
@@ -351,7 +384,7 @@ export default function CategoriesPage() {
         rows: grouped[type],
       }))
       .filter((group) => group.rows.length > 0);
-  }, [visibleRows]);
+  }, [categoryTypeSectionLabels, visibleRows]);
 
   const activeFiltersCount =
     Number(typeFilter !== "all") +

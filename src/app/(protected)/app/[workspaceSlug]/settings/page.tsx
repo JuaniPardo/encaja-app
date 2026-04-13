@@ -25,22 +25,22 @@ import { Controller, useForm, useWatch } from "react-hook-form";
 import { type Locale } from "@/features/i18n/config";
 import { useI18n } from "@/features/i18n/provider";
 import {
-  settingsFormSchema,
+  createSettingsFormSchema,
   type SettingsFormInputValues,
   type SettingsFormValues,
 } from "@/features/settings/schema";
 import {
-  inviteWorkspaceMemberSchema,
+  createInviteWorkspaceMemberSchema,
   type InviteWorkspaceMemberInputValues,
   type InviteWorkspaceMemberValues,
 } from "@/features/workspace/members-schema";
 import {
-  workspaceFormSchema,
+  createWorkspaceFormSchema,
   type WorkspaceFormInputValues,
   type WorkspaceFormValues,
 } from "@/features/workspace/schema";
 import {
-  workspaceLinkFormSchema,
+  createWorkspaceLinkFormSchema,
   type WorkspaceLinkFormInputValues,
   type WorkspaceLinkFormValues,
 } from "@/features/workspace/links-schema";
@@ -129,6 +129,45 @@ export default function SettingsPage() {
     ],
     [t],
   );
+  const settingsSchema = useMemo(
+    () =>
+      createSettingsFormSchema({
+        integerNumber: t("common.validation.integerNumber"),
+        minDay: t("common.validation.minDay1"),
+        maxDay: t("common.validation.maxDay31"),
+        startYearInteger: t("common.forms.settings.startYearInteger"),
+        startYearMin: t("common.forms.settings.startYearMin"),
+        startYearMax: t("common.forms.settings.startYearMax"),
+        currencyLength: t("common.forms.settings.currencyLength"),
+        requiredDeferredIncomeDay: t("common.forms.settings.requiredDeferredIncomeDay"),
+      }),
+    [t],
+  );
+  const workspaceSchema = useMemo(
+    () =>
+      createWorkspaceFormSchema({
+        minNameLength: t("common.forms.workspace.minNameLength"),
+        maxNameLength: t("common.forms.workspace.maxNameLength"),
+      }),
+    [t],
+  );
+  const inviteMemberSchema = useMemo(
+    () =>
+      createInviteWorkspaceMemberSchema({
+        requiredEmail: t("common.forms.workspace.requiredEmail"),
+        longEmail: t("common.forms.workspace.longEmail"),
+        invalidEmail: t("auth.validation.invalidEmail"),
+      }),
+    [t],
+  );
+  const workspaceLinkSchema = useMemo(
+    () =>
+      createWorkspaceLinkFormSchema({
+        requiredTargetWorkspace: t("common.forms.workspace.requiredTargetWorkspace"),
+        invalidTargetWorkspace: t("common.forms.workspace.invalidTargetWorkspace"),
+      }),
+    [t],
+  );
 
   const {
     register,
@@ -137,7 +176,7 @@ export default function SettingsPage() {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<SettingsFormInputValues, unknown, SettingsFormValues>({
-    resolver: zodResolver(settingsFormSchema),
+    resolver: zodResolver(settingsSchema),
     defaultValues: {
       startYear: new Date().getFullYear(),
       savingsRateMode: "manual",
@@ -158,7 +197,7 @@ export default function SettingsPage() {
       isSubmitting: isWorkspaceSubmitting,
     },
   } = useForm<WorkspaceFormInputValues, unknown, WorkspaceFormValues>({
-    resolver: zodResolver(workspaceFormSchema),
+    resolver: zodResolver(workspaceSchema),
     defaultValues: {
       name: workspace.name,
     },
@@ -172,7 +211,7 @@ export default function SettingsPage() {
       isSubmitting: isCreatingWorkspace,
     },
   } = useForm<WorkspaceFormInputValues, unknown, WorkspaceFormValues>({
-    resolver: zodResolver(workspaceFormSchema),
+    resolver: zodResolver(workspaceSchema),
     defaultValues: {
       name: "",
     },
@@ -186,7 +225,7 @@ export default function SettingsPage() {
       isSubmitting: isInvitingMember,
     },
   } = useForm<InviteWorkspaceMemberInputValues, unknown, InviteWorkspaceMemberValues>({
-    resolver: zodResolver(inviteWorkspaceMemberSchema),
+    resolver: zodResolver(inviteMemberSchema),
     defaultValues: {
       email: "",
     },
@@ -200,7 +239,7 @@ export default function SettingsPage() {
       isSubmitting: isWorkspaceLinkSubmitting,
     },
   } = useForm<WorkspaceLinkFormInputValues, unknown, WorkspaceLinkFormValues>({
-    resolver: zodResolver(workspaceLinkFormSchema),
+    resolver: zodResolver(workspaceLinkSchema),
     defaultValues: {
       targetWorkspaceId: "",
     },

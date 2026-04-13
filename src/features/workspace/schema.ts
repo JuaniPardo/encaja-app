@@ -1,14 +1,33 @@
 import { z } from "zod";
 
-export const workspaceNameSchema = z
-  .string()
-  .trim()
-  .min(2, "El nombre debe tener al menos 2 caracteres.")
-  .max(80, "El nombre debe tener como máximo 80 caracteres.");
+export interface WorkspaceSchemaMessages {
+  minNameLength: string;
+  maxNameLength: string;
+}
 
-export const workspaceFormSchema = z.object({
-  name: workspaceNameSchema,
-});
+const defaultMessages: WorkspaceSchemaMessages = {
+  minNameLength: "El nombre debe tener al menos 2 caracteres.",
+  maxNameLength: "El nombre debe tener como máximo 80 caracteres.",
+};
+
+export function createWorkspaceFormSchema(messages?: Partial<WorkspaceSchemaMessages>) {
+  const resolvedMessages = {
+    ...defaultMessages,
+    ...messages,
+  };
+
+  const workspaceNameSchema = z
+    .string()
+    .trim()
+    .min(2, resolvedMessages.minNameLength)
+    .max(80, resolvedMessages.maxNameLength);
+
+  return z.object({
+    name: workspaceNameSchema,
+  });
+}
+
+export const workspaceFormSchema = createWorkspaceFormSchema();
 
 export type WorkspaceFormInputValues = z.input<typeof workspaceFormSchema>;
 export type WorkspaceFormValues = z.output<typeof workspaceFormSchema>;

@@ -22,6 +22,14 @@ import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 
 import { ProgressCell } from "@/features/dashboard/progress-cell";
+import {
+  buildMonthOptions,
+  localeCompareByName,
+  mapPaymentMethodTypeLabel,
+  mapTransactionTypeLabel,
+  monthLabelFromOptions,
+} from "@/features/i18n/formatting";
+import { useI18n } from "@/features/i18n/provider";
 import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { Database, PaymentMethodType, TransactionType } from "@/types/database";
@@ -90,68 +98,35 @@ type FinancialMethodRow = {
 
 const deviationTolerance = 0.005;
 
-const monthOptions = [
-  { value: "1", label: "Enero" },
-  { value: "2", label: "Febrero" },
-  { value: "3", label: "Marzo" },
-  { value: "4", label: "Abril" },
-  { value: "5", label: "Mayo" },
-  { value: "6", label: "Junio" },
-  { value: "7", label: "Julio" },
-  { value: "8", label: "Agosto" },
-  { value: "9", label: "Septiembre" },
-  { value: "10", label: "Octubre" },
-  { value: "11", label: "Noviembre" },
-  { value: "12", label: "Diciembre" },
-] as const;
-
 const typeOrder: Record<TransactionType, number> = {
   income: 0,
   expense: 1,
   saving: 2,
 };
 
-const typeLabels: Record<TransactionType, string> = {
-  income: "Ingresos",
-  expense: "Gastos",
-  saving: "Ahorro",
-};
-
 const compactSummaryTheme: Record<
   TransactionType,
   {
     color: string;
-    label: string;
     textColor: string;
   }
 > = {
   income: {
     color: "var(--mantine-color-teal-6)",
-    label: "Ingresos",
     textColor: "var(--mantine-color-teal-7)",
   },
   expense: {
     color: "var(--mantine-color-pink-6)",
-    label: "Gastos",
     textColor: "var(--mantine-color-pink-7)",
   },
   saving: {
     color: "var(--mantine-color-indigo-5)",
-    label: "Ahorro",
     textColor: "var(--mantine-color-indigo-7)",
   },
 };
 
 const compactSummaryBaseColor = "var(--mantine-color-gray-3)";
 const compactSummaryNeutralColor = "var(--mantine-color-gray-5)";
-
-const paymentMethodTypeLabels: Record<PaymentMethodType, string> = {
-  cash: "Efectivo",
-  debit_card: "Tarjeta débito",
-  credit_card: "Tarjeta crédito",
-  bank_transfer: "Transferencia",
-  other: "Otro",
-};
 
 const typeTheme: Record<
   TransactionType,
@@ -214,10 +189,6 @@ function buildMonthRange(year: number, month: number) {
   return { start, end };
 }
 
-function monthLabel(month: number) {
-  return monthOptions.find((option) => Number(option.value) === month)?.label ?? `Mes ${month}`;
-}
-
 function formatSignedCurrency(value: number, formatter: Intl.NumberFormat) {
   const roundedValue = roundMoney(value);
   if (Math.abs(roundedValue) < deviationTolerance) {
@@ -228,7 +199,7 @@ function formatSignedCurrency(value: number, formatter: Intl.NumberFormat) {
   return `${roundedValue > 0 ? "+" : "-"}${absolute}`;
 }
 
-function sortCategories(a: CategoryRow, b: CategoryRow) {
+function sortCategories(a: CategoryRow, b: CategoryRow, locale: "es" | "en") {
   const typeDiff = typeOrder[a.type] - typeOrder[b.type];
   if (typeDiff !== 0) {
     return typeDiff;
@@ -240,7 +211,7 @@ function sortCategories(a: CategoryRow, b: CategoryRow) {
     return sortOrderA - sortOrderB;
   }
 
-  return a.name.localeCompare(b.name, "es");
+  return localeCompareByName(a.name, b.name, locale);
 }
 
 function clampToPercent(value: number) {
@@ -273,6 +244,26 @@ function getDeviationColor(type: TransactionType, deviation: number) {
 
 export default function DashboardPage() {
   const { supabase, workspace } = useWorkspace();
+  const { intlLocale, locale, t } = useI18n();
+  const monthOptions = useMemo(() => buildMonthOptions(intlLocale), [intlLocale]);
+  const typeLabels = useMemo<Record<TransactionType, string>>(
+    () => ({
+      income: mapTransactionTypeLabel("income", t, { plural: true }),
+      expense: mapTransactionTypeLabel("expense", t, { plural: true }),
+      saving: mapTransactionTypeLabel("saving", t, { plural: true }),
+    }),
+    [t],
+  );
+  const paymentMethodTypeLabels = useMemo<Record<PaymentMethodType, string>>(
+    () => ({
+      cash: mapPaymentMethodTypeLabel("cash", t),
+      debit_card: mapPaymentMethodTypeLabel("debit_card", t),
+      credit_card: mapPaymentMethodTypeLabel("credit_card", t),
+      bank_transfer: mapPaymentMethodTypeLabel("bank_transfer", t),
+      other: mapPaymentMethodTypeLabel("other", t),
+    }),
+    [t],
+  );
 
   const now = useMemo(() => new Date(), []);
   const [categories, setCategories] = useState<CategoryRow[]>([]);
@@ -291,36 +282,36 @@ export default function DashboardPage() {
   const [isLoadingSummary, setIsLoadingSummary] = useState(true);
 
   const currencyFormatter = useMemo(() => {
-    return new Intl.NumberFormat("es-AR", {
+    return new Intl.NumberFormat(intlLocale, {
       style: "currency",
       currency: currencyCode || "ARS",
       minimumFractionDigits: showCents ? 2 : 0,
       maximumFractionDigits: showCents ? 2 : 0,
     });
-  }, [currencyCode, showCents]);
+  }, [currencyCode, intlLocale, showCents]);
 
   const percentageFormatter = useMemo(() => {
-    return new Intl.NumberFormat("es-AR", {
+    return new Intl.NumberFormat(intlLocale, {
       minimumFractionDigits: 1,
       maximumFractionDigits: 1,
     });
-  }, []);
+  }, [intlLocale]);
 
   const compactFormatter = useMemo(() => {
-    return new Intl.NumberFormat("es-AR", {
+    return new Intl.NumberFormat(intlLocale, {
       notation: "compact",
       maximumFractionDigits: 1,
     });
-  }, []);
+  }, [intlLocale]);
 
   const compactCurrencyFormatter = useMemo(() => {
-    return new Intl.NumberFormat("es-AR", {
+    return new Intl.NumberFormat(intlLocale, {
       style: "currency",
       currency: currencyCode || "ARS",
       notation: "compact",
       maximumFractionDigits: 1,
     });
-  }, [currencyCode]);
+  }, [currencyCode, intlLocale]);
 
   const yearOptions = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -365,7 +356,7 @@ export default function DashboardPage() {
       });
       setCategories([]);
     } else {
-      const sortedCategories = [...categoriesResponse.data].sort(sortCategories);
+      const sortedCategories = [...categoriesResponse.data].sort((a, b) => sortCategories(a, b, locale));
       setCategories(sortedCategories);
     }
 
@@ -397,7 +388,7 @@ export default function DashboardPage() {
     }
 
     setIsBootstrapping(false);
-  }, [supabase, workspace.id]);
+  }, [locale, supabase, workspace.id]);
 
   const loadSummaryData = useCallback(async () => {
     const { start, end } = buildMonthRange(selectedYear, selectedMonth);
@@ -548,7 +539,7 @@ export default function DashboardPage() {
 
     const visibleCategories = categories
       .filter((category) => category.is_active || categoryIdsWithData.has(category.id))
-      .sort(sortCategories);
+      .sort((a, b) => sortCategories(a, b, locale));
 
     for (const category of visibleCategories) {
       const budgetAmount = roundMoney(budgetByCategoryId.get(category.id) ?? 0);
@@ -594,7 +585,7 @@ export default function DashboardPage() {
       balanceReal,
       balanceDelta,
     };
-  }, [budgetItems, categories, transactionRows]);
+  }, [budgetItems, categories, locale, transactionRows]);
 
   const savingsVsIncome = useMemo(() => {
     if (metrics.totalsByType.income.real <= 0) {
@@ -692,7 +683,7 @@ export default function DashboardPage() {
           return b.currentBalance - a.currentBalance;
         }
 
-        return a.name.localeCompare(b.name, "es");
+        return localeCompareByName(a.name, b.name, locale);
       });
 
     const totalBalance = roundMoney(
@@ -713,7 +704,7 @@ export default function DashboardPage() {
       excludedActiveCount,
       inactiveCount,
     };
-  }, [paymentMethodRows, transactionRows]);
+  }, [locale, paymentMethodRows, transactionRows]);
 
   const normalizedLinkedWorkspaceSummaries = useMemo(() => {
     return linkedWorkspaceSummaries.map((row) => {
@@ -764,7 +755,11 @@ export default function DashboardPage() {
     });
   }, [normalizedLinkedWorkspaceSummaries]);
 
-  const selectedPeriodLabel = `${monthLabel(selectedMonth)} ${selectedYear}`;
+  const selectedPeriodLabel = `${monthLabelFromOptions(
+    selectedMonth,
+    monthOptions,
+    t("common.messages.month", "Mes"),
+  )} ${selectedYear}`;
   const isMobile = useMediaQuery("(max-width: 47.99em)");
   const isNarrowMobile = useMediaQuery("(max-width: 33.99em)");
   const isTablet = useMediaQuery("(min-width: 48em) and (max-width: 74.99em)");
@@ -1126,7 +1121,7 @@ export default function DashboardPage() {
                       c={theme.textColor}
                       ta="center"
                     >
-                      {theme.label}
+                      {typeLabels[type]}
                     </Text>
                   </Stack>
                 </Paper>

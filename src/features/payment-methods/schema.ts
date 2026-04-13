@@ -8,50 +8,77 @@ export const paymentMethodTypeOptions = [
   "other",
 ] as const;
 
-const optionalDay = z.preprocess(
-  (value) => {
-    if (value === "" || value === null || value === undefined) {
-      return null;
-    }
+export interface PaymentMethodSchemaMessages {
+  integerNumber: string;
+  minDay: string;
+  maxDay: string;
+  invalidBalance: string;
+  requiredName: string;
+  maxNameLength: string;
+}
 
-    return Number(value);
-  },
-  z
-    .number()
-    .int("Debe ser un número entero.")
-    .min(1, "El día mínimo es 1.")
-    .max(31, "El día máximo es 31.")
-    .nullable(),
-);
+const defaultMessages: PaymentMethodSchemaMessages = {
+  integerNumber: "Debe ser un número entero.",
+  minDay: "El día mínimo es 1.",
+  maxDay: "El día máximo es 31.",
+  invalidBalance: "Ingresá un saldo válido.",
+  requiredName: "El nombre es obligatorio.",
+  maxNameLength: "El nombre no puede superar 80 caracteres.",
+};
 
-const requiredCurrentBalance = z.preprocess(
-  (value) => {
-    if (value === null || value === undefined || value === "") {
-      return Number.NaN;
-    }
+export function createPaymentMethodFormSchema(messages?: Partial<PaymentMethodSchemaMessages>) {
+  const resolvedMessages = {
+    ...defaultMessages,
+    ...messages,
+  };
 
-    if (typeof value === "number") {
-      return value;
-    }
+  const optionalDay = z.preprocess(
+    (value) => {
+      if (value === "" || value === null || value === undefined) {
+        return null;
+      }
 
-    const normalized = String(value).trim().replace(",", ".");
-    return Number(normalized);
-  },
-  z.number().finite("Ingresá un saldo válido."),
-);
+      return Number(value);
+    },
+    z
+      .number()
+      .int(resolvedMessages.integerNumber)
+      .min(1, resolvedMessages.minDay)
+      .max(31, resolvedMessages.maxDay)
+      .nullable(),
+  );
 
-export const paymentMethodFormSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(1, "El nombre es obligatorio.")
-    .max(80, "El nombre no puede superar 80 caracteres."),
-  type: z.enum(paymentMethodTypeOptions),
-  currentBalance: requiredCurrentBalance,
-  includeInBalance: z.boolean(),
-  closingDay: optionalDay,
-  dueDay: optionalDay,
-});
+  const requiredCurrentBalance = z.preprocess(
+    (value) => {
+      if (value === null || value === undefined || value === "") {
+        return Number.NaN;
+      }
+
+      if (typeof value === "number") {
+        return value;
+      }
+
+      const normalized = String(value).trim().replace(",", ".");
+      return Number(normalized);
+    },
+    z.number().finite(resolvedMessages.invalidBalance),
+  );
+
+  return z.object({
+    name: z
+      .string()
+      .trim()
+      .min(1, resolvedMessages.requiredName)
+      .max(80, resolvedMessages.maxNameLength),
+    type: z.enum(paymentMethodTypeOptions),
+    currentBalance: requiredCurrentBalance,
+    includeInBalance: z.boolean(),
+    closingDay: optionalDay,
+    dueDay: optionalDay,
+  });
+}
+
+export const paymentMethodFormSchema = createPaymentMethodFormSchema();
 
 export type PaymentMethodFormInputValues = z.input<typeof paymentMethodFormSchema>;
 export type PaymentMethodFormValues = z.output<typeof paymentMethodFormSchema>;

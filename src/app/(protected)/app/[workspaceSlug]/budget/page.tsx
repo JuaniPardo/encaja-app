@@ -27,10 +27,17 @@ import {
   sanitizeBudgetTypingValue,
 } from "@/features/budget/amount-format";
 import {
-  budgetFormSchema,
+  buildMonthOptions,
+  localeCompareByName,
+  mapTransactionTypeLabel,
+  monthLabelFromOptions,
+} from "@/features/i18n/formatting";
+import {
+  createBudgetFormSchema,
   type BudgetFormInputValues,
   type BudgetFormValues,
 } from "@/features/budget/schema";
+import { useI18n } from "@/features/i18n/provider";
 import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
 import { canManageBudgetStructure } from "@/features/workspace/permissions";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
@@ -57,32 +64,11 @@ const typeOrder: Record<TransactionType, number> = {
   saving: 2,
 };
 
-const typeLabels: Record<TransactionType, string> = {
-  income: "Ingresos",
-  expense: "Gastos",
-  saving: "Ahorro",
-};
-
 const typeColors: Record<TransactionType, string> = {
   income: "teal",
   expense: "pink",
   saving: "indigo",
 };
-
-const monthOptions = [
-  { value: "1", label: "Enero" },
-  { value: "2", label: "Febrero" },
-  { value: "3", label: "Marzo" },
-  { value: "4", label: "Abril" },
-  { value: "5", label: "Mayo" },
-  { value: "6", label: "Junio" },
-  { value: "7", label: "Julio" },
-  { value: "8", label: "Agosto" },
-  { value: "9", label: "Septiembre" },
-  { value: "10", label: "Octubre" },
-  { value: "11", label: "Noviembre" },
-  { value: "12", label: "Diciembre" },
-] as const;
 
 function roundMoney(value: number) {
   return Math.round(value * 100) / 100;
@@ -96,14 +82,20 @@ function buildPreviousPeriod(year: number, month: number) {
   return { year, month: month - 1 };
 }
 
-function monthLabel(month: number) {
-  return monthOptions.find((option) => Number(option.value) === month)?.label ?? `Mes ${month}`;
-}
-
 export default function BudgetPage() {
   const { supabase, workspace, user } = useWorkspace();
+  const { intlLocale, locale, t } = useI18n();
   const canManageStructure = canManageBudgetStructure(workspace.role);
   const isMobile = useMediaQuery("(max-width: 48em)");
+  const monthOptions = useMemo(() => buildMonthOptions(intlLocale), [intlLocale]);
+  const typeLabels = useMemo<Record<TransactionType, string>>(
+    () => ({
+      income: mapTransactionTypeLabel("income", t, { plural: true }),
+      expense: mapTransactionTypeLabel("expense", t, { plural: true }),
+      saving: mapTransactionTypeLabel("saving", t, { plural: true }),
+    }),
+    [t],
+  );
 
   const now = useMemo(() => new Date(), []);
   const [startYear, setStartYear] = useState(now.getFullYear());
@@ -126,7 +118,13 @@ export default function BudgetPage() {
     reset,
     formState: { errors },
   } = useForm<BudgetFormInputValues, unknown, BudgetFormValues>({
-    resolver: zodResolver(budgetFormSchema),
+    resolver: zodResolver(
+      createBudgetFormSchema({
+        invalidAmount: t("common.validation.invalidAmount"),
+        negativeAmount: t("common.validation.nonNegative"),
+        invalidCategory: t("common.validation.invalidCategory"),
+      }),
+    ),
     defaultValues: {
       items: [],
     },
@@ -138,13 +136,13 @@ export default function BudgetPage() {
   });
 
   const currencyFormatter = useMemo(() => {
-    return new Intl.NumberFormat("es-AR", {
+    return new Intl.NumberFormat(intlLocale, {
       style: "currency",
       currency: currencyCode || "ARS",
       minimumFractionDigits: showCents ? 2 : 0,
       maximumFractionDigits: showCents ? 2 : 0,
     });
-  }, [currencyCode, showCents]);
+  }, [currencyCode, intlLocale, showCents]);
 
   const groupedCategories = useMemo<GroupedCategories>(() => {
     const grouped: GroupedCategories = {
@@ -262,7 +260,7 @@ export default function BudgetPage() {
           return sortOrderA - sortOrderB;
         }
 
-        return a.name.localeCompare(b.name, "es");
+        return localeCompareByName(a.name, b.name, locale);
       });
 
       setCategories(sortedCategories);
@@ -285,7 +283,7 @@ export default function BudgetPage() {
     }
 
     setIsBootstrapping(false);
-  }, [supabase, workspace.id]);
+  }, [locale, supabase, workspace.id]);
 
   const loadSelectedPeriod = useCallback(async () => {
     setIsPeriodLoading(true);
@@ -475,7 +473,11 @@ export default function BudgetPage() {
       notifications.show({
         color: "green",
         title: "Presupuesto guardado",
-        message: `Guardamos el presupuesto de ${monthLabel(selectedMonth)} ${selectedYear}.`,
+        message: `Guardamos el presupuesto de ${monthLabelFromOptions(
+          selectedMonth,
+          monthOptions,
+          t("common.messages.month", "Mes"),
+        )} ${selectedYear}.`,
       });
 
       await loadSelectedPeriod();
@@ -532,7 +534,11 @@ export default function BudgetPage() {
         notifications.show({
           color: "yellow",
           title: "No hay presupuesto previo",
-          message: `No existe presupuesto para ${monthLabel(previous.month)} ${previous.year}.`,
+          message: `No existe presupuesto para ${monthLabelFromOptions(
+            previous.month,
+            monthOptions,
+            t("common.messages.month", "Mes"),
+          )} ${previous.year}.`,
         });
         return;
       }
@@ -604,7 +610,11 @@ export default function BudgetPage() {
       notifications.show({
         color: "green",
         title: "Presupuesto copiado",
-        message: `Copiamos los valores desde ${monthLabel(previous.month)} ${previous.year}.`,
+        message: `Copiamos los valores desde ${monthLabelFromOptions(
+          previous.month,
+          monthOptions,
+          t("common.messages.month", "Mes"),
+        )} ${previous.year}.`,
       });
 
       await loadSelectedPeriod();
@@ -621,7 +631,11 @@ export default function BudgetPage() {
 
   const canCopyFromPrevious =
     canManageStructure && categories.length > 0 && !isPeriodLoading && !isSaving && !periodHasItems;
-  const selectedPeriodLabel = `${selectedYear} · ${monthLabel(selectedMonth)}`;
+  const selectedPeriodLabel = `${selectedYear} · ${monthLabelFromOptions(
+    selectedMonth,
+    monthOptions,
+    t("common.messages.month", "Mes"),
+  )}`;
   const categoryDrilldownHref = useCallback(
     (type: TransactionType, categoryId: string) =>
       buildTransactionsDrilldownHref({
@@ -842,7 +856,9 @@ export default function BudgetPage() {
                   <Stack gap={0}>
                     <Title order={4}>Resultado del período</Title>
                     <Text size="xs" c="dimmed">
-                      Resumen de montos para {monthLabel(selectedMonth)} {selectedYear}.
+                      Resumen de montos para{" "}
+                      {monthLabelFromOptions(selectedMonth, monthOptions, t("common.messages.month", "Mes"))}{" "}
+                      {selectedYear}.
                     </Text>
                   </Stack>
                   <Badge
