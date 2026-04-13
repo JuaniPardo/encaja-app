@@ -210,7 +210,7 @@ export default function StartPage() {
       <LoadingOverlay visible={isLoading} />
 
       <Stack gap={2}>
-        <Title order={2}>{t("start.title")}</Title>
+        <Title order={2} component="h1">{t("start.title")}</Title>
         <Text c="dimmed" size="sm">
           {t("start.subtitle")}
         </Text>

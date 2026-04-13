@@ -1,0 +1,9 @@
+[     287ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3101/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[     305ms] [LOG] [Fast Refresh] done in 121ms @ http://127.0.0.1:3101/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[     493ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:3101/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[     531ms] [LOG] [HMR] connected @ http://127.0.0.1:3101/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[     661ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3101/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[     683ms] [LOG] [Fast Refresh] done in 122ms @ http://127.0.0.1:3101/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[    5105ms] [ERROR] Failed to load resource: the server responded with a status of 400 () @ https://zmjifwtjlndrotgacrey.supabase.co/auth/v1/signup:0
+[  240409ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3101/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  240439ms] [LOG] [Fast Refresh] done in 133ms @ http://127.0.0.1:3101/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431

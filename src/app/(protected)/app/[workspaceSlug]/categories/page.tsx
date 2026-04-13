@@ -174,7 +174,7 @@ export default function CategoriesPage() {
   const { supabase, workspace, user } = useWorkspace();
   const { locale, t } = useI18n();
   const canManageStructure = canManageCategories(workspace.role);
-  const isMobile = useMediaQuery("(max-width: 48em)");
+  const isMobile = useMediaQuery("(max-width: 47.99em)");
   const [rows, setRows] = useState<CategoryRow[]>([]);
   const [usageByCategoryId, setUsageByCategoryId] = useState<Record<string, number>>({});
   const [hasUsageData, setHasUsageData] = useState(true);
@@ -516,7 +516,7 @@ export default function CategoriesPage() {
 
       <Group justify="space-between" align="end" wrap="wrap" gap="xs">
         <Stack gap={2}>
-          <Title order={2}>{t("categories.title")}</Title>
+          <Title order={2} component="h1">{t("categories.title")}</Title>
           <Text c="dimmed" size="sm">
             {t("categories.subtitle")}
           </Text>

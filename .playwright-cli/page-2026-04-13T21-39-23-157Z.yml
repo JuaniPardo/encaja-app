@@ -1,0 +1,31 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - radiogroup "Cambiar idioma del formulario de acceso" [ref=e4]:
+      - generic [ref=e6]:
+        - radio "Español" [checked]
+        - generic [ref=e7] [cursor=pointer]: Español
+      - generic [ref=e8]:
+        - radio "English"
+        - generic [ref=e9] [cursor=pointer]: English
+    - generic [ref=e11]:
+      - heading "Ingresar" [level=2] [ref=e12]
+      - paragraph [ref=e13]: Entrá a Encaja para administrar tu presupuesto familiar.
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - generic [ref=e17]: Email
+          - textbox "Email" [ref=e19]:
+            - /placeholder: nombre@email.com
+        - generic [ref=e20]:
+          - generic [ref=e21]: Contraseña
+          - generic [ref=e22]:
+            - textbox "Contraseña" [ref=e24]:
+              - /placeholder: "********"
+            - button "Toggle password visibility" [ref=e26] [cursor=pointer]:
+              - img [ref=e28]
+        - button "Iniciar sesión" [ref=e32] [cursor=pointer]:
+          - generic [ref=e34]: Iniciar sesión
+      - paragraph [ref=e35]:
+        - text: ¿Todavía no tenés cuenta?
+        - link "Registrate" [ref=e36] [cursor=pointer]:
+          - /url: /register
+  - alert [ref=e37]

@@ -118,7 +118,7 @@ export default function SettingsPage() {
   const canCreateWorkspace = canUseMultiWorkspace && canEditWorkspaceSettings;
   const canDeleteCurrentWorkspace =
     canUseMultiWorkspace && canDeleteWorkspace(workspace.role) && workspaces.length > 1;
-  const isMobile = useMediaQuery("(max-width: 48em)");
+  const isMobile = useMediaQuery("(max-width: 47.99em)");
   const currentRoleLabel = t(`common.role.${workspace.role}`, workspace.role);
   const [isCreateWorkspaceOpen, { open: openCreateWorkspace, close: closeCreateWorkspace }] =
     useDisclosure(false);
@@ -1041,7 +1041,7 @@ export default function SettingsPage() {
       </Modal>
 
       <Stack gap={2}>
-        <Title order={2}>{t("workspaceSettings.title")}</Title>
+        <Title order={2} component="h1">{t("workspaceSettings.title")}</Title>
         <Text c="dimmed" size="sm">
           {t("workspaceSettings.subtitle", undefined, {
             workspaceName: workspace.name,
@@ -1061,7 +1061,7 @@ export default function SettingsPage() {
       <Tabs
         value={activeSettingsTab}
         onChange={(value) => setActiveSettingsTab((value as SettingsTabValue) ?? "workspace")}
-        variant="pills"
+        variant="default"
         keepMounted={false}
       >
         <Tabs.List

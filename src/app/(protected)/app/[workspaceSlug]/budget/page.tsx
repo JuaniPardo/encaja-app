@@ -87,7 +87,7 @@ export default function BudgetPage() {
   const { intlLocale, locale, t } = useI18n();
   const canManageStructure = canManageBudgetStructure(workspace.role);
   const roleLabel = t(`common.role.${workspace.role}`, workspace.role);
-  const isMobile = useMediaQuery("(max-width: 48em)");
+  const isMobile = useMediaQuery("(max-width: 47.99em)");
   const monthOptions = useMemo(() => buildMonthOptions(intlLocale), [intlLocale]);
   const typeLabels = useMemo<Record<TransactionType, string>>(
     () => ({
@@ -117,7 +117,7 @@ export default function BudgetPage() {
     handleSubmit,
     control,
     reset,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<BudgetFormInputValues, unknown, BudgetFormValues>({
     resolver: zodResolver(
       createBudgetFormSchema({
@@ -658,7 +658,7 @@ export default function BudgetPage() {
       <LoadingOverlay visible={isBootstrapping || isPeriodLoading} />
 
       <Stack gap={0}>
-        <Title order={2}>{t("budget.title")}</Title>
+        <Title order={2} component="h1">{t("budget.title")}</Title>
         <Text size="xs" c="dimmed">
           {t("budget.subtitle")}
         </Text>
@@ -994,7 +994,7 @@ export default function BudgetPage() {
               radius="md"
               p="sm"
               style={
-                isMobile
+                isMobile && isDirty
                   ? {
                       position: "sticky",
                       bottom: 0,

@@ -21,6 +21,7 @@ import {
   TextInput,
   Title,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useForm, useWatch } from "react-hook-form";
 
@@ -124,6 +125,7 @@ export default function PaymentMethodsPage() {
   const { supabase, workspace, user } = useWorkspace();
   const { intlLocale, locale, t } = useI18n();
   const canManageStructure = canManagePaymentMethods(workspace.role);
+  const isMobile = useMediaQuery("(max-width: 47.99em)");
   const now = useMemo(() => new Date(), []);
   const [rows, setRows] = useState<PaymentMethodRow[]>([]);
   const [movementByMethodId, setMovementByMethodId] = useState<Record<string, number>>({});
@@ -475,15 +477,15 @@ export default function PaymentMethodsPage() {
     <Stack gap="md" pos="relative">
       <LoadingOverlay visible={isLoading} />
 
-      <Group justify="space-between" align="end">
+      <Group justify="space-between" align="end" wrap="wrap" gap="xs">
         <Stack gap={2}>
-          <Title order={2}>{t("paymentMethods.title")}</Title>
+          <Title order={2} component="h1">{t("paymentMethods.title")}</Title>
           <Text c="dimmed" size="sm">
             {t("paymentMethods.subtitle")}
           </Text>
         </Stack>
 
-        <Button onClick={openCreateModal} disabled={!canManageStructure}>
+        <Button onClick={openCreateModal} disabled={!canManageStructure} fullWidth={isMobile}>
           {t("paymentMethods.new")}
         </Button>
       </Group>
@@ -496,7 +498,7 @@ export default function PaymentMethodsPage() {
 
       <Paper withBorder radius="md" p="md">
         <NativeSelect
-          w={220}
+          w={isMobile ? "100%" : 220}
           label={t("paymentMethods.filters.status")}
           value={statusFilter}
           onChange={(event) => setStatusFilter(event.currentTarget.value as StatusFilter)}
@@ -539,7 +541,7 @@ export default function PaymentMethodsPage() {
             {t("paymentMethods.emptyState")}
           </Text>
         ) : (
-          <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="sm">
+          <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="sm">
             {visibleRows.map((row) => (
               <Paper key={row.id} withBorder radius="md" p="md" bg="#ffffff">
                 <Stack gap="xs">
@@ -637,6 +639,7 @@ export default function PaymentMethodsPage() {
         opened={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editingRow ? t("paymentMethods.edit") : t("paymentMethods.new")}
+        fullScreen={isMobile}
       >
         <form onSubmit={onSubmit}>
           <Stack>

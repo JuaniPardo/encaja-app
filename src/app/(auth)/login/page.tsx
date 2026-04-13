@@ -92,7 +92,7 @@ function LoginPageContent() {
   return (
     <Paper radius="lg" p="xl" withBorder shadow="sm">
       <Stack gap="md">
-        <Title order={2}>{t("auth.login.title")}</Title>
+        <Title order={2} component="h1">{t("auth.login.title")}</Title>
         <Text c="dimmed" size="sm">
           {t("auth.login.subtitle")}
         </Text>
@@ -138,7 +138,7 @@ function LoginPageFallback() {
   return (
     <Paper radius="lg" p="xl" withBorder shadow="sm">
       <Stack gap="md">
-        <Title order={2}>{t("auth.login.title")}</Title>
+        <Title order={2} component="h1">{t("auth.login.title")}</Title>
         <Text c="dimmed" size="sm">
           {t("auth.login.fallback")}
         </Text>

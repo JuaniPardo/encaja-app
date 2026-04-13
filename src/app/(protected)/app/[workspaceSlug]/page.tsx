@@ -16,6 +16,7 @@ import {
   Stack,
   Table,
   Text,
+  Title,
   UnstyledButton,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
@@ -799,11 +800,10 @@ export default function DashboardPage() {
   const compactSummaryDonutThickness = isNarrowMobile ? 10 : 12;
   const tableColumnWidths = isMobile
     ? {
-        category: "30%",
-        real: "15%",
-        budget: "15%",
+        category: "38%",
+        real: "16%",
         execution: "24%",
-        deviation: "16%",
+        deviation: "22%",
       }
     : isTablet
       ? {
@@ -978,10 +978,10 @@ export default function DashboardPage() {
       >
         <Group justify="space-between" align={isMobile ? "flex-start" : "end"} wrap="wrap" gap="xs">
           <Stack gap={1}>
-            <Text size="xs" fw={700} c="#667085" style={{ textTransform: "uppercase" }}>
+            <Title order={2} component="h1" size="h3" c="#1f2937">
               {t("dashboard.financialDashboard")}
-            </Text>
-            <Text fw={800} size="lg" c="#1f2937">
+            </Title>
+            <Text fw={700} size="md" c="#344054">
               {selectedPeriodLabel}
             </Text>
             <Text size="xs" c="#667085">
@@ -1309,11 +1309,13 @@ export default function DashboardPage() {
                     <Table.Th style={{ color: "#475467", textAlign: "right", width: tableColumnWidths.real }}>
                       {t("dashboard.real")}
                     </Table.Th>
-                    <Table.Th
-                      style={{ color: "#475467", textAlign: "right", width: tableColumnWidths.budget }}
-                    >
-                      {t("dashboard.budgetAbbrevWithDot")}
-                    </Table.Th>
+                    {!isMobile ? (
+                      <Table.Th
+                        style={{ color: "#475467", textAlign: "right", width: tableColumnWidths.budget }}
+                      >
+                        {t("dashboard.budgetAbbrevWithDot")}
+                      </Table.Th>
+                    ) : null}
                     <Table.Th
                       style={{
                         color: "#475467",
@@ -1337,7 +1339,7 @@ export default function DashboardPage() {
                 <Table.Tbody>
                   {rows.length === 0 ? (
                     <Table.Tr>
-                      <Table.Td colSpan={5}>
+                      <Table.Td colSpan={isMobile ? 4 : 5}>
                         <Text size="xs" c="#98a2b3">
                           {t("dashboard.noCategoriesForType")}
                         </Text>
@@ -1373,11 +1375,13 @@ export default function DashboardPage() {
                               {compactFormatter.format(row.realAmount)}
                             </Text>
                           </Table.Td>
-                          <Table.Td style={{ textAlign: "right" }}>
-                            <Text size="xs" c="#475467">
-                              {compactFormatter.format(row.budgetAmount)}
-                            </Text>
-                          </Table.Td>
+                          {!isMobile ? (
+                            <Table.Td style={{ textAlign: "right" }}>
+                              <Text size="xs" c="#475467">
+                                {compactFormatter.format(row.budgetAmount)}
+                              </Text>
+                            </Table.Td>
+                          ) : null}
                           <Table.Td style={{ textAlign: "right" }}>
                             <Box
                               style={{
@@ -1419,11 +1423,13 @@ export default function DashboardPage() {
                         {compactFormatter.format(totals.real)}
                       </Text>
                     </Table.Td>
-                    <Table.Td style={{ textAlign: "right" }}>
-                      <Text size="xs" fw={800} c="#344054">
-                        {compactFormatter.format(totals.budget)}
-                      </Text>
-                    </Table.Td>
+                    {!isMobile ? (
+                      <Table.Td style={{ textAlign: "right" }}>
+                        <Text size="xs" fw={800} c="#344054">
+                          {compactFormatter.format(totals.budget)}
+                        </Text>
+                      </Table.Td>
+                    ) : null}
                     <Table.Td style={{ textAlign: "right" }}>
                       <Box
                         style={{

@@ -111,7 +111,7 @@ export default function RegisterPage() {
   return (
     <Paper radius="lg" p="xl" withBorder shadow="sm">
       <Stack gap="md">
-        <Title order={2}>{t("auth.register.title")}</Title>
+        <Title order={2} component="h1">{t("auth.register.title")}</Title>
         <Text c="dimmed" size="sm">
           {t("auth.register.subtitle")}
         </Text>

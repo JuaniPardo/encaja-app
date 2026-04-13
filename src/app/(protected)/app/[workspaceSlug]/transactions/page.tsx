@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Alert,
   Button,
+  Collapse,
   Group,
   LoadingOverlay,
   Modal,
@@ -222,7 +223,7 @@ function TrashIcon({ size = 14 }: { size?: number }) {
 export default function TransactionsPage() {
   const { supabase, workspace, user } = useWorkspace();
   const { intlLocale, locale, t } = useI18n();
-  const isMobile = useMediaQuery("(max-width: 48em)");
+  const isMobile = useMediaQuery("(max-width: 47.99em)");
 
   const now = useMemo(() => new Date(), []);
   const [rows, setRows] = useState<TransactionRow[]>([]);
@@ -243,6 +244,7 @@ export default function TransactionsPage() {
   const [editingRow, setEditingRow] = useState<TransactionRow | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [didApplyUrlFilters, setDidApplyUrlFilters] = useState(false);
+  const [mobileFiltersOpened, setMobileFiltersOpened] = useState(false);
   const [quickPaymentMethodType, setQuickPaymentMethodType] =
     useState<QuickPaymentMethodType>("cash");
   const [createModalTypeFromQuery, setCreateModalTypeFromQuery] =
@@ -586,6 +588,13 @@ export default function TransactionsPage() {
     Number(paymentMethodFilter !== "all") +
     Number(normalizedSearchFilter !== "");
 
+  const clearOperationalFilters = useCallback(() => {
+    setTypeFilter("all");
+    setCategoryFilter("all");
+    setPaymentMethodFilter("all");
+    setSearchFilter("");
+  }, []);
+
   const typeSegmentStyles = useMemo(
     () => ({
       root: {
@@ -661,6 +670,18 @@ export default function TransactionsPage() {
 
     setDidApplyUrlFilters(true);
   }, [didApplyUrlFilters]);
+
+  useEffect(() => {
+    if (!isMobile) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMobileFiltersOpened(true);
+      return;
+    }
+
+    if (activeFiltersCount > 0) {
+      setMobileFiltersOpened(true);
+    }
+  }, [activeFiltersCount, isMobile]);
 
   useEffect(() => {
     if (selectedCategoryId === "") {
@@ -1162,7 +1183,7 @@ export default function TransactionsPage() {
 
       <Group justify="space-between" align="end" wrap="wrap" gap="xs">
         <Stack gap={2}>
-          <Title order={2}>{t("transactions.title")}</Title>
+          <Title order={2} component="h1">{t("transactions.title")}</Title>
           <Text c="dimmed" size="sm">
             {t("transactions.subtitle")}
           </Text>
@@ -1177,55 +1198,100 @@ export default function TransactionsPage() {
 
       <Paper withBorder radius="md" p="sm">
         <Stack gap="xs">
-          <Group align="end" wrap="wrap" gap="xs">
-            <NativeSelect
-              label={t("transactions.year")}
-              data={yearOptions}
-              value={String(selectedYear)}
-              onChange={(event) => setSelectedYear(Number(event.currentTarget.value))}
-              style={{ minWidth: 104 }}
-            />
+          {isMobile ? (
+            <Group justify="space-between" align="center" gap="xs">
+              <Text fw={600} size="sm">
+                {t("transactions.filters", "Filtros")}
+              </Text>
+              <Group gap="xs">
+                {activeFiltersCount > 0 ? (
+                  <Button
+                    variant="subtle"
+                    color="gray"
+                    size="compact-xs"
+                    onClick={clearOperationalFilters}
+                  >
+                    {t("common.actions.clearFilters", "Limpiar")}
+                  </Button>
+                ) : null}
+                <Button
+                  variant="light"
+                  color="gray"
+                  size="compact-xs"
+                  onClick={() => setMobileFiltersOpened((prev) => !prev)}
+                >
+                  {mobileFiltersOpened
+                    ? t("transactions.hideFilters", "Ocultar")
+                    : t("transactions.showFilters", "Mostrar")}
+                </Button>
+              </Group>
+            </Group>
+          ) : null}
 
-            <NativeSelect
-              label={t("transactions.month")}
-              data={monthOptions}
-              value={String(selectedMonth)}
-              onChange={(event) => setSelectedMonth(Number(event.currentTarget.value))}
-              style={{ minWidth: 132 }}
-            />
+          <Collapse in={!isMobile || mobileFiltersOpened}>
+            <Group align="end" wrap="wrap" gap="xs">
+              <NativeSelect
+                label={t("transactions.year")}
+                data={yearOptions}
+                value={String(selectedYear)}
+                onChange={(event) => setSelectedYear(Number(event.currentTarget.value))}
+                style={{ minWidth: 104 }}
+              />
 
-            <NativeSelect
-              label={t("transactions.type")}
-              data={[{ value: "all", label: t("transactions.all") }, ...transactionTypeSelectData]}
-              value={typeFilter}
-              onChange={(event) => setTypeFilter(event.currentTarget.value as TypeFilter)}
-              style={{ minWidth: 132 }}
-            />
+              <NativeSelect
+                label={t("transactions.month")}
+                data={monthOptions}
+                value={String(selectedMonth)}
+                onChange={(event) => setSelectedMonth(Number(event.currentTarget.value))}
+                style={{ minWidth: 132 }}
+              />
 
-            <NativeSelect
-              label={t("transactions.category")}
-              data={categoryFilterOptions}
-              value={categoryFilter}
-              onChange={(event) => setCategoryFilter(event.currentTarget.value)}
-              style={{ minWidth: 180 }}
-            />
+              <NativeSelect
+                label={t("transactions.type")}
+                data={[{ value: "all", label: t("transactions.all") }, ...transactionTypeSelectData]}
+                value={typeFilter}
+                onChange={(event) => setTypeFilter(event.currentTarget.value as TypeFilter)}
+                style={{ minWidth: 132 }}
+              />
 
-            <NativeSelect
-              label={t("transactions.paymentMethodShort")}
-              data={paymentMethodFilterOptions}
-              value={paymentMethodFilter}
-              onChange={(event) => setPaymentMethodFilter(event.currentTarget.value)}
-              style={{ minWidth: 180 }}
-            />
+              <NativeSelect
+                label={t("transactions.category")}
+                data={categoryFilterOptions}
+                value={categoryFilter}
+                onChange={(event) => setCategoryFilter(event.currentTarget.value)}
+                style={{ minWidth: 180 }}
+              />
 
-            <TextInput
-              label={t("transactions.search")}
-              placeholder={t("transactions.searchPlaceholder")}
-              value={searchFilter}
-              onChange={(event) => setSearchFilter(event.currentTarget.value)}
-              style={{ minWidth: 220, flex: "1 1 220px" }}
-            />
-          </Group>
+              <NativeSelect
+                label={t("transactions.paymentMethodShort")}
+                data={paymentMethodFilterOptions}
+                value={paymentMethodFilter}
+                onChange={(event) => setPaymentMethodFilter(event.currentTarget.value)}
+                style={{ minWidth: 180 }}
+              />
+
+              <TextInput
+                label={t("transactions.search")}
+                placeholder={t("transactions.searchPlaceholder")}
+                value={searchFilter}
+                onChange={(event) => setSearchFilter(event.currentTarget.value)}
+                style={{ minWidth: 220, flex: "1 1 220px" }}
+              />
+            </Group>
+          </Collapse>
+
+          {!isMobile && activeFiltersCount > 0 ? (
+            <Group justify="flex-end">
+              <Button
+                variant="subtle"
+                color="gray"
+                size="compact-xs"
+                onClick={clearOperationalFilters}
+              >
+                {t("common.actions.clearFilters", "Limpiar filtros")}
+              </Button>
+            </Group>
+          ) : null}
 
           <Text size="xs" c="dimmed">
             {t("transactions.summaryMovements", undefined, {

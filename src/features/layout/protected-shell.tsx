@@ -31,15 +31,6 @@ import type { WorkspaceRole } from "@/types/database";
 
 const navItems = [
   {
-    sectionPath: "",
-    labelKey: "nav.summary",
-    icon: (
-      <ShellIcon>
-        <path d="M3 10.2 12 4l9 6.2v8.3a1 1 0 0 1-1 1h-5.8v-5.5H9.8v5.5H4a1 1 0 0 1-1-1v-8.3Z" />
-      </ShellIcon>
-    ),
-  },
-  {
     sectionPath: "/start",
     labelKey: "nav.start",
     icon: (
@@ -52,14 +43,11 @@ const navItems = [
     ),
   },
   {
-    sectionPath: "/insights",
-    labelKey: "nav.insights",
+    sectionPath: "",
+    labelKey: "nav.summary",
     icon: (
       <ShellIcon>
-        <path d="M4 18V8" />
-        <path d="M10 18V4" />
-        <path d="M16 18v-6" />
-        <path d="M22 18V10" />
+        <path d="M3 10.2 12 4l9 6.2v8.3a1 1 0 0 1-1 1h-5.8v-5.5H9.8v5.5H4a1 1 0 0 1-1-1v-8.3Z" />
       </ShellIcon>
     ),
   },
@@ -83,6 +71,18 @@ const navItems = [
         <path d="m11 5 3 3-3 3" />
         <path d="M20 16H10" />
         <path d="m13 13-3 3 3 3" />
+      </ShellIcon>
+    ),
+  },
+  {
+    sectionPath: "/insights",
+    labelKey: "nav.insights",
+    icon: (
+      <ShellIcon>
+        <path d="M4 18V8" />
+        <path d="M10 18V4" />
+        <path d="M16 18v-6" />
+        <path d="M22 18V10" />
       </ShellIcon>
     ),
   },

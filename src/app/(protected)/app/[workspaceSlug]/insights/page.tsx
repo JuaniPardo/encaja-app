@@ -227,7 +227,7 @@ function getPaceMainMessage(
 export default function InsightsPage() {
   const { supabase, workspace } = useWorkspace();
   const { intlLocale, locale, t } = useI18n();
-  const isMobile = useMediaQuery("(max-width: 48em)");
+  const isMobile = useMediaQuery("(max-width: 47.99em)");
   const monthOptions = useMemo(() => buildMonthOptions(intlLocale), [intlLocale]);
   const periodLabel = useCallback(
     (period: PeriodRef) =>
@@ -817,7 +817,7 @@ export default function InsightsPage() {
       <LoadingOverlay visible={isLoading} />
 
       <Stack gap={2}>
-        <Title order={2}>{t("insights.title")}</Title>
+        <Title order={2} component="h1">{t("insights.title")}</Title>
         <Text c="dimmed" size="sm">
           {t("insights.subtitle")}
         </Text>
