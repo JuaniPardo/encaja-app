@@ -341,6 +341,35 @@ const dictionaries = {
       title: "Settings del workspace",
       subtitle: "Estás en {{workspaceName}} con rol {{role}}.",
       notApplicable: "N/A",
+      sections: {
+        personal: {
+          title: "Preferencias personales",
+          description: "Configuraciones que aplican a tu experiencia individual dentro de Encaja.",
+          scope: "Solo vos",
+        },
+        workspace: {
+          title: "Workspace actual",
+          description:
+            "Reglas globales que afectan a todos los miembros del workspace actual.",
+          scope: "Todo el workspace",
+        },
+        collaboration: {
+          title: "Colaboración",
+          description: "Gestioná quién participa en el workspace y qué rol visible tiene.",
+          scope: "Equipo",
+        },
+        links: {
+          title: "Vínculos e integraciones",
+          description:
+            "Conectá otros workspaces compatibles para consumir resúmenes externos sin mezclar datos.",
+          scope: "Vínculos",
+        },
+        advanced: {
+          title: "Avanzado",
+          description: "Acciones sensibles del workspace. Revisá el impacto antes de confirmar.",
+          scope: "Riesgo alto",
+        },
+      },
       readOnly: {
         title: "Acceso de solo lectura",
         message:
@@ -363,9 +392,25 @@ const dictionaries = {
         enableDeferredIncome: "Habilitar ingreso diferido",
         deferredIncomeDay: "Día de diferimiento",
         currency: "Moneda",
+        currencyDescription:
+          "Moneda única y obligatoria del workspace. Todas las transacciones se registran en esta moneda.",
         showCents: "Mostrar centavos en la UI",
+        showCentsDescription:
+          "Solo cambia la visualización. Los valores reales y cálculos internos mantienen precisión completa.",
         revertButton: "Revertir",
         saveSettingsButton: "Guardar settings",
+      },
+      currencyOptions: {
+        ars: "ARS · Peso argentino",
+        usd: "USD · Dólar estadounidense",
+        eur: "EUR · Euro",
+        clp: "CLP · Peso chileno",
+        uyu: "UYU · Peso uruguayo",
+        brl: "BRL · Real brasileño",
+        mxn: "MXN · Peso mexicano",
+        cop: "COP · Peso colombiano",
+        pen: "PEN · Sol peruano",
+        custom: "{{code}} · Moneda existente en este workspace",
       },
       identity: {
         title: "Identidad del workspace",
@@ -1060,6 +1105,34 @@ const dictionaries = {
       title: "Workspace settings",
       subtitle: "You are in {{workspaceName}} with role {{role}}.",
       notApplicable: "N/A",
+      sections: {
+        personal: {
+          title: "Personal preferences",
+          description: "Settings that apply to your own experience in Encaja.",
+          scope: "Only you",
+        },
+        workspace: {
+          title: "Current workspace",
+          description: "Global rules shared by every member in this workspace.",
+          scope: "Whole workspace",
+        },
+        collaboration: {
+          title: "Collaboration",
+          description: "Manage who participates in the workspace and their visible role.",
+          scope: "Team",
+        },
+        links: {
+          title: "Links and integrations",
+          description:
+            "Connect compatible workspaces to consume external summaries without mixing data.",
+          scope: "Links",
+        },
+        advanced: {
+          title: "Advanced",
+          description: "Sensitive workspace actions. Review the impact before confirming.",
+          scope: "High risk",
+        },
+      },
       readOnly: {
         title: "Read-only access",
         message:
@@ -1082,9 +1155,25 @@ const dictionaries = {
         enableDeferredIncome: "Enable deferred income",
         deferredIncomeDay: "Deferral day",
         currency: "Currency",
+        currencyDescription:
+          "Single required workspace currency. Every transaction is recorded using this currency.",
         showCents: "Show cents in UI",
+        showCentsDescription:
+          "This only changes visualization. Real stored values and calculations keep full precision.",
         revertButton: "Revert",
         saveSettingsButton: "Save settings",
+      },
+      currencyOptions: {
+        ars: "ARS · Argentine peso",
+        usd: "USD · US dollar",
+        eur: "EUR · Euro",
+        clp: "CLP · Chilean peso",
+        uyu: "UYU · Uruguayan peso",
+        brl: "BRL · Brazilian real",
+        mxn: "MXN · Mexican peso",
+        cop: "COP · Colombian peso",
+        pen: "PEN · Peruvian sol",
+        custom: "{{code}} · Existing workspace currency",
       },
       identity: {
         title: "Workspace identity",

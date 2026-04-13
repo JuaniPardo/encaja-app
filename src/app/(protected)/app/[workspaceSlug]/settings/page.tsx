@@ -13,6 +13,7 @@ import {
   NativeSelect,
   Paper,
   Select,
+  SimpleGrid,
   Stack,
   Text,
   TextInput,
@@ -62,6 +63,9 @@ type WorkspaceSettingsCurrencyRow = Pick<
   "workspace_id" | "currency_code"
 >;
 
+const DEFAULT_CURRENCY_CODE = "ARS";
+const WORKSPACE_CURRENCY_CODES = ["ARS", "USD", "EUR", "CLP", "UYU", "BRL", "MXN", "COP", "PEN"] as const;
+
 function getMemberDisplayName(member: WorkspaceMemberSummary) {
   if (member.full_name && member.full_name.trim().length > 0) {
     return member.full_name.trim();
@@ -109,7 +113,7 @@ export default function SettingsPage() {
     Record<string, string>
   >({});
   const [isWorkspaceCurrenciesLoading, setIsWorkspaceCurrenciesLoading] = useState(true);
-  const [workspaceCurrencyCode, setWorkspaceCurrencyCode] = useState("ARS");
+  const [workspaceCurrencyCode, setWorkspaceCurrencyCode] = useState(DEFAULT_CURRENCY_CODE);
   const [settingsId, setSettingsId] = useState<string | null>(null);
   const [selectedLanguage, setSelectedLanguage] = useState<Locale>(locale);
   const [isUpdatingLanguage, setIsUpdatingLanguage] = useState(false);
@@ -128,6 +132,30 @@ export default function SettingsPage() {
     ],
     [t],
   );
+  const workspaceCurrencyOptions = useMemo(() => {
+    const options = WORKSPACE_CURRENCY_CODES.map((currencyCode) => ({
+      value: currencyCode,
+      label: t(`workspaceSettings.currencyOptions.${currencyCode.toLowerCase()}`, currencyCode),
+    }));
+    const normalizedCurrentCurrency = workspaceCurrencyCode.trim().toUpperCase();
+
+    if (
+      normalizedCurrentCurrency.length === 3 &&
+      !options.some((option) => option.value === normalizedCurrentCurrency)
+    ) {
+      return [
+        {
+          value: normalizedCurrentCurrency,
+          label: t("workspaceSettings.currencyOptions.custom", normalizedCurrentCurrency, {
+            code: normalizedCurrentCurrency,
+          }),
+        },
+        ...options,
+      ];
+    }
+
+    return options;
+  }, [t, workspaceCurrencyCode]);
   const settingsSchema = useMemo(
     () =>
       createSettingsFormSchema({
@@ -182,7 +210,7 @@ export default function SettingsPage() {
       deferredIncomeEnabled: false,
       deferredIncomeDay: null,
       showCents: false,
-      currencyCode: "ARS",
+      currencyCode: DEFAULT_CURRENCY_CODE,
     },
   });
 
@@ -290,14 +318,14 @@ export default function SettingsPage() {
 
     if (!response.data) {
       setSettingsId(null);
-      setWorkspaceCurrencyCode("ARS");
+      setWorkspaceCurrencyCode(DEFAULT_CURRENCY_CODE);
       reset({
         startYear: new Date().getFullYear(),
         savingsRateMode: "manual",
         deferredIncomeEnabled: false,
         deferredIncomeDay: null,
         showCents: false,
-        currencyCode: "ARS",
+        currencyCode: DEFAULT_CURRENCY_CODE,
       });
       return;
     }
@@ -736,6 +764,9 @@ export default function SettingsPage() {
   );
 
   const sourceWorkspaceCurrency = workspaceCurrencyCode.toUpperCase();
+  const activeWorkspaceLinksCount = workspaceLinks.filter(
+    (workspaceLink) => workspaceLink.is_active,
+  ).length;
 
   const workspaceLinkTargetOptions = useMemo(() => {
     return workspaces
@@ -908,7 +939,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <Stack gap="md" pos="relative">
+    <Stack gap="lg" pos="relative">
       <LoadingOverlay visible={isLoading} />
       <Modal
         opened={isCreateWorkspaceOpen}
@@ -987,6 +1018,7 @@ export default function SettingsPage() {
           })}
         </Text>
       </Stack>
+
       {!canEditWorkspaceSettings ? (
         <Alert color="yellow" variant="light" title={t("workspaceSettings.readOnly.title")}>
           {t("workspaceSettings.readOnly.message", undefined, {
@@ -995,34 +1027,200 @@ export default function SettingsPage() {
         </Alert>
       ) : null}
 
-      <Paper withBorder radius="md" p="md">
-        <Stack gap="sm">
-          <Text fw={600}>{t("settings.language.title")}</Text>
-          <Text size="sm" c="dimmed">
-            {t("settings.language.description")}
-          </Text>
-          <Group align="flex-end" wrap="wrap">
-            <NativeSelect
-              label={t("settings.language.fieldLabel")}
-              data={languageOptions}
-              value={selectedLanguage}
-              onChange={(event) => setSelectedLanguage(event.currentTarget.value as Locale)}
-              style={{ minWidth: 220 }}
-            />
-            <Button
-              type="button"
-              onClick={() => void onSaveLanguage()}
-              loading={isUpdatingLanguage}
-              disabled={selectedLanguage === locale}
-            >
-              {t("settings.language.saveButton")}
-            </Button>
-          </Group>
-        </Stack>
-      </Paper>
+      <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md">
+        <Paper withBorder radius="md" p="md">
+          <Stack gap="sm">
+            <Group justify="space-between" align="flex-start" wrap="wrap">
+              <Stack gap={2}>
+                <Text fw={600}>{t("workspaceSettings.sections.personal.title")}</Text>
+                <Text size="sm" c="dimmed">
+                  {t("workspaceSettings.sections.personal.description")}
+                </Text>
+              </Stack>
+              <Badge variant="light" color="indigo">
+                {t("workspaceSettings.sections.personal.scope")}
+              </Badge>
+            </Group>
+
+            <Paper withBorder radius="sm" p="sm">
+              <Stack gap="sm">
+                <Text fw={600}>{t("settings.language.title")}</Text>
+                <Text size="sm" c="dimmed">
+                  {t("settings.language.description")}
+                </Text>
+                <Group align="flex-end" wrap="wrap">
+                  <NativeSelect
+                    label={t("settings.language.fieldLabel")}
+                    data={languageOptions}
+                    value={selectedLanguage}
+                    onChange={(event) => setSelectedLanguage(event.currentTarget.value as Locale)}
+                    style={{ minWidth: 220, flex: 1 }}
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => void onSaveLanguage()}
+                    loading={isUpdatingLanguage}
+                    disabled={selectedLanguage === locale}
+                  >
+                    {t("settings.language.saveButton")}
+                  </Button>
+                </Group>
+              </Stack>
+            </Paper>
+          </Stack>
+        </Paper>
+
+        <Paper withBorder radius="md" p="md">
+          <Stack gap="sm">
+            <Group justify="space-between" align="flex-start" wrap="wrap">
+              <Stack gap={2}>
+                <Text fw={600}>{t("workspaceSettings.sections.workspace.title")}</Text>
+                <Text size="sm" c="dimmed">
+                  {t("workspaceSettings.sections.workspace.description")}
+                </Text>
+              </Stack>
+              <Badge variant="light" color="teal">
+                {t("workspaceSettings.sections.workspace.scope")}
+              </Badge>
+            </Group>
+
+            <Paper withBorder radius="sm" p="sm">
+              <form onSubmit={onSubmitWorkspace}>
+                <Stack gap="sm">
+                  <Group justify="space-between" align="center">
+                    <Text fw={600}>{t("workspaceSettings.identity.title")}</Text>
+                    {canCreateWorkspace ? (
+                      <Button variant="subtle" size="xs" onClick={openCreateWorkspace}>
+                        {t("workspaceSettings.identity.createWorkspaceButton")}
+                      </Button>
+                    ) : null}
+                  </Group>
+                  <TextInput
+                    label={t("workspaceSettings.forms.workspaceDisplayName")}
+                    placeholder={t("workspaceSettings.forms.workspaceDisplayNamePlaceholderShort")}
+                    disabled={!canEditWorkspaceSettings}
+                    error={workspaceErrors.name?.message}
+                    {...registerWorkspace("name")}
+                  />
+                  <Group justify="flex-end">
+                    <Button
+                      type="submit"
+                      loading={isWorkspaceSubmitting}
+                      disabled={!canEditWorkspaceSettings}
+                    >
+                      {t("workspaceSettings.identity.saveNameButton")}
+                    </Button>
+                  </Group>
+                </Stack>
+              </form>
+            </Paper>
+
+            <Paper withBorder radius="sm" p="sm">
+              <form onSubmit={onSubmit}>
+                <Stack gap="sm">
+                  <NativeSelect
+                    label={t("workspaceSettings.forms.currency")}
+                    data={workspaceCurrencyOptions}
+                    disabled={!canEditWorkspaceSettings}
+                    error={errors.currencyCode?.message}
+                    {...register("currencyCode")}
+                  />
+                  <Text size="xs" c="dimmed">
+                    {t("workspaceSettings.forms.currencyDescription")}
+                  </Text>
+
+                  <Controller
+                    control={control}
+                    name="showCents"
+                    render={({ field }) => (
+                      <Checkbox
+                        checked={field.value}
+                        disabled={!canEditWorkspaceSettings}
+                        onChange={(event) => field.onChange(event.currentTarget.checked)}
+                        label={t("workspaceSettings.forms.showCents")}
+                      />
+                    )}
+                  />
+                  <Text size="xs" c="dimmed">
+                    {t("workspaceSettings.forms.showCentsDescription")}
+                  </Text>
+
+                  <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
+                    <TextInput
+                      label={t("workspaceSettings.forms.startYear")}
+                      type="number"
+                      placeholder="2026"
+                      disabled={!canEditWorkspaceSettings}
+                      error={errors.startYear?.message}
+                      {...register("startYear")}
+                    />
+
+                    <NativeSelect
+                      label={t("workspaceSettings.forms.savingsMode")}
+                      data={savingsRateModeSelectData}
+                      disabled={!canEditWorkspaceSettings}
+                      error={errors.savingsRateMode?.message}
+                      {...register("savingsRateMode")}
+                    />
+                  </SimpleGrid>
+
+                  <Controller
+                    control={control}
+                    name="deferredIncomeEnabled"
+                    render={({ field }) => (
+                      <Checkbox
+                        checked={field.value}
+                        disabled={!canEditWorkspaceSettings}
+                        onChange={(event) => field.onChange(event.currentTarget.checked)}
+                        label={t("workspaceSettings.forms.enableDeferredIncome")}
+                      />
+                    )}
+                  />
+
+                  <TextInput
+                    label={t("workspaceSettings.forms.deferredIncomeDay")}
+                    type="number"
+                    placeholder="Ej: 5"
+                    disabled={!canEditWorkspaceSettings || !deferredIncomeEnabled}
+                    error={errors.deferredIncomeDay?.message}
+                    {...register("deferredIncomeDay")}
+                  />
+
+                  <Group justify="flex-end">
+                    <Button
+                      type="button"
+                      variant="light"
+                      color="gray"
+                      onClick={() => void loadSettings()}
+                      disabled={!canEditWorkspaceSettings}
+                    >
+                      {t("workspaceSettings.forms.revertButton")}
+                    </Button>
+                    <Button type="submit" loading={isSubmitting} disabled={!canEditWorkspaceSettings}>
+                      {t("workspaceSettings.forms.saveSettingsButton")}
+                    </Button>
+                  </Group>
+                </Stack>
+              </form>
+            </Paper>
+          </Stack>
+        </Paper>
+      </SimpleGrid>
 
       <Paper withBorder radius="md" p="md">
         <Stack gap="sm">
+          <Group justify="space-between" align="flex-start" wrap="wrap">
+            <Stack gap={2}>
+              <Text fw={600}>{t("workspaceSettings.sections.collaboration.title")}</Text>
+              <Text size="sm" c="dimmed">
+                {t("workspaceSettings.sections.collaboration.description")}
+              </Text>
+            </Stack>
+            <Badge variant="light" color="blue">
+              {t("workspaceSettings.sections.collaboration.scope")}
+            </Badge>
+          </Group>
+
           <Group justify="space-between" align="center">
             <Text fw={600}>{t("workspaceSettings.members.title")}</Text>
             <Badge variant="light" color="gray">
@@ -1108,11 +1306,23 @@ export default function SettingsPage() {
 
       <Paper withBorder radius="md" p="md">
         <Stack gap="sm">
+          <Group justify="space-between" align="flex-start" wrap="wrap">
+            <Stack gap={2}>
+              <Text fw={600}>{t("workspaceSettings.sections.links.title")}</Text>
+              <Text size="sm" c="dimmed">
+                {t("workspaceSettings.sections.links.description")}
+              </Text>
+            </Stack>
+            <Badge variant="light" color="cyan">
+              {t("workspaceSettings.sections.links.scope")}
+            </Badge>
+          </Group>
+
           <Group justify="space-between" align="center">
             <Text fw={600}>{t("workspaceSettings.workspaceLinks.title")}</Text>
             <Badge variant="light" color="blue">
               {t("workspaceSettings.workspaceLinks.activeCount", undefined, {
-                count: workspaceLinks.filter((workspaceLink) => workspaceLink.is_active).length,
+                count: activeWorkspaceLinksCount,
               })}
             </Badge>
           </Group>
@@ -1269,114 +1479,21 @@ export default function SettingsPage() {
       </Paper>
 
       <Paper withBorder radius="md" p="md">
-        <form onSubmit={onSubmitWorkspace}>
-          <Stack>
-            <Group justify="space-between" align="center">
-              <Text fw={600}>{t("workspaceSettings.identity.title")}</Text>
-              {canCreateWorkspace ? (
-                <Button variant="subtle" size="xs" onClick={openCreateWorkspace}>
-                  {t("workspaceSettings.identity.createWorkspaceButton")}
-                </Button>
-              ) : null}
-            </Group>
-            <TextInput
-              label={t("workspaceSettings.forms.workspaceDisplayName")}
-              placeholder={t("workspaceSettings.forms.workspaceDisplayNamePlaceholderShort")}
-              disabled={!canEditWorkspaceSettings}
-              error={workspaceErrors.name?.message}
-              {...registerWorkspace("name")}
-            />
-            <Group justify="flex-end" mt="sm">
-              <Button
-                type="submit"
-                loading={isWorkspaceSubmitting}
-                disabled={!canEditWorkspaceSettings}
-              >
-                {t("workspaceSettings.identity.saveNameButton")}
-              </Button>
-            </Group>
-          </Stack>
-        </form>
-      </Paper>
-
-      <Paper withBorder radius="md" p="md">
-        <form onSubmit={onSubmit}>
-          <Stack>
-            <TextInput
-              label={t("workspaceSettings.forms.startYear")}
-              type="number"
-              placeholder="2026"
-              error={errors.startYear?.message}
-              {...register("startYear")}
-            />
-
-            <NativeSelect
-              label={t("workspaceSettings.forms.savingsMode")}
-              data={savingsRateModeSelectData}
-              disabled={!canEditWorkspaceSettings}
-              error={errors.savingsRateMode?.message}
-              {...register("savingsRateMode")}
-            />
-
-            <Controller
-              control={control}
-              name="deferredIncomeEnabled"
-              render={({ field }) => (
-                <Checkbox
-                  checked={field.value}
-                  disabled={!canEditWorkspaceSettings}
-                  onChange={(event) => field.onChange(event.currentTarget.checked)}
-                  label={t("workspaceSettings.forms.enableDeferredIncome")}
-                />
-              )}
-            />
-
-            <TextInput
-              label={t("workspaceSettings.forms.deferredIncomeDay")}
-              type="number"
-              placeholder="Ej: 5"
-              disabled={!deferredIncomeEnabled}
-              readOnly={!canEditWorkspaceSettings}
-              error={errors.deferredIncomeDay?.message}
-              {...register("deferredIncomeDay")}
-            />
-
-            <TextInput
-              label={t("workspaceSettings.forms.currency")}
-              placeholder="ARS"
-              maxLength={3}
-              readOnly={!canEditWorkspaceSettings}
-              error={errors.currencyCode?.message}
-              {...register("currencyCode")}
-            />
-
-            <Controller
-              control={control}
-              name="showCents"
-              render={({ field }) => (
-                <Checkbox
-                  checked={field.value}
-                  disabled={!canEditWorkspaceSettings}
-                  onChange={(event) => field.onChange(event.currentTarget.checked)}
-                  label={t("workspaceSettings.forms.showCents")}
-                />
-              )}
-            />
-
-            <Group justify="flex-end" mt="sm">
-              <Button type="button" variant="light" color="gray" onClick={() => void loadSettings()}>
-                {t("workspaceSettings.forms.revertButton")}
-              </Button>
-              <Button type="submit" loading={isSubmitting} disabled={!canEditWorkspaceSettings}>
-                {t("workspaceSettings.forms.saveSettingsButton")}
-              </Button>
-            </Group>
-          </Stack>
-        </form>
-      </Paper>
-
-      <Paper withBorder radius="md" p="md">
         <Stack gap="sm">
+          <Group justify="space-between" align="flex-start" wrap="wrap">
+            <Stack gap={2}>
+              <Text fw={600} c="red.7">
+                {t("workspaceSettings.sections.advanced.title")}
+              </Text>
+              <Text size="sm" c="dimmed">
+                {t("workspaceSettings.sections.advanced.description")}
+              </Text>
+            </Stack>
+            <Badge variant="light" color="red">
+              {t("workspaceSettings.sections.advanced.scope")}
+            </Badge>
+          </Group>
+
           <Text fw={600} c="red.7">
             {t("workspaceSettings.dangerZone.title")}
           </Text>
