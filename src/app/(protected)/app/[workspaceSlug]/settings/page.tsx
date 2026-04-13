@@ -82,6 +82,21 @@ function getMemberDisplayName(member: WorkspaceMemberSummary) {
   return member.email;
 }
 
+function getErrorMessage(error: unknown, fallbackMessage: string) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim().length > 0) {
+      return message;
+    }
+  }
+
+  return fallbackMessage;
+}
+
 export default function SettingsPage() {
   const { t } = useI18n();
   const {
@@ -659,10 +674,10 @@ export default function SettingsPage() {
       notifications.show({
         color: "red",
         title: t("workspaceSettings.notifications.deleteWorkspaceError"),
-        message:
-          error instanceof Error
-            ? error.message
-            : t("workspaceSettings.notifications.unexpectedDeleteWorkspaceError"),
+        message: getErrorMessage(
+          error,
+          t("workspaceSettings.notifications.unexpectedDeleteWorkspaceError"),
+        ),
       });
     } finally {
       setIsDeletingWorkspace(false);

@@ -193,7 +193,7 @@ export async function deleteWorkspaceForUser({
   });
 
   if (rpcResponse.error) {
-    throw rpcResponse.error;
+    throw new Error(rpcResponse.error.message);
   }
 
   const deletedRow = (rpcResponse.data ?? [])[0] as DeleteWorkspaceRpcRow | undefined;
