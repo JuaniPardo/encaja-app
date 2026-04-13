@@ -1,30 +1,30 @@
 begin;
 
-alter function if exists public.set_current_timestamp_updated_at()
+alter function public.set_current_timestamp_updated_at()
   set search_path = '';
 
-alter function if exists public.is_workspace_member(uuid)
+alter function public.is_workspace_member(uuid)
   set search_path = '';
 
-alter function if exists public.budget_item_belongs_to_period_workspace()
+alter function public.budget_item_belongs_to_period_workspace()
   set search_path = '';
 
-alter function if exists public.ensure_transaction_workspace_consistency()
+alter function public.ensure_transaction_workspace_consistency()
   set search_path = '';
 
-alter function if exists public.is_workspace_owner(uuid)
+alter function public.is_workspace_owner(uuid)
   set search_path = '';
 
-alter function if exists public.normalize_workspace_slug(text)
+alter function public.normalize_workspace_slug(text)
   set search_path = '';
 
-alter function if exists public.allocate_workspace_slug(text)
+alter function public.allocate_workspace_slug(text)
   set search_path = '';
 
-alter function if exists public.normalize_profile_email()
+alter function public.normalize_profile_email()
   set search_path = '';
 
-alter function if exists public.is_workspace_owner_or_admin(uuid)
+alter function public.is_workspace_owner_or_admin(uuid)
   set search_path = '';
 
 commit;
