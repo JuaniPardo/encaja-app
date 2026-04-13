@@ -280,6 +280,7 @@ export default function TransactionsPage() {
   const selectedType = useWatch({ control, name: "type" });
   const selectedCategoryId = useWatch({ control, name: "categoryId" });
   const selectedPaymentMethodId = useWatch({ control, name: "paymentMethodId" });
+  const selectedTypeColor = transactionTypeColors[selectedType ?? "expense"];
 
   const categoryById = useMemo(
     () => new Map(categories.map((category) => [category.id, category])),
@@ -563,6 +564,28 @@ export default function TransactionsPage() {
     Number(categoryFilter !== "all") +
     Number(paymentMethodFilter !== "all") +
     Number(normalizedSearchFilter !== "");
+
+  const typeSegmentStyles = useMemo(
+    () => ({
+      root: {
+        backgroundColor: "var(--mantine-color-gray-0)",
+        border: "1px solid var(--mantine-color-gray-2)",
+      },
+      indicator: {
+        backgroundColor: `var(--mantine-color-${selectedTypeColor}-0)`,
+        border: `1px solid var(--mantine-color-${selectedTypeColor}-2)`,
+      },
+      label: {
+        color: "var(--mantine-color-gray-7)",
+        fontWeight: 500,
+        "&[data-active]": {
+          color: `var(--mantine-color-${selectedTypeColor}-7)`,
+          fontWeight: 700,
+        },
+      },
+    }),
+    [selectedTypeColor],
+  );
 
   useEffect(() => {
     if (didApplyUrlFilters) {
@@ -1273,6 +1296,7 @@ export default function TransactionsPage() {
                     data={transactionTypeSelectData}
                     value={field.value}
                     onChange={(value) => field.onChange(value as TransactionType)}
+                    styles={typeSegmentStyles}
                   />
                 )}
               />
