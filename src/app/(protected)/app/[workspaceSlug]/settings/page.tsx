@@ -21,7 +21,7 @@ import {
 } from "@mantine/core";
 import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { Controller, useForm, useWatch } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 
 import { type Locale } from "@/features/i18n/config";
 import { useI18n } from "@/features/i18n/provider";
@@ -224,7 +224,6 @@ export default function SettingsPage() {
     },
   });
 
-  const deferredIncomeEnabled = useWatch({ control, name: "deferredIncomeEnabled" }) ?? false;
   const {
     register: registerWorkspace,
     handleSubmit: handleSubmitWorkspace,
@@ -1171,28 +1170,6 @@ export default function SettingsPage() {
                     disabled={!canEditWorkspaceSettings}
                     error={errors.savingsRateMode?.message}
                     {...register("savingsRateMode")}
-                  />
-
-                  <Controller
-                    control={control}
-                    name="deferredIncomeEnabled"
-                    render={({ field }) => (
-                      <Checkbox
-                        checked={field.value}
-                        disabled={!canEditWorkspaceSettings}
-                        onChange={(event) => field.onChange(event.currentTarget.checked)}
-                        label={t("workspaceSettings.forms.enableDeferredIncome")}
-                      />
-                    )}
-                  />
-
-                  <TextInput
-                    label={t("workspaceSettings.forms.deferredIncomeDay")}
-                    type="number"
-                    placeholder="Ej: 5"
-                    disabled={!canEditWorkspaceSettings || !deferredIncomeEnabled}
-                    error={errors.deferredIncomeDay?.message}
-                    {...register("deferredIncomeDay")}
                   />
 
                   <Group justify="flex-end">
