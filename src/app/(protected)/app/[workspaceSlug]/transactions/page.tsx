@@ -240,6 +240,8 @@ export default function TransactionsPage() {
   const [editingRow, setEditingRow] = useState<TransactionRow | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [didApplyUrlFilters, setDidApplyUrlFilters] = useState(false);
+  const [createModalTypeFromQuery, setCreateModalTypeFromQuery] =
+    useState<TransactionType | null>(null);
   const monthOptions = useMemo(() => buildMonthOptions(intlLocale), [intlLocale]);
   const transactionTypeLabels = useMemo<Record<TransactionType, string>>(
     () => ({
@@ -634,6 +636,15 @@ export default function TransactionsPage() {
       setSearchFilter(searchFromQuery.trim());
     }
 
+    if (params.get("new") === "1") {
+      const prefillTypeFromQuery = params.get("prefillType");
+      if (isTransactionTypeValue(prefillTypeFromQuery)) {
+        setCreateModalTypeFromQuery(prefillTypeFromQuery);
+      } else {
+        setCreateModalTypeFromQuery("expense");
+      }
+    }
+
     setDidApplyUrlFilters(true);
   }, [didApplyUrlFilters]);
 
@@ -839,33 +850,58 @@ export default function TransactionsPage() {
     setEditingRow(null);
   }
 
-  function openCreateModal() {
-    const defaultType = typeFilter === "all" ? "expense" : typeFilter;
-    const filteredCategory = categoryFilter !== "all" ? categoryById.get(categoryFilter) : null;
-    const filteredPaymentMethod =
-      paymentMethodFilter !== "all" ? paymentMethodById.get(paymentMethodFilter) : null;
+  const openCreateModal = useCallback(
+    (preferredType?: TransactionType) => {
+      const defaultType = preferredType ?? (typeFilter === "all" ? "expense" : typeFilter);
+      const filteredCategory = categoryFilter !== "all" ? categoryById.get(categoryFilter) : null;
+      const filteredPaymentMethod =
+        paymentMethodFilter !== "all" ? paymentMethodById.get(paymentMethodFilter) : null;
 
-    const resolvedType = filteredCategory?.is_active ? filteredCategory.type : defaultType;
-    const defaults = toFormDefaults(undefined, resolvedType);
+      const resolvedType = filteredCategory?.is_active ? filteredCategory.type : defaultType;
+      const defaults = toFormDefaults(undefined, resolvedType);
 
-    if (filteredCategory?.is_active && filteredCategory.type === resolvedType) {
-      defaults.categoryId = filteredCategory.id;
-    }
+      if (filteredCategory?.is_active && filteredCategory.type === resolvedType) {
+        defaults.categoryId = filteredCategory.id;
+      }
 
-    if (filteredPaymentMethod?.is_active) {
-      defaults.paymentMethodId = filteredPaymentMethod.id;
-    }
+      if (filteredPaymentMethod?.is_active) {
+        defaults.paymentMethodId = filteredPaymentMethod.id;
+      }
 
-    setEditingRow(null);
-    reset(defaults);
-    setIsModalOpen(true);
-  }
+      setEditingRow(null);
+      reset(defaults);
+      setIsModalOpen(true);
+    },
+    [categoryById, categoryFilter, paymentMethodById, paymentMethodFilter, reset, typeFilter],
+  );
 
   function openEditModal(row: TransactionRow) {
     setEditingRow(row);
     reset(toFormDefaults(row));
     setIsModalOpen(true);
   }
+
+  useEffect(() => {
+    if (createModalTypeFromQuery === null || isBootstrapping || isModalOpen) {
+      return;
+    }
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    openCreateModal(createModalTypeFromQuery);
+    setCreateModalTypeFromQuery(null);
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    params.delete("new");
+    params.delete("prefillType");
+
+    const query = params.toString();
+    const nextUrl = query.length > 0 ? `${window.location.pathname}?${query}` : window.location.pathname;
+    window.history.replaceState(window.history.state, "", nextUrl);
+  }, [createModalTypeFromQuery, isBootstrapping, isModalOpen, openCreateModal]);
 
   const onSubmit = handleSubmit(async (values) => {
     const category = categoryById.get(values.categoryId);
@@ -1055,7 +1091,7 @@ export default function TransactionsPage() {
         </Stack>
 
         {!isMobile ? (
-          <Button onClick={openCreateModal} disabled={!hasAnyActiveCategory}>
+          <Button onClick={() => openCreateModal()} disabled={!hasAnyActiveCategory}>
             {t("transactions.new")}
           </Button>
         ) : null}
@@ -1279,7 +1315,7 @@ export default function TransactionsPage() {
             boxShadow: "0 -8px 18px rgba(0, 0, 0, 0.08)",
           }}
         >
-          <Button onClick={openCreateModal} disabled={!hasAnyActiveCategory} fullWidth>
+          <Button onClick={() => openCreateModal()} disabled={!hasAnyActiveCategory} fullWidth>
             {t("transactions.new")}
           </Button>
         </Paper>

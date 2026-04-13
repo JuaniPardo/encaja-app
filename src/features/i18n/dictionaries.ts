@@ -83,6 +83,7 @@ const dictionaries = {
     },
     nav: {
       summary: "Resumen",
+      start: "Empezar",
       insights: "Insights",
       budget: "Presupuesto",
       transactions: "Transacciones",
@@ -246,6 +247,53 @@ const dictionaries = {
           item2: "• qué aumentó o bajó respecto al mes anterior",
           item3: "• cómo evoluciona tu dinero mes a mes",
         },
+      },
+    },
+    start: {
+      title: "Empezar",
+      subtitle: "Guía rápida para tus primeros pasos en Encaja.",
+      sections: {
+        currentStatus: "Estado actual",
+        primaryAction: "Acción principal",
+        insight: "Insight breve",
+        checklist: "Checklist de progreso",
+      },
+      status: {
+        noMovements: "Todavía no registraste movimientos",
+        started: "Ya empezaste a registrar tus finanzas",
+        readyForBalance: "Ya tenés información útil para empezar a analizar tu mes",
+      },
+      action: {
+        firstExpense: "Registrá tu primer gasto",
+        keepLogging: "Registrá más movimientos",
+        reviewBalance: "Revisá tu balance",
+      },
+      cta: {
+        newTransaction: "Nueva transacción",
+        goDashboard: "Ir al tablero",
+      },
+      insight: {
+        noMovements: "Registrar incluso los gastos chicos hace una gran diferencia.",
+        started: "Si sabés en qué gastás, ya estás un paso adelante.",
+        readyForBalance: "Tu balance muestra lo que queda después de tus decisiones.",
+      },
+      guidance: {
+        message1: "Empezá cargando los gastos mensuales que ya tenés claros.",
+        message2: "No te preocupes si al principio el presupuesto no cierra perfecto.",
+        message3: "Es normal acordarse de cosas a mitad de camino y agregarlas después.",
+        message4: "Lo importante es registrar y mejorar de a poco.",
+        message5: "Con el tiempo tu presupuesto se va a acercar cada vez más a tu realidad.",
+        message6: "Cuanto más claro tengas en qué gastás, mejores decisiones podés tomar.",
+      },
+      checklist: {
+        firstIncome: "Registrar primer ingreso",
+        threeExpenses: "Registrar 3 gastos",
+        reviewBalance: "Revisar balance del mes",
+      },
+      progressSummary: "{{completed}}/{{total}} completado",
+      notifications: {
+        loadErrorTitle: "No pudimos cargar tu guía de inicio",
+        loadErrorFallback: "No pudimos cargar el estado inicial.",
       },
     },
     auth: {
@@ -865,6 +913,7 @@ const dictionaries = {
     },
     nav: {
       summary: "Overview",
+      start: "Get started",
       insights: "Insights",
       budget: "Budget",
       transactions: "Transactions",
@@ -1030,6 +1079,53 @@ const dictionaries = {
           item2: "• what increased or decreased vs previous month",
           item3: "• how your money evolves month by month",
         },
+      },
+    },
+    start: {
+      title: "Get started",
+      subtitle: "Quick guidance for your first steps in Encaja.",
+      sections: {
+        currentStatus: "Current status",
+        primaryAction: "Primary action",
+        insight: "Quick insight",
+        checklist: "Progress checklist",
+      },
+      status: {
+        noMovements: "You have not logged movements yet",
+        started: "You already started logging your finances",
+        readyForBalance: "You already have useful data to start reviewing your month",
+      },
+      action: {
+        firstExpense: "Log your first expense",
+        keepLogging: "Log more movements",
+        reviewBalance: "Review your balance",
+      },
+      cta: {
+        newTransaction: "New transaction",
+        goDashboard: "Go to dashboard",
+      },
+      insight: {
+        noMovements: "Logging even small expenses makes a big difference.",
+        started: "If you know where your money goes, you are already one step ahead.",
+        readyForBalance: "Your balance shows what remains after your decisions.",
+      },
+      guidance: {
+        message1: "Start by logging the monthly expenses you already know.",
+        message2: "Do not worry if your budget does not balance perfectly at first.",
+        message3: "It is normal to remember things halfway through and add them later.",
+        message4: "The important part is to log and improve little by little.",
+        message5: "Over time your budget will get closer and closer to your real life.",
+        message6: "The clearer you are about where your money goes, the better decisions you can make.",
+      },
+      checklist: {
+        firstIncome: "Log first income",
+        threeExpenses: "Log 3 expenses",
+        reviewBalance: "Review monthly balance",
+      },
+      progressSummary: "{{completed}}/{{total}} completed",
+      notifications: {
+        loadErrorTitle: "We couldn't load your getting started guide",
+        loadErrorFallback: "We couldn't load your initial status.",
       },
     },
     auth: {

@@ -40,6 +40,18 @@ const navItems = [
     ),
   },
   {
+    sectionPath: "/start",
+    labelKey: "nav.start",
+    icon: (
+      <ShellIcon>
+        <path d="M4 6h16" />
+        <path d="M4 12h10" />
+        <path d="M4 18h7" />
+        <path d="m17 14 3 3-3 3" />
+      </ShellIcon>
+    ),
+  },
+  {
     sectionPath: "/insights",
     labelKey: "nav.insights",
     icon: (
