@@ -1472,7 +1472,13 @@ export default function SettingsPage() {
         </Tabs.Panel>
 
         <Tabs.Panel value="advanced" pt="sm">
-          <Paper withBorder radius="md" p="md" bg="red.1">
+          <Paper
+            withBorder
+            radius="md"
+            p="md"
+            bg="red.1"
+            style={{ borderColor: "var(--mantine-color-red-7)" }}
+          >
             <Stack gap="sm">
               <Text fw={700} c="red.8">
                 {t("workspaceSettings.dangerZone.title")}
@@ -1493,9 +1499,22 @@ export default function SettingsPage() {
               <Group justify="flex-end">
                 <Button
                   color="red"
-                  variant="light"
+                  variant="filled"
                   onClick={openDeleteWorkspace}
                   disabled={!canDeleteCurrentWorkspace}
+                  styles={{
+                    root: {
+                      backgroundColor: "var(--mantine-color-red-7)",
+                      border: "1px solid var(--mantine-color-red-8)",
+                      color: "var(--mantine-color-white)",
+                    },
+                    disabled: {
+                      opacity: 1,
+                      backgroundColor: "var(--mantine-color-red-3)",
+                      border: "1px solid var(--mantine-color-red-5)",
+                      color: "var(--mantine-color-red-8)",
+                    },
+                  }}
                 >
                   {t("workspaceSettings.dangerZone.deleteWorkspaceButton")}
                 </Button>
