@@ -13,7 +13,6 @@ import {
   NativeSelect,
   Paper,
   Select,
-  SimpleGrid,
   Stack,
   Tabs,
   Text,
@@ -838,10 +837,12 @@ export default function SettingsPage() {
         color: isActive ? `var(--mantine-color-${accentColor}-7)` : "var(--mantine-color-gray-7)",
         fontWeight: isActive ? 700 : 500,
         borderRadius: 8,
-        minHeight: 36,
+        minHeight: isMobile ? 34 : 36,
+        fontSize: isMobile ? "0.78rem" : undefined,
+        lineHeight: 1.15,
         textAlign: "center" as const,
-        paddingInline: 8,
-        gridColumn: isMobile && tabValue === "advanced" ? "1 / -1" : undefined,
+        paddingInline: isMobile ? 6 : 8,
+        whiteSpace: "nowrap" as const,
       };
     },
     [activeSettingsTab, isMobile],
@@ -1079,8 +1080,8 @@ export default function SettingsPage() {
             borderRadius: 10,
             padding: 6,
             display: "grid",
-            gridTemplateColumns: isMobile ? "repeat(2, minmax(0, 1fr))" : "repeat(5, minmax(0, 1fr))",
-            gap: 6,
+            gridTemplateColumns: isMobile ? "repeat(3, minmax(0, 1fr))" : "repeat(5, minmax(0, 1fr))",
+            gap: isMobile ? 4 : 6,
             boxShadow: isMobile ? "0 1px 0 rgba(0,0,0,0.04)" : undefined,
           }}
         >
@@ -1164,24 +1165,13 @@ export default function SettingsPage() {
                     {t("workspaceSettings.forms.showCentsDescription")}
                   </Text>
 
-                  <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
-                    <TextInput
-                      label={t("workspaceSettings.forms.startYear")}
-                      type="number"
-                      placeholder="2026"
-                      disabled={!canEditWorkspaceSettings}
-                      error={errors.startYear?.message}
-                      {...register("startYear")}
-                    />
-
-                    <NativeSelect
-                      label={t("workspaceSettings.forms.savingsMode")}
-                      data={savingsRateModeSelectData}
-                      disabled={!canEditWorkspaceSettings}
-                      error={errors.savingsRateMode?.message}
-                      {...register("savingsRateMode")}
-                    />
-                  </SimpleGrid>
+                  <NativeSelect
+                    label={t("workspaceSettings.forms.savingsMode")}
+                    data={savingsRateModeSelectData}
+                    disabled={!canEditWorkspaceSettings}
+                    error={errors.savingsRateMode?.message}
+                    {...register("savingsRateMode")}
+                  />
 
                   <Controller
                     control={control}
