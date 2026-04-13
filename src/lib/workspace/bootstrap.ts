@@ -1,5 +1,6 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 
+import { normalizeLocale, type Locale } from "@/features/i18n/config";
 import type {
   Database,
   SubscriptionPlan,
@@ -44,6 +45,7 @@ interface BootstrapOptions {
   supabase: SupabaseClient<Database>;
   user: User;
   fullNameHint?: string;
+  preferredLanguageHint?: Locale;
 }
 
 interface ListWorkspacesOptions {
@@ -55,6 +57,7 @@ interface CreateWorkspaceOptions {
   supabase: SupabaseClient<Database>;
   user: User;
   name: string;
+  preferredLanguageHint?: Locale;
 }
 
 interface DeleteWorkspaceOptions {
@@ -110,6 +113,7 @@ async function ensureUserProfile(
   supabase: SupabaseClient<Database>,
   user: User,
   fullNameHint?: string,
+  preferredLanguageHint?: Locale,
 ) {
   const profileUpsert = await supabase.from("profiles").upsert(
     {
@@ -124,6 +128,23 @@ async function ensureUserProfile(
 
   if (profileUpsert.error) {
     throw profileUpsert.error;
+  }
+
+  const normalizedLanguage = normalizeLocale(preferredLanguageHint ?? null);
+  if (!normalizedLanguage) {
+    return;
+  }
+
+  const profileLanguageUpdate = await supabase
+    .from("profiles")
+    .update({
+      preferred_language: normalizedLanguage,
+    })
+    .eq("id", user.id)
+    .is("preferred_language", null);
+
+  if (profileLanguageUpdate.error) {
+    throw profileLanguageUpdate.error;
   }
 }
 
@@ -151,8 +172,9 @@ export async function createWorkspaceForUser({
   supabase,
   user,
   name,
+  preferredLanguageHint,
 }: CreateWorkspaceOptions): Promise<WorkspaceSummary> {
-  await ensureUserProfile(supabase, user);
+  await ensureUserProfile(supabase, user, undefined, preferredLanguageHint);
 
   const workspaceName = name.trim();
   if (workspaceName.length < 2) {
@@ -247,8 +269,9 @@ export async function bootstrapUserWorkspace({
   supabase,
   user,
   fullNameHint,
+  preferredLanguageHint,
 }: BootstrapOptions): Promise<WorkspaceSummary> {
-  await ensureUserProfile(supabase, user, fullNameHint);
+  await ensureUserProfile(supabase, user, fullNameHint, preferredLanguageHint);
 
   const existingWorkspaces = await listUserWorkspaces({ supabase, user });
   if (existingWorkspaces.length > 0) {

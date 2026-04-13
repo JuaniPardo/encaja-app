@@ -14,6 +14,8 @@ import { Button, Center, Loader, Paper, Stack, Text } from "@mantine/core";
 import { usePathname, useRouter } from "next/navigation";
 
 import { canUseFeature, type WorkspaceFeature } from "@/features/billing/feature-access";
+import { normalizeLocale, type Locale } from "@/features/i18n/config";
+import { useI18n } from "@/features/i18n/provider";
 import {
   buildFallbackWorkspacePath,
   pickActiveWorkspace,
@@ -43,6 +45,8 @@ interface WorkspaceContextValue {
   deleteWorkspace: (workspaceId: string) => Promise<WorkspaceSummary>;
   switchWorkspace: (workspaceSlug: string, sectionPath?: string) => void;
   canUseWorkspaceFeature: (feature: WorkspaceFeature) => boolean;
+  locale: Locale;
+  setUserLanguage: (language: Locale) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -76,6 +80,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const routeWorkspaceSlug = getWorkspaceSlugFromPathname(pathname ?? "");
+  const { locale, setLocale, t } = useI18n();
 
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const requestCounterRef = useRef(0);
@@ -127,7 +132,21 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
             supabase,
             user,
             fullNameHint: fullNameFromMetadata,
+            preferredLanguageHint: locale,
           });
+        }
+
+        const profileResponse = await supabase
+          .from("profiles")
+          .select("preferred_language")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (!profileResponse.error) {
+          const preferredLanguage = normalizeLocale(profileResponse.data?.preferred_language ?? null);
+          if (preferredLanguage && preferredLanguage !== locale) {
+            setLocale(preferredLanguage);
+          }
         }
 
         const workspaces = await listUserWorkspaces({ supabase, user });
@@ -141,7 +160,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         );
 
         if (!workspace) {
-          throw new Error("No encontramos un workspace asociado.");
+          throw new Error(t("workspace.noWorkspaceAssociated"));
         }
 
         if (requestCounterRef.current !== requestId) {
@@ -167,14 +186,14 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
           errorMessage:
             error instanceof Error
               ? error.message
-              : "No pudimos inicializar el workspace.",
+              : t("workspace.initializingError"),
           user,
           workspaces: [],
           workspace: null,
         });
       }
     },
-    [router, supabase],
+    [locale, router, setLocale, supabase, t],
   );
 
   const refreshWorkspace = useCallback(async () => {
@@ -198,7 +217,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       );
 
       if (!workspace) {
-        throw new Error("No encontramos un workspace asociado.");
+        throw new Error(t("workspace.noWorkspaceAssociated"));
       }
 
       if (requestCounterRef.current !== requestId) {
@@ -221,21 +240,22 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       setState((prev) => ({
         ...prev,
         errorMessage:
-          error instanceof Error ? error.message : "No pudimos refrescar workspaces.",
+          error instanceof Error ? error.message : t("workspace.refreshError"),
       }));
     }
-  }, [loadSessionAndWorkspaces, state.user, state.workspace?.slug, supabase]);
+  }, [loadSessionAndWorkspaces, state.user, state.workspace?.slug, supabase, t]);
 
   const createWorkspace = useCallback(
     async (name: string) => {
       if (!state.user) {
-        throw new Error("Tu sesión no está disponible.");
+        throw new Error(t("workspace.noSessionAvailable"));
       }
 
       const createdWorkspace = await createWorkspaceForUser({
         supabase,
         user: state.user,
         name,
+        preferredLanguageHint: locale,
       });
 
       const workspaces = await listUserWorkspaces({
@@ -253,13 +273,13 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       rememberLastWorkspaceSlug(createdWorkspace.slug);
       return createdWorkspace;
     },
-    [state.user, supabase],
+    [locale, state.user, supabase, t],
   );
 
   const deleteWorkspace = useCallback(
     async (workspaceId: string) => {
       if (!state.user) {
-        throw new Error("Tu sesión no está disponible.");
+        throw new Error(t("workspace.noSessionAvailable"));
       }
 
       const workspaceToDelete = state.workspaces.find(
@@ -291,7 +311,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!workspace) {
-        throw new Error("Necesitás al menos un workspace activo.");
+        throw new Error(t("workspace.needActiveWorkspace"));
       }
 
       setState((prev) => ({
@@ -304,7 +324,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       rememberLastWorkspaceSlug(workspace.slug);
       return workspace;
     },
-    [state.user, state.workspace?.id, state.workspace?.slug, state.workspaces, supabase],
+    [state.user, state.workspace?.id, state.workspace?.slug, state.workspaces, supabase, t],
   );
 
   const switchWorkspace = useCallback(
@@ -330,6 +350,30 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     });
     router.replace("/login");
   }, [router, supabase]);
+
+  const setUserLanguage = useCallback(
+    async (language: Locale) => {
+      if (!state.user) {
+        throw new Error(t("workspace.noSessionAvailable"));
+      }
+
+      const normalizedLanguage = normalizeLocale(language) ?? locale;
+      const response = await supabase
+        .from("profiles")
+        .update({
+          preferred_language: normalizedLanguage,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", state.user.id);
+
+      if (response.error) {
+        throw response.error;
+      }
+
+      setLocale(normalizedLanguage);
+    },
+    [locale, setLocale, state.user, supabase, t],
+  );
 
   useEffect(() => {
     void loadSessionAndWorkspaces();
@@ -402,7 +446,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         <Stack align="center" gap="xs">
           <Loader size="md" />
           <Text size="sm" c="dimmed">
-            Preparando tus workspaces...
+            {t("workspace.loading")}
           </Text>
         </Stack>
       </Center>
@@ -414,13 +458,15 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       <Center h="100vh" p="md">
         <Paper withBorder radius="md" p="lg" maw={480}>
           <Stack gap="sm">
-            <Text fw={600}>No pudimos cargar tu sesión</Text>
+            <Text fw={600}>{t("workspace.sessionErrorTitle")}</Text>
             <Text size="sm" c="dimmed">
-              {state.errorMessage ?? "No encontramos un workspace asociado."}
+              {state.errorMessage ?? t("workspace.sessionErrorFallback")}
             </Text>
-            <Button onClick={() => void loadSessionAndWorkspaces()}>Reintentar</Button>
+            <Button onClick={() => void loadSessionAndWorkspaces()}>
+              {t("common.actions.retry")}
+            </Button>
             <Button variant="light" color="gray" onClick={() => void signOut()}>
-              Volver a ingresar
+              {t("workspace.backToLogin")}
             </Button>
           </Stack>
         </Paper>
@@ -443,6 +489,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         deleteWorkspace,
         switchWorkspace,
         canUseWorkspaceFeature,
+        locale,
+        setUserLanguage,
         signOut,
       }}
     >

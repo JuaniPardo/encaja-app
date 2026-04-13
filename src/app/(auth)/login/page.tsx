@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useMemo } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,7 +17,8 @@ import {
 import { notifications } from "@mantine/notifications";
 import { useForm } from "react-hook-form";
 
-import { loginSchema, type LoginValues } from "@/features/auth/schemas";
+import { createLoginSchema, type LoginValues } from "@/features/auth/schemas";
+import { useI18n } from "@/features/i18n/provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 function getSafeNextPath(pathname: string | null) {
@@ -39,14 +40,23 @@ export default function LoginPage() {
 function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useI18n();
   const supabase = getSupabaseBrowserClient();
+  const loginFormSchema = useMemo(
+    () =>
+      createLoginSchema({
+        invalidEmail: t("auth.validation.invalidEmail"),
+        passwordMinLength: t("auth.validation.passwordMinLength"),
+      }),
+    [t],
+  );
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<LoginValues>({
-    resolver: zodResolver(loginSchema),
+    resolver: zodResolver(loginFormSchema),
     defaultValues: {
       email: "",
       password: "",
@@ -62,7 +72,7 @@ function LoginPageContent() {
     if (response.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos iniciar sesión",
+        title: t("auth.login.errorTitle"),
         message: response.error.message,
       });
       return;
@@ -70,8 +80,8 @@ function LoginPageContent() {
 
     notifications.show({
       color: "green",
-      title: "Bienvenido",
-      message: "Sesión iniciada correctamente.",
+      title: t("auth.login.successTitle"),
+      message: t("auth.login.successMessage"),
     });
 
     const nextPath = getSafeNextPath(searchParams.get("next"));
@@ -81,39 +91,39 @@ function LoginPageContent() {
   return (
     <Paper radius="lg" p="xl" withBorder shadow="sm">
       <Stack gap="md">
-        <Title order={2}>Ingresar</Title>
+        <Title order={2}>{t("auth.login.title")}</Title>
         <Text c="dimmed" size="sm">
-          Entrá a Encaja para administrar tu presupuesto familiar.
+          {t("auth.login.subtitle")}
         </Text>
 
         <form onSubmit={onSubmit}>
           <Stack gap="sm">
             <TextInput
-              label="Email"
-              placeholder="nombre@email.com"
+              label={t("auth.login.emailLabel")}
+              placeholder={t("auth.login.emailPlaceholder")}
               autoComplete="email"
               error={errors.email?.message}
               {...register("email")}
             />
 
             <PasswordInput
-              label="Contraseña"
-              placeholder="********"
+              label={t("auth.login.passwordLabel")}
+              placeholder={t("auth.login.passwordPlaceholder")}
               autoComplete="current-password"
               error={errors.password?.message}
               {...register("password")}
             />
 
             <Button type="submit" loading={isSubmitting}>
-              Iniciar sesión
+              {t("auth.login.submit")}
             </Button>
           </Stack>
         </form>
 
         <Text size="sm" c="dimmed">
-          ¿Todavía no tenés cuenta?{" "}
+          {t("auth.login.noAccount")}{" "}
           <Anchor component={Link} href="/register">
-            Registrate
+            {t("auth.login.goToRegister")}
           </Anchor>
         </Text>
       </Stack>
@@ -122,12 +132,14 @@ function LoginPageContent() {
 }
 
 function LoginPageFallback() {
+  const { t } = useI18n();
+
   return (
     <Paper radius="lg" p="xl" withBorder shadow="sm">
       <Stack gap="md">
-        <Title order={2}>Ingresar</Title>
+        <Title order={2}>{t("auth.login.title")}</Title>
         <Text c="dimmed" size="sm">
-          Cargando formulario...
+          {t("auth.login.fallback")}
         </Text>
       </Stack>
     </Paper>

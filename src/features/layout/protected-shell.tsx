@@ -20,6 +20,7 @@ import {
 import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import { useEffect, useMemo, useState } from "react";
 
+import { useI18n } from "@/features/i18n/provider";
 import {
   buildWorkspaceHref,
   getWorkspaceScopedSectionPath,
@@ -31,7 +32,7 @@ import type { WorkspaceRole } from "@/types/database";
 const navItems = [
   {
     sectionPath: "",
-    label: "Resumen",
+    labelKey: "nav.summary",
     icon: (
       <ShellIcon>
         <path d="M3 10.2 12 4l9 6.2v8.3a1 1 0 0 1-1 1h-5.8v-5.5H9.8v5.5H4a1 1 0 0 1-1-1v-8.3Z" />
@@ -40,7 +41,7 @@ const navItems = [
   },
   {
     sectionPath: "/insights",
-    label: "Insights",
+    labelKey: "nav.insights",
     icon: (
       <ShellIcon>
         <path d="M4 18V8" />
@@ -52,7 +53,7 @@ const navItems = [
   },
   {
     sectionPath: "/budget",
-    label: "Presupuesto",
+    labelKey: "nav.budget",
     icon: (
       <ShellIcon>
         <rect x="3" y="6" width="18" height="12" rx="2" />
@@ -63,7 +64,7 @@ const navItems = [
   },
   {
     sectionPath: "/transactions",
-    label: "Transacciones",
+    labelKey: "nav.transactions",
     icon: (
       <ShellIcon>
         <path d="M4 8h10" />
@@ -75,7 +76,7 @@ const navItems = [
   },
   {
     sectionPath: "/categories",
-    label: "Categorías",
+    labelKey: "nav.categories",
     icon: (
       <ShellIcon>
         <rect x="4" y="4" width="7" height="7" rx="1" />
@@ -87,7 +88,7 @@ const navItems = [
   },
   {
     sectionPath: "/payment-methods",
-    label: "Medios de pago",
+    labelKey: "nav.paymentMethods",
     icon: (
       <ShellIcon>
         <rect x="2.5" y="6" width="19" height="12" rx="2" />
@@ -98,7 +99,7 @@ const navItems = [
   },
   {
     sectionPath: "/settings",
-    label: "Configuración",
+    labelKey: "nav.settings",
     icon: (
       <ShellIcon>
         <circle cx="12" cy="12" r="3.5" />
@@ -133,8 +134,8 @@ function ShellIcon({ children }: { children: React.ReactNode }) {
   );
 }
 
-function formatRoleLabel(role: WorkspaceRole) {
-  return role === "owner" ? "owner" : "member";
+function formatRoleLabel(role: WorkspaceRole, t: (key: string, fallback?: string) => string) {
+  return role === "owner" ? t("common.role.owner", "owner") : t("common.role.member", "member");
 }
 
 export function ProtectedShell({ children }: { children: React.ReactNode }) {
@@ -142,6 +143,7 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
   const [opened, { toggle, close }] = useDisclosure(false);
   const [desktopCollapsed, setDesktopCollapsed] = useState(false);
   const isMobile = useMediaQuery("(max-width: 47.99em)");
+  const { t } = useI18n();
   const { workspace, workspaces, user, switchWorkspace, signOut } = useWorkspace();
   const sectionPath = getWorkspaceScopedSectionPath(pathname ?? "");
   const pathWithoutWorkspace = stripWorkspaceSlugFromPathname(pathname ?? "/app");
@@ -149,9 +151,9 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
     () =>
       workspaces.map((item) => ({
         value: item.slug,
-        label: `${item.name} · ${formatRoleLabel(item.role)}`,
+        label: `${item.name} · ${formatRoleLabel(item.role, t)}`,
       })),
-    [workspaces],
+    [t, workspaces],
   );
 
   useEffect(() => {
@@ -183,7 +185,9 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
                 color="gray"
                 size="sm"
                 visibleFrom="sm"
-                aria-label={desktopCollapsed ? "Expandir menú" : "Colapsar menú"}
+                aria-label={
+                  desktopCollapsed ? t("nav.expandMenu", "Expand menu") : t("nav.collapseMenu", "Collapse menu")
+                }
                 onClick={() => setDesktopCollapsed((prev) => !prev)}
               >
                 <Text size="sm" fw={700}>
@@ -207,12 +211,14 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
                   />
                 ) : (
                   <Text size="xs" c="dimmed">
-                    {workspace.name} · {formatRoleLabel(workspace.role)}
+                    {workspace.name} · {formatRoleLabel(workspace.role, t)}
                   </Text>
                 )}
                 {workspaces.length > 1 ? (
                   <Text size="xs" c="dimmed">
-                    Rol activo: {formatRoleLabel(workspace.role)}
+                    {t("nav.activeRole", "Active role: {{role}}", {
+                      role: formatRoleLabel(workspace.role, t),
+                    })}
                   </Text>
                 ) : null}
               </Box>
@@ -223,7 +229,7 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
                 {user.email}
               </Text>
               <Button size="xs" variant="light" color="gray" onClick={() => void signOut()}>
-                Salir
+                {t("common.actions.signOut", "Sign out")}
               </Button>
             </Group>
           </Group>
@@ -241,11 +247,12 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
               const navPath = buildWorkspaceHref(workspace.slug, item.sectionPath);
               const activePath = item.sectionPath ? `/app${item.sectionPath}` : "/app";
               const isActive = isActivePath(pathWithoutWorkspace, activePath);
+              const itemLabel = t(item.labelKey);
 
               return (
                 <Tooltip
                   key={item.sectionPath || "/"}
-                  label={item.label}
+                  label={itemLabel}
                   disabled={!desktopCollapsed}
                   position="right"
                   withArrow
@@ -292,7 +299,7 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
                       </Box>
                       {!desktopCollapsed ? (
                         <Text size={isMobile ? "xs" : "sm"} fw={isActive ? 700 : 600}>
-                          {item.label}
+                          {itemLabel}
                         </Text>
                       ) : null}
                     </Group>
@@ -311,10 +318,15 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
               onClick={() => void signOut()}
               fullWidth
             >
-              Cerrar sesión
+              {t("common.actions.closeSession", "Close session")}
             </Button>
 
-            <Tooltip label="Salir" disabled={!desktopCollapsed} position="right" withArrow>
+            <Tooltip
+              label={t("workspace.signOutTooltip", "Sign out")}
+              disabled={!desktopCollapsed}
+              position="right"
+              withArrow
+            >
               <UnstyledButton
                 visibleFrom="sm"
                 onClick={() => void signOut()}
@@ -334,7 +346,7 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
                   </ShellIcon>
                   {!desktopCollapsed ? (
                     <Text size="sm" fw={600}>
-                      Salir
+                      {t("common.actions.signOut", "Sign out")}
                     </Text>
                   ) : null}
                 </Group>
@@ -343,7 +355,7 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
 
             {!desktopCollapsed || isMobile ? (
               <Text size="10px" c="#98a2b3" mt="sm" ta={isMobile ? "center" : "left"}>
-                Desarrollado por Juan Pardo
+                {t("workspace.developedBy", "Developed by Juan Pardo")}
               </Text>
             ) : null}
         </Box>

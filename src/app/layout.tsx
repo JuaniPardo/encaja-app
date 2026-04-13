@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { IBM_Plex_Sans, IBM_Plex_Sans_Condensed } from "next/font/google";
 
 import "@mantine/core/styles.css";
@@ -7,6 +8,7 @@ import "@mantine/notifications/styles.css";
 import "./globals.css";
 
 import { AppProviders } from "@/app/providers";
+import { defaultLocale, localeCookieName, normalizeLocale } from "@/features/i18n/config";
 
 const sans = IBM_Plex_Sans({
   variable: "--font-sans",
@@ -25,15 +27,19 @@ export const metadata: Metadata = {
   description: "Presupuesto y control financiero familiar",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const initialLocale =
+    normalizeLocale(cookieStore.get(localeCookieName)?.value ?? null) ?? defaultLocale;
+
   return (
-    <html lang="es" className={`${sans.variable} ${condensed.variable}`}>
+    <html lang={initialLocale} className={`${sans.variable} ${condensed.variable}`}>
       <body>
-        <AppProviders>{children}</AppProviders>
+        <AppProviders initialLocale={initialLocale}>{children}</AppProviders>
       </body>
     </html>
   );

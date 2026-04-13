@@ -22,6 +22,8 @@ import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { Controller, useForm, useWatch } from "react-hook-form";
 
+import { type Locale } from "@/features/i18n/config";
+import { useI18n } from "@/features/i18n/provider";
 import {
   settingsFormSchema,
   type SettingsFormInputValues,
@@ -78,6 +80,7 @@ function getMemberDisplayName(member: WorkspaceMemberSummary) {
 }
 
 export default function SettingsPage() {
+  const { t } = useI18n();
   const {
     supabase,
     workspace,
@@ -87,6 +90,8 @@ export default function SettingsPage() {
     deleteWorkspace,
     switchWorkspace,
     canUseWorkspaceFeature,
+    locale,
+    setUserLanguage,
   } = useWorkspace();
   const canEditWorkspaceSettings = canManageWorkspaceSettings(workspace.role);
   const canManageMembers = canManageWorkspaceMembers(workspace.role);
@@ -114,6 +119,16 @@ export default function SettingsPage() {
   const [isWorkspaceCurrenciesLoading, setIsWorkspaceCurrenciesLoading] = useState(true);
   const [workspaceCurrencyCode, setWorkspaceCurrencyCode] = useState("ARS");
   const [settingsId, setSettingsId] = useState<string | null>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState<Locale>(locale);
+  const [isUpdatingLanguage, setIsUpdatingLanguage] = useState(false);
+
+  const languageOptions = useMemo(
+    () => [
+      { value: "es", label: t("settings.language.spanishOption") },
+      { value: "en", label: t("settings.language.englishOption") },
+    ],
+    [t],
+  );
 
   const {
     register,
@@ -210,6 +225,10 @@ export default function SettingsPage() {
       setDeleteWorkspaceConfirmation("");
     }
   }, [isDeleteWorkspaceOpen]);
+
+  useEffect(() => {
+    setSelectedLanguage(locale);
+  }, [locale]);
 
   const loadSettings = useCallback(async () => {
     setIsLoading(true);
@@ -439,6 +458,27 @@ export default function SettingsPage() {
     setWorkspaceCurrencyCode(payload.currency_code);
     await loadWorkspaceCurrencies();
   });
+
+  const onSaveLanguage = async () => {
+    setIsUpdatingLanguage(true);
+
+    try {
+      await setUserLanguage(selectedLanguage);
+      notifications.show({
+        color: "green",
+        title: t("settings.language.savedTitle"),
+        message: t("settings.language.savedMessage"),
+      });
+    } catch (error) {
+      notifications.show({
+        color: "red",
+        title: t("settings.language.errorTitle"),
+        message: error instanceof Error ? error.message : undefined,
+      });
+    } finally {
+      setIsUpdatingLanguage(false);
+    }
+  };
 
   const onSubmitWorkspace = handleSubmitWorkspace(async (values) => {
     if (!canEditWorkspaceSettings) {
@@ -889,6 +929,32 @@ export default function SettingsPage() {
           configuración del workspace.
         </Alert>
       ) : null}
+
+      <Paper withBorder radius="md" p="md">
+        <Stack gap="sm">
+          <Text fw={600}>{t("settings.language.title")}</Text>
+          <Text size="sm" c="dimmed">
+            {t("settings.language.description")}
+          </Text>
+          <Group align="flex-end" wrap="wrap">
+            <NativeSelect
+              label={t("settings.language.fieldLabel")}
+              data={languageOptions}
+              value={selectedLanguage}
+              onChange={(event) => setSelectedLanguage(event.currentTarget.value as Locale)}
+              style={{ minWidth: 220 }}
+            />
+            <Button
+              type="button"
+              onClick={() => void onSaveLanguage()}
+              loading={isUpdatingLanguage}
+              disabled={selectedLanguage === locale}
+            >
+              {t("settings.language.saveButton")}
+            </Button>
+          </Group>
+        </Stack>
+      </Paper>
 
       <Paper withBorder radius="md" p="md">
         <Stack gap="sm">

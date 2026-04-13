@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useMemo } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Anchor,
@@ -16,20 +17,31 @@ import {
 import { notifications } from "@mantine/notifications";
 import { useForm } from "react-hook-form";
 
-import { registerSchema, type RegisterValues } from "@/features/auth/schemas";
+import { createRegisterSchema, type RegisterValues } from "@/features/auth/schemas";
+import { useI18n } from "@/features/i18n/provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { bootstrapUserWorkspace } from "@/lib/workspace/bootstrap";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { locale, t } = useI18n();
   const supabase = getSupabaseBrowserClient();
+  const registerFormSchema = useMemo(
+    () =>
+      createRegisterSchema({
+        invalidEmail: t("auth.validation.invalidEmail"),
+        passwordMinLength: t("auth.validation.passwordMinLength"),
+        fullNameMaxLength: t("auth.validation.fullNameMaxLength"),
+      }),
+    [t],
+  );
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<RegisterValues>({
-    resolver: zodResolver(registerSchema),
+    resolver: zodResolver(registerFormSchema),
     defaultValues: {
       fullName: "",
       email: "",
@@ -51,7 +63,7 @@ export default function RegisterPage() {
     if (response.error) {
       notifications.show({
         color: "red",
-        title: "No pudimos crear la cuenta",
+        title: t("auth.register.createErrorTitle"),
         message: response.error.message,
       });
       return;
@@ -60,8 +72,8 @@ export default function RegisterPage() {
     if (!response.data.user || !response.data.session) {
       notifications.show({
         color: "blue",
-        title: "Cuenta creada",
-        message: "Revisá tu email para confirmar la cuenta y luego ingresá.",
+        title: t("auth.register.createdTitle"),
+        message: t("auth.register.createdConfirmEmail"),
       });
       router.replace("/login");
       return;
@@ -72,23 +84,24 @@ export default function RegisterPage() {
         supabase,
         user: response.data.user,
         fullNameHint: values.fullName,
+        preferredLanguageHint: locale,
       });
     } catch (error) {
       notifications.show({
         color: "red",
-        title: "No pudimos preparar tu workspace",
+        title: t("auth.register.bootstrapErrorTitle"),
         message:
           error instanceof Error
             ? error.message
-            : "Ocurrió un error inesperado durante el bootstrap.",
+            : t("auth.register.bootstrapErrorFallback"),
       });
       return;
     }
 
     notifications.show({
       color: "green",
-      title: "Cuenta creada",
-      message: "Tu workspace inicial ya está listo.",
+      title: t("auth.register.createdTitle"),
+      message: t("auth.register.workspaceReady"),
     });
 
     router.replace("/app");
@@ -97,47 +110,47 @@ export default function RegisterPage() {
   return (
     <Paper radius="lg" p="xl" withBorder shadow="sm">
       <Stack gap="md">
-        <Title order={2}>Crear cuenta</Title>
+        <Title order={2}>{t("auth.register.title")}</Title>
         <Text c="dimmed" size="sm">
-          Registrate para iniciar tu espacio de gestión financiera.
+          {t("auth.register.subtitle")}
         </Text>
 
         <form onSubmit={onSubmit}>
           <Stack gap="sm">
             <TextInput
-              label="Nombre (opcional)"
-              placeholder="Juan"
+              label={t("auth.register.fullNameLabel")}
+              placeholder={t("auth.register.fullNamePlaceholder")}
               autoComplete="name"
               error={errors.fullName?.message}
               {...register("fullName")}
             />
 
             <TextInput
-              label="Email"
-              placeholder="nombre@email.com"
+              label={t("auth.register.emailLabel")}
+              placeholder={t("auth.register.emailPlaceholder")}
               autoComplete="email"
               error={errors.email?.message}
               {...register("email")}
             />
 
             <PasswordInput
-              label="Contraseña"
-              placeholder="********"
+              label={t("auth.register.passwordLabel")}
+              placeholder={t("auth.register.passwordPlaceholder")}
               autoComplete="new-password"
               error={errors.password?.message}
               {...register("password")}
             />
 
             <Button type="submit" loading={isSubmitting}>
-              Crear cuenta
+              {t("auth.register.submit")}
             </Button>
           </Stack>
         </form>
 
         <Text size="sm" c="dimmed">
-          ¿Ya tenés cuenta?{" "}
+          {t("auth.register.hasAccount")}{" "}
           <Anchor component={Link} href="/login">
-            Ingresá
+            {t("auth.register.goToLogin")}
           </Anchor>
         </Text>
       </Stack>
