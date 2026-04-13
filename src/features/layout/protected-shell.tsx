@@ -211,16 +211,9 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
                   />
                 ) : (
                   <Text size="xs" c="dimmed">
-                    {workspace.name} · {formatRoleLabel(workspace.role, t)}
+                    {workspace.name}
                   </Text>
                 )}
-                {workspaces.length > 1 ? (
-                  <Text size="xs" c="dimmed">
-                    {t("nav.activeRole", "Active role: {{role}}", {
-                      role: formatRoleLabel(workspace.role, t),
-                    })}
-                  </Text>
-                ) : null}
               </Box>
             </Group>
 
