@@ -251,6 +251,8 @@ const dictionaries = {
     auth: {
       language: {
         switchAriaLabel: "Cambiar idioma del formulario de acceso",
+        spanishNative: "Español",
+        englishNative: "English",
       },
       login: {
         title: "Ingresar",
@@ -1033,6 +1035,8 @@ const dictionaries = {
     auth: {
       language: {
         switchAriaLabel: "Change auth form language",
+        spanishNative: "Español",
+        englishNative: "English",
       },
       login: {
         title: "Log in",

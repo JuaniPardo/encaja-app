@@ -21,8 +21,8 @@ export function AuthLanguageSwitcher() {
         setLocale(normalizedLocale);
       }}
       data={[
-        { value: "es", label: t("settings.language.spanishOption") },
-        { value: "en", label: t("settings.language.englishOption") },
+        { value: "es", label: t("auth.language.spanishNative") },
+        { value: "en", label: t("auth.language.englishNative") },
       ]}
       aria-label={t("auth.language.switchAriaLabel")}
       fullWidth
