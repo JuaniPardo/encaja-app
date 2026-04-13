@@ -66,6 +66,14 @@ type WorkspaceSettingsCurrencyRow = Pick<
 
 const DEFAULT_CURRENCY_CODE = "ARS";
 const WORKSPACE_CURRENCY_CODES = ["ARS", "USD", "EUR", "CLP", "UYU", "BRL", "MXN", "COP", "PEN"] as const;
+type SettingsTabValue = "workspace" | "collaboration" | "links" | "personal" | "advanced";
+const settingsTabAccentColor: Record<SettingsTabValue, string> = {
+  workspace: "teal",
+  collaboration: "blue",
+  links: "cyan",
+  personal: "indigo",
+  advanced: "red",
+};
 
 function getMemberDisplayName(member: WorkspaceMemberSummary) {
   if (member.full_name && member.full_name.trim().length > 0) {
@@ -119,6 +127,7 @@ export default function SettingsPage() {
   const [settingsId, setSettingsId] = useState<string | null>(null);
   const [selectedLanguage, setSelectedLanguage] = useState<Locale>(locale);
   const [isUpdatingLanguage, setIsUpdatingLanguage] = useState(false);
+  const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsTabValue>("workspace");
   const savingsRateModeSelectData = useMemo(
     () => [
       { value: "manual", label: t("workspaceSettings.savingsRateMode.manual") },
@@ -769,6 +778,7 @@ export default function SettingsPage() {
   const activeWorkspaceLinksCount = workspaceLinks.filter(
     (workspaceLink) => workspaceLink.is_active,
   ).length;
+  const selectedSettingsTabColor = settingsTabAccentColor[activeSettingsTab];
 
   const workspaceLinkTargetOptions = useMemo(() => {
     return workspaces
@@ -812,6 +822,30 @@ export default function SettingsPage() {
   ]);
 
   const canCreateAnyWorkspaceLink = workspaceLinkTargetOptions.some((option) => !option.disabled);
+
+  const getSettingsTabStyle = useCallback(
+    (tabValue: SettingsTabValue) => {
+      const accentColor = settingsTabAccentColor[tabValue];
+      const isActive = activeSettingsTab === tabValue;
+
+      return {
+        border: isActive
+          ? `1px solid var(--mantine-color-${accentColor}-2)`
+          : "1px solid var(--mantine-color-gray-2)",
+        backgroundColor: isActive
+          ? `var(--mantine-color-${accentColor}-0)`
+          : "var(--mantine-color-gray-0)",
+        color: isActive ? `var(--mantine-color-${accentColor}-7)` : "var(--mantine-color-gray-7)",
+        fontWeight: isActive ? 700 : 500,
+        borderRadius: 8,
+        minHeight: 36,
+        textAlign: "center" as const,
+        paddingInline: 8,
+        gridColumn: isMobile && tabValue === "advanced" ? "1 / -1" : undefined,
+      };
+    },
+    [activeSettingsTab, isMobile],
+  );
 
   const onSubmitWorkspaceLink = handleSubmitWorkspaceLink(async (values) => {
     if (!canManageLinks) {
@@ -1029,28 +1063,42 @@ export default function SettingsPage() {
         </Alert>
       ) : null}
 
-      <Tabs defaultValue="workspace" variant="outline" keepMounted={false}>
+      <Tabs
+        value={activeSettingsTab}
+        onChange={(value) => setActiveSettingsTab((value as SettingsTabValue) ?? "workspace")}
+        variant="pills"
+        keepMounted={false}
+      >
         <Tabs.List
-          style={
-            isMobile
-              ? {
-                  position: "sticky",
-                  top: 0,
-                  zIndex: 20,
-                  background: "var(--mantine-color-body)",
-                  paddingTop: 6,
-                  paddingBottom: 6,
-                  overflowX: "auto",
-                  flexWrap: "nowrap",
-                }
-              : undefined
-          }
+          style={{
+            position: isMobile ? "sticky" : undefined,
+            top: isMobile ? 0 : undefined,
+            zIndex: isMobile ? 20 : undefined,
+            backgroundColor: "var(--mantine-color-body)",
+            border: `1px solid var(--mantine-color-${selectedSettingsTabColor}-2)`,
+            borderRadius: 10,
+            padding: 6,
+            display: "grid",
+            gridTemplateColumns: isMobile ? "repeat(2, minmax(0, 1fr))" : "repeat(5, minmax(0, 1fr))",
+            gap: 6,
+            boxShadow: isMobile ? "0 1px 0 rgba(0,0,0,0.04)" : undefined,
+          }}
         >
-          <Tabs.Tab value="workspace">{t("workspaceSettings.tabs.workspace")}</Tabs.Tab>
-          <Tabs.Tab value="collaboration">{t("workspaceSettings.tabs.collaboration")}</Tabs.Tab>
-          <Tabs.Tab value="links">{t("workspaceSettings.tabs.links")}</Tabs.Tab>
-          <Tabs.Tab value="personal">{t("workspaceSettings.tabs.personal")}</Tabs.Tab>
-          <Tabs.Tab value="advanced">{t("workspaceSettings.tabs.advanced")}</Tabs.Tab>
+          <Tabs.Tab value="workspace" style={getSettingsTabStyle("workspace")}>
+            {t("workspaceSettings.tabs.workspace")}
+          </Tabs.Tab>
+          <Tabs.Tab value="collaboration" style={getSettingsTabStyle("collaboration")}>
+            {t("workspaceSettings.tabs.collaboration")}
+          </Tabs.Tab>
+          <Tabs.Tab value="links" style={getSettingsTabStyle("links")}>
+            {t("workspaceSettings.tabs.links")}
+          </Tabs.Tab>
+          <Tabs.Tab value="personal" style={getSettingsTabStyle("personal")}>
+            {t("workspaceSettings.tabs.personal")}
+          </Tabs.Tab>
+          <Tabs.Tab value="advanced" style={getSettingsTabStyle("advanced")}>
+            {t("workspaceSettings.tabs.advanced")}
+          </Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="workspace" pt="sm">
