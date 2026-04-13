@@ -278,7 +278,7 @@ const dictionaries = {
         readyForBalance: "Tu balance muestra lo que queda después de tus decisiones.",
       },
       guidance: {
-        message1: "Empezá cargando los gastos mensuales que ya tenés claros.",
+        message1: "Podés empezar con efectivo o tarjeta y ajustar después.",
         message2: "No te preocupes si al principio el presupuesto no cierra perfecto.",
         message3: "Es normal acordarse de cosas a mitad de camino y agregarlas después.",
         message4: "Lo importante es registrar y mejorar de a poco.",
@@ -636,6 +636,20 @@ const dictionaries = {
         notes: "Notas",
         notesPlaceholder: "Detalle adicional del movimiento",
       },
+      quickPayment: {
+        title: "Medio de pago inicial",
+        hint: "Podés empezar con efectivo o tarjeta y ajustar después.",
+        options: {
+          cash: "Efectivo",
+          debit_card: "Tarjeta",
+          other: "Otro",
+        },
+        defaultNames: {
+          cash: "Efectivo",
+          debit_card: "Tarjeta",
+          other: "Otro",
+        },
+      },
       notifications: {
         loadCategoriesError: "No pudimos cargar categorías",
         loadPaymentMethodsError: "No pudimos cargar medios de pago",
@@ -653,6 +667,7 @@ const dictionaries = {
         inactivePaymentMethodTitle: "Medio de pago inactivo",
         inactivePaymentMethodMessage:
           "Seleccioná un medio de pago activo para crear una nueva transacción.",
+        quickPaymentCreateError: "No pudimos crear el medio de pago inicial",
         saveChangesError: "No pudimos guardar cambios",
         updatedTitle: "Transacción actualizada",
         updatedMessage: "Los cambios se guardaron correctamente.",
@@ -1110,7 +1125,7 @@ const dictionaries = {
         readyForBalance: "Your balance shows what remains after your decisions.",
       },
       guidance: {
-        message1: "Start by logging the monthly expenses you already know.",
+        message1: "You can start with cash or card and adjust later.",
         message2: "Do not worry if your budget does not balance perfectly at first.",
         message3: "It is normal to remember things halfway through and add them later.",
         message4: "The important part is to log and improve little by little.",
@@ -1468,6 +1483,20 @@ const dictionaries = {
         notes: "Notes",
         notesPlaceholder: "Additional movement detail",
       },
+      quickPayment: {
+        title: "Starter payment method",
+        hint: "You can start with cash or card and adjust later.",
+        options: {
+          cash: "Cash",
+          debit_card: "Card",
+          other: "Other",
+        },
+        defaultNames: {
+          cash: "Cash",
+          debit_card: "Card",
+          other: "Other",
+        },
+      },
       notifications: {
         loadCategoriesError: "We couldn't load categories",
         loadPaymentMethodsError: "We couldn't load payment methods",
@@ -1485,6 +1514,7 @@ const dictionaries = {
         inactivePaymentMethodTitle: "Inactive payment method",
         inactivePaymentMethodMessage:
           "Select an active payment method to create a new transaction.",
+        quickPaymentCreateError: "We couldn't create the starter payment method",
         saveChangesError: "We couldn't save changes",
         updatedTitle: "Transaction updated",
         updatedMessage: "Changes were saved successfully.",

@@ -51,6 +51,7 @@ type WorkspaceSettingsLiteRow = Pick<
 >;
 
 type TypeFilter = TransactionType | "all";
+type QuickPaymentMethodType = "cash" | "debit_card" | "other";
 
 type TransactionGroup = {
   key: string;
@@ -69,6 +70,8 @@ const transactionTypeCardBackgrounds: Record<TransactionType, string> = {
   expense: "var(--mantine-color-pink-0)",
   saving: "var(--mantine-color-indigo-0)",
 };
+
+const quickPaymentMethodTypes: QuickPaymentMethodType[] = ["cash", "debit_card", "other"];
 
 function toDateInputValue(date: Date) {
   const year = date.getFullYear();
@@ -240,6 +243,8 @@ export default function TransactionsPage() {
   const [editingRow, setEditingRow] = useState<TransactionRow | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [didApplyUrlFilters, setDidApplyUrlFilters] = useState(false);
+  const [quickPaymentMethodType, setQuickPaymentMethodType] =
+    useState<QuickPaymentMethodType>("cash");
   const [createModalTypeFromQuery, setCreateModalTypeFromQuery] =
     useState<TransactionType | null>(null);
   const monthOptions = useMemo(() => buildMonthOptions(intlLocale), [intlLocale]);
@@ -298,6 +303,7 @@ export default function TransactionsPage() {
     () => new Map(paymentMethods.map((paymentMethod) => [paymentMethod.id, paymentMethod])),
     [paymentMethods],
   );
+  const hasAnyPaymentMethods = paymentMethods.length > 0;
 
   const hasAnyActiveCategory = useMemo(
     () => categories.some((category) => category.is_active),
@@ -443,6 +449,14 @@ export default function TransactionsPage() {
       })),
     ];
   }, [locale, paymentMethods, t]);
+  const quickPaymentMethodSelectData = useMemo(
+    () =>
+      quickPaymentMethodTypes.map((type) => ({
+        value: type,
+        label: t(`transactions.quickPayment.options.${type}`),
+      })),
+    [t],
+  );
 
   const formatDate = useCallback(
     (dateValue: string | null) => {
@@ -848,6 +862,7 @@ export default function TransactionsPage() {
   function closeModal() {
     setIsModalOpen(false);
     setEditingRow(null);
+    setQuickPaymentMethodType("cash");
   }
 
   const openCreateModal = useCallback(
@@ -868,16 +883,29 @@ export default function TransactionsPage() {
         defaults.paymentMethodId = filteredPaymentMethod.id;
       }
 
+      if (!hasAnyPaymentMethods) {
+        setQuickPaymentMethodType("cash");
+      }
+
       setEditingRow(null);
       reset(defaults);
       setIsModalOpen(true);
     },
-    [categoryById, categoryFilter, paymentMethodById, paymentMethodFilter, reset, typeFilter],
+    [
+      categoryById,
+      categoryFilter,
+      hasAnyPaymentMethods,
+      paymentMethodById,
+      paymentMethodFilter,
+      reset,
+      typeFilter,
+    ],
   );
 
   function openEditModal(row: TransactionRow) {
     setEditingRow(row);
     reset(toFormDefaults(row));
+    setQuickPaymentMethodType("cash");
     setIsModalOpen(true);
   }
 
@@ -932,11 +960,49 @@ export default function TransactionsPage() {
       return;
     }
 
-    const paymentMethod = values.paymentMethodId
-      ? paymentMethodById.get(values.paymentMethodId)
+    let resolvedPaymentMethodId = values.paymentMethodId;
+    let quickCreatedPaymentMethod: PaymentMethodRow | null = null;
+
+    const shouldAutoCreateQuickPaymentMethod =
+      !editingRow && !hasAnyPaymentMethods && resolvedPaymentMethodId === null;
+
+    if (shouldAutoCreateQuickPaymentMethod) {
+      const quickMethodName = t(`transactions.quickPayment.defaultNames.${quickPaymentMethodType}`);
+      const createQuickMethodResponse = await supabase
+        .from("payment_methods")
+        .insert({
+          workspace_id: workspace.id,
+          name: quickMethodName,
+          type: quickPaymentMethodType,
+          current_balance: 0,
+          include_in_balance: true,
+          is_active: true,
+          created_by: user.id,
+        })
+        .select("*")
+        .single();
+
+      if (createQuickMethodResponse.error) {
+        notifications.show({
+          color: "red",
+          title: t("transactions.notifications.quickPaymentCreateError"),
+          message: createQuickMethodResponse.error.message,
+        });
+        return;
+      }
+
+      quickCreatedPaymentMethod = createQuickMethodResponse.data;
+      resolvedPaymentMethodId = quickCreatedPaymentMethod.id;
+      setPaymentMethods((previousRows) => [...previousRows, quickCreatedPaymentMethod]);
+    }
+
+    const paymentMethod = resolvedPaymentMethodId
+      ? quickCreatedPaymentMethod?.id === resolvedPaymentMethodId
+        ? quickCreatedPaymentMethod
+        : paymentMethodById.get(resolvedPaymentMethodId)
       : null;
 
-    if (values.paymentMethodId && (!paymentMethod || paymentMethod.workspace_id !== workspace.id)) {
+    if (resolvedPaymentMethodId && (!paymentMethod || paymentMethod.workspace_id !== workspace.id)) {
       notifications.show({
         color: "red",
         title: t("transactions.notifications.invalidPaymentMethodTitle"),
@@ -964,7 +1030,7 @@ export default function TransactionsPage() {
       amount: Math.round(values.amount * 100) / 100,
       transaction_date: values.transactionDate,
       effective_date: values.effectiveDate,
-      payment_method_id: values.paymentMethodId,
+      payment_method_id: resolvedPaymentMethodId,
       description: values.description,
       notes: values.notes,
       updated_at: new Date().toISOString(),
@@ -1026,6 +1092,8 @@ export default function TransactionsPage() {
     reset(toFormDefaults(undefined, values.type));
     await loadTransactions();
   });
+
+  const shouldShowQuickPaymentSetup = !editingRow && !hasAnyPaymentMethods;
 
   async function deleteTransaction(row: TransactionRow) {
     setDeletingId(row.id);
@@ -1416,13 +1484,35 @@ export default function TransactionsPage() {
                     {...register("effectiveDate")}
                   />
 
-                  <NativeSelect
-                    label={t("transactions.paymentMethod")}
-                    data={[{ value: "", label: t("transactions.form.noPaymentMethod") }, ...paymentMethodOptions]}
-                    error={errors.paymentMethodId?.message}
-                    {...register("paymentMethodId")}
-                  />
+                  {shouldShowQuickPaymentSetup ? (
+                    <Stack gap={4}>
+                      <Text size="sm" fw={500}>
+                        {t("transactions.quickPayment.title")}
+                      </Text>
+                      <SegmentedControl
+                        fullWidth
+                        data={quickPaymentMethodSelectData}
+                        value={quickPaymentMethodType}
+                        onChange={(value) => {
+                          setQuickPaymentMethodType(value as QuickPaymentMethodType);
+                        }}
+                      />
+                    </Stack>
+                  ) : (
+                    <NativeSelect
+                      label={t("transactions.paymentMethod")}
+                      data={[{ value: "", label: t("transactions.form.noPaymentMethod") }, ...paymentMethodOptions]}
+                      error={errors.paymentMethodId?.message}
+                      {...register("paymentMethodId")}
+                    />
+                  )}
                 </Group>
+
+                {shouldShowQuickPaymentSetup ? (
+                  <Text size="xs" c="dimmed">
+                    {t("transactions.quickPayment.hint")}
+                  </Text>
+                ) : null}
 
                 <TextInput
                   label={t("transactions.form.description")}
