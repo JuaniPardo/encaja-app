@@ -16,13 +16,20 @@ import {
   Stack,
   Tabs,
   Text,
+  Textarea,
   TextInput,
   Title,
 } from "@mantine/core";
 import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
+import { usePathname } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 
+import {
+  createFeedbackFormSchema,
+  type FeedbackFormInputValues,
+  type FeedbackFormValues,
+} from "@/features/feedback/schema";
 import { type Locale } from "@/features/i18n/config";
 import { useI18n } from "@/features/i18n/provider";
 import {
@@ -52,6 +59,7 @@ import {
   canManageWorkspaceSettings,
 } from "@/features/workspace/permissions";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
+import { createFeedback } from "@/lib/feedback/create-feedback";
 import type { Database } from "@/types/database";
 
 type WorkspaceMemberSummary =
@@ -98,6 +106,7 @@ function getErrorMessage(error: unknown, fallbackMessage: string) {
 }
 
 export default function SettingsPage() {
+  const pathname = usePathname();
   const { t } = useI18n();
   const {
     supabase,
@@ -154,6 +163,16 @@ export default function SettingsPage() {
     () => [
       { value: "es", label: t("settings.language.spanishOption") },
       { value: "en", label: t("settings.language.englishOption") },
+    ],
+    [t],
+  );
+  const feedbackTypeOptions = useMemo(
+    () => [
+      { value: "", label: t("settings.feedback.typePlaceholder") },
+      { value: "bug", label: t("settings.feedback.typeOptions.bug") },
+      { value: "suggestion", label: t("settings.feedback.typeOptions.suggestion") },
+      { value: "question", label: t("settings.feedback.typeOptions.question") },
+      { value: "other", label: t("settings.feedback.typeOptions.other") },
     ],
     [t],
   );
@@ -217,6 +236,16 @@ export default function SettingsPage() {
       createWorkspaceLinkFormSchema({
         requiredTargetWorkspace: t("common.forms.workspace.requiredTargetWorkspace"),
         invalidTargetWorkspace: t("common.forms.workspace.invalidTargetWorkspace"),
+      }),
+    [t],
+  );
+  const feedbackSchema = useMemo(
+    () =>
+      createFeedbackFormSchema({
+        requiredType: t("common.forms.feedback.requiredType"),
+        invalidType: t("common.forms.feedback.invalidType"),
+        requiredMessage: t("common.forms.feedback.requiredMessage"),
+        maxMessageLength: t("common.forms.feedback.maxMessageLength"),
       }),
     [t],
   );
@@ -293,6 +322,21 @@ export default function SettingsPage() {
     resolver: zodResolver(workspaceLinkSchema),
     defaultValues: {
       targetWorkspaceId: "",
+    },
+  });
+  const {
+    register: registerFeedback,
+    handleSubmit: handleSubmitFeedback,
+    reset: resetFeedback,
+    formState: {
+      errors: feedbackErrors,
+      isSubmitting: isFeedbackSubmitting,
+    },
+  } = useForm<FeedbackFormInputValues, unknown, FeedbackFormValues>({
+    resolver: zodResolver(feedbackSchema),
+    defaultValues: {
+      type: "",
+      message: "",
     },
   });
 
@@ -569,6 +613,35 @@ export default function SettingsPage() {
       setIsUpdatingLanguage(false);
     }
   };
+
+  const onSubmitFeedback = handleSubmitFeedback(async (values) => {
+    try {
+      await createFeedback({
+        supabase,
+        workspaceId: workspace.id,
+        type: values.type,
+        message: values.message,
+        route: pathname ?? null,
+      });
+
+      notifications.show({
+        color: "green",
+        title: t("settings.feedback.successTitle"),
+        message: t("settings.feedback.successMessage"),
+      });
+
+      resetFeedback({
+        type: "",
+        message: "",
+      });
+    } catch (error) {
+      notifications.show({
+        color: "red",
+        title: t("settings.feedback.errorTitle"),
+        message: getErrorMessage(error, t("settings.feedback.errorFallbackMessage")),
+      });
+    }
+  });
 
   const onSubmitWorkspace = handleSubmitWorkspace(async (values) => {
     if (!canEditWorkspaceSettings) {
@@ -1439,31 +1512,65 @@ export default function SettingsPage() {
         </Tabs.Panel>
 
         <Tabs.Panel value="personal" pt="sm">
-          <Paper withBorder radius="md" p="md">
-            <Stack gap="sm">
-              <Text fw={600}>{t("settings.language.title")}</Text>
-              <Text size="sm" c="dimmed">
-                {t("settings.language.description")}
-              </Text>
-              <Group align="flex-end" wrap="wrap">
-                <NativeSelect
-                  label={t("settings.language.fieldLabel")}
-                  data={languageOptions}
-                  value={selectedLanguage}
-                  onChange={(event) => setSelectedLanguage(event.currentTarget.value as Locale)}
-                  style={{ minWidth: 220, flex: 1 }}
-                />
-                <Button
-                  type="button"
-                  onClick={() => void onSaveLanguage()}
-                  loading={isUpdatingLanguage}
-                  disabled={selectedLanguage === locale}
-                >
-                  {t("settings.language.saveButton")}
-                </Button>
-              </Group>
-            </Stack>
-          </Paper>
+          <Stack gap="md">
+            <Paper withBorder radius="md" p="md">
+              <Stack gap="sm">
+                <Text fw={600}>{t("settings.language.title")}</Text>
+                <Text size="sm" c="dimmed">
+                  {t("settings.language.description")}
+                </Text>
+                <Group align="flex-end" wrap="wrap">
+                  <NativeSelect
+                    label={t("settings.language.fieldLabel")}
+                    data={languageOptions}
+                    value={selectedLanguage}
+                    onChange={(event) => setSelectedLanguage(event.currentTarget.value as Locale)}
+                    style={{ minWidth: 220, flex: 1 }}
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => void onSaveLanguage()}
+                    loading={isUpdatingLanguage}
+                    disabled={selectedLanguage === locale}
+                  >
+                    {t("settings.language.saveButton")}
+                  </Button>
+                </Group>
+              </Stack>
+            </Paper>
+
+            <Paper withBorder radius="md" p="md">
+              <form onSubmit={onSubmitFeedback}>
+                <Stack gap="sm">
+                  <Text fw={600}>{t("settings.feedback.title")}</Text>
+                  <Text size="sm" c="dimmed">
+                    {t("settings.feedback.description")}
+                  </Text>
+                  <NativeSelect
+                    label={t("settings.feedback.typeLabel")}
+                    data={feedbackTypeOptions}
+                    error={feedbackErrors.type?.message}
+                    {...registerFeedback("type")}
+                  />
+                  <Textarea
+                    label={t("settings.feedback.messageLabel")}
+                    placeholder={t("settings.feedback.messagePlaceholder")}
+                    autosize
+                    minRows={4}
+                    maxRows={7}
+                    maxLength={1500}
+                    error={feedbackErrors.message?.message}
+                    {...registerFeedback("message")}
+                  />
+                  <Group justify="flex-end">
+                    <Button type="submit" loading={isFeedbackSubmitting}>
+                      {t("settings.feedback.sendButton")}
+                    </Button>
+                  </Group>
+                </Stack>
+              </form>
+            </Paper>
+          </Stack>
         </Tabs.Panel>
 
         <Tabs.Panel value="advanced" pt="sm">

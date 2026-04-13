@@ -12,6 +12,8 @@ export type BudgetPeriodStatus = "draft" | "active" | "closed";
 export type SubscriptionPlan = "free" | "pro" | "premium";
 export type SubscriptionStatus = "active" | "canceled" | "past_due";
 export type WorkspaceLinkVisibilityMode = "summary_only";
+export type FeedbackType = "bug" | "suggestion" | "question" | "other";
+export type FeedbackStatus = "new" | "reviewed" | "closed";
 
 export interface Database {
   public: {
@@ -172,6 +174,36 @@ export interface Database {
           visibility_mode?: WorkspaceLinkVisibilityMode;
           is_active?: boolean;
           updated_at?: string;
+        };
+        Relationships: [];
+      };
+      feedback: {
+        Row: {
+          id: string;
+          user_id: string;
+          workspace_id: string | null;
+          type: FeedbackType;
+          message: string;
+          route: string | null;
+          status: FeedbackStatus;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string;
+          workspace_id?: string | null;
+          type: FeedbackType;
+          message: string;
+          route?: string | null;
+          status?: FeedbackStatus;
+          created_at?: string;
+        };
+        Update: {
+          workspace_id?: string | null;
+          type?: FeedbackType;
+          message?: string;
+          route?: string | null;
+          status?: FeedbackStatus;
         };
         Relationships: [];
       };
