@@ -5,6 +5,7 @@ import {
   canManageBudgetStructure,
   canManageCategories,
   canDeleteWorkspace,
+  canManageWorkspaceLinks,
   canManageWorkspaceMembers,
   canManagePaymentMethods,
   canManageWorkspaceSettings,
@@ -19,6 +20,7 @@ describe("workspace role permissions", () => {
     expect(canBootstrapWorkspaceFoundations("owner")).toBe(true);
     expect(canDeleteWorkspace("owner")).toBe(true);
     expect(canManageWorkspaceMembers("owner")).toBe(true);
+    expect(canManageWorkspaceLinks("owner")).toBe(true);
     expect(canManageCategories("owner")).toBe(true);
     expect(canManagePaymentMethods("owner")).toBe(true);
     expect(canManageBudgetStructure("owner")).toBe(true);
@@ -31,6 +33,7 @@ describe("workspace role permissions", () => {
     expect(canBootstrapWorkspaceFoundations("member")).toBe(false);
     expect(canDeleteWorkspace("member")).toBe(false);
     expect(canManageWorkspaceMembers("member")).toBe(false);
+    expect(canManageWorkspaceLinks("member")).toBe(false);
     expect(canManageCategories("member")).toBe(false);
     expect(canManagePaymentMethods("member")).toBe(false);
     expect(canManageBudgetStructure("member")).toBe(false);

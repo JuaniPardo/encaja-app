@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Alert,
@@ -12,6 +12,7 @@ import {
   Modal,
   NativeSelect,
   Paper,
+  Select,
   Stack,
   Text,
   TextInput,
@@ -37,7 +38,13 @@ import {
   type WorkspaceFormValues,
 } from "@/features/workspace/schema";
 import {
+  workspaceLinkFormSchema,
+  type WorkspaceLinkFormInputValues,
+  type WorkspaceLinkFormValues,
+} from "@/features/workspace/links-schema";
+import {
   canDeleteWorkspace,
+  canManageWorkspaceLinks,
   canManageWorkspaceMembers,
   canManageWorkspaceSettings,
 } from "@/features/workspace/permissions";
@@ -51,6 +58,12 @@ const savingsRateModeSelectData = [
 
 type WorkspaceMemberSummary =
   Database["public"]["Functions"]["list_workspace_members"]["Returns"][number];
+type WorkspaceLinkSummary =
+  Database["public"]["Functions"]["list_workspace_links"]["Returns"][number];
+type WorkspaceSettingsCurrencyRow = Pick<
+  Database["public"]["Tables"]["workspace_settings"]["Row"],
+  "workspace_id" | "currency_code"
+>;
 
 function normalizeRoleLabel(role: WorkspaceRole) {
   return role === "owner" ? "owner" : "member";
@@ -77,6 +90,7 @@ export default function SettingsPage() {
   } = useWorkspace();
   const canEditWorkspaceSettings = canManageWorkspaceSettings(workspace.role);
   const canManageMembers = canManageWorkspaceMembers(workspace.role);
+  const canManageLinks = canManageWorkspaceLinks(workspace.role);
   const canUseMultiWorkspace = canUseWorkspaceFeature("multi_workspace");
   const canCreateWorkspace = canUseMultiWorkspace && canEditWorkspaceSettings;
   const canDeleteCurrentWorkspace =
@@ -91,6 +105,14 @@ export default function SettingsPage() {
   const [deleteWorkspaceConfirmation, setDeleteWorkspaceConfirmation] = useState("");
   const [members, setMembers] = useState<WorkspaceMemberSummary[]>([]);
   const [removingMemberUserId, setRemovingMemberUserId] = useState<string | null>(null);
+  const [workspaceLinks, setWorkspaceLinks] = useState<WorkspaceLinkSummary[]>([]);
+  const [isWorkspaceLinksLoading, setIsWorkspaceLinksLoading] = useState(true);
+  const [deactivatingLinkId, setDeactivatingLinkId] = useState<string | null>(null);
+  const [workspaceCurrenciesById, setWorkspaceCurrenciesById] = useState<
+    Record<string, string>
+  >({});
+  const [isWorkspaceCurrenciesLoading, setIsWorkspaceCurrenciesLoading] = useState(true);
+  const [workspaceCurrencyCode, setWorkspaceCurrencyCode] = useState("ARS");
   const [settingsId, setSettingsId] = useState<string | null>(null);
 
   const {
@@ -154,6 +176,20 @@ export default function SettingsPage() {
       email: "",
     },
   });
+  const {
+    control: workspaceLinkControl,
+    handleSubmit: handleSubmitWorkspaceLink,
+    reset: resetWorkspaceLink,
+    formState: {
+      errors: workspaceLinkErrors,
+      isSubmitting: isWorkspaceLinkSubmitting,
+    },
+  } = useForm<WorkspaceLinkFormInputValues, unknown, WorkspaceLinkFormValues>({
+    resolver: zodResolver(workspaceLinkFormSchema),
+    defaultValues: {
+      targetWorkspaceId: "",
+    },
+  });
 
   useEffect(() => {
     resetWorkspace({
@@ -197,6 +233,7 @@ export default function SettingsPage() {
 
     if (!response.data) {
       setSettingsId(null);
+      setWorkspaceCurrencyCode("ARS");
       reset({
         startYear: new Date().getFullYear(),
         savingsRateMode: "manual",
@@ -209,6 +246,7 @@ export default function SettingsPage() {
     }
 
     setSettingsId(response.data.id);
+    setWorkspaceCurrencyCode(response.data.currency_code);
     reset({
       startYear: response.data.start_year,
       savingsRateMode: response.data.savings_rate_mode,
@@ -249,11 +287,86 @@ export default function SettingsPage() {
     void loadMembers();
   }, [loadMembers]);
 
+  const loadWorkspaceCurrencies = useCallback(async () => {
+    const workspaceIds = Array.from(new Set(workspaces.map((workspaceItem) => workspaceItem.id)));
+    if (workspaceIds.length === 0) {
+      setWorkspaceCurrenciesById({});
+      setIsWorkspaceCurrenciesLoading(false);
+      return;
+    }
+
+    setIsWorkspaceCurrenciesLoading(true);
+
+    const response = await supabase
+      .from("workspace_settings")
+      .select("workspace_id, currency_code")
+      .in("workspace_id", workspaceIds);
+
+    setIsWorkspaceCurrenciesLoading(false);
+
+    if (response.error) {
+      notifications.show({
+        color: "red",
+        title: "No pudimos cargar monedas de workspaces",
+        message: response.error.message,
+      });
+      return;
+    }
+
+    const rows = (response.data ?? []) as WorkspaceSettingsCurrencyRow[];
+    const nextCurrenciesById: Record<string, string> = {};
+
+    for (const row of rows) {
+      nextCurrenciesById[row.workspace_id] = row.currency_code;
+    }
+
+    setWorkspaceCurrenciesById(nextCurrenciesById);
+    if (nextCurrenciesById[workspace.id]) {
+      setWorkspaceCurrencyCode(nextCurrenciesById[workspace.id]);
+    }
+  }, [supabase, workspace.id, workspaces]);
+
+  useEffect(() => {
+    void loadWorkspaceCurrencies();
+  }, [loadWorkspaceCurrencies]);
+
+  const loadWorkspaceLinks = useCallback(async () => {
+    setIsWorkspaceLinksLoading(true);
+
+    const response = await supabase.rpc("list_workspace_links", {
+      p_source_workspace_id: workspace.id,
+    });
+
+    setIsWorkspaceLinksLoading(false);
+
+    if (response.error) {
+      notifications.show({
+        color: "red",
+        title: "No pudimos cargar vínculos",
+        message: response.error.message,
+      });
+      return;
+    }
+
+    const rows = (response.data ?? []) as WorkspaceLinkSummary[];
+    setWorkspaceLinks(rows);
+  }, [supabase, workspace.id]);
+
+  useEffect(() => {
+    void loadWorkspaceLinks();
+  }, [loadWorkspaceLinks]);
+
   useEffect(() => {
     resetInviteMember({
       email: "",
     });
   }, [resetInviteMember, workspace.id]);
+
+  useEffect(() => {
+    resetWorkspaceLink({
+      targetWorkspaceId: "",
+    });
+  }, [resetWorkspaceLink, workspace.id]);
 
   const onSubmit = handleSubmit(async (values) => {
     if (!canEditWorkspaceSettings) {
@@ -322,6 +435,9 @@ export default function SettingsPage() {
       title: "Settings guardados",
       message: "La configuración del workspace se actualizó correctamente.",
     });
+
+    setWorkspaceCurrencyCode(payload.currency_code);
+    await loadWorkspaceCurrencies();
   });
 
   const onSubmitWorkspace = handleSubmitWorkspace(async (values) => {
@@ -519,6 +635,179 @@ export default function SettingsPage() {
     await loadMembers();
   };
 
+  const activeLinksByTargetWorkspaceId = useMemo(
+    () =>
+      new Map(
+        workspaceLinks
+          .filter((workspaceLink) => workspaceLink.is_active)
+          .map((workspaceLink) => [workspaceLink.target_workspace_id, workspaceLink]),
+      ),
+    [workspaceLinks],
+  );
+
+  const sourceWorkspaceCurrency = workspaceCurrencyCode.toUpperCase();
+
+  const workspaceLinkTargetOptions = useMemo(() => {
+    return workspaces
+      .filter((workspaceItem) => workspaceItem.id !== workspace.id)
+      .map((workspaceItem) => {
+        const targetCurrency = workspaceCurrenciesById[workspaceItem.id] ?? null;
+        const hasCurrencyConfigured = Boolean(targetCurrency);
+        const hasCurrencyCompatibility =
+          hasCurrencyConfigured && targetCurrency?.toUpperCase() === sourceWorkspaceCurrency;
+        const hasActiveLink = activeLinksByTargetWorkspaceId.has(workspaceItem.id);
+
+        let disabledReason: string | null = null;
+        if (!hasCurrencyConfigured) {
+          disabledReason = "sin moneda configurada";
+        } else if (!hasCurrencyCompatibility) {
+          disabledReason = `moneda distinta (${targetCurrency})`;
+        } else if (hasActiveLink) {
+          disabledReason = "ya vinculado";
+        }
+
+        const roleLabel = normalizeRoleLabel(workspaceItem.role);
+        const currencyLabel = targetCurrency ?? "N/A";
+
+        return {
+          value: workspaceItem.id,
+          label: `${workspaceItem.name} · ${roleLabel} · ${currencyLabel}${disabledReason ? ` (${disabledReason})` : ""}`,
+          disabled: disabledReason !== null,
+        };
+      });
+  }, [
+    activeLinksByTargetWorkspaceId,
+    sourceWorkspaceCurrency,
+    workspace.id,
+    workspaceCurrenciesById,
+    workspaces,
+  ]);
+
+  const canCreateAnyWorkspaceLink = workspaceLinkTargetOptions.some((option) => !option.disabled);
+
+  const onSubmitWorkspaceLink = handleSubmitWorkspaceLink(async (values) => {
+    if (!canManageLinks) {
+      notifications.show({
+        color: "red",
+        title: "Acción no permitida",
+        message: "Solo el owner puede crear vínculos entre workspaces.",
+      });
+      return;
+    }
+
+    const selectedTargetWorkspace = workspaces.find(
+      (workspaceItem) => workspaceItem.id === values.targetWorkspaceId,
+    );
+    if (!selectedTargetWorkspace) {
+      notifications.show({
+        color: "red",
+        title: "Workspace inválido",
+        message: "Seleccioná un workspace destino válido.",
+      });
+      return;
+    }
+
+    if (selectedTargetWorkspace.id === workspace.id) {
+      notifications.show({
+        color: "red",
+        title: "Vínculo inválido",
+        message: "No podés vincular un workspace consigo mismo.",
+      });
+      return;
+    }
+
+    const selectedTargetCurrency = workspaceCurrenciesById[selectedTargetWorkspace.id];
+    if (!selectedTargetCurrency) {
+      notifications.show({
+        color: "red",
+        title: "Workspace sin moneda",
+        message: "El workspace destino no tiene moneda configurada.",
+      });
+      return;
+    }
+
+    if (selectedTargetCurrency.toUpperCase() !== sourceWorkspaceCurrency) {
+      notifications.show({
+        color: "red",
+        title: "Moneda incompatible",
+        message: `Solo podés vincular workspaces en ${sourceWorkspaceCurrency}.`,
+      });
+      return;
+    }
+
+    if (activeLinksByTargetWorkspaceId.has(selectedTargetWorkspace.id)) {
+      notifications.show({
+        color: "yellow",
+        title: "Ya existe un vínculo activo",
+        message: "Ese workspace ya está vinculado.",
+      });
+      return;
+    }
+
+    const response = await supabase.rpc("create_workspace_link", {
+      p_source_workspace_id: workspace.id,
+      p_target_workspace_id: selectedTargetWorkspace.id,
+      p_visibility_mode: "summary_only",
+    });
+
+    if (response.error) {
+      notifications.show({
+        color: "red",
+        title: "No pudimos crear el vínculo",
+        message: response.error.message,
+      });
+      return;
+    }
+
+    notifications.show({
+      color: "green",
+      title: "Workspace vinculado",
+      message: `${selectedTargetWorkspace.name} ya está disponible como resumen externo.`,
+    });
+
+    resetWorkspaceLink({
+      targetWorkspaceId: "",
+    });
+    await loadWorkspaceLinks();
+  });
+
+  const onDeactivateWorkspaceLink = async (workspaceLink: WorkspaceLinkSummary) => {
+    if (!canManageLinks) {
+      notifications.show({
+        color: "red",
+        title: "Acción no permitida",
+        message: "Solo el owner puede desactivar vínculos.",
+      });
+      return;
+    }
+
+    setDeactivatingLinkId(workspaceLink.link_id);
+
+    const response = await supabase.rpc("deactivate_workspace_link", {
+      p_source_workspace_id: workspace.id,
+      p_link_id: workspaceLink.link_id,
+    });
+
+    setDeactivatingLinkId(null);
+
+    if (response.error) {
+      notifications.show({
+        color: "red",
+        title: "No pudimos desactivar el vínculo",
+        message: response.error.message,
+      });
+      return;
+    }
+
+    notifications.show({
+      color: "green",
+      title: "Vínculo desactivado",
+      message: "El workspace dejó de mostrarse como resumen externo.",
+    });
+
+    await loadWorkspaceLinks();
+  };
+
   return (
     <Stack gap="md" pos="relative">
       <LoadingOverlay visible={isLoading} />
@@ -675,6 +964,149 @@ export default function SettingsPage() {
                         ) : null}
                       </Group>
                     </Group>
+                  </Paper>
+                );
+              })}
+            </Stack>
+          )}
+        </Stack>
+      </Paper>
+
+      <Paper withBorder radius="md" p="md">
+        <Stack gap="sm">
+          <Group justify="space-between" align="center">
+            <Text fw={600}>Workspaces vinculados</Text>
+            <Badge variant="light" color="blue">
+              {workspaceLinks.filter((workspaceLink) => workspaceLink.is_active).length} activos
+            </Badge>
+          </Group>
+          <Text size="sm" c="dimmed">
+            Vinculá workspaces para ver un <b>resumen externo</b> (ingresos, gastos, ahorro y
+            balance) sin mezclar transacciones ni categorías con este workspace.
+          </Text>
+          <Text size="sm" c="dimmed">
+            Moneda del workspace actual: <b>{sourceWorkspaceCurrency}</b>.
+          </Text>
+
+          {!canManageLinks ? (
+            <Alert color="blue" variant="light" title="Sin permisos de administración">
+              Podés ver vínculos existentes, pero solo el owner puede crear o desactivar vínculos.
+            </Alert>
+          ) : null}
+
+          <form onSubmit={onSubmitWorkspaceLink}>
+            <Group align="flex-end" wrap="wrap">
+              <Controller
+                control={workspaceLinkControl}
+                name="targetWorkspaceId"
+                render={({ field }) => (
+                  <Select
+                    label="Workspace destino"
+                    placeholder={
+                      canUseMultiWorkspace ? "Seleccioná workspace destino" : "Plan sin acceso"
+                    }
+                    data={workspaceLinkTargetOptions}
+                    error={workspaceLinkErrors.targetWorkspaceId?.message}
+                    disabled={
+                      !canUseMultiWorkspace ||
+                      !canManageLinks ||
+                      isWorkspaceCurrenciesLoading ||
+                      !canCreateAnyWorkspaceLink
+                    }
+                    style={{ flex: 1, minWidth: 260 }}
+                    searchable
+                    value={field.value}
+                    onChange={(value) => field.onChange(value ?? "")}
+                    onBlur={field.onBlur}
+                  />
+                )}
+              />
+              <Button
+                type="submit"
+                loading={isWorkspaceLinkSubmitting}
+                disabled={
+                  !canUseMultiWorkspace ||
+                  !canManageLinks ||
+                  isWorkspaceCurrenciesLoading ||
+                  !canCreateAnyWorkspaceLink
+                }
+              >
+                Vincular
+              </Button>
+            </Group>
+          </form>
+
+          {!canUseMultiWorkspace ? (
+            <Text size="sm" c="dimmed">
+              Tu plan actual no incluye múltiples workspaces, por eso no podés crear vínculos.
+            </Text>
+          ) : null}
+
+          {canUseMultiWorkspace &&
+          canManageLinks &&
+          !isWorkspaceCurrenciesLoading &&
+          !canCreateAnyWorkspaceLink ? (
+            <Text size="sm" c="dimmed">
+              No hay workspaces compatibles para vincular. Revisá que exista otro workspace con la
+              misma moneda.
+            </Text>
+          ) : null}
+
+          {isWorkspaceLinksLoading ? (
+            <Text size="sm" c="dimmed">
+              Cargando vínculos...
+            </Text>
+          ) : workspaceLinks.length === 0 ? (
+            <Text size="sm" c="dimmed">
+              Todavía no hay workspaces vinculados.
+            </Text>
+          ) : (
+            <Stack gap="xs">
+              {workspaceLinks.map((workspaceLink) => {
+                const linkName = workspaceLink.target_workspace_name ?? "Workspace sin acceso";
+                const linkSlug = workspaceLink.target_workspace_slug;
+                const linkCurrency = workspaceLink.target_currency_code ?? "N/A";
+                const canDeactivateLink = canManageLinks && workspaceLink.is_active;
+
+                return (
+                  <Paper key={workspaceLink.link_id} withBorder radius="sm" p="sm">
+                    <Stack gap={6}>
+                      <Group justify="space-between" align="center" wrap="wrap">
+                        <Stack gap={2}>
+                          <Text fw={600}>{linkName}</Text>
+                          <Text size="sm" c="dimmed">
+                            {linkSlug ? `${linkSlug} · ` : ""}Moneda {linkCurrency} · Modo{" "}
+                            {workspaceLink.visibility_mode}
+                          </Text>
+                        </Stack>
+                        <Group gap="xs" align="center">
+                          <Badge
+                            variant="light"
+                            color={workspaceLink.is_active ? "teal" : "gray"}
+                          >
+                            {workspaceLink.is_active ? "Activo" : "Inactivo"}
+                          </Badge>
+                          {canDeactivateLink ? (
+                            <Button
+                              type="button"
+                              size="xs"
+                              color="gray"
+                              variant="light"
+                              loading={deactivatingLinkId === workspaceLink.link_id}
+                              onClick={() => void onDeactivateWorkspaceLink(workspaceLink)}
+                            >
+                              Desactivar
+                            </Button>
+                          ) : null}
+                        </Group>
+                      </Group>
+                      {!workspaceLink.has_target_access ? (
+                        <Alert color="yellow" variant="light" title="Sin acceso al destino">
+                          Este vínculo existe, pero ya no tenés permisos sobre el workspace
+                          destino, así que no se mostrará su resumen.
+                        </Alert>
+                      ) : null}
+                    </Stack>
                   </Paper>
                 );
               })}

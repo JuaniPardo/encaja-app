@@ -31,6 +31,8 @@ type WorkspaceSettingsLiteRow = Pick<
   Database["public"]["Tables"]["workspace_settings"]["Row"],
   "start_year" | "currency_code" | "show_cents"
 >;
+type LinkedWorkspaceSummaryRow =
+  Database["public"]["Functions"]["list_linked_workspace_summaries"]["Returns"][number];
 type BudgetPeriodIdRow = Pick<Database["public"]["Tables"]["budget_periods"]["Row"], "id">;
 type BudgetItemLiteRow = Pick<
   Database["public"]["Tables"]["budget_items"]["Row"],
@@ -249,6 +251,9 @@ export default function DashboardPage() {
   const [budgetItems, setBudgetItems] = useState<BudgetItemLiteRow[]>([]);
   const [transactionRows, setTransactionRows] = useState<TransactionLiteRow[]>([]);
   const [paymentMethodRows, setPaymentMethodRows] = useState<PaymentMethodBalanceRow[]>([]);
+  const [linkedWorkspaceSummaries, setLinkedWorkspaceSummaries] = useState<
+    LinkedWorkspaceSummaryRow[]
+  >([]);
   const [startYear, setStartYear] = useState(now.getFullYear());
   const [currencyCode, setCurrencyCode] = useState("ARS");
   const [showCents, setShowCents] = useState(false);
@@ -387,9 +392,16 @@ export default function DashboardPage() {
       .eq("workspace_id", workspace.id)
       .or(transactionFilter);
 
-    const [periodResponse, transactionsResponse] = await Promise.all([
+    const linkedWorkspaceSummaryPromise = supabase.rpc("list_linked_workspace_summaries", {
+      p_source_workspace_id: workspace.id,
+      p_year: selectedYear,
+      p_month: selectedMonth,
+    });
+
+    const [periodResponse, transactionsResponse, linkedWorkspaceSummaryResponse] = await Promise.all([
       periodResponsePromise,
       transactionsResponsePromise,
+      linkedWorkspaceSummaryPromise,
     ]);
 
     if (transactionsResponse.error) {
@@ -401,6 +413,19 @@ export default function DashboardPage() {
       setTransactionRows([]);
     } else {
       setTransactionRows((transactionsResponse.data ?? []) as TransactionLiteRow[]);
+    }
+
+    if (linkedWorkspaceSummaryResponse.error) {
+      notifications.show({
+        color: "red",
+        title: "No pudimos cargar resúmenes externos",
+        message: linkedWorkspaceSummaryResponse.error.message,
+      });
+      setLinkedWorkspaceSummaries([]);
+    } else {
+      setLinkedWorkspaceSummaries(
+        (linkedWorkspaceSummaryResponse.data ?? []) as LinkedWorkspaceSummaryRow[],
+      );
     }
 
     if (periodResponse.error) {
@@ -661,6 +686,40 @@ export default function DashboardPage() {
       inactiveCount,
     };
   }, [paymentMethodRows, transactionRows]);
+
+  const normalizedLinkedWorkspaceSummaries = useMemo(() => {
+    return linkedWorkspaceSummaries.map((row) => {
+      const incomeTotal = roundMoney(parseAmountValue(row.income_total));
+      const expenseTotal = roundMoney(parseAmountValue(row.expense_total));
+      const savingTotal = roundMoney(parseAmountValue(row.saving_total));
+      const balanceTotal = roundMoney(parseAmountValue(row.balance_total));
+
+      return {
+        ...row,
+        incomeTotal,
+        expenseTotal,
+        savingTotal,
+        balanceTotal,
+      };
+    });
+  }, [linkedWorkspaceSummaries]);
+
+  const linkedWorkspaceTotals = useMemo(() => {
+    return normalizedLinkedWorkspaceSummaries.reduce(
+      (totals, row) => ({
+        incomeTotal: roundMoney(totals.incomeTotal + row.incomeTotal),
+        expenseTotal: roundMoney(totals.expenseTotal + row.expenseTotal),
+        savingTotal: roundMoney(totals.savingTotal + row.savingTotal),
+        balanceTotal: roundMoney(totals.balanceTotal + row.balanceTotal),
+      }),
+      {
+        incomeTotal: 0,
+        expenseTotal: 0,
+        savingTotal: 0,
+        balanceTotal: 0,
+      },
+    );
+  }, [normalizedLinkedWorkspaceSummaries]);
 
   const selectedPeriodLabel = `${monthLabel(selectedMonth)} ${selectedYear}`;
   const isMobile = useMediaQuery("(max-width: 47.99em)");
@@ -983,6 +1042,128 @@ export default function DashboardPage() {
           </SimpleGrid>
         </>
       )}
+
+      <Paper
+        p={isMobile ? "xs" : "sm"}
+        radius="sm"
+        style={{
+          border: "1px dashed #9ec5fe",
+          backgroundColor: "#f5f9ff",
+        }}
+      >
+        <Stack gap={isMobile ? 6 : "xs"}>
+          <Group justify="space-between" align="center" wrap="wrap" gap={6}>
+            <Stack gap={1}>
+              <Text size="xs" fw={800} c="#1d4ed8">
+                Resumen externo de workspaces vinculados
+              </Text>
+              <Text size="xs" c="#475467">
+                Vista agregada externa del período. No modifica transacciones, categorías ni
+                presupuesto de este workspace.
+              </Text>
+            </Stack>
+            <Badge variant="light" color="blue">
+              {normalizedLinkedWorkspaceSummaries.length} vinculados
+            </Badge>
+          </Group>
+
+          {normalizedLinkedWorkspaceSummaries.length === 0 ? (
+            <Text size="xs" c="#667085">
+              No hay workspaces vinculados activos para mostrar en este período.
+            </Text>
+          ) : (
+            <>
+              <SimpleGrid cols={isMobile ? 2 : 4} spacing={isMobile ? 6 : "xs"}>
+                <Paper withBorder radius="sm" p={isMobile ? 6 : "xs"}>
+                  <Stack gap={2}>
+                    <Text size="xs" c="#475467">
+                      Ingresos externos
+                    </Text>
+                    <Text size="sm" fw={800} c="#087f5b">
+                      {currencyFormatter.format(linkedWorkspaceTotals.incomeTotal)}
+                    </Text>
+                  </Stack>
+                </Paper>
+                <Paper withBorder radius="sm" p={isMobile ? 6 : "xs"}>
+                  <Stack gap={2}>
+                    <Text size="xs" c="#475467">
+                      Gastos externos
+                    </Text>
+                    <Text size="sm" fw={800} c="#c92a2a">
+                      {currencyFormatter.format(linkedWorkspaceTotals.expenseTotal)}
+                    </Text>
+                  </Stack>
+                </Paper>
+                <Paper withBorder radius="sm" p={isMobile ? 6 : "xs"}>
+                  <Stack gap={2}>
+                    <Text size="xs" c="#475467">
+                      Ahorro externo
+                    </Text>
+                    <Text size="sm" fw={800} c="#1c7ed6">
+                      {currencyFormatter.format(linkedWorkspaceTotals.savingTotal)}
+                    </Text>
+                  </Stack>
+                </Paper>
+                <Paper withBorder radius="sm" p={isMobile ? 6 : "xs"}>
+                  <Stack gap={2}>
+                    <Text size="xs" c="#475467">
+                      Balance externo
+                    </Text>
+                    <Text
+                      size="sm"
+                      fw={800}
+                      c={linkedWorkspaceTotals.balanceTotal >= 0 ? "#087f5b" : "#c92a2a"}
+                    >
+                      {currencyFormatter.format(linkedWorkspaceTotals.balanceTotal)}
+                    </Text>
+                  </Stack>
+                </Paper>
+              </SimpleGrid>
+
+              <Stack gap={6}>
+                {normalizedLinkedWorkspaceSummaries.map((row) => (
+                  <Paper
+                    key={row.link_id}
+                    withBorder
+                    radius="sm"
+                    p={isMobile ? "xs" : "sm"}
+                    bg="#ffffff"
+                  >
+                    <Stack gap={4}>
+                      <Group justify="space-between" align="center" wrap="wrap" gap={6}>
+                        <Text size="sm" fw={700} c="#1f2937">
+                          {row.target_workspace_name}
+                        </Text>
+                        <Badge variant="light" color="gray">
+                          {row.target_currency_code} · {row.visibility_mode}
+                        </Badge>
+                      </Group>
+                      <SimpleGrid cols={isMobile ? 2 : 4} spacing={isMobile ? 6 : "xs"}>
+                        <Text size="xs" c="#344054">
+                          Ingresos: {currencyFormatter.format(row.incomeTotal)}
+                        </Text>
+                        <Text size="xs" c="#344054">
+                          Gastos: {currencyFormatter.format(row.expenseTotal)}
+                        </Text>
+                        <Text size="xs" c="#344054">
+                          Ahorro: {currencyFormatter.format(row.savingTotal)}
+                        </Text>
+                        <Text
+                          size="xs"
+                          fw={700}
+                          c={row.balanceTotal >= 0 ? "#087f5b" : "#c92a2a"}
+                        >
+                          Balance: {currencyFormatter.format(row.balanceTotal)}
+                        </Text>
+                      </SimpleGrid>
+                    </Stack>
+                  </Paper>
+                ))}
+              </Stack>
+            </>
+          )}
+        </Stack>
+      </Paper>
 
       <Stack gap={isMobile ? "xs" : "sm"}>
         {summaryRows.map(({ type, rows }) => {

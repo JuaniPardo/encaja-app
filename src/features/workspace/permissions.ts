@@ -20,6 +20,10 @@ export function canManageWorkspaceMembers(role: WorkspaceRole) {
   return canManageWorkspaceStructure(role);
 }
 
+export function canManageWorkspaceLinks(role: WorkspaceRole) {
+  return canManageWorkspaceStructure(role);
+}
+
 export function canManageCategories(role: WorkspaceRole) {
   return canManageWorkspaceStructure(role);
 }

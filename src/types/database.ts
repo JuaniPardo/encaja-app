@@ -11,6 +11,7 @@ export type SavingsRateMode = "manual" | "percentage";
 export type BudgetPeriodStatus = "draft" | "active" | "closed";
 export type SubscriptionPlan = "free" | "pro" | "premium";
 export type SubscriptionStatus = "active" | "canceled" | "past_due";
+export type WorkspaceLinkVisibilityMode = "summary_only";
 
 export interface Database {
   public: {
@@ -137,6 +138,36 @@ export interface Database {
           deferred_income_day?: number | null;
           currency_code?: string;
           show_cents?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      workspace_links: {
+        Row: {
+          id: string;
+          source_workspace_id: string;
+          target_workspace_id: string;
+          visibility_mode: WorkspaceLinkVisibilityMode;
+          is_active: boolean;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          source_workspace_id: string;
+          target_workspace_id: string;
+          visibility_mode?: WorkspaceLinkVisibilityMode;
+          is_active?: boolean;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          source_workspace_id?: string;
+          target_workspace_id?: string;
+          visibility_mode?: WorkspaceLinkVisibilityMode;
+          is_active?: boolean;
           updated_at?: string;
         };
         Relationships: [];
@@ -340,6 +371,47 @@ export interface Database {
           subscription_status: SubscriptionStatus;
         }[];
       };
+      create_workspace_link: {
+        Args: {
+          p_source_workspace_id: string;
+          p_target_workspace_id: string;
+          p_visibility_mode?: WorkspaceLinkVisibilityMode;
+        };
+        Returns: {
+          link_id: string;
+          source_workspace_id: string;
+          target_workspace_id: string;
+          target_workspace_name: string | null;
+          target_workspace_slug: string | null;
+          target_currency_code: string | null;
+          visibility_mode: WorkspaceLinkVisibilityMode;
+          is_active: boolean;
+          has_target_access: boolean;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        }[];
+      };
+      deactivate_workspace_link: {
+        Args: {
+          p_source_workspace_id: string;
+          p_link_id: string;
+        };
+        Returns: {
+          link_id: string;
+          source_workspace_id: string;
+          target_workspace_id: string;
+          target_workspace_name: string | null;
+          target_workspace_slug: string | null;
+          target_currency_code: string | null;
+          visibility_mode: WorkspaceLinkVisibilityMode;
+          is_active: boolean;
+          has_target_access: boolean;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        }[];
+      };
       delete_workspace: {
         Args: {
           p_workspace_id: string;
@@ -362,6 +434,47 @@ export interface Database {
           role: WorkspaceRole;
           joined_at: string;
           was_created: boolean;
+        }[];
+      };
+      list_linked_workspace_summaries: {
+        Args: {
+          p_source_workspace_id: string;
+          p_year: number;
+          p_month: number;
+        };
+        Returns: {
+          link_id: string;
+          source_workspace_id: string;
+          target_workspace_id: string;
+          target_workspace_name: string;
+          target_workspace_slug: string;
+          target_currency_code: string;
+          visibility_mode: WorkspaceLinkVisibilityMode;
+          period_year: number;
+          period_month: number;
+          income_total: number;
+          expense_total: number;
+          saving_total: number;
+          balance_total: number;
+        }[];
+      };
+      list_workspace_links: {
+        Args: {
+          p_source_workspace_id: string;
+        };
+        Returns: {
+          link_id: string;
+          source_workspace_id: string;
+          target_workspace_id: string;
+          target_workspace_name: string | null;
+          target_workspace_slug: string | null;
+          target_currency_code: string | null;
+          visibility_mode: WorkspaceLinkVisibilityMode;
+          is_active: boolean;
+          has_target_access: boolean;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
         }[];
       };
       list_workspace_members: {
