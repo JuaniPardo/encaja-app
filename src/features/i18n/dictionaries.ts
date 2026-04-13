@@ -119,7 +119,9 @@ const dictionaries = {
       current: "Actual",
       linkedWorkspacesExternalSummary: "Resumen externo de workspaces vinculados",
       linkedWorkspacesExternalSummaryDescription:
-        "Vista agregada externa del período. No modifica transacciones, categorías ni presupuesto de este workspace.",
+        "Vista externa por workspace del período. No modifica transacciones, categorías ni presupuesto de este workspace.",
+      linkedWorkspacesNoConversion:
+        "Los workspaces vinculados se muestran en su moneda original. No se realiza conversión.",
       linkedCount: "{{count}} vinculados",
       externalIncome: "Ingresos externos",
       externalExpense: "Gastos externos",
@@ -454,7 +456,7 @@ const dictionaries = {
         planWithoutMultiWorkspace:
           "Tu plan actual no incluye múltiples workspaces, por eso no podés crear vínculos.",
         noCompatibleWorkspaces:
-          "No hay workspaces compatibles para vincular. Revisá que exista otro workspace con la misma moneda.",
+          "No hay workspaces disponibles para vincular en este momento.",
         loading: "Cargando vínculos...",
         empty: "Todavía no hay workspaces vinculados.",
         workspaceWithoutAccess: "Workspace sin acceso",
@@ -465,7 +467,6 @@ const dictionaries = {
         linkMeta: "{{slugPrefix}}Moneda {{currencyCode}} · Modo {{visibilityMode}}",
         disabledReason: {
           noCurrencyConfigured: "sin moneda configurada",
-          differentCurrency: "moneda distinta ({{currency}})",
           alreadyLinked: "ya vinculado",
         },
       },
@@ -543,8 +544,6 @@ const dictionaries = {
         workspaceWithoutCurrencyTitle: "Workspace sin moneda",
         workspaceWithoutCurrencyMessage:
           "El workspace destino no tiene moneda configurada.",
-        incompatibleCurrencyTitle: "Moneda incompatible",
-        incompatibleCurrencyMessage: "Solo podés vincular workspaces en {{currencyCode}}.",
         activeLinkAlreadyExistsTitle: "Ya existe un vínculo activo",
         activeLinkAlreadyExistsMessage: "Ese workspace ya está vinculado.",
         createLinkError: "No pudimos crear el vínculo",
@@ -910,7 +909,9 @@ const dictionaries = {
       current: "Current",
       linkedWorkspacesExternalSummary: "Linked workspaces external summary",
       linkedWorkspacesExternalSummaryDescription:
-        "External aggregated view for this period. It does not modify transactions, categories, or budget of this workspace.",
+        "External per-workspace view for this period. It does not modify transactions, categories, or budget of this workspace.",
+      linkedWorkspacesNoConversion:
+        "Linked workspaces are displayed in their original currency. No conversion is applied.",
       linkedCount: "{{count}} linked",
       externalIncome: "External income",
       externalExpense: "External expense",
@@ -1224,7 +1225,7 @@ const dictionaries = {
         planWithoutMultiWorkspace:
           "Your current plan does not include multiple workspaces, so you cannot create links.",
         noCompatibleWorkspaces:
-          "There are no compatible workspaces to link. Make sure another workspace exists with the same currency.",
+          "There are no available workspaces to link right now.",
         loading: "Loading links...",
         empty: "There are no linked workspaces yet.",
         workspaceWithoutAccess: "Workspace without access",
@@ -1235,7 +1236,6 @@ const dictionaries = {
         linkMeta: "{{slugPrefix}}Currency {{currencyCode}} · Mode {{visibilityMode}}",
         disabledReason: {
           noCurrencyConfigured: "no configured currency",
-          differentCurrency: "different currency ({{currency}})",
           alreadyLinked: "already linked",
         },
       },
@@ -1315,9 +1315,6 @@ const dictionaries = {
         workspaceWithoutCurrencyTitle: "Workspace without currency",
         workspaceWithoutCurrencyMessage:
           "Target workspace has no configured currency.",
-        incompatibleCurrencyTitle: "Incompatible currency",
-        incompatibleCurrencyMessage:
-          "You can only link workspaces in {{currencyCode}}.",
         activeLinkAlreadyExistsTitle: "An active link already exists",
         activeLinkAlreadyExistsMessage: "That workspace is already linked.",
         createLinkError: "We couldn't create link",

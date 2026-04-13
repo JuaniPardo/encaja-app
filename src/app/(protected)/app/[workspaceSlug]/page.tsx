@@ -199,6 +199,24 @@ function formatSignedCurrency(value: number, formatter: Intl.NumberFormat) {
   return `${roundedValue > 0 ? "+" : "-"}${absolute}`;
 }
 
+function buildSafeCurrencyFormatter(
+  intlLocale: string,
+  currencyCode: string,
+  showCents: boolean,
+  fallbackFormatter: Intl.NumberFormat,
+) {
+  try {
+    return new Intl.NumberFormat(intlLocale, {
+      style: "currency",
+      currency: currencyCode || "ARS",
+      minimumFractionDigits: showCents ? 2 : 0,
+      maximumFractionDigits: showCents ? 2 : 0,
+    });
+  } catch {
+    return fallbackFormatter;
+  }
+}
+
 function sortCategories(a: CategoryRow, b: CategoryRow, locale: "es" | "en") {
   const typeDiff = typeOrder[a.type] - typeOrder[b.type];
   if (typeDiff !== 0) {
@@ -723,36 +741,44 @@ export default function DashboardPage() {
     });
   }, [linkedWorkspaceSummaries]);
 
-  const linkedWorkspaceTotals = useMemo(() => {
-    return normalizedLinkedWorkspaceSummaries.reduce(
-      (totals, row) => ({
-        incomeTotal: roundMoney(totals.incomeTotal + row.incomeTotal),
-        expenseTotal: roundMoney(totals.expenseTotal + row.expenseTotal),
-        savingTotal: roundMoney(totals.savingTotal + row.savingTotal),
-        balanceTotal: roundMoney(totals.balanceTotal + row.balanceTotal),
-      }),
-      {
-        incomeTotal: 0,
-        expenseTotal: 0,
-        savingTotal: 0,
-        balanceTotal: 0,
-      },
-    );
-  }, [normalizedLinkedWorkspaceSummaries]);
+  const linkedWorkspaceSummariesByCurrency = useMemo(() => {
+    const summariesByCurrency = new Map<string, typeof normalizedLinkedWorkspaceSummaries>();
 
-  const shouldShowLinkedWorkspaceSummary = useMemo(() => {
-    if (normalizedLinkedWorkspaceSummaries.length === 0) {
-      return false;
+    for (const row of normalizedLinkedWorkspaceSummaries) {
+      const currencyKey = (row.target_currency_code ?? "N/A").toUpperCase();
+      const existingRows = summariesByCurrency.get(currencyKey);
+      if (existingRows) {
+        existingRows.push(row);
+      } else {
+        summariesByCurrency.set(currencyKey, [row]);
+      }
     }
 
-    return normalizedLinkedWorkspaceSummaries.some((row) => {
-      return (
-        Math.abs(row.incomeTotal) >= deviationTolerance ||
-        Math.abs(row.expenseTotal) >= deviationTolerance ||
-        Math.abs(row.savingTotal) >= deviationTolerance ||
-        Math.abs(row.balanceTotal) >= deviationTolerance
+    return Array.from(summariesByCurrency.entries())
+      .sort(([currencyA], [currencyB]) => currencyA.localeCompare(currencyB, intlLocale))
+      .map(([currencyCode, rows]) => ({
+        currencyCode,
+        rows: [...rows].sort((a, b) =>
+          localeCompareByName(a.target_workspace_name, b.target_workspace_name, locale),
+        ),
+      }));
+  }, [intlLocale, locale, normalizedLinkedWorkspaceSummaries]);
+
+  const linkedWorkspaceCurrencyFormatters = useMemo(() => {
+    const formattersByCode = new Map<string, Intl.NumberFormat>();
+
+    for (const group of linkedWorkspaceSummariesByCurrency) {
+      formattersByCode.set(
+        group.currencyCode,
+        buildSafeCurrencyFormatter(intlLocale, group.currencyCode, showCents, currencyFormatter),
       );
-    });
+    }
+
+    return formattersByCode;
+  }, [currencyFormatter, intlLocale, linkedWorkspaceSummariesByCurrency, showCents]);
+
+  const shouldShowLinkedWorkspaceSummary = useMemo(() => {
+    return normalizedLinkedWorkspaceSummaries.length > 0;
   }, [normalizedLinkedWorkspaceSummaries]);
 
   const selectedPeriodLabel = `${monthLabelFromOptions(
@@ -1184,88 +1210,58 @@ export default function DashboardPage() {
               </Badge>
             </Group>
 
-            <SimpleGrid cols={isMobile ? 2 : 4} spacing={isMobile ? 6 : "xs"}>
-              <Paper withBorder radius="sm" p={isMobile ? 6 : "xs"}>
-                <Stack gap={2}>
-                  <Text size="xs" c="#475467">
-                    {t("dashboard.externalIncome")}
-                  </Text>
-                  <Text size="sm" fw={800} c="#087f5b">
-                    {currencyFormatter.format(linkedWorkspaceTotals.incomeTotal)}
-                  </Text>
-                </Stack>
-              </Paper>
-              <Paper withBorder radius="sm" p={isMobile ? 6 : "xs"}>
-                <Stack gap={2}>
-                  <Text size="xs" c="#475467">
-                    {t("dashboard.externalExpense")}
-                  </Text>
-                  <Text size="sm" fw={800} c="#c92a2a">
-                    {currencyFormatter.format(linkedWorkspaceTotals.expenseTotal)}
-                  </Text>
-                </Stack>
-              </Paper>
-              <Paper withBorder radius="sm" p={isMobile ? 6 : "xs"}>
-                <Stack gap={2}>
-                  <Text size="xs" c="#475467">
-                    {t("dashboard.externalSaving")}
-                  </Text>
-                  <Text size="sm" fw={800} c="#1c7ed6">
-                    {currencyFormatter.format(linkedWorkspaceTotals.savingTotal)}
-                  </Text>
-                </Stack>
-              </Paper>
-              <Paper withBorder radius="sm" p={isMobile ? 6 : "xs"}>
-                <Stack gap={2}>
-                  <Text size="xs" c="#475467">
-                    {t("dashboard.externalBalance")}
-                  </Text>
-                  <Text
-                    size="sm"
-                    fw={800}
-                    c={linkedWorkspaceTotals.balanceTotal >= 0 ? "#087f5b" : "#c92a2a"}
-                  >
-                    {currencyFormatter.format(linkedWorkspaceTotals.balanceTotal)}
-                  </Text>
-                </Stack>
-              </Paper>
-            </SimpleGrid>
+            <Text size="xs" c="#475467">
+              {t("dashboard.linkedWorkspacesNoConversion")}
+            </Text>
 
             <Stack gap={6}>
-              {normalizedLinkedWorkspaceSummaries.map((row) => (
-                <Paper
-                  key={row.link_id}
-                  withBorder
-                  radius="sm"
-                  p={isMobile ? "xs" : "sm"}
-                  bg="#ffffff"
-                >
-                  <Stack gap={4}>
-                    <Group justify="space-between" align="center" wrap="wrap" gap={6}>
-                      <Text size="sm" fw={700} c="#1f2937">
-                        {row.target_workspace_name}
-                      </Text>
-                      <Badge variant="light" color="gray">
-                        {row.target_currency_code} · {row.visibility_mode}
-                      </Badge>
-                    </Group>
-                    <SimpleGrid cols={isMobile ? 2 : 4} spacing={isMobile ? 6 : "xs"}>
-                      <Text size="xs" c="#344054">
-                        {t("dashboard.incomeLabel")}: {currencyFormatter.format(row.incomeTotal)}
-                      </Text>
-                      <Text size="xs" c="#344054">
-                        {t("dashboard.expenseLabel")}: {currencyFormatter.format(row.expenseTotal)}
-                      </Text>
-                      <Text size="xs" c="#344054">
-                        {t("dashboard.savingLabel")}: {currencyFormatter.format(row.savingTotal)}
-                      </Text>
-                      <Text size="xs" fw={700} c={row.balanceTotal >= 0 ? "#087f5b" : "#c92a2a"}>
-                        {t("dashboard.balanceLabel")}: {currencyFormatter.format(row.balanceTotal)}
-                      </Text>
-                    </SimpleGrid>
+              {linkedWorkspaceSummariesByCurrency.map((group) => {
+                const groupCurrencyFormatter =
+                  linkedWorkspaceCurrencyFormatters.get(group.currencyCode) ?? currencyFormatter;
+
+                return (
+                  <Stack key={group.currencyCode} gap={6}>
+                    <Text size="xs" fw={700} c="#475467">
+                      — {group.currencyCode} —
+                    </Text>
+
+                    {group.rows.map((row) => (
+                      <Paper
+                        key={row.link_id}
+                        withBorder
+                        radius="sm"
+                        p={isMobile ? "xs" : "sm"}
+                        bg="#ffffff"
+                      >
+                        <Stack gap={4}>
+                          <Group justify="space-between" align="center" wrap="wrap" gap={6}>
+                            <Text size="sm" fw={700} c="#1f2937">
+                              {row.target_workspace_name}
+                            </Text>
+                            <Badge variant="light" color="gray">
+                              {row.target_currency_code} · {row.visibility_mode}
+                            </Badge>
+                          </Group>
+                          <SimpleGrid cols={isMobile ? 2 : 4} spacing={isMobile ? 6 : "xs"}>
+                            <Text size="xs" c="#344054">
+                              {t("dashboard.incomeLabel")}: {groupCurrencyFormatter.format(row.incomeTotal)}
+                            </Text>
+                            <Text size="xs" c="#344054">
+                              {t("dashboard.expenseLabel")}: {groupCurrencyFormatter.format(row.expenseTotal)}
+                            </Text>
+                            <Text size="xs" c="#344054">
+                              {t("dashboard.savingLabel")}: {groupCurrencyFormatter.format(row.savingTotal)}
+                            </Text>
+                            <Text size="xs" fw={700} c={row.balanceTotal >= 0 ? "#087f5b" : "#c92a2a"}>
+                              {t("dashboard.balanceLabel")}: {groupCurrencyFormatter.format(row.balanceTotal)}
+                            </Text>
+                          </SimpleGrid>
+                        </Stack>
+                      </Paper>
+                    ))}
                   </Stack>
-                </Paper>
-              ))}
+                );
+              })}
             </Stack>
           </Stack>
         </Paper>

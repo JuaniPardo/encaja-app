@@ -784,19 +784,11 @@ export default function SettingsPage() {
       .map((workspaceItem) => {
         const targetCurrency = workspaceCurrenciesById[workspaceItem.id] ?? null;
         const hasCurrencyConfigured = Boolean(targetCurrency);
-        const hasCurrencyCompatibility =
-          hasCurrencyConfigured && targetCurrency?.toUpperCase() === sourceWorkspaceCurrency;
         const hasActiveLink = activeLinksByTargetWorkspaceId.has(workspaceItem.id);
 
         let disabledReason: string | null = null;
         if (!hasCurrencyConfigured) {
           disabledReason = t("workspaceSettings.workspaceLinks.disabledReason.noCurrencyConfigured");
-        } else if (!hasCurrencyCompatibility) {
-          disabledReason = t(
-            "workspaceSettings.workspaceLinks.disabledReason.differentCurrency",
-            undefined,
-            { currency: targetCurrency ?? "-" },
-          );
         } else if (hasActiveLink) {
           disabledReason = t("workspaceSettings.workspaceLinks.disabledReason.alreadyLinked");
         }
@@ -812,7 +804,6 @@ export default function SettingsPage() {
       });
   }, [
     activeLinksByTargetWorkspaceId,
-    sourceWorkspaceCurrency,
     t,
     workspace.id,
     workspaceCurrenciesById,
@@ -884,17 +875,6 @@ export default function SettingsPage() {
         color: "red",
         title: t("workspaceSettings.notifications.workspaceWithoutCurrencyTitle"),
         message: t("workspaceSettings.notifications.workspaceWithoutCurrencyMessage"),
-      });
-      return;
-    }
-
-    if (selectedTargetCurrency.toUpperCase() !== sourceWorkspaceCurrency) {
-      notifications.show({
-        color: "red",
-        title: t("workspaceSettings.notifications.incompatibleCurrencyTitle"),
-        message: t("workspaceSettings.notifications.incompatibleCurrencyMessage", undefined, {
-          currencyCode: sourceWorkspaceCurrency,
-        }),
       });
       return;
     }
