@@ -1476,45 +1476,31 @@ export default function SettingsPage() {
             withBorder
             radius="md"
             p="md"
-            bg="red.1"
-            style={{ borderColor: "var(--mantine-color-red-7)" }}
+            style={{ borderColor: "var(--mantine-color-red-3)" }}
           >
             <Stack gap="sm">
-              <Text fw={700} c="red.8">
+              <Text fw={600} c="red.6">
                 {t("workspaceSettings.dangerZone.title")}
               </Text>
-              <Text size="sm" c="red.9">
+              <Text size="sm" c="dimmed">
                 {t("workspaceSettings.dangerZone.description")}
               </Text>
               {!canDeleteWorkspace(workspace.role) ? (
-                <Text size="sm" c="red.8">
+                <Text size="sm" c="dimmed">
                   {t("workspaceSettings.dangerZone.ownerOnlyMessage")}
                 </Text>
               ) : null}
               {workspaces.length <= 1 ? (
-                <Text size="sm" c="red.8">
+                <Text size="sm" c="dimmed">
                   {t("workspaceSettings.dangerZone.needAnotherWorkspaceMessage")}
                 </Text>
               ) : null}
               <Group justify="flex-end">
                 <Button
                   color="red"
-                  variant="filled"
+                  variant="outline"
                   onClick={openDeleteWorkspace}
                   disabled={!canDeleteCurrentWorkspace}
-                  styles={{
-                    root: {
-                      backgroundColor: "var(--mantine-color-red-7)",
-                      border: "1px solid var(--mantine-color-red-8)",
-                      color: "var(--mantine-color-white)",
-                    },
-                    disabled: {
-                      opacity: 1,
-                      backgroundColor: "var(--mantine-color-red-3)",
-                      border: "1px solid var(--mantine-color-red-5)",
-                      color: "var(--mantine-color-red-8)",
-                    },
-                  }}
                 >
                   {t("workspaceSettings.dangerZone.deleteWorkspaceButton")}
                 </Button>
