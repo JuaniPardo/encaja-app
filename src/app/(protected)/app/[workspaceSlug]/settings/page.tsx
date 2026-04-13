@@ -1472,21 +1472,21 @@ export default function SettingsPage() {
         </Tabs.Panel>
 
         <Tabs.Panel value="advanced" pt="sm">
-          <Paper withBorder radius="md" p="md">
+          <Paper withBorder radius="md" p="md" bg="red.1">
             <Stack gap="sm">
-              <Text fw={600} c="red.7">
+              <Text fw={700} c="red.8">
                 {t("workspaceSettings.dangerZone.title")}
               </Text>
-              <Text size="sm" c="dimmed">
+              <Text size="sm" c="red.9">
                 {t("workspaceSettings.dangerZone.description")}
               </Text>
               {!canDeleteWorkspace(workspace.role) ? (
-                <Text size="sm" c="dimmed">
+                <Text size="sm" c="red.8">
                   {t("workspaceSettings.dangerZone.ownerOnlyMessage")}
                 </Text>
               ) : null}
               {workspaces.length <= 1 ? (
-                <Text size="sm" c="dimmed">
+                <Text size="sm" c="red.8">
                   {t("workspaceSettings.dangerZone.needAnotherWorkspaceMessage")}
                 </Text>
               ) : null}
