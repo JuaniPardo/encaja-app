@@ -137,6 +137,17 @@ const navItems: NavItem[] = [
       </ShellIcon>
     ),
   },
+  {
+    section: "secondary",
+    sectionPath: ROUTES.PROFILE,
+    labelKey: "profile.navButton",
+    icon: (
+      <ShellIcon>
+        <circle cx="12" cy="8" r="3.2" />
+        <path d="M5 19c1.4-2.7 3.8-4 7-4s5.6 1.3 7 4" />
+      </ShellIcon>
+    ),
+  },
 ];
 
 function isActivePath(currentPath: string, navPath: string) {
@@ -177,9 +188,6 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
   const { workspace, workspaces, user, switchWorkspace, signOut } = useWorkspace();
   const sectionPath = getWorkspaceScopedSectionPath(pathname ?? "");
   const pathWithoutWorkspace = stripWorkspaceSlugFromPathname(pathname ?? "/app");
-  const isProfileRoute =
-    (pathname ?? "").startsWith(ROUTES.PROFILE) &&
-    ((pathname ?? "") === ROUTES.PROFILE || (pathname ?? "").startsWith(`${ROUTES.PROFILE}/`));
   const workspaceSelectData = useMemo(
     () =>
       workspaces.map((item) => ({
@@ -366,63 +374,6 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
         </Stack>
 
         <Box mt="auto" pt={desktopCollapsed ? "sm" : "lg"}>
-            {!desktopCollapsed ? (
-              <Text
-                size="xs"
-                fw={700}
-                c="gray.6"
-                px={isMobile ? 10 : 12}
-                pb={isMobile ? 6 : 8}
-                style={{ letterSpacing: "0.04em", textTransform: "uppercase" }}
-              >
-                {t("nav.account", "Cuenta")}
-              </Text>
-            ) : null}
-            <Divider
-              my={desktopCollapsed ? (isMobile ? 4 : 6) : 0}
-              mt={!desktopCollapsed ? 0 : undefined}
-              mb={!desktopCollapsed ? (isMobile ? 6 : 8) : undefined}
-              color="gray.3"
-            />
-
-            <Tooltip
-              label={t("profile.navButton")}
-              disabled={!desktopCollapsed}
-              position="right"
-              withArrow
-            >
-              <UnstyledButton
-                component={Link}
-                href={ROUTES.PROFILE}
-                onClick={() => {
-                  if (opened) {
-                    close();
-                  }
-                }}
-                style={{
-                  width: "100%",
-                  padding: desktopCollapsed ? "11px 0" : "11px 12px",
-                  borderRadius: 8,
-                  color: isProfileRoute ? "#087f5b" : "#475467",
-                  border: `1px solid ${isProfileRoute ? "#9fd7bf" : "transparent"}`,
-                  backgroundColor: isProfileRoute ? "#dff3ea" : "transparent",
-                  boxShadow: isProfileRoute ? "inset 3px 0 0 #0ca678" : "none",
-                }}
-              >
-                <Group gap={10} justify={desktopCollapsed ? "center" : "flex-start"} wrap="nowrap">
-                  <ShellIcon>
-                    <circle cx="12" cy="8" r="3.2" />
-                    <path d="M5 19c1.4-2.7 3.8-4 7-4s5.6 1.3 7 4" />
-                  </ShellIcon>
-                  {!desktopCollapsed ? (
-                    <Text size="sm" fw={isProfileRoute ? 700 : 600}>
-                      {t("profile.navButton")}
-                    </Text>
-                  ) : null}
-                </Group>
-              </UnstyledButton>
-            </Tooltip>
-
             <Tooltip
               label={t("workspace.signOutTooltip", "Sign out")}
               disabled={!desktopCollapsed}

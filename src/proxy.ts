@@ -35,8 +35,7 @@ export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const accessToken = getAccessTokenFromSessionCookie(request.headers.get("cookie"));
 
-  const requiresAuth =
-    pathname.startsWith(ROUTES.APP) || pathname.startsWith(ROUTES.PROFILE) || pathname === ROUTES.ROOT;
+  const requiresAuth = pathname.startsWith(ROUTES.APP) || pathname === ROUTES.ROOT;
   const isAuthPage = authPages.has(pathname);
 
   if (!accessToken) {

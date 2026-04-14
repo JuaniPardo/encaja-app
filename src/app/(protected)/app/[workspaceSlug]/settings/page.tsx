@@ -58,6 +58,7 @@ import {
   canManageWorkspaceMembers,
   canManageWorkspaceSettings,
 } from "@/features/workspace/permissions";
+import { buildWorkspaceHref } from "@/features/workspace/routing";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 import { createFeedback } from "@/lib/feedback/create-feedback";
 import { ROUTES } from "@/lib/routes";
@@ -1485,7 +1486,11 @@ export default function SettingsPage() {
                   {t("settings.profile.description")}
                 </Text>
                 <Group justify="flex-end">
-                  <Button component={Link} href={ROUTES.PROFILE} variant="light">
+                  <Button
+                    component={Link}
+                    href={buildWorkspaceHref(workspace.slug, ROUTES.PROFILE)}
+                    variant="light"
+                  >
                     {t("settings.profile.openButton")}
                   </Button>
                 </Group>
