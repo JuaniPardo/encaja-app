@@ -28,6 +28,7 @@ import {
   stripWorkspaceSlugFromPathname,
 } from "@/features/workspace/routing";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
+import { ROUTES } from "@/lib/routes";
 import type { WorkspaceRole } from "@/types/database";
 
 type NavSection = "primary" | "secondary";
@@ -324,6 +325,15 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
               <Text size="sm" c="dimmed">
                 {user.email}
               </Text>
+              <Button
+                component={Link}
+                href={ROUTES.PROFILE}
+                size="xs"
+                variant="light"
+                color="gray"
+              >
+                {t("profile.navButton")}
+              </Button>
               <Button size="xs" variant="light" color="gray" onClick={() => void signOut()}>
                 {t("common.actions.signOut", "Sign out")}
               </Button>
@@ -366,6 +376,17 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
         </Stack>
 
         <Box mt="auto" pt="lg">
+            <Button
+              component={Link}
+              href={ROUTES.PROFILE}
+              variant="subtle"
+              color="gray"
+              hiddenFrom="sm"
+              size="xs"
+              fullWidth
+            >
+              {t("profile.navButton")}
+            </Button>
             <Button
               variant="subtle"
               color="gray"

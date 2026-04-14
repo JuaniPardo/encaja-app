@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -30,7 +31,6 @@ import {
   type FeedbackFormInputValues,
   type FeedbackFormValues,
 } from "@/features/feedback/schema";
-import { type Locale } from "@/features/i18n/config";
 import { useI18n } from "@/features/i18n/provider";
 import {
   createSettingsFormSchema,
@@ -60,6 +60,7 @@ import {
 } from "@/features/workspace/permissions";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 import { createFeedback } from "@/lib/feedback/create-feedback";
+import { ROUTES } from "@/lib/routes";
 import type { Database } from "@/types/database";
 
 type WorkspaceMemberSummary =
@@ -117,8 +118,6 @@ export default function SettingsPage() {
     deleteWorkspace,
     switchWorkspace,
     canUseWorkspaceFeature,
-    locale,
-    setUserLanguage,
   } = useWorkspace();
   const canEditWorkspaceSettings = canManageWorkspaceSettings(workspace.role);
   const canManageMembers = canManageWorkspaceMembers(workspace.role);
@@ -148,8 +147,6 @@ export default function SettingsPage() {
   const [isWorkspaceCurrenciesLoading, setIsWorkspaceCurrenciesLoading] = useState(true);
   const [workspaceCurrencyCode, setWorkspaceCurrencyCode] = useState(DEFAULT_CURRENCY_CODE);
   const [settingsId, setSettingsId] = useState<string | null>(null);
-  const [selectedLanguage, setSelectedLanguage] = useState<Locale>(locale);
-  const [isUpdatingLanguage, setIsUpdatingLanguage] = useState(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsTabValue>("workspace");
   const savingsRateModeSelectData = useMemo(
     () => [
@@ -159,13 +156,6 @@ export default function SettingsPage() {
     [t],
   );
 
-  const languageOptions = useMemo(
-    () => [
-      { value: "es", label: t("settings.language.spanishOption") },
-      { value: "en", label: t("settings.language.englishOption") },
-    ],
-    [t],
-  );
   const feedbackTypeOptions = useMemo(
     () => [
       { value: "", label: t("settings.feedback.typePlaceholder") },
@@ -359,10 +349,6 @@ export default function SettingsPage() {
       setDeleteWorkspaceConfirmation("");
     }
   }, [isDeleteWorkspaceOpen]);
-
-  useEffect(() => {
-    setSelectedLanguage(locale);
-  }, [locale]);
 
   const loadSettings = useCallback(async () => {
     setIsLoading(true);
@@ -592,27 +578,6 @@ export default function SettingsPage() {
     setWorkspaceCurrencyCode(payload.currency_code);
     await loadWorkspaceCurrencies();
   });
-
-  const onSaveLanguage = async () => {
-    setIsUpdatingLanguage(true);
-
-    try {
-      await setUserLanguage(selectedLanguage);
-      notifications.show({
-        color: "green",
-        title: t("settings.language.savedTitle"),
-        message: t("settings.language.savedMessage"),
-      });
-    } catch (error) {
-      notifications.show({
-        color: "red",
-        title: t("settings.language.errorTitle"),
-        message: error instanceof Error ? error.message : undefined,
-      });
-    } finally {
-      setIsUpdatingLanguage(false);
-    }
-  };
 
   const onSubmitFeedback = handleSubmitFeedback(async (values) => {
     try {
@@ -1515,25 +1480,13 @@ export default function SettingsPage() {
           <Stack gap="md">
             <Paper withBorder radius="md" p="md">
               <Stack gap="sm">
-                <Text fw={600}>{t("settings.language.title")}</Text>
+                <Text fw={600}>{t("settings.profile.title")}</Text>
                 <Text size="sm" c="dimmed">
-                  {t("settings.language.description")}
+                  {t("settings.profile.description")}
                 </Text>
-                <Group align="flex-end" wrap="wrap">
-                  <NativeSelect
-                    label={t("settings.language.fieldLabel")}
-                    data={languageOptions}
-                    value={selectedLanguage}
-                    onChange={(event) => setSelectedLanguage(event.currentTarget.value as Locale)}
-                    style={{ minWidth: 220, flex: 1 }}
-                  />
-                  <Button
-                    type="button"
-                    onClick={() => void onSaveLanguage()}
-                    loading={isUpdatingLanguage}
-                    disabled={selectedLanguage === locale}
-                  >
-                    {t("settings.language.saveButton")}
+                <Group justify="flex-end">
+                  <Button component={Link} href={ROUTES.PROFILE} variant="light">
+                    {t("settings.profile.openButton")}
                   </Button>
                 </Group>
               </Stack>

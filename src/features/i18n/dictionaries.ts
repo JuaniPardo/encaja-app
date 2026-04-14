@@ -385,6 +385,12 @@ const dictionaries = {
         savedMessage: "Tu preferencia de idioma se guardó correctamente.",
         errorTitle: "No pudimos actualizar idioma",
       },
+      profile: {
+        title: "Perfil de usuario",
+        description:
+          "Administrá tu nombre, idioma y seguridad desde tu perfil personal.",
+        openButton: "Ir a perfil",
+      },
       feedback: {
         title: "¿Encontraste algo que no funciona bien?",
         description: "Tu feedback me ayuda a mejorar Encaja.",
@@ -403,6 +409,34 @@ const dictionaries = {
         successMessage: "Gracias por tu feedback 🙌",
         errorTitle: "No pudimos enviar feedback",
         errorFallbackMessage: "Ocurrió un error inesperado al enviar tu feedback.",
+      },
+    },
+    profile: {
+      navButton: "Perfil",
+      title: "Tu perfil",
+      subtitle: "Gestioná tus preferencias personales sin afectar ningún workspace.",
+      backToApp: "Volver a la app",
+      form: {
+        title: "Información personal",
+        emailLabel: "Email",
+        fullNameLabel: "Nombre",
+        fullNamePlaceholder: "Tu nombre",
+        saveButton: "Guardar cambios",
+      },
+      security: {
+        title: "Seguridad",
+        description: "Enviamos un email para que cambies tu contraseña de forma segura.",
+        resetPasswordButton: "Cambiar contraseña",
+      },
+      notifications: {
+        loadErrorTitle: "No pudimos cargar tu perfil",
+        saveErrorTitle: "No pudimos actualizar tu perfil",
+        savedTitle: "Perfil actualizado",
+        savedMessage: "Tus cambios se guardaron correctamente.",
+        passwordResetErrorTitle: "No pudimos enviar el email",
+        passwordResetSentTitle: "Email enviado",
+        passwordResetSentMessage:
+          "Revisá tu correo para continuar con el cambio de contraseña.",
       },
     },
     workspaceSettings: {
@@ -1259,6 +1293,12 @@ const dictionaries = {
         savedMessage: "Your language preference was saved successfully.",
         errorTitle: "We couldn't update your language",
       },
+      profile: {
+        title: "User profile",
+        description:
+          "Manage your name, language, and security from your personal profile.",
+        openButton: "Go to profile",
+      },
       feedback: {
         title: "Did you find something that is not working well?",
         description: "Your feedback helps me improve Encaja.",
@@ -1277,6 +1317,34 @@ const dictionaries = {
         successMessage: "Thanks for your feedback 🙌",
         errorTitle: "We couldn't send feedback",
         errorFallbackMessage: "An unexpected error occurred while sending your feedback.",
+      },
+    },
+    profile: {
+      navButton: "Profile",
+      title: "Your profile",
+      subtitle: "Manage personal preferences without affecting any workspace.",
+      backToApp: "Back to app",
+      form: {
+        title: "Personal information",
+        emailLabel: "Email",
+        fullNameLabel: "Name",
+        fullNamePlaceholder: "Your name",
+        saveButton: "Save changes",
+      },
+      security: {
+        title: "Security",
+        description: "We'll send an email so you can change your password securely.",
+        resetPasswordButton: "Change password",
+      },
+      notifications: {
+        loadErrorTitle: "We couldn't load your profile",
+        saveErrorTitle: "We couldn't update your profile",
+        savedTitle: "Profile updated",
+        savedMessage: "Your changes were saved successfully.",
+        passwordResetErrorTitle: "We couldn't send the email",
+        passwordResetSentTitle: "Email sent",
+        passwordResetSentMessage:
+          "Check your inbox to continue changing your password.",
       },
     },
     workspaceSettings: {

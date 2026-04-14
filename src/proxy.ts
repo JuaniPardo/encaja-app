@@ -4,8 +4,9 @@ import { NextResponse } from "next/server";
 import { getSupabaseVerifierClient } from "@/lib/supabase/server-verifier";
 import { getAccessTokenFromSessionCookie } from "@/lib/supabase/session-cookie";
 import { SUPABASE_AUTH_STORAGE_KEY } from "@/lib/supabase/config";
+import { ROUTES } from "@/lib/routes";
 
-const authPages = new Set(["/login", "/register"]);
+const authPages: ReadonlySet<string> = new Set([ROUTES.LOGIN, ROUTES.REGISTER]);
 
 function redirectTo(pathname: string, request: NextRequest) {
   const url = request.nextUrl.clone();
@@ -34,12 +35,13 @@ export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const accessToken = getAccessTokenFromSessionCookie(request.headers.get("cookie"));
 
-  const requiresAuth = pathname.startsWith("/app") || pathname === "/";
+  const requiresAuth =
+    pathname.startsWith(ROUTES.APP) || pathname.startsWith(ROUTES.PROFILE) || pathname === ROUTES.ROOT;
   const isAuthPage = authPages.has(pathname);
 
   if (!accessToken) {
     if (requiresAuth) {
-      return redirectTo("/login", request);
+      return redirectTo(ROUTES.LOGIN, request);
     }
 
     return NextResponse.next();
@@ -49,7 +51,7 @@ export async function proxy(request: NextRequest) {
 
   if (!tokenIsValid) {
     if (requiresAuth) {
-      const response = redirectTo("/login", request);
+      const response = redirectTo(ROUTES.LOGIN, request);
       clearAuthCookie(response);
       return response;
     }
@@ -63,8 +65,8 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (isAuthPage || pathname === "/") {
-    return redirectTo("/app", request);
+  if (isAuthPage || pathname === ROUTES.ROOT) {
+    return redirectTo(ROUTES.APP, request);
   }
 
   return NextResponse.next();
