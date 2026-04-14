@@ -9,6 +9,7 @@ import {
   Burger,
   Button,
   Container,
+  Divider,
   Group,
   NativeSelect,
   Stack,
@@ -29,20 +30,18 @@ import {
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { WorkspaceRole } from "@/types/database";
 
-const navItems = [
+type NavSection = "primary" | "secondary";
+
+interface NavItem {
+  section: NavSection;
+  sectionPath: string;
+  labelKey: string;
+  icon: React.ReactNode;
+}
+
+const navItems: NavItem[] = [
   {
-    sectionPath: "/start",
-    labelKey: "nav.start",
-    icon: (
-      <ShellIcon>
-        <path d="M4 6h16" />
-        <path d="M4 12h10" />
-        <path d="M4 18h7" />
-        <path d="m17 14 3 3-3 3" />
-      </ShellIcon>
-    ),
-  },
-  {
+    section: "primary",
     sectionPath: "",
     labelKey: "nav.summary",
     icon: (
@@ -52,17 +51,7 @@ const navItems = [
     ),
   },
   {
-    sectionPath: "/budget",
-    labelKey: "nav.budget",
-    icon: (
-      <ShellIcon>
-        <rect x="3" y="6" width="18" height="12" rx="2" />
-        <path d="M3 10h18" />
-        <path d="M7 14h3" />
-      </ShellIcon>
-    ),
-  },
-  {
+    section: "primary",
     sectionPath: "/transactions",
     labelKey: "nav.transactions",
     icon: (
@@ -75,18 +64,19 @@ const navItems = [
     ),
   },
   {
-    sectionPath: "/insights",
-    labelKey: "nav.insights",
+    section: "primary",
+    sectionPath: "/budget",
+    labelKey: "nav.budget",
     icon: (
       <ShellIcon>
-        <path d="M4 18V8" />
-        <path d="M10 18V4" />
-        <path d="M16 18v-6" />
-        <path d="M22 18V10" />
+        <rect x="3" y="6" width="18" height="12" rx="2" />
+        <path d="M3 10h18" />
+        <path d="M7 14h3" />
       </ShellIcon>
     ),
   },
   {
+    section: "primary",
     sectionPath: "/categories",
     labelKey: "nav.categories",
     icon: (
@@ -99,6 +89,7 @@ const navItems = [
     ),
   },
   {
+    section: "primary",
     sectionPath: "/payment-methods",
     labelKey: "nav.paymentMethods",
     icon: (
@@ -110,6 +101,33 @@ const navItems = [
     ),
   },
   {
+    section: "secondary",
+    sectionPath: "/start",
+    labelKey: "nav.start",
+    icon: (
+      <ShellIcon>
+        <path d="M4 6h16" />
+        <path d="M4 12h10" />
+        <path d="M4 18h7" />
+        <path d="m17 14 3 3-3 3" />
+      </ShellIcon>
+    ),
+  },
+  {
+    section: "secondary",
+    sectionPath: "/insights",
+    labelKey: "nav.insights",
+    icon: (
+      <ShellIcon>
+        <path d="M4 18V8" />
+        <path d="M10 18V4" />
+        <path d="M16 18v-6" />
+        <path d="M22 18V10" />
+      </ShellIcon>
+    ),
+  },
+  {
+    section: "secondary",
     sectionPath: "/settings",
     labelKey: "nav.settings",
     icon: (
@@ -167,10 +185,83 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
       })),
     [t, workspaces],
   );
+  const primaryNavItems = useMemo(
+    () => navItems.filter((item) => item.section === "primary"),
+    [],
+  );
+  const secondaryNavItems = useMemo(
+    () => navItems.filter((item) => item.section === "secondary"),
+    [],
+  );
 
   useEffect(() => {
     close();
   }, [pathname, close]);
+
+  const renderNavItem = (item: NavItem) => {
+    const navPath = buildWorkspaceHref(workspace.slug, item.sectionPath);
+    const activePath = item.sectionPath ? `/app${item.sectionPath}` : "/app";
+    const isActive = isActivePath(pathWithoutWorkspace, activePath);
+    const itemLabel = t(item.labelKey);
+
+    return (
+      <Tooltip
+        key={item.sectionPath || "/"}
+        label={itemLabel}
+        disabled={!desktopCollapsed}
+        position="right"
+        withArrow
+      >
+        <UnstyledButton
+          component={Link}
+          href={navPath}
+          onClick={() => {
+            if (opened) {
+              close();
+            }
+          }}
+          style={{
+            width: "100%",
+            padding: desktopCollapsed ? "10px 0" : isMobile ? "10px 10px" : "11px 12px",
+            borderRadius: 8,
+            display: "block",
+            backgroundColor: isActive ? "#dff3ea" : "transparent",
+            border: `1px solid ${isActive ? "#9fd7bf" : "transparent"}`,
+            color: isActive ? "#087f5b" : "#475467",
+            boxShadow: isActive ? "inset 3px 0 0 #0ca678" : "none",
+          }}
+        >
+          <Group
+            gap={10}
+            justify={desktopCollapsed ? "center" : "flex-start"}
+            wrap="nowrap"
+          >
+            <Box pos="relative">
+              {item.icon}
+              {desktopCollapsed && isActive ? (
+                <Box
+                  h={6}
+                  w={6}
+                  style={{
+                    borderRadius: "50%",
+                    backgroundColor: "#0ca678",
+                    position: "absolute",
+                    right: -4,
+                    top: -2,
+                  }}
+                />
+              ) : null}
+            </Box>
+            {!desktopCollapsed ? (
+              <Text size={isMobile ? "xs" : "sm"} fw={isActive ? 700 : 600}>
+                {itemLabel}
+              </Text>
+            ) : null}
+          </Group>
+        </UnstyledButton>
+      </Tooltip>
+    );
+  };
 
   return (
     <AppShell
@@ -248,70 +339,30 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
         }}
       >
         <Stack gap={isMobile ? 3 : 4}>
-            {navItems.map((item) => {
-              const navPath = buildWorkspaceHref(workspace.slug, item.sectionPath);
-              const activePath = item.sectionPath ? `/app${item.sectionPath}` : "/app";
-              const isActive = isActivePath(pathWithoutWorkspace, activePath);
-              const itemLabel = t(item.labelKey);
-
-              return (
-                <Tooltip
-                  key={item.sectionPath || "/"}
-                  label={itemLabel}
-                  disabled={!desktopCollapsed}
-                  position="right"
-                  withArrow
-                >
-                  <UnstyledButton
-                    component={Link}
-                    href={navPath}
-                    onClick={() => {
-                      if (opened) {
-                        close();
-                      }
-                    }}
-                    style={{
-                      width: "100%",
-                      padding: desktopCollapsed ? "10px 0" : isMobile ? "10px 10px" : "11px 12px",
-                      borderRadius: 8,
-                      display: "block",
-                      backgroundColor: isActive ? "#dff3ea" : "transparent",
-                      border: `1px solid ${isActive ? "#9fd7bf" : "transparent"}`,
-                      color: isActive ? "#087f5b" : "#475467",
-                      boxShadow: isActive ? "inset 3px 0 0 #0ca678" : "none",
-                    }}
+            {primaryNavItems.map(renderNavItem)}
+            {secondaryNavItems.length > 0 ? (
+              <>
+                {!desktopCollapsed ? (
+                  <Text
+                    size="xs"
+                    fw={700}
+                    c="gray.6"
+                    px={isMobile ? 10 : 12}
+                    pt={isMobile ? 8 : 10}
+                    style={{ letterSpacing: "0.04em", textTransform: "uppercase" }}
                   >
-                    <Group
-                      gap={10}
-                      justify={desktopCollapsed ? "center" : "flex-start"}
-                      wrap="nowrap"
-                    >
-                      <Box pos="relative">
-                        {item.icon}
-                        {desktopCollapsed && isActive ? (
-                          <Box
-                            h={6}
-                            w={6}
-                            style={{
-                              borderRadius: "50%",
-                              backgroundColor: "#0ca678",
-                              position: "absolute",
-                              right: -4,
-                              top: -2,
-                            }}
-                          />
-                        ) : null}
-                      </Box>
-                      {!desktopCollapsed ? (
-                        <Text size={isMobile ? "xs" : "sm"} fw={isActive ? 700 : 600}>
-                          {itemLabel}
-                        </Text>
-                      ) : null}
-                    </Group>
-                  </UnstyledButton>
-                </Tooltip>
-              );
-            })}
+                    {t("nav.more", "Más")}
+                  </Text>
+                ) : null}
+                <Divider
+                  my={desktopCollapsed ? (isMobile ? 4 : 6) : 0}
+                  mt={!desktopCollapsed ? 4 : undefined}
+                  mb={!desktopCollapsed ? (isMobile ? 4 : 6) : undefined}
+                  color="gray.3"
+                />
+                {secondaryNavItems.map(renderNavItem)}
+              </>
+            ) : null}
         </Stack>
 
         <Box mt="auto" pt="lg">
