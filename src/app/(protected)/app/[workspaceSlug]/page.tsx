@@ -32,6 +32,7 @@ import {
 } from "@/features/i18n/formatting";
 import { useI18n } from "@/features/i18n/provider";
 import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
+import { transactionTypeColorCssVar } from "@/features/transactions/type-colors";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { Database, PaymentMethodType, TransactionType } from "@/types/database";
 
@@ -113,16 +114,16 @@ const compactSummaryTheme: Record<
   }
 > = {
   income: {
-    color: "var(--mantine-color-teal-6)",
-    textColor: "var(--mantine-color-teal-7)",
+    color: transactionTypeColorCssVar("income", 6),
+    textColor: transactionTypeColorCssVar("income", 7),
   },
   expense: {
-    color: "var(--mantine-color-pink-6)",
-    textColor: "var(--mantine-color-pink-7)",
+    color: transactionTypeColorCssVar("expense", 6),
+    textColor: transactionTypeColorCssVar("expense", 7),
   },
   saving: {
-    color: "var(--mantine-color-indigo-5)",
-    textColor: "var(--mantine-color-indigo-7)",
+    color: transactionTypeColorCssVar("saving", 6),
+    textColor: transactionTypeColorCssVar("saving", 7),
   },
 };
 
@@ -138,19 +139,40 @@ const typeTheme: Record<
   }
 > = {
   income: {
-    main: "#00a552",
-    header: "#00863f",
-    palette: ["#00a552", "#00bf60", "#40cd85", "#74daaa", "#a7e8ce", "#d7f5e8"],
+    main: transactionTypeColorCssVar("income", 6),
+    header: transactionTypeColorCssVar("income", 7),
+    palette: [
+      transactionTypeColorCssVar("income", 6),
+      transactionTypeColorCssVar("income", 5),
+      transactionTypeColorCssVar("income", 4),
+      transactionTypeColorCssVar("income", 3),
+      transactionTypeColorCssVar("income", 2),
+      transactionTypeColorCssVar("income", 1),
+    ],
   },
   expense: {
-    main: "#e60062",
-    header: "#c10052",
-    palette: ["#e60062", "#ff2f84", "#ff63a3", "#ff95c1", "#ffc4dc", "#ffe0ef"],
+    main: transactionTypeColorCssVar("expense", 6),
+    header: transactionTypeColorCssVar("expense", 7),
+    palette: [
+      transactionTypeColorCssVar("expense", 6),
+      transactionTypeColorCssVar("expense", 5),
+      transactionTypeColorCssVar("expense", 4),
+      transactionTypeColorCssVar("expense", 3),
+      transactionTypeColorCssVar("expense", 2),
+      transactionTypeColorCssVar("expense", 1),
+    ],
   },
   saving: {
-    main: "#00a0d6",
-    header: "#007faa",
-    palette: ["#00a0d6", "#00b8f2", "#44c8f5", "#79d9f8", "#ade9fb", "#dbf5fe"],
+    main: transactionTypeColorCssVar("saving", 6),
+    header: transactionTypeColorCssVar("saving", 7),
+    palette: [
+      transactionTypeColorCssVar("saving", 6),
+      transactionTypeColorCssVar("saving", 5),
+      transactionTypeColorCssVar("saving", 4),
+      transactionTypeColorCssVar("saving", 3),
+      transactionTypeColorCssVar("saving", 2),
+      transactionTypeColorCssVar("saving", 1),
+    ],
   },
 };
 

@@ -39,6 +39,10 @@ import {
   type TransactionFormInputValues,
   type TransactionFormValues,
 } from "@/features/transactions/schema";
+import {
+  transactionTypeColorCssVar,
+  transactionTypeMantineColor,
+} from "@/features/transactions/type-colors";
 import { useI18n } from "@/features/i18n/provider";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { Database, TransactionType } from "@/types/database";
@@ -60,16 +64,10 @@ type TransactionGroup = {
   rows: TransactionRow[];
 };
 
-const transactionTypeColors: Record<TransactionType, string> = {
-  income: "teal",
-  expense: "pink",
-  saving: "indigo",
-};
-
 const transactionTypeCardBackgrounds: Record<TransactionType, string> = {
-  income: "var(--mantine-color-teal-0)",
-  expense: "var(--mantine-color-pink-0)",
-  saving: "var(--mantine-color-indigo-0)",
+  income: transactionTypeColorCssVar("income", 0),
+  expense: transactionTypeColorCssVar("expense", 0),
+  saving: transactionTypeColorCssVar("saving", 0),
 };
 
 const quickPaymentMethodTypes: QuickPaymentMethodType[] = ["cash", "debit_card", "other"];
@@ -294,7 +292,7 @@ export default function TransactionsPage() {
   const selectedType = useWatch({ control, name: "type" });
   const selectedCategoryId = useWatch({ control, name: "categoryId" });
   const selectedPaymentMethodId = useWatch({ control, name: "paymentMethodId" });
-  const selectedTypeColor = transactionTypeColors[selectedType ?? "expense"];
+  const selectedTypeColor = transactionTypeMantineColor[selectedType ?? "expense"];
 
   const categoryById = useMemo(
     () => new Map(categories.map((category) => [category.id, category])),

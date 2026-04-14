@@ -2,6 +2,7 @@
 
 import { Box, Text } from "@mantine/core";
 
+import { transactionTypeColorCssVar } from "@/features/transactions/type-colors";
 import type { TransactionType } from "@/types/database";
 
 type ProgressCellProps = {
@@ -44,24 +45,18 @@ function getProgressVisualScale(type: TransactionType, value: number): ProgressV
     };
   }
 
-  const targetColors: Record<
-    TransactionType,
-    {
-      reached: string;
-      exceeded: string;
-    }
-  > = {
+  const targetColors: Record<TransactionType, { reached: string; exceeded: string }> = {
     income: {
-      reached: "#22c55e",
-      exceeded: "#15803d",
+      reached: transactionTypeColorCssVar("income", 6),
+      exceeded: transactionTypeColorCssVar("income", 7),
     },
     expense: {
-      reached: "#ec4899",
-      exceeded: "#be185d",
+      reached: transactionTypeColorCssVar("expense", 6),
+      exceeded: transactionTypeColorCssVar("expense", 7),
     },
     saving: {
-      reached: "#6366f1",
-      exceeded: "#4338ca",
+      reached: transactionTypeColorCssVar("saving", 6),
+      exceeded: transactionTypeColorCssVar("saving", 7),
     },
   };
 

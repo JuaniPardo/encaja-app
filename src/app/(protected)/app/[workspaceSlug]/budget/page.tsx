@@ -39,6 +39,10 @@ import {
 } from "@/features/budget/schema";
 import { useI18n } from "@/features/i18n/provider";
 import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
+import {
+  transactionTypeColorShade,
+  transactionTypeMantineColor,
+} from "@/features/transactions/type-colors";
 import { canManageBudgetStructure } from "@/features/workspace/permissions";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { Database, TransactionType } from "@/types/database";
@@ -62,12 +66,6 @@ const typeOrder: Record<TransactionType, number> = {
   income: 0,
   expense: 1,
   saving: 2,
-};
-
-const typeColors: Record<TransactionType, string> = {
-  income: "teal",
-  expense: "pink",
-  saving: "indigo",
 };
 
 function roundMoney(value: number) {
@@ -746,10 +744,10 @@ export default function BudgetPage() {
               <Paper key={typeKey} withBorder radius="md" p="sm">
                 <Stack gap="xs">
                   <Group justify="space-between" align="center" wrap="wrap">
-                    <Title order={5} c={typeColors[typeKey]}>
+                    <Title order={5} c={transactionTypeMantineColor[typeKey]}>
                       {typeLabels[typeKey]}
                     </Title>
-                    <Badge variant="light" color={typeColors[typeKey]} size="sm">
+                    <Badge variant="light" color={transactionTypeMantineColor[typeKey]} size="sm">
                       {currencyFormatter.format(totals[typeKey])}
                     </Badge>
                   </Group>
@@ -895,7 +893,7 @@ export default function BudgetPage() {
                     <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
                       {mapTransactionTypeLabel("income", t, { plural: true })}
                     </Text>
-                    <Text mt={1} fw={700} size="sm" c={`${typeColors.income}.7`}>
+                    <Text mt={1} fw={700} size="sm" c={transactionTypeColorShade("income", 7)}>
                       {currencyFormatter.format(totals.income)}
                     </Text>
                   </Paper>
@@ -903,7 +901,7 @@ export default function BudgetPage() {
                     <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
                       {mapTransactionTypeLabel("expense", t, { plural: true })}
                     </Text>
-                    <Text mt={1} fw={700} size="sm" c={`${typeColors.expense}.7`}>
+                    <Text mt={1} fw={700} size="sm" c={transactionTypeColorShade("expense", 7)}>
                       {currencyFormatter.format(totals.expense)}
                     </Text>
                   </Paper>
@@ -911,7 +909,7 @@ export default function BudgetPage() {
                     <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
                       {mapTransactionTypeLabel("saving", t, { plural: true })}
                     </Text>
-                    <Text mt={1} fw={700} size="sm" c={`${typeColors.saving}.7`}>
+                    <Text mt={1} fw={700} size="sm" c={transactionTypeColorShade("saving", 7)}>
                       {currencyFormatter.format(totals.saving)}
                     </Text>
                   </Paper>

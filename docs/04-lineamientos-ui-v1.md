@@ -47,3 +47,20 @@ Antes de cerrar una pantalla nueva o refactor:
 - validar que la navegación de vistas usa `Tabs`
 - validar que no se introdujeron patrones alternativos para el mismo comportamiento
 - validar consistencia con pantallas existentes
+
+---
+
+## 6. Semántica de color financiero (regla fija)
+
+En toda la app, los tipos financieros deben mantener esta asociación visual:
+- `income` (Ingresos) → `teal`
+- `expense` (Gastos) → `pink`
+- `saving` (Ahorro) → `indigo`
+
+Reglas:
+- usar únicamente tonos (`0..9`) de ese color base para variaciones de estado
+- no intercambiar colores entre tipos aunque cambie el contexto de la pantalla
+- evitar colores alternativos para representar tipo financiero
+
+Fuente canónica en código:
+- `src/features/transactions/type-colors.ts`

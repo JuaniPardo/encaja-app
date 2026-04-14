@@ -31,6 +31,7 @@ import {
 import { localeCompareByName, mapTransactionTypeLabel } from "@/features/i18n/formatting";
 import { useI18n } from "@/features/i18n/provider";
 import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
+import { transactionTypeColorCssVar } from "@/features/transactions/type-colors";
 import { canManageCategories } from "@/features/workspace/permissions";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { Database, ExpenseBehavior, TransactionType } from "@/types/database";
@@ -55,21 +56,21 @@ const categoryTypeOrder: Record<TransactionType, number> = {
 const categoryTypeSectionOrder: TransactionType[] = ["income", "expense", "saving"];
 
 const categoryGroupBackgroundColor: Record<TransactionType, string> = {
-  expense: "var(--mantine-color-pink-0)",
-  income: "var(--mantine-color-teal-0)",
-  saving: "var(--mantine-color-indigo-0)",
+  expense: transactionTypeColorCssVar("expense", 0),
+  income: transactionTypeColorCssVar("income", 0),
+  saving: transactionTypeColorCssVar("saving", 0),
 };
 
 const categoryGroupHeaderColor: Record<TransactionType, string> = {
-  expense: "var(--mantine-color-pink-6)",
-  income: "var(--mantine-color-teal-6)",
-  saving: "var(--mantine-color-indigo-6)",
+  expense: transactionTypeColorCssVar("expense", 6),
+  income: transactionTypeColorCssVar("income", 6),
+  saving: transactionTypeColorCssVar("saving", 6),
 };
 
 const categoryGroupBorderColor: Record<TransactionType, string> = {
-  expense: "var(--mantine-color-pink-4)",
-  income: "var(--mantine-color-teal-4)",
-  saving: "var(--mantine-color-indigo-4)",
+  expense: transactionTypeColorCssVar("expense", 4),
+  income: transactionTypeColorCssVar("income", 4),
+  saving: transactionTypeColorCssVar("saving", 4),
 };
 
 function normalizeSearchText(value: string, locale: "es" | "en") {
