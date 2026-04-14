@@ -22,9 +22,45 @@ const condensed = IBM_Plex_Sans_Condensed({
   subsets: ["latin"],
 });
 
+function resolveMetadataBase() {
+  const rawUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ??
+    process.env.VERCEL_URL;
+
+  if (!rawUrl) {
+    return new URL("http://localhost:3000");
+  }
+
+  const normalizedUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
+
+  try {
+    return new URL(normalizedUrl);
+  } catch {
+    return new URL("http://localhost:3000");
+  }
+}
+
 export const metadata: Metadata = {
+  metadataBase: resolveMetadataBase(),
   title: "Encaja",
   description: "Presupuesto y control financiero familiar",
+  icons: {
+    icon: "/logo-EnCaja.svg",
+    shortcut: "/logo-EnCaja.svg",
+    apple: "/logo-EnCaja.svg",
+  },
+  openGraph: {
+    title: "Encaja",
+    description: "Presupuesto y control financiero familiar",
+    images: [{ url: "/logo-EnCaja.svg", alt: "Logo de Encaja" }],
+  },
+  twitter: {
+    card: "summary",
+    title: "Encaja",
+    description: "Presupuesto y control financiero familiar",
+    images: ["/logo-EnCaja.svg"],
+  },
 };
 
 export default async function RootLayout({

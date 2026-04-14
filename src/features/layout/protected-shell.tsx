@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -309,7 +310,10 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
                 </Text>
               </ActionIcon>
               <Box>
-                <Title order={isMobile ? 4 : 3}>Encaja</Title>
+                <Group gap={8} wrap="nowrap">
+                  <Image src="/logo-EnCaja.svg" alt="Encaja" width={isMobile ? 26 : 30} height={isMobile ? 26 : 30} />
+                  <Title order={isMobile ? 4 : 3}>Encaja</Title>
+                </Group>
                 {workspaces.length > 1 ? (
                   <NativeSelect
                     value={workspace.slug}
@@ -346,6 +350,19 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
           backgroundColor: "#f9fbfa",
         }}
       >
+        <Group
+          justify={desktopCollapsed ? "center" : "flex-start"}
+          px={desktopCollapsed ? 0 : isMobile ? 10 : 12}
+          pb={isMobile ? 6 : 8}
+          wrap="nowrap"
+        >
+          <Image src="/logo-EnCaja.svg" alt="Encaja" width={24} height={24} />
+          {!desktopCollapsed ? (
+            <Text size="sm" fw={700} c="#1f2937">
+              Encaja
+            </Text>
+          ) : null}
+        </Group>
         <Stack gap={isMobile ? 3 : 4}>
             {primaryNavItems.map(renderNavItem)}
             {secondaryNavItems.length > 0 ? (
