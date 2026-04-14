@@ -1,17 +1,15 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Button,
-  Card,
   Center,
   Container,
-  Divider,
   Group,
   Loader,
   NativeSelect,
+  Paper,
   Stack,
   Text,
   TextInput,
@@ -204,21 +202,11 @@ export default function ProfilePage() {
   return (
     <Container size="sm" py="md">
       <Stack gap="md">
-        <Group justify="space-between" align="flex-start" wrap="wrap">
-          <Stack gap={2}>
-            <Title order={2} component="h1">
-              {t("profile.title")}
-            </Title>
-            <Text size="sm" c="dimmed">
-              {t("profile.subtitle")}
-            </Text>
-          </Stack>
-          <Button component={Link} href={ROUTES.APP} variant="light" color="gray">
-            {t("profile.backToApp")}
-          </Button>
-        </Group>
+        <Title order={2} component="h1">
+          {t("profile.title")}
+        </Title>
 
-        <Card withBorder>
+        <Paper withBorder radius="md" p="md">
           <form onSubmit={onSubmit}>
             <Stack gap="sm">
               <Text fw={600}>{t("profile.form.title")}</Text>
@@ -250,19 +238,20 @@ export default function ProfilePage() {
               </Group>
             </Stack>
           </form>
-        </Card>
+        </Paper>
 
-        <Divider />
-
-        <Card withBorder>
-          <Stack gap="sm">
-            <Text fw={600}>{t("profile.security.title")}</Text>
-            <Text size="sm" c="dimmed">
-              {t("profile.security.description")}
-            </Text>
+        <Paper withBorder radius="md" p="sm">
+          <Group justify="space-between" align="flex-end" wrap="wrap" gap="xs">
+            <Stack gap={2}>
+              <Text fw={600}>{t("profile.security.title")}</Text>
+              <Text size="sm" c="dimmed">
+                {t("profile.security.description")}
+              </Text>
+            </Stack>
             <Group justify="flex-end">
               <Button
                 type="button"
+                size="sm"
                 variant="light"
                 onClick={() => void onResetPassword()}
                 loading={isSendingResetPassword}
@@ -270,8 +259,8 @@ export default function ProfilePage() {
                 {t("profile.security.resetPasswordButton")}
               </Button>
             </Group>
-          </Stack>
-        </Card>
+          </Group>
+        </Paper>
       </Stack>
     </Container>
   );

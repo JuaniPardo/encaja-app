@@ -97,6 +97,7 @@ const dictionaries = {
       paymentMethods: "Medios de pago",
       settings: "Configuración",
       more: "Más",
+      account: "Cuenta",
       expandMenu: "Expandir menú",
       collapseMenu: "Colapsar menú",
       activeRole: "Rol activo: {{role}}",
@@ -413,9 +414,7 @@ const dictionaries = {
     },
     profile: {
       navButton: "Perfil",
-      title: "Tu perfil",
-      subtitle: "Gestioná tus preferencias personales sin afectar ningún workspace.",
-      backToApp: "Volver a la app",
+      title: "Perfil",
       form: {
         title: "Información personal",
         emailLabel: "Email",
@@ -425,7 +424,7 @@ const dictionaries = {
       },
       security: {
         title: "Seguridad",
-        description: "Enviamos un email para que cambies tu contraseña de forma segura.",
+        description: "Recibís un email para cambiar tu contraseña de forma segura.",
         resetPasswordButton: "Cambiar contraseña",
       },
       notifications: {
@@ -1004,6 +1003,7 @@ const dictionaries = {
       paymentMethods: "Payment methods",
       settings: "Settings",
       more: "More",
+      account: "Account",
       expandMenu: "Expand menu",
       collapseMenu: "Collapse menu",
       activeRole: "Active role: {{role}}",
@@ -1321,9 +1321,7 @@ const dictionaries = {
     },
     profile: {
       navButton: "Profile",
-      title: "Your profile",
-      subtitle: "Manage personal preferences without affecting any workspace.",
-      backToApp: "Back to app",
+      title: "Profile",
       form: {
         title: "Personal information",
         emailLabel: "Email",
@@ -1333,7 +1331,7 @@ const dictionaries = {
       },
       security: {
         title: "Security",
-        description: "We'll send an email so you can change your password securely.",
+        description: "You will receive an email to change your password securely.",
         resetPasswordButton: "Change password",
       },
       notifications: {
