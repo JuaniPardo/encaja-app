@@ -80,7 +80,7 @@ function LoginPageContent() {
     }
 
     notifications.show({
-      color: "green",
+      color: "cyan",
       title: t("auth.login.successTitle"),
       message: t("auth.login.successMessage"),
     });

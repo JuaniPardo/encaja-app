@@ -64,3 +64,15 @@ Reglas:
 
 Fuente canónica en código:
 - `src/features/transactions/type-colors.ts`
+
+---
+
+## 7. Acento de UI (no financiero)
+
+Para componentes de interfaz generales (botones primarios, estado activo de navegación, éxito de operaciones de UI):
+- usar `cyan` como color de acento principal
+- evitar `teal` como acento general para no superponerlo con la semántica de `income`
+
+Regla:
+- `teal/pink/indigo` quedan reservados a semántica financiera
+- `cyan` se usa para acento visual de producto y navegación

@@ -275,7 +275,7 @@ export default function StartPage() {
                 readOnly
                 label={item.label}
                 size="sm"
-                color={item.done ? "teal" : "gray"}
+                color={item.done ? "cyan" : "gray"}
               />
             ))}
           </Stack>

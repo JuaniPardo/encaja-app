@@ -399,7 +399,7 @@ export default function PaymentMethodsPage() {
       }
 
       notifications.show({
-        color: "green",
+        color: "cyan",
         title: t("paymentMethods.notifications.updatedTitle"),
         message: t("paymentMethods.notifications.updatedMessage"),
       });
@@ -426,7 +426,7 @@ export default function PaymentMethodsPage() {
       }
 
       notifications.show({
-        color: "green",
+        color: "cyan",
         title: t("paymentMethods.notifications.createdTitle"),
         message: t("paymentMethods.notifications.createdMessage"),
       });
@@ -463,7 +463,7 @@ export default function PaymentMethodsPage() {
     }
 
     notifications.show({
-      color: "green",
+      color: "cyan",
       title: row.is_active
         ? t("paymentMethods.notifications.deactivatedTitle")
         : t("paymentMethods.notifications.activatedTitle"),
@@ -552,7 +552,7 @@ export default function PaymentMethodsPage() {
                       </Text>
                       <Group gap={6} wrap="wrap">
                         <Badge variant="light">{paymentTypeLabels[row.type]}</Badge>
-                        <Badge color={row.is_active ? "teal" : "gray"} variant="outline">
+                        <Badge color={row.is_active ? "cyan" : "gray"} variant="outline">
                           {row.is_active
                             ? t("paymentMethods.status.active")
                             : t("paymentMethods.status.inactive")}
@@ -576,7 +576,7 @@ export default function PaymentMethodsPage() {
                           {t("paymentMethods.edit")}
                         </Menu.Item>
                         <Menu.Item
-                          color={row.is_active ? "gray" : "teal"}
+                          color={row.is_active ? "gray" : "cyan"}
                           disabled={!canManageStructure}
                           onClick={() => void toggleActive(row)}
                         >

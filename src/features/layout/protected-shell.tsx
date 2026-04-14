@@ -237,10 +237,10 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
             padding: desktopCollapsed ? "10px 0" : isMobile ? "10px 10px" : "11px 12px",
             borderRadius: 8,
             display: "block",
-            backgroundColor: isActive ? "#dff3ea" : "transparent",
-            border: `1px solid ${isActive ? "#9fd7bf" : "transparent"}`,
-            color: isActive ? "#087f5b" : "#475467",
-            boxShadow: isActive ? "inset 3px 0 0 #0ca678" : "none",
+            backgroundColor: isActive ? "var(--mantine-color-cyan-0)" : "transparent",
+            border: `1px solid ${isActive ? "var(--mantine-color-cyan-2)" : "transparent"}`,
+            color: isActive ? "var(--mantine-color-cyan-8)" : "#475467",
+            boxShadow: isActive ? "inset 3px 0 0 var(--mantine-color-cyan-6)" : "none",
           }}
         >
           <Group
@@ -256,7 +256,7 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
                   w={6}
                   style={{
                     borderRadius: "50%",
-                    backgroundColor: "#0ca678",
+                    backgroundColor: "var(--mantine-color-cyan-6)",
                     position: "absolute",
                     right: -4,
                     top: -2,

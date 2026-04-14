@@ -470,7 +470,7 @@ export default function BudgetPage() {
       }
 
       notifications.show({
-        color: "green",
+        color: "cyan",
         title: t("budget.notifications.savedTitle"),
         message: t("budget.notifications.savedMessage", undefined, {
           monthYear: `${monthLabelFromOptions(
@@ -609,7 +609,7 @@ export default function BudgetPage() {
       }
 
       notifications.show({
-        color: "green",
+        color: "cyan",
         title: t("budget.notifications.copiedTitle"),
         message: t("budget.notifications.copiedMessage", undefined, {
           monthYear: `${monthLabelFromOptions(
@@ -849,7 +849,7 @@ export default function BudgetPage() {
               style={{
                 borderColor:
                   balanceStatus === "balanced"
-                    ? "var(--mantine-color-teal-4)"
+                    ? "var(--mantine-color-cyan-4)"
                     : balanceStatus === "remaining"
                       ? "var(--mantine-color-yellow-4)"
                       : "var(--mantine-color-pink-4)",
@@ -872,7 +872,7 @@ export default function BudgetPage() {
                   <Badge
                     color={
                       balanceStatus === "balanced"
-                        ? "teal"
+                        ? "cyan"
                         : balanceStatus === "remaining"
                           ? "yellow"
                           : "pink"
@@ -933,7 +933,7 @@ export default function BudgetPage() {
                   style={{
                     backgroundColor:
                       balanceStatus === "balanced"
-                        ? "var(--mantine-color-teal-0)"
+                        ? "var(--mantine-color-cyan-0)"
                         : balanceStatus === "remaining"
                           ? "var(--mantine-color-yellow-0)"
                           : "var(--mantine-color-pink-0)",
@@ -948,7 +948,7 @@ export default function BudgetPage() {
                       size={isMobile ? "lg" : "xl"}
                       c={
                         balanceStatus === "balanced"
-                          ? "teal.7"
+                          ? "cyan.7"
                           : balanceStatus === "remaining"
                             ? "yellow.8"
                             : "pink.7"
@@ -965,7 +965,7 @@ export default function BudgetPage() {
                   py={6}
                   color={
                     balanceStatus === "balanced"
-                      ? "teal"
+                      ? "cyan"
                       : balanceStatus === "remaining"
                         ? "yellow"
                         : "red"

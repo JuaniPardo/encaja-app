@@ -153,7 +153,7 @@ export default function ProfilePage() {
     reset(values);
 
     notifications.show({
-      color: "green",
+      color: "cyan",
       title: t("profile.notifications.savedTitle"),
       message: t("profile.notifications.savedMessage"),
     });

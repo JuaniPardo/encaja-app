@@ -100,7 +100,7 @@ export default function RegisterPage() {
     }
 
     notifications.show({
-      color: "green",
+      color: "cyan",
       title: t("auth.register.createdTitle"),
       message: t("auth.register.workspaceReady"),
     });

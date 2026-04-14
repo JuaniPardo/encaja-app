@@ -77,7 +77,7 @@ const DEFAULT_CURRENCY_CODE = "ARS";
 const WORKSPACE_CURRENCY_CODES = ["ARS", "USD", "EUR", "CLP", "UYU", "BRL", "MXN", "COP", "PEN"] as const;
 type SettingsTabValue = "workspace" | "collaboration" | "links" | "personal" | "advanced";
 const settingsTabAccentColor: Record<SettingsTabValue, string> = {
-  workspace: "teal",
+  workspace: "cyan",
   collaboration: "blue",
   links: "cyan",
   personal: "indigo",
@@ -571,7 +571,7 @@ export default function SettingsPage() {
     }
 
     notifications.show({
-      color: "green",
+      color: "cyan",
       title: t("workspaceSettings.notifications.settingsSavedTitle"),
       message: t("workspaceSettings.notifications.settingsSavedMessage"),
     });
@@ -591,7 +591,7 @@ export default function SettingsPage() {
       });
 
       notifications.show({
-        color: "green",
+        color: "cyan",
         title: t("settings.feedback.successTitle"),
         message: t("settings.feedback.successMessage"),
       });
@@ -639,7 +639,7 @@ export default function SettingsPage() {
     await refreshWorkspace();
 
     notifications.show({
-      color: "green",
+      color: "cyan",
       title: t("workspaceSettings.notifications.workspaceUpdatedTitle"),
       message: t("workspaceSettings.notifications.workspaceUpdatedMessage"),
     });
@@ -658,7 +658,7 @@ export default function SettingsPage() {
     try {
       const createdWorkspace = await createWorkspace(values.name);
       notifications.show({
-        color: "green",
+        color: "cyan",
         title: t("workspaceSettings.notifications.workspaceCreatedTitle"),
         message: t("workspaceSettings.notifications.workspaceCreatedMessage", undefined, {
           workspaceName: createdWorkspace.name,
@@ -703,7 +703,7 @@ export default function SettingsPage() {
       const fallbackWorkspace = await deleteWorkspace(workspace.id);
       closeDeleteWorkspace();
       notifications.show({
-        color: "green",
+        color: "cyan",
         title: t("workspaceSettings.notifications.workspaceDeletedTitle"),
         message: t("workspaceSettings.notifications.workspaceDeletedMessage", undefined, {
           workspaceName: fallbackWorkspace.name,
@@ -758,7 +758,7 @@ export default function SettingsPage() {
     }
 
     notifications.show({
-      color: invitedMember.was_created ? "green" : "blue",
+      color: invitedMember.was_created ? "cyan" : "blue",
       title: invitedMember.was_created
         ? t("workspaceSettings.notifications.memberInvitedTitle")
         : t("workspaceSettings.notifications.memberAlreadyExistsTitle"),
@@ -806,7 +806,7 @@ export default function SettingsPage() {
     }
 
     notifications.show({
-      color: "green",
+      color: "cyan",
       title: t("workspaceSettings.notifications.memberAccessRemovedTitle"),
       message: t("workspaceSettings.notifications.memberAccessRemovedMessage", undefined, {
         email: member.email,
@@ -958,7 +958,7 @@ export default function SettingsPage() {
     }
 
     notifications.show({
-      color: "green",
+      color: "cyan",
       title: t("workspaceSettings.notifications.workspaceLinkedTitle"),
       message: t("workspaceSettings.notifications.workspaceLinkedMessage", undefined, {
         workspaceName: selectedTargetWorkspace.name,
@@ -1000,7 +1000,7 @@ export default function SettingsPage() {
     }
 
     notifications.show({
-      color: "green",
+      color: "cyan",
       title: t("workspaceSettings.notifications.linkDeactivatedTitle"),
       message: t("workspaceSettings.notifications.linkDeactivatedMessage"),
     });
@@ -1287,7 +1287,7 @@ export default function SettingsPage() {
                             </Text>
                           </Stack>
                           <Group gap="xs" align="center">
-                            <Badge variant="light" color={member.role === "owner" ? "teal" : "gray"}>
+                            <Badge variant="light" color={member.role === "owner" ? "cyan" : "gray"}>
                               {t(`common.role.${member.role}`, member.role)}
                             </Badge>
                             {canRemoveMember ? (
@@ -1438,7 +1438,7 @@ export default function SettingsPage() {
                             <Group gap="xs" align="center">
                               <Badge
                                 variant="light"
-                                color={workspaceLink.is_active ? "teal" : "gray"}
+                                color={workspaceLink.is_active ? "cyan" : "gray"}
                               >
                                 {workspaceLink.is_active
                                   ? t("workspaceSettings.status.active")

@@ -8,7 +8,7 @@ import { type Locale } from "@/features/i18n/config";
 import { I18nProvider } from "@/features/i18n/provider";
 
 const theme = createTheme({
-  primaryColor: "teal",
+  primaryColor: "cyan",
   fontFamily: "'IBM Plex Sans', sans-serif",
   headings: {
     fontFamily: "'IBM Plex Sans Condensed', sans-serif",

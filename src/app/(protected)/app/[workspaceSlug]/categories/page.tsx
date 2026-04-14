@@ -437,7 +437,7 @@ export default function CategoriesPage() {
       }
 
       notifications.show({
-        color: "green",
+        color: "cyan",
         title: t("categories.notifications.updatedTitle"),
         message: t("categories.notifications.updatedMessage"),
       });
@@ -465,7 +465,7 @@ export default function CategoriesPage() {
       }
 
       notifications.show({
-        color: "green",
+        color: "cyan",
         title: t("categories.notifications.createdTitle"),
         message: t("categories.notifications.createdMessage"),
       });
@@ -500,7 +500,7 @@ export default function CategoriesPage() {
     }
 
     notifications.show({
-      color: "green",
+      color: "cyan",
       title: row.is_active
         ? t("categories.notifications.deactivatedTitle")
         : t("categories.notifications.activatedTitle"),
@@ -720,7 +720,7 @@ export default function CategoriesPage() {
                                   {t("categories.edit")}
                                 </Menu.Item>
                                 <Menu.Item
-                                  color={row.is_active ? "gray" : "teal"}
+                                  color={row.is_active ? "gray" : "cyan"}
                                   leftSection={<ToggleActiveIcon size={13} />}
                                   disabled={!canManageStructure}
                                   onClick={() => void toggleActive(row)}

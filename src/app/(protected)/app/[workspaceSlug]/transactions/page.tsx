@@ -1070,7 +1070,7 @@ export default function TransactionsPage() {
       }
 
       notifications.show({
-        color: "green",
+        color: "cyan",
         title: t("transactions.notifications.updatedTitle"),
         message: t("transactions.notifications.updatedMessage"),
       });
@@ -1099,7 +1099,7 @@ export default function TransactionsPage() {
       }
 
       notifications.show({
-        color: "green",
+        color: "cyan",
         title: t("transactions.notifications.createdTitle"),
         message: t("transactions.notifications.createdMessage"),
       });
@@ -1133,7 +1133,7 @@ export default function TransactionsPage() {
     }
 
     notifications.show({
-      color: "green",
+      color: "cyan",
       title: t("transactions.notifications.deletedTitle"),
       message: t("transactions.notifications.deletedMessage"),
     });
