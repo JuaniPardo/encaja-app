@@ -47,12 +47,12 @@ type GroupedCategoryRows = {
 };
 
 const categoryTypeOrder: Record<TransactionType, number> = {
-  expense: 0,
-  income: 1,
+  income: 0,
+  expense: 1,
   saving: 2,
 };
 
-const categoryTypeSectionOrder: TransactionType[] = ["expense", "income", "saving"];
+const categoryTypeSectionOrder: TransactionType[] = ["income", "expense", "saving"];
 
 const categoryGroupBackgroundColor: Record<TransactionType, string> = {
   expense: "var(--mantine-color-pink-0)",

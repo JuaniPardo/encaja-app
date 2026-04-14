@@ -672,18 +672,6 @@ export default function TransactionsPage() {
   }, [didApplyUrlFilters]);
 
   useEffect(() => {
-    if (!isMobile) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setMobileFiltersOpened(true);
-      return;
-    }
-
-    if (activeFiltersCount > 0) {
-      setMobileFiltersOpened(true);
-    }
-  }, [activeFiltersCount, isMobile]);
-
-  useEffect(() => {
     if (selectedCategoryId === "") {
       return;
     }
