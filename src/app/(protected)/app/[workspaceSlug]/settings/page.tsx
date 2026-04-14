@@ -112,6 +112,7 @@ export default function SettingsPage() {
   const { t } = useI18n();
   const {
     supabase,
+    user,
     workspace,
     workspaces,
     refreshWorkspace,
@@ -765,7 +766,7 @@ export default function SettingsPage() {
       // Redirigir al primer workspace disponible que no sea el actual
       const nextWorkspace = workspaces.find((w) => w.id !== workspace.id);
       if (nextWorkspace) {
-        window.location.href = buildWorkspaceHref(nextWorkspace.slug, ROUTES.APP_HOME);
+        window.location.href = buildWorkspaceHref(nextWorkspace.slug);
       } else {
         window.location.href = ROUTES.LOGIN;
       }
@@ -1336,7 +1337,7 @@ export default function SettingsPage() {
                 <Stack gap="xs">
                   {members.map((member) => {
                     const canRemoveMember = canManageMembers && member.role !== "owner";
-                    const isCurrentUser = member.user_id === workspace.user_id;
+                    const isCurrentUser = member.user_id === user.id;
 
                     return (
                       <Paper key={member.member_id} withBorder radius="sm" p="sm">

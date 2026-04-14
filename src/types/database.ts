@@ -456,6 +456,15 @@ export interface Database {
           deleted_workspace_slug: string;
         }[];
       };
+      leave_workspace: {
+        Args: {
+          p_workspace_id: string;
+        };
+        Returns: {
+          left_workspace_id: string;
+          left_workspace_slug: string;
+        }[];
+      };
       invite_workspace_member_by_email: {
         Args: {
           p_workspace_id: string;
