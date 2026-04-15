@@ -76,6 +76,7 @@ export function TransferModal({
     formState: { errors, isValid },
   } = useForm<TransferFormValues>({
     resolver: zodResolver(transferSchema),
+    mode: "onChange",
     defaultValues: {
       amount: "",
       categoryId: transferCategories[0]?.id ?? "",
@@ -297,7 +298,7 @@ export function TransferModal({
 
           <Group justify="flex-end" mt="xl">
             <Button variant="subtle" onClick={onClose} disabled={isSubmitting}>
-              {t("actions.cancel")}
+              {t("common.actions.cancel")}
             </Button>
             <Button type="submit" loading={isSubmitting} disabled={!isValid}>
               {t("transactions.transfer")}
