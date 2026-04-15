@@ -96,6 +96,7 @@ type FinancialMethodRow = {
   name: string;
   type: PaymentMethodType;
   currentBalance: number;
+  monthImpact: number;
 };
 
 const deviationTolerance = 0.005;
@@ -178,19 +179,6 @@ const typeTheme: Record<
 
 function roundMoney(value: number) {
   return Math.round(value * 100) / 100;
-}
-
-function normalizePaymentMethodBalance(type: PaymentMethodType, value: unknown) {
-  const parsed = parseAmountValue(value);
-  if (Math.abs(parsed) < deviationTolerance) {
-    return 0;
-  }
-
-  if (type === "credit_card") {
-    return -Math.abs(parsed);
-  }
-
-  return parsed;
 }
 
 function parseAmountValue(value: unknown) {
@@ -310,6 +298,7 @@ export default function DashboardPage() {
   const [categories, setCategories] = useState<CategoryRow[]>([]);
   const [budgetItems, setBudgetItems] = useState<BudgetItemLiteRow[]>([]);
   const [transactionRows, setTransactionRows] = useState<TransactionLiteRow[]>([]);
+  const [allTransactionsImpact, setAllTransactionsImpact] = useState<Map<string, number>>(new Map());
   const [paymentMethodRows, setPaymentMethodRows] = useState<PaymentMethodBalanceRow[]>([]);
   const [linkedWorkspaceSummaries, setLinkedWorkspaceSummaries] = useState<
     LinkedWorkspaceSummaryRow[]
@@ -452,17 +441,31 @@ export default function DashboardPage() {
       .eq("workspace_id", workspace.id)
       .or(transactionFilter);
 
+    const historicalTransactionsPromise = supabase
+      .from("transactions")
+      .select("amount, type, payment_method_id")
+      .eq("workspace_id", workspace.id)
+      .lt("effective_date", end);
+
     const linkedWorkspaceSummaryPromise = supabase.rpc("list_linked_workspace_summaries", {
       p_source_workspace_id: workspace.id,
       p_year: selectedYear,
       p_month: selectedMonth,
     });
 
-    const [periodResponse, transactionsResponse, linkedWorkspaceSummaryResponse] = await Promise.all([
+    const [
+      periodResponse,
+      transactionsResponse,
+      historicalTransactionsResponse,
+      linkedWorkspaceSummaryPromiseResponse,
+    ] = await Promise.all([
       periodResponsePromise,
       transactionsResponsePromise,
+      historicalTransactionsPromise,
       linkedWorkspaceSummaryPromise,
     ]);
+
+    const linkedWorkspaceSummaryResponse = linkedWorkspaceSummaryPromiseResponse;
 
     if (transactionsResponse.error) {
       notifications.show({
@@ -473,6 +476,29 @@ export default function DashboardPage() {
       setTransactionRows([]);
     } else {
       setTransactionRows((transactionsResponse.data ?? []) as TransactionLiteRow[]);
+    }
+
+    if (historicalTransactionsResponse.error) {
+      notifications.show({
+        color: "red",
+        title: t("dashboard.notifications.loadPeriodTransactionsError"),
+        message: historicalTransactionsResponse.error.message,
+      });
+      setAllTransactionsImpact(new Map());
+    } else {
+      const historicalTransactions = historicalTransactionsResponse.data as TransactionLiteRow[];
+      const impactMap = new Map<string, number>();
+      for (const row of historicalTransactions) {
+        if (!row.payment_method_id) {
+          continue;
+        }
+
+        const parsedAmount = parseAmountValue(row.amount);
+        const signedAmount = row.type === "income" ? parsedAmount : -parsedAmount;
+        const previousAmount = impactMap.get(row.payment_method_id) ?? 0;
+        impactMap.set(row.payment_method_id, roundMoney(previousAmount + signedAmount));
+      }
+      setAllTransactionsImpact(impactMap);
     }
 
     if (linkedWorkspaceSummaryResponse.error) {
@@ -688,7 +714,7 @@ export default function DashboardPage() {
   }, [metrics.groupedRows]);
 
   const financialSummary = useMemo(() => {
-    const transactionImpactByMethodId = new Map<string, number>();
+    const monthImpactByMethodId = new Map<string, number>();
 
     for (const row of transactionRows) {
       if (!row.payment_method_id) {
@@ -697,8 +723,8 @@ export default function DashboardPage() {
 
       const parsedAmount = parseAmountValue(row.amount);
       const signedAmount = row.type === "income" ? parsedAmount : -parsedAmount;
-      const previousAmount = transactionImpactByMethodId.get(row.payment_method_id) ?? 0;
-      transactionImpactByMethodId.set(
+      const previousAmount = monthImpactByMethodId.get(row.payment_method_id) ?? 0;
+      monthImpactByMethodId.set(
         row.payment_method_id,
         roundMoney(previousAmount + signedAmount),
       );
@@ -710,14 +736,8 @@ export default function DashboardPage() {
         id: row.id,
         name: row.name,
         type: row.type,
-        currentBalance: (() => {
-          const manualBalance = normalizePaymentMethodBalance(row.type, row.current_balance);
-          if (Math.abs(manualBalance) >= deviationTolerance) {
-            return manualBalance;
-          }
-
-          return roundMoney(transactionImpactByMethodId.get(row.id) ?? 0);
-        })(),
+        currentBalance: roundMoney(allTransactionsImpact.get(row.id) ?? 0),
+        monthImpact: roundMoney(monthImpactByMethodId.get(row.id) ?? 0),
       }))
       .sort((a, b) => {
         if (b.currentBalance !== a.currentBalance) {
@@ -730,6 +750,9 @@ export default function DashboardPage() {
     const totalBalance = roundMoney(
       activeIncludedRows.reduce((sum, row) => sum + row.currentBalance, 0),
     );
+    const totalMonthImpact = roundMoney(
+      activeIncludedRows.reduce((sum, row) => sum + row.monthImpact, 0),
+    );
     const excludedActiveCount = paymentMethodRows.filter(
       (row) => row.is_active && !row.include_in_balance,
     ).length;
@@ -738,10 +761,11 @@ export default function DashboardPage() {
     return {
       activeIncludedRows,
       totalBalance,
+      totalMonthImpact,
       excludedActiveCount,
       inactiveCount,
     };
-  }, [locale, paymentMethodRows, transactionRows]);
+  }, [allTransactionsImpact, locale, paymentMethodRows, transactionRows]);
 
   const normalizedLinkedWorkspaceSummaries = useMemo(() => {
     return linkedWorkspaceSummaries.map((row) => {
@@ -883,6 +907,9 @@ export default function DashboardPage() {
             <Text fw={800} c={financialSummary.totalBalance >= 0 ? "#087f5b" : "#c92a2a"}>
               {t("dashboard.totalBalance")}: {currencyFormatter.format(financialSummary.totalBalance)}
             </Text>
+            <Text size="xs" fw={700} c={financialSummary.totalMonthImpact >= 0 ? "#087f5b" : "#c92a2a"}>
+              {t("dashboard.monthImpact")}: {formatSignedCurrency(financialSummary.totalMonthImpact, currencyFormatter)}
+            </Text>
             <Text size="xs" c="#667085">
               {t("dashboard.activeInBalance", undefined, {
                 count: financialSummary.activeIncludedRows.length,
@@ -920,13 +947,22 @@ export default function DashboardPage() {
                       {paymentMethodTypeLabels[row.type]} · {t("dashboard.viewMovements")}
                     </Text>
                   </Stack>
-                  <Text
-                    size="sm"
-                    fw={800}
-                    c={row.currentBalance >= 0 ? "#087f5b" : "#c92a2a"}
-                  >
-                    {currencyFormatter.format(row.currentBalance)}
-                  </Text>
+                  <Stack gap={0} style={{ minWidth: 0, textAlign: "right" }}>
+                    <Text
+                      size="sm"
+                      fw={800}
+                      c={row.currentBalance >= 0 ? "#087f5b" : "#c92a2a"}
+                    >
+                      {currencyFormatter.format(row.currentBalance)}
+                    </Text>
+                    <Text
+                      size="10px"
+                      fw={700}
+                      c={row.monthImpact >= 0 ? "#087f5b" : "#c92a2a"}
+                    >
+                      {formatSignedCurrency(row.monthImpact, currencyFormatter)}
+                    </Text>
+                  </Stack>
                 </Group>
               </UnstyledButton>
             ))}
