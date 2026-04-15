@@ -30,6 +30,7 @@ import {
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 import { ROUTES } from "@/lib/routes";
 import type { WorkspaceRole } from "@/types/database";
+import pkg from "../../../package.json";
 
 type NavSection = "primary" | "secondary";
 
@@ -434,9 +435,14 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
         <Container size="xl" py={isMobile ? "xs" : "md"}>
           {children}
           <Box component="footer" mt={isMobile ? 36 : 56} pb={isMobile ? "sm" : "md"}>
-            <Text size="xs" c="gray.5" fw={400} ta="center">
-              Built by Juan Pardo
-            </Text>
+            <Stack gap={4} align="center">
+              <Text size="xs" c="gray.5" fw={400}>
+                Built by Juan Pardo
+              </Text>
+              <Text size="xs" c="gray.4" fw={500} style={{ letterSpacing: "0.02em" }}>
+                v{pkg.version}
+              </Text>
+            </Stack>
           </Box>
         </Container>
       </AppShell.Main>
