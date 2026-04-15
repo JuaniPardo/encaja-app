@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { parseBudgetAmount } from "@/features/budget/amount-format";
 
-export const transactionTypeOptions = ["income", "expense", "saving"] as const;
+export const transactionTypeOptions = ["income", "expense", "saving", "transfer"] as const;
 
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
 

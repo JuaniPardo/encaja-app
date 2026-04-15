@@ -66,6 +66,7 @@ const typeOrder: Record<TransactionType, number> = {
   income: 0,
   expense: 1,
   saving: 2,
+  transfer: 3,
 };
 
 function roundMoney(value: number) {
@@ -92,6 +93,7 @@ export default function BudgetPage() {
       income: mapTransactionTypeLabel("income", t, { plural: true }),
       expense: mapTransactionTypeLabel("expense", t, { plural: true }),
       saving: mapTransactionTypeLabel("saving", t, { plural: true }),
+      transfer: t("transactions.transfer"),
     }),
     [t],
   );
@@ -148,6 +150,7 @@ export default function BudgetPage() {
       income: [],
       expense: [],
       saving: [],
+      transfer: [],
     };
 
     categories.forEach((category, index) => {
@@ -165,6 +168,7 @@ export default function BudgetPage() {
       income: 0,
       expense: 0,
       saving: 0,
+      transfer: 0,
     };
 
     const typeByCategoryId = new Map(categories.map((category) => [category.id, category.type]));
@@ -740,14 +744,23 @@ export default function BudgetPage() {
               </Text>
             </Stack>
 
-            {(Object.keys(groupedCategories) as TransactionType[]).map((typeKey) => (
+            {(Object.keys(groupedCategories) as TransactionType[])
+              .filter((typeKey) => typeKey !== "transfer")
+              .map((typeKey) => (
               <Paper key={typeKey} withBorder radius="md" p="sm">
                 <Stack gap="xs">
                   <Group justify="space-between" align="center" wrap="wrap">
-                    <Title order={5} c={transactionTypeMantineColor[typeKey]}>
+                    <Title
+                      order={5}
+                      c={transactionTypeMantineColor[typeKey]}
+                    >
                       {typeLabels[typeKey]}
                     </Title>
-                    <Badge variant="light" color={transactionTypeMantineColor[typeKey]} size="sm">
+                    <Badge
+                      variant="light"
+                      color={transactionTypeMantineColor[typeKey]}
+                      size="sm"
+                    >
                       {currencyFormatter.format(totals[typeKey])}
                     </Badge>
                   </Group>

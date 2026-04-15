@@ -1,0 +1,330 @@
+"use client";
+
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Button,
+  Group,
+  Modal,
+  NativeSelect,
+  Paper,
+  SegmentedControl,
+  Stack,
+  Text,
+  TextInput,
+  Textarea,
+} from "@mantine/core";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import { useEffect, useMemo } from "react";
+
+import {
+  formatBudgetAmount,
+  parseBudgetAmount,
+  sanitizeBudgetTypingValue,
+} from "@/features/budget/amount-format";
+import {
+  createTransactionFormSchema,
+  type TransactionFormInputValues,
+  type TransactionFormValues,
+} from "@/features/transactions/schema";
+import {
+  transactionTypeMantineColor,
+} from "@/features/transactions/type-colors";
+import { useI18n } from "@/features/i18n/provider";
+import type { Database, TransactionType } from "@/types/database";
+
+type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
+type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
+type QuickPaymentMethodType = "cash" | "debit_card" | "other";
+
+type TransactionFormModalProps = {
+  opened: boolean;
+  onClose: () => void;
+  editingRow: TransactionRow | null;
+  categories: CategoryRow[];
+  paymentMethodOptions: Array<{ value: string; label: string }>;
+  transactionTypeSelectData: Array<{ value: string; label: string }>;
+  isMobile: boolean | undefined;
+  quickPaymentMethodType: QuickPaymentMethodType;
+  setQuickPaymentMethodType: (value: QuickPaymentMethodType) => void;
+  quickPaymentMethodSelectData: Array<{ value: string; label: string }>;
+  shouldShowQuickPaymentSetup: boolean;
+  initialValues: TransactionFormInputValues;
+  onSubmit: (values: TransactionFormValues) => Promise<void>;
+};
+
+export function TransactionFormModal({
+  opened,
+  onClose,
+  editingRow,
+  categories,
+  paymentMethodOptions,
+  transactionTypeSelectData,
+  isMobile,
+  quickPaymentMethodType,
+  setQuickPaymentMethodType,
+  quickPaymentMethodSelectData,
+  shouldShowQuickPaymentSetup,
+  initialValues,
+  onSubmit,
+}: TransactionFormModalProps) {
+  const { t } = useI18n();
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<TransactionFormInputValues, unknown, TransactionFormValues>({
+    resolver: zodResolver(
+      createTransactionFormSchema({
+        invalidAmount: t("common.validation.invalidAmount"),
+        amountGtZero: t("common.validation.amountGtZero"),
+        invalidDate: t("common.validation.invalidDate"),
+        invalidOption: t("common.validation.invalidOption"),
+        requiredCategory: t("common.forms.transaction.requiredCategory"),
+        invalidCategory: t("common.forms.transaction.invalidCategory"),
+        requiredTransactionDate: t("common.forms.transaction.requiredTransactionDate"),
+        descriptionMaxLength: t("common.forms.transaction.descriptionMaxLength"),
+        notesMaxLength: t("common.forms.transaction.notesMaxLength"),
+      }),
+    ),
+    defaultValues: initialValues,
+  });
+
+  useEffect(() => {
+    reset(initialValues);
+  }, [initialValues, reset]);
+
+  const selectedType = useWatch({ control, name: "type" });
+
+  const categoryOptions = useMemo(() => {
+    const currentCategoryId = editingRow?.category_id ?? null;
+
+    return categories
+      .filter(
+        (category) =>
+          category.type === (selectedType ?? "expense") &&
+          (category.is_active || category.id === currentCategoryId),
+      )
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((category) => ({
+        value: category.id,
+        label: category.is_active
+          ? category.name
+          : `${category.name} (${t("transactions.inactiveCategorySuffix")})`,
+      }));
+  }, [categories, editingRow?.category_id, selectedType, t]);
+
+  const selectedCategoryId = useWatch({ control, name: "categoryId" });
+
+  useEffect(() => {
+    if (!selectedCategoryId) {
+      return;
+    }
+
+    const isAvailable = categoryOptions.some((option) => option.value === selectedCategoryId);
+    if (!isAvailable) {
+      reset(
+        {
+          ...control._formValues,
+          categoryId: "",
+        },
+        {
+          keepErrors: true,
+          keepDirty: true,
+          keepTouched: true,
+        },
+      );
+    }
+  }, [categoryOptions, control._formValues, reset, selectedCategoryId]);
+
+  const selectedTypeColor = transactionTypeMantineColor[selectedType ?? "expense"];
+
+  const typeSegmentStyles = {
+    root: {
+      backgroundColor: "var(--mantine-color-gray-0)",
+      border: "1px solid var(--mantine-color-gray-2)",
+    },
+    indicator: {
+      backgroundColor: `var(--mantine-color-${selectedTypeColor}-0)`,
+      border: `1px solid var(--mantine-color-${selectedTypeColor}-2)`,
+    },
+    label: {
+      color: "var(--mantine-color-gray-7)",
+      fontWeight: 500,
+      "&[data-active]": {
+        color: `var(--mantine-color-${selectedTypeColor}-7)`,
+        fontWeight: 700,
+      },
+    },
+  } satisfies {
+    root: React.CSSProperties;
+    indicator: React.CSSProperties;
+    label: React.CSSProperties & { "&[data-active]": React.CSSProperties };
+  };
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={editingRow ? t("transactions.edit") : t("transactions.new")}
+      size="lg"
+      fullScreen={isMobile}
+    >
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <Stack gap="sm">
+          <Stack gap={4}>
+            <Text size="sm" fw={600}>
+              {t("transactions.type")}
+            </Text>
+            <Controller
+              control={control}
+              name="type"
+              render={({ field }) => (
+                <SegmentedControl
+                  fullWidth
+                  data={transactionTypeSelectData}
+                  value={field.value}
+                  onChange={(value) => field.onChange(value as TransactionType)}
+                  styles={typeSegmentStyles}
+                />
+              )}
+            />
+            {errors.type?.message ? (
+              <Text size="xs" c="red">
+                {errors.type.message}
+              </Text>
+            ) : null}
+          </Stack>
+
+          <Group grow align="start">
+            <NativeSelect
+              label={t("transactions.category")}
+              data={[{ value: "", label: t("transactions.form.selectCategory") }, ...categoryOptions]}
+              error={errors.categoryId?.message}
+              {...register("categoryId")}
+            />
+
+            <Controller
+              control={control}
+              name="amount"
+              render={({ field }) => (
+                <TextInput
+                  label={t("transactions.form.amount")}
+                  inputMode="decimal"
+                  placeholder="0"
+                  autoFocus
+                  error={errors.amount?.message}
+                  value={
+                    typeof field.value === "string"
+                      ? field.value
+                      : field.value === null || field.value === undefined
+                        ? ""
+                        : String(field.value)
+                  }
+                  onChange={(event) => {
+                    field.onChange(sanitizeBudgetTypingValue(event.currentTarget.value));
+                  }}
+                  onBlur={(event) => {
+                    field.onBlur();
+                    const parsed = parseBudgetAmount(event.currentTarget.value);
+                    field.onChange(parsed === null ? "" : formatBudgetAmount(parsed));
+                  }}
+                  leftSection={
+                    <Text size="xs" c="dimmed" fw={700}>
+                      $
+                    </Text>
+                  }
+                  leftSectionWidth={24}
+                  styles={{ input: { textAlign: "right", fontVariantNumeric: "tabular-nums" } }}
+                />
+              )}
+            />
+          </Group>
+
+          <TextInput
+            label={t("transactions.form.transactionDate")}
+            type="date"
+            error={errors.transactionDate?.message}
+            {...register("transactionDate")}
+          />
+
+          <Paper withBorder radius="md" p="sm">
+            <Stack gap="xs">
+              <Text size="xs" c="dimmed" fw={600}>
+                {t("transactions.form.optionalFields")}
+              </Text>
+
+              <Group grow align="start">
+                <TextInput
+                  label={t("transactions.form.effectiveDate")}
+                  type="date"
+                  error={errors.effectiveDate?.message}
+                  {...register("effectiveDate")}
+                />
+
+                {shouldShowQuickPaymentSetup ? (
+                  <Stack gap={4}>
+                    <Text size="sm" fw={500}>
+                      {t("transactions.quickPayment.title")}
+                    </Text>
+                    <SegmentedControl
+                      fullWidth
+                      data={quickPaymentMethodSelectData}
+                      value={quickPaymentMethodType}
+                      onChange={(value) => {
+                        setQuickPaymentMethodType(value as QuickPaymentMethodType);
+                      }}
+                    />
+                  </Stack>
+                ) : (
+                  <NativeSelect
+                    label={t("transactions.paymentMethod")}
+                    data={[
+                      { value: "", label: t("transactions.form.noPaymentMethod") },
+                      ...paymentMethodOptions,
+                    ]}
+                    error={errors.paymentMethodId?.message}
+                    {...register("paymentMethodId")}
+                  />
+                )}
+              </Group>
+
+                {shouldShowQuickPaymentSetup ? (
+                  <Text size="xs" c="dimmed">
+                    {t("transactions.quickPayment.hint")}
+                  </Text>
+                ) : null}
+
+                <TextInput
+                  label={t("transactions.form.description")}
+                  placeholder={t("transactions.form.descriptionPlaceholder")}
+                  error={errors.description?.message}
+                  {...register("description")}
+                />
+
+                <Textarea
+                  label={t("transactions.form.notes")}
+                  placeholder={t("transactions.form.notesPlaceholder")}
+                  minRows={2}
+                  autosize
+                  error={errors.notes?.message}
+                  {...register("notes")}
+                />
+              </Stack>
+            </Paper>
+
+            <Group justify="flex-end" mt="sm">
+              <Button type="button" variant="light" color="gray" onClick={onClose}>
+                {t("common.actions.cancel")}
+              </Button>
+              <Button type="submit" loading={isSubmitting}>
+                {editingRow ? t("common.actions.save") : t("common.actions.create")}
+              </Button>
+            </Group>
+          </Stack>
+        </form>
+      </Modal>
+    );
+}

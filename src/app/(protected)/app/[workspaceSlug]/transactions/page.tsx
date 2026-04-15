@@ -1,33 +1,23 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Alert,
   Button,
   Collapse,
   Group,
   LoadingOverlay,
-  Modal,
   NativeSelect,
   Paper,
-  SegmentedControl,
   Stack,
   Text,
   TextInput,
-  Textarea,
   Title,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { modals } from "@mantine/modals";
 import { notifications } from "@mantine/notifications";
-import { Controller, useForm, useWatch } from "react-hook-form";
 
-import {
-  formatBudgetAmount,
-  parseBudgetAmount,
-  sanitizeBudgetTypingValue,
-} from "@/features/budget/amount-format";
 import {
   buildMonthOptions,
   localeCompareByName,
@@ -35,17 +25,18 @@ import {
   monthLabelFromOptions,
 } from "@/features/i18n/formatting";
 import {
-  createTransactionFormSchema,
   type TransactionFormInputValues,
   type TransactionFormValues,
 } from "@/features/transactions/schema";
 import {
   transactionTypeColorCssVar,
-  transactionTypeMantineColor,
 } from "@/features/transactions/type-colors";
 import { useI18n } from "@/features/i18n/provider";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
+import { TransferModal } from "@/features/transactions/transfer-modal";
+import { TransactionFormModal } from "@/features/transactions/transaction-form-modal";
 import type { Database, TransactionType } from "@/types/database";
+import {formatBudgetAmount} from "@/features/budget/amount-format";
 
 type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
@@ -68,6 +59,7 @@ const transactionTypeCardBackgrounds: Record<TransactionType, string> = {
   income: transactionTypeColorCssVar("income", 0),
   expense: transactionTypeColorCssVar("expense", 0),
   saving: transactionTypeColorCssVar("saving", 0),
+  transfer: transactionTypeColorCssVar("transfer", 0),
 };
 
 const quickPaymentMethodTypes: QuickPaymentMethodType[] = ["cash", "debit_card", "other"];
@@ -239,12 +231,16 @@ export default function TransactionsPage() {
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<TransactionRow | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [didApplyUrlFilters, setDidApplyUrlFilters] = useState(false);
   const [mobileFiltersOpened, setMobileFiltersOpened] = useState(false);
   const [quickPaymentMethodType, setQuickPaymentMethodType] =
     useState<QuickPaymentMethodType>("cash");
+  const [formInitialValues, setFormInitialValues] = useState<TransactionFormInputValues>(
+    toFormDefaults(),
+  );
   const [createModalTypeFromQuery, setCreateModalTypeFromQuery] =
     useState<TransactionType | null>(null);
   const monthOptions = useMemo(() => buildMonthOptions(intlLocale), [intlLocale]);
@@ -253,6 +249,7 @@ export default function TransactionsPage() {
       income: mapTransactionTypeLabel("income", t),
       expense: mapTransactionTypeLabel("expense", t),
       saving: mapTransactionTypeLabel("saving", t),
+      transfer: mapTransactionTypeLabel("transfer", t),
     }),
     [t],
   );
@@ -265,34 +262,7 @@ export default function TransactionsPage() {
     [t],
   );
 
-  const {
-    register,
-    handleSubmit,
-    control,
-    reset,
-    setValue,
-    formState: { errors, isSubmitting },
-  } = useForm<TransactionFormInputValues, unknown, TransactionFormValues>({
-    resolver: zodResolver(
-      createTransactionFormSchema({
-        invalidAmount: t("common.validation.invalidAmount"),
-        amountGtZero: t("common.validation.amountGtZero"),
-        invalidDate: t("common.validation.invalidDate"),
-        invalidOption: t("common.validation.invalidOption"),
-        requiredCategory: t("common.forms.transaction.requiredCategory"),
-        invalidCategory: t("common.forms.transaction.invalidCategory"),
-        requiredTransactionDate: t("common.forms.transaction.requiredTransactionDate"),
-        descriptionMaxLength: t("common.forms.transaction.descriptionMaxLength"),
-        notesMaxLength: t("common.forms.transaction.notesMaxLength"),
-      }),
-    ),
-    defaultValues: toFormDefaults(),
-  });
-
-  const selectedType = useWatch({ control, name: "type" });
-  const selectedCategoryId = useWatch({ control, name: "categoryId" });
-  const selectedPaymentMethodId = useWatch({ control, name: "paymentMethodId" });
-  const selectedTypeColor = transactionTypeMantineColor[selectedType ?? "expense"];
+  // Form state moved to TransactionFormModal
 
   const categoryById = useMemo(
     () => new Map(categories.map((category) => [category.id, category])),
@@ -386,22 +356,6 @@ export default function TransactionsPage() {
     return options;
   }, [selectedYear, startYear]);
 
-  const categoryOptions = useMemo(() => {
-    const currentCategoryId = editingRow?.category_id ?? null;
-
-    return categories
-      .filter(
-        (category) =>
-          category.type === selectedType && (category.is_active || category.id === currentCategoryId),
-      )
-      .sort((a, b) => sortCategories(a, b, locale))
-      .map((category) => ({
-        value: category.id,
-        label: category.is_active
-          ? category.name
-          : `${category.name} (${t("transactions.inactiveCategorySuffix")})`,
-      }));
-  }, [categories, editingRow?.category_id, locale, selectedType, t]);
 
   const categoryFilterOptions = useMemo(() => {
     const sortedCategories = [...categories].sort((a, b) => sortCategories(a, b, locale));
@@ -593,27 +547,7 @@ export default function TransactionsPage() {
     setSearchFilter("");
   }, []);
 
-  const typeSegmentStyles = useMemo(
-    () => ({
-      root: {
-        backgroundColor: "var(--mantine-color-gray-0)",
-        border: "1px solid var(--mantine-color-gray-2)",
-      },
-      indicator: {
-        backgroundColor: `var(--mantine-color-${selectedTypeColor}-0)`,
-        border: `1px solid var(--mantine-color-${selectedTypeColor}-2)`,
-      },
-      label: {
-        color: "var(--mantine-color-gray-7)",
-        fontWeight: 500,
-        "&[data-active]": {
-          color: `var(--mantine-color-${selectedTypeColor}-7)`,
-          fontWeight: 700,
-        },
-      },
-    }),
-    [selectedTypeColor],
-  );
+  // typeSegmentStyles moved to TransactionFormModal
 
   useEffect(() => {
     if (didApplyUrlFilters) {
@@ -669,30 +603,7 @@ export default function TransactionsPage() {
     setDidApplyUrlFilters(true);
   }, [didApplyUrlFilters]);
 
-  useEffect(() => {
-    if (selectedCategoryId === "") {
-      return;
-    }
-
-    const isCategoryAvailable = categoryOptions.some((option) => option.value === selectedCategoryId);
-    if (!isCategoryAvailable) {
-      setValue("categoryId", "");
-    }
-  }, [categoryOptions, selectedCategoryId, setValue]);
-
-  useEffect(() => {
-    if (!selectedPaymentMethodId) {
-      return;
-    }
-
-    const isPaymentMethodAvailable = paymentMethodOptions.some(
-      (option) => option.value === selectedPaymentMethodId,
-    );
-
-    if (!isPaymentMethodAvailable) {
-      setValue("paymentMethodId", "");
-    }
-  }, [paymentMethodOptions, selectedPaymentMethodId, setValue]);
+  // categoryId and paymentMethodId validation moved to TransactionFormModal
 
   useEffect(() => {
     if (isBootstrapping) {
@@ -895,7 +806,7 @@ export default function TransactionsPage() {
       }
 
       setEditingRow(null);
-      reset(defaults);
+      setFormInitialValues(defaults);
       setIsModalOpen(true);
     },
     [
@@ -904,14 +815,13 @@ export default function TransactionsPage() {
       hasAnyPaymentMethods,
       paymentMethodById,
       paymentMethodFilter,
-      reset,
       typeFilter,
     ],
   );
 
   function openEditModal(row: TransactionRow) {
     setEditingRow(row);
-    reset(toFormDefaults(row));
+    setFormInitialValues(toFormDefaults(row));
     setQuickPaymentMethodType("cash");
     setIsModalOpen(true);
   }
@@ -938,7 +848,7 @@ export default function TransactionsPage() {
     window.history.replaceState(window.history.state, "", nextUrl);
   }, [createModalTypeFromQuery, isBootstrapping, isModalOpen, openCreateModal]);
 
-  const onSubmit = handleSubmit(async (values) => {
+  const onSubmit = async (values: TransactionFormValues) => {
     const category = categoryById.get(values.categoryId);
     if (!category || category.workspace_id !== workspace.id) {
       notifications.show({
@@ -1106,27 +1016,33 @@ export default function TransactionsPage() {
     }
 
     closeModal();
-    reset(toFormDefaults(undefined, values.type));
+    setFormInitialValues(toFormDefaults(undefined, values.type));
     await loadTransactions();
-  });
+  };
 
   const shouldShowQuickPaymentSetup = !editingRow && !hasAnyPaymentMethods;
 
   async function deleteTransaction(row: TransactionRow) {
     setDeletingId(row.id);
 
-    const response = await supabase
-      .from("transactions")
-      .delete()
-      .eq("id", row.id)
-      .eq("workspace_id", workspace.id);
+    let query = supabase.from("transactions").delete().eq("workspace_id", workspace.id);
 
+    if (row.type === "transfer" && row.transfer_group_id) {
+      query = query.eq("transfer_group_id", row.transfer_group_id);
+    } else {
+      query = query.eq("id", row.id);
+    }
+
+    const response = await query;
     setDeletingId(null);
 
     if (response.error) {
       notifications.show({
         color: "red",
-        title: t("transactions.notifications.deleteError"),
+        title:
+          row.type === "transfer"
+            ? t("transactions.notifications.transferDeleteError")
+            : t("transactions.notifications.deleteError"),
         message: response.error.message,
       });
       return;
@@ -1134,8 +1050,14 @@ export default function TransactionsPage() {
 
     notifications.show({
       color: "cyan",
-      title: t("transactions.notifications.deletedTitle"),
-      message: t("transactions.notifications.deletedMessage"),
+      title:
+        row.type === "transfer"
+          ? t("transactions.notifications.transferDeletedTitle")
+          : t("transactions.notifications.deletedTitle"),
+      message:
+        row.type === "transfer"
+          ? t("transactions.notifications.transferDeletedMessage")
+          : t("transactions.notifications.deletedMessage"),
     });
 
     await loadTransactions();
@@ -1176,9 +1098,18 @@ export default function TransactionsPage() {
         </Stack>
 
         {!isMobile ? (
-          <Button onClick={() => openCreateModal()} disabled={!hasAnyActiveCategory}>
-            {t("transactions.new")}
-          </Button>
+          <Group gap="xs">
+            <Button onClick={() => openCreateModal()} disabled={!hasAnyActiveCategory}>
+              {t("transactions.new")}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsTransferModalOpen(true)}
+              disabled={!hasAnyActiveCategory}
+            >
+              {t("transactions.transfer")}
+            </Button>
+          </Group>
         ) : null}
       </Group>
 
@@ -1451,160 +1382,29 @@ export default function TransactionsPage() {
         </Paper>
       ) : null}
 
-      <Modal
+      <TransactionFormModal
         opened={isModalOpen}
         onClose={closeModal}
-        title={editingRow ? t("transactions.edit") : t("transactions.new")}
-        size="lg"
-        fullScreen={isMobile}
-      >
-        <form onSubmit={onSubmit}>
-          <Stack gap="sm">
-            <Stack gap={4}>
-              <Text size="sm" fw={600}>
-                {t("transactions.type")}
-              </Text>
-              <Controller
-                control={control}
-                name="type"
-                render={({ field }) => (
-                  <SegmentedControl
-                    fullWidth
-                    data={transactionTypeSelectData}
-                    value={field.value}
-                    onChange={(value) => field.onChange(value as TransactionType)}
-                    styles={typeSegmentStyles}
-                  />
-                )}
-              />
-              {errors.type?.message ? (
-                <Text size="xs" c="red">
-                  {errors.type.message}
-                </Text>
-              ) : null}
-            </Stack>
+        editingRow={editingRow}
+        categories={categories}
+        paymentMethodOptions={paymentMethodOptions}
+        transactionTypeSelectData={transactionTypeSelectData}
+        isMobile={isMobile}
+        quickPaymentMethodType={quickPaymentMethodType}
+        setQuickPaymentMethodType={setQuickPaymentMethodType}
+        quickPaymentMethodSelectData={quickPaymentMethodSelectData}
+        shouldShowQuickPaymentSetup={shouldShowQuickPaymentSetup}
+        initialValues={formInitialValues}
+        onSubmit={onSubmit}
+      />
 
-            <Group grow align="start">
-              <NativeSelect
-                label={t("transactions.category")}
-                data={[{ value: "", label: t("transactions.form.selectCategory") }, ...categoryOptions]}
-                error={errors.categoryId?.message}
-                {...register("categoryId")}
-              />
-
-              <Controller
-                control={control}
-                name="amount"
-                render={({ field }) => (
-                  <TextInput
-                    label={t("transactions.form.amount")}
-                    inputMode="decimal"
-                    placeholder="0"
-                    autoFocus
-                    error={errors.amount?.message}
-                    value={
-                      typeof field.value === "string"
-                        ? field.value
-                        : field.value === null || field.value === undefined
-                          ? ""
-                          : String(field.value)
-                    }
-                    onChange={(event) => {
-                      field.onChange(sanitizeBudgetTypingValue(event.currentTarget.value));
-                    }}
-                    onBlur={(event) => {
-                      field.onBlur();
-                      const parsed = parseBudgetAmount(event.currentTarget.value);
-                      field.onChange(parsed === null ? "" : formatBudgetAmount(parsed));
-                    }}
-                    leftSection={<Text size="xs" c="dimmed" fw={700}>$</Text>}
-                    leftSectionWidth={24}
-                    styles={{ input: { textAlign: "right", fontVariantNumeric: "tabular-nums" } }}
-                  />
-                )}
-              />
-            </Group>
-
-            <TextInput
-              label={t("transactions.form.transactionDate")}
-              type="date"
-              error={errors.transactionDate?.message}
-              {...register("transactionDate")}
-            />
-
-            <Paper withBorder radius="md" p="sm">
-              <Stack gap="xs">
-                <Text size="xs" c="dimmed" fw={600}>
-                  {t("transactions.form.optionalFields")}
-                </Text>
-
-                <Group grow align="start">
-                  <TextInput
-                    label={t("transactions.form.effectiveDate")}
-                    type="date"
-                    error={errors.effectiveDate?.message}
-                    {...register("effectiveDate")}
-                  />
-
-                  {shouldShowQuickPaymentSetup ? (
-                    <Stack gap={4}>
-                      <Text size="sm" fw={500}>
-                        {t("transactions.quickPayment.title")}
-                      </Text>
-                      <SegmentedControl
-                        fullWidth
-                        data={quickPaymentMethodSelectData}
-                        value={quickPaymentMethodType}
-                        onChange={(value) => {
-                          setQuickPaymentMethodType(value as QuickPaymentMethodType);
-                        }}
-                      />
-                    </Stack>
-                  ) : (
-                    <NativeSelect
-                      label={t("transactions.paymentMethod")}
-                      data={[{ value: "", label: t("transactions.form.noPaymentMethod") }, ...paymentMethodOptions]}
-                      error={errors.paymentMethodId?.message}
-                      {...register("paymentMethodId")}
-                    />
-                  )}
-                </Group>
-
-                {shouldShowQuickPaymentSetup ? (
-                  <Text size="xs" c="dimmed">
-                    {t("transactions.quickPayment.hint")}
-                  </Text>
-                ) : null}
-
-                <TextInput
-                  label={t("transactions.form.description")}
-                  placeholder={t("transactions.form.descriptionPlaceholder")}
-                  error={errors.description?.message}
-                  {...register("description")}
-                />
-
-                <Textarea
-                  label={t("transactions.form.notes")}
-                  placeholder={t("transactions.form.notesPlaceholder")}
-                  minRows={2}
-                  autosize
-                  error={errors.notes?.message}
-                  {...register("notes")}
-                />
-              </Stack>
-            </Paper>
-
-            <Group justify="flex-end" mt="sm">
-              <Button type="button" variant="light" color="gray" onClick={closeModal}>
-                {t("common.actions.cancel")}
-              </Button>
-              <Button type="submit" loading={isSubmitting}>
-                {editingRow ? t("common.actions.save") : t("common.actions.create")}
-              </Button>
-            </Group>
-          </Stack>
-        </form>
-      </Modal>
+      <TransferModal
+        opened={isTransferModalOpen}
+        onClose={() => setIsTransferModalOpen(false)}
+        categories={categories}
+        paymentMethods={paymentMethods}
+        onSuccess={loadTransactions}
+      />
     </Stack>
   );
 }
