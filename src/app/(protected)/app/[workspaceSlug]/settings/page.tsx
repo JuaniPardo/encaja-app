@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -112,6 +111,7 @@ export default function SettingsPage() {
   const { t } = useI18n();
   const {
     supabase,
+    user,
     workspace,
     workspaces,
     refreshWorkspace,
@@ -137,6 +137,7 @@ export default function SettingsPage() {
   const [isMembersLoading, setIsMembersLoading] = useState(true);
   const [isDeletingWorkspace, setIsDeletingWorkspace] = useState(false);
   const [deleteWorkspaceConfirmation, setDeleteWorkspaceConfirmation] = useState("");
+  const [isLeavingWorkspace, setIsLeavingWorkspace] = useState(false);
   const [members, setMembers] = useState<WorkspaceMemberSummary[]>([]);
   const [removingMemberUserId, setRemovingMemberUserId] = useState<string | null>(null);
   const [workspaceLinks, setWorkspaceLinks] = useState<WorkspaceLinkSummary[]>([]);
@@ -722,6 +723,74 @@ export default function SettingsPage() {
       setIsDeletingWorkspace(false);
     }
   };
+  
+  const onLeaveWorkspace = async () => {
+    if (workspace.role === "owner") {
+      notifications.show({
+        color: "red",
+        title: t("workspaceSettings.notifications.permissionDeniedTitle"),
+        message: t("workspaceSettings.notifications.ownerCannotLeaveMessage"),
+      });
+      return;
+    }
+
+    if (workspaces.length <= 1) {
+      notifications.show({
+        color: "red",
+        title: t("workspaceSettings.notifications.leaveWorkspaceError"),
+        message: t("workspaceSettings.dangerZone.needAnotherWorkspaceMessage"),
+      });
+      return;
+    }
+
+    setIsLeavingWorkspace(true);
+
+    try {
+      const { error } = await supabase.rpc("leave_workspace", {
+        p_workspace_id: workspace.id,
+      });
+
+      if (error) {
+        setIsLeavingWorkspace(false);
+        notifications.show({
+          color: "red",
+          title: t("workspaceSettings.notifications.leaveWorkspaceError"),
+          message: getErrorMessage(
+            error,
+            t("workspaceSettings.notifications.unexpectedLeaveWorkspaceError"),
+          ),
+        });
+        return;
+      }
+
+      notifications.show({
+        color: "cyan",
+        title: t("workspaceSettings.notifications.workspaceLeftTitle"),
+        message: t("workspaceSettings.notifications.workspaceLeftMessage", undefined, {
+          workspaceName: workspace.name,
+        }),
+      });
+
+      // Redirigir al primer workspace disponible que no sea el actual
+      const nextWorkspace = workspaces.find((w) => w.id !== workspace.id);
+      if (nextWorkspace) {
+        window.location.href = buildWorkspaceHref(nextWorkspace.slug);
+      } else {
+        window.location.href = ROUTES.LOGIN;
+      }
+    } catch (error) {
+      notifications.show({
+        color: "red",
+        title: t("workspaceSettings.notifications.leaveWorkspaceError"),
+        message: getErrorMessage(
+          error,
+          t("workspaceSettings.notifications.unexpectedLeaveWorkspaceError"),
+        ),
+      });
+    } finally {
+      setIsLeavingWorkspace(false);
+    }
+  };
 
   const onSubmitInviteMember = handleSubmitInviteMember(async (values) => {
     if (!canManageMembers) {
@@ -1276,12 +1345,20 @@ export default function SettingsPage() {
                 <Stack gap="xs">
                   {members.map((member) => {
                     const canRemoveMember = canManageMembers && member.role !== "owner";
+                    const isCurrentUser = member.user_id === user.id;
 
                     return (
                       <Paper key={member.member_id} withBorder radius="sm" p="sm">
                         <Group justify="space-between" align="center" wrap="wrap">
                           <Stack gap={2}>
-                            <Text fw={600}>{getMemberDisplayName(member)}</Text>
+                            <Group gap="xs">
+                              <Text fw={600}>{getMemberDisplayName(member)}</Text>
+                              {isCurrentUser ? (
+                                <Badge size="xs" variant="outline" color="blue">
+                                  {t("common.you", "Vos")}
+                                </Badge>
+                              ) : null}
+                            </Group>
                             <Text size="sm" c="dimmed">
                               {member.email}
                             </Text>
@@ -1480,24 +1557,6 @@ export default function SettingsPage() {
         <Tabs.Panel value="personal" pt="sm">
           <Stack gap="md">
             <Paper withBorder radius="md" p="md">
-              <Stack gap="sm">
-                <Text fw={600}>{t("settings.profile.title")}</Text>
-                <Text size="sm" c="dimmed">
-                  {t("settings.profile.description")}
-                </Text>
-                <Group justify="flex-end">
-                  <Button
-                    component={Link}
-                    href={buildWorkspaceHref(workspace.slug, ROUTES.PROFILE)}
-                    variant="light"
-                  >
-                    {t("settings.profile.openButton")}
-                  </Button>
-                </Group>
-              </Stack>
-            </Paper>
-
-            <Paper withBorder radius="md" p="md">
               <form onSubmit={onSubmitFeedback}>
                 <Stack gap="sm">
                   <Text fw={600}>{t("settings.feedback.title")}</Text>
@@ -1546,9 +1605,14 @@ export default function SettingsPage() {
                 {t("workspaceSettings.dangerZone.description")}
               </Text>
               {!canDeleteWorkspace(workspace.role) ? (
-                <Text size="sm" c="dimmed">
-                  {t("workspaceSettings.dangerZone.ownerOnlyMessage")}
-                </Text>
+                <Stack gap="sm">
+                  <Text size="sm" c="dimmed">
+                    {t("workspaceSettings.dangerZone.ownerOnlyMessage")}
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    {t("workspaceSettings.dangerZone.leaveWorkspaceDescription")}
+                  </Text>
+                </Stack>
               ) : null}
               {workspaces.length <= 1 ? (
                 <Text size="sm" c="dimmed">
@@ -1556,14 +1620,26 @@ export default function SettingsPage() {
                 </Text>
               ) : null}
               <Group justify="flex-end">
-                <Button
-                  color="red"
-                  variant="outline"
-                  onClick={openDeleteWorkspace}
-                  disabled={!canDeleteCurrentWorkspace}
-                >
-                  {t("workspaceSettings.dangerZone.deleteWorkspaceButton")}
-                </Button>
+                {workspace.role !== "owner" ? (
+                  <Button
+                    color="red"
+                    variant="outline"
+                    onClick={() => void onLeaveWorkspace()}
+                    loading={isLeavingWorkspace}
+                    disabled={workspaces.length <= 1}
+                  >
+                    {t("workspaceSettings.dangerZone.leaveWorkspaceButton")}
+                  </Button>
+                ) : (
+                  <Button
+                    color="red"
+                    variant="outline"
+                    onClick={openDeleteWorkspace}
+                    disabled={!canDeleteCurrentWorkspace}
+                  >
+                    {t("workspaceSettings.dangerZone.deleteWorkspaceButton")}
+                  </Button>
+                )}
               </Group>
             </Stack>
           </Paper>

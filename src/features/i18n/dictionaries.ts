@@ -446,14 +446,14 @@ const dictionaries = {
         workspace: "Workspace",
         collaboration: "Colaboración",
         links: "Vínculos",
-        personal: "Personal",
+        personal: "Feedback",
         advanced: "Avanzado",
       },
       sections: {
         personal: {
-          title: "Preferencias personales",
-          description: "Configuraciones que aplican a tu experiencia individual dentro de Encaja.",
-          scope: "Solo vos",
+          title: "Feedback",
+          description: "Tu opinión me ayuda a mejorar Encaja.",
+          scope: "Mejora continua",
         },
         workspace: {
           title: "Workspace actual",
@@ -587,6 +587,8 @@ const dictionaries = {
         description:
           "Podés eliminar este workspace si tenés otro disponible. Esta acción es irreversible.",
         ownerOnlyMessage: "Solo el owner puede eliminar workspaces.",
+        leaveWorkspaceDescription: "Como miembro, podés abandonar este workspace si ya no necesitás acceder a él.",
+        leaveWorkspaceButton: "Abandonar workspace",
         needAnotherWorkspaceMessage: "Necesitás al menos otro workspace antes de eliminar este.",
         deleteWorkspaceButton: "Eliminar workspace",
       },
@@ -623,6 +625,11 @@ const dictionaries = {
         deleteWorkspaceError: "No pudimos eliminar el workspace",
         unexpectedDeleteWorkspaceError:
           "Ocurrió un error inesperado al eliminar el workspace.",
+        leaveWorkspaceError: "No pudimos abandonar el workspace",
+        unexpectedLeaveWorkspaceError: "Ocurrió un error inesperado al abandonar el workspace.",
+        ownerCannotLeaveMessage: "El owner no puede abandonar el workspace, debe eliminarlo o transferirlo.",
+        workspaceLeftTitle: "Workspace abandonado",
+        workspaceLeftMessage: "Ya no tenés acceso a {{workspaceName}}.",
         inviteMemberPermissionDenied: "Solo el owner puede invitar miembros.",
         inviteMemberError: "No pudimos invitar al miembro",
         inviteMemberMissingBackendConfirmation: "No recibimos confirmación del backend.",
@@ -1353,14 +1360,14 @@ const dictionaries = {
         workspace: "Workspace",
         collaboration: "Collaboration",
         links: "Links",
-        personal: "Personal",
+        personal: "Feedback",
         advanced: "Advanced",
       },
       sections: {
         personal: {
-          title: "Personal preferences",
-          description: "Settings that apply to your own experience in Encaja.",
-          scope: "Only you",
+          title: "Feedback",
+          description: "Your feedback helps me improve Encaja.",
+          scope: "Continuous improvement",
         },
         workspace: {
           title: "Current workspace",
@@ -1493,6 +1500,8 @@ const dictionaries = {
         description:
           "You can delete this workspace if you have another available. This action is irreversible.",
         ownerOnlyMessage: "Only the owner can delete workspaces.",
+        leaveWorkspaceDescription: "As a member, you can leave this workspace if you no longer need access to it.",
+        leaveWorkspaceButton: "Leave workspace",
         needAnotherWorkspaceMessage:
           "You need at least one other workspace before deleting this one.",
         deleteWorkspaceButton: "Delete workspace",
@@ -1530,6 +1539,11 @@ const dictionaries = {
         deleteWorkspaceError: "We couldn't delete workspace",
         unexpectedDeleteWorkspaceError:
           "An unexpected error occurred while deleting workspace.",
+        leaveWorkspaceError: "We couldn't leave workspace",
+        unexpectedLeaveWorkspaceError: "An unexpected error occurred while leaving workspace.",
+        ownerCannotLeaveMessage: "The owner cannot leave the workspace, they must delete it or transfer it.",
+        workspaceLeftTitle: "Workspace left",
+        workspaceLeftMessage: "You no longer have access to {{workspaceName}}.",
         inviteMemberPermissionDenied: "Only the owner can invite members.",
         inviteMemberError: "We couldn't invite member",
         inviteMemberMissingBackendConfirmation:
@@ -1862,7 +1876,7 @@ function interpolate(template: string, values?: Record<string, string | number>)
     return template;
   }
 
-  return template.replace(/\{\{(\w+)\}\}/g, (_, token: string) => {
+  return template.replace(/{{(\w+)}}/g, (_, token: string) => {
     const replacement = values[token];
     if (replacement === undefined) {
       return "";
