@@ -1,4 +1,4 @@
-export type TransactionType = "income" | "expense" | "saving";
+export type TransactionType = "income" | "expense" | "saving" | "transfer";
 export type PaymentMethodType =
   | "cash"
   | "debit_card"
@@ -348,6 +348,8 @@ export interface Database {
           transaction_date: string;
           effective_date: string | null;
           type: TransactionType;
+          transfer_group_id: string | null;
+          direction: "in" | "out" | null;
           category_id: string;
           payment_method_id: string | null;
           amount: number;
@@ -364,6 +366,8 @@ export interface Database {
           transaction_date: string;
           effective_date?: string | null;
           type: TransactionType;
+          transfer_group_id?: string | null;
+          direction?: "in" | "out" | null;
           category_id: string;
           payment_method_id?: string | null;
           amount: number;
@@ -378,6 +382,8 @@ export interface Database {
           transaction_date?: string;
           effective_date?: string | null;
           type?: TransactionType;
+          transfer_group_id?: string | null;
+          direction?: "in" | "out" | null;
           category_id?: string;
           payment_method_id?: string | null;
           amount?: number;

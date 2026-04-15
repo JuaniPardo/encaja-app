@@ -27,6 +27,7 @@ import {
 import { useI18n } from "@/features/i18n/provider";
 import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
+import { excludeTransfers } from "@/features/transactions/queries";
 import type { Database, ExpenseBehavior, TransactionType } from "@/types/database";
 
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
@@ -37,7 +38,7 @@ type BudgetItemLiteRow = Pick<
 >;
 type TransactionLiteRow = Pick<
   Database["public"]["Tables"]["transactions"]["Row"],
-  "category_id" | "amount" | "type" | "transaction_date" | "effective_date"
+  "category_id" | "amount" | "type" | "transaction_date" | "effective_date" | "direction"
 >;
 type WorkspaceSettingsLiteRow = Pick<
   Database["public"]["Tables"]["workspace_settings"]["Row"],
@@ -85,6 +86,7 @@ const typeOrder: Record<TransactionType, number> = {
   income: 0,
   expense: 1,
   saving: 2,
+  transfer: 3,
 };
 
 const deviationTolerance = 0.005;
@@ -310,16 +312,20 @@ export default function InsightsPage() {
         .eq("year", currentPeriod.year)
         .eq("month", currentPeriod.month)
         .maybeSingle(),
-      supabase
-        .from("transactions")
-        .select("category_id, amount, type, transaction_date, effective_date")
-        .eq("workspace_id", workspace.id)
-        .or(buildTransactionPeriodFilter(currentRange.start, currentRange.end)),
-      supabase
-        .from("transactions")
-        .select("category_id, amount, type, transaction_date, effective_date")
-        .eq("workspace_id", workspace.id)
-        .or(buildTransactionPeriodFilter(comparisonRange.start, closedRange.end)),
+      excludeTransfers(
+        supabase
+          .from("transactions")
+          .select("category_id, amount, type, transaction_date, effective_date, direction")
+          .eq("workspace_id", workspace.id)
+          .or(buildTransactionPeriodFilter(currentRange.start, currentRange.end))
+      ),
+      excludeTransfers(
+        supabase
+          .from("transactions")
+          .select("category_id, amount, type, transaction_date, effective_date, direction")
+          .eq("workspace_id", workspace.id)
+          .or(buildTransactionPeriodFilter(comparisonRange.start, closedRange.end))
+      ),
     ]);
 
     if (categoriesResponse.error) {
@@ -611,12 +617,14 @@ export default function InsightsPage() {
       income: 0,
       expense: 0,
       saving: 0,
+      transfer: 0,
     };
 
     const previousTotals: TotalsByType = {
       income: 0,
       expense: 0,
       saving: 0,
+      transfer: 0,
     };
 
     for (const row of historicalTransactions) {

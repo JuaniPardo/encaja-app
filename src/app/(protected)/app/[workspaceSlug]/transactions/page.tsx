@@ -45,6 +45,7 @@ import {
 } from "@/features/transactions/type-colors";
 import { useI18n } from "@/features/i18n/provider";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
+import { TransferModal } from "@/features/transactions/transfer-modal";
 import type { Database, TransactionType } from "@/types/database";
 
 type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
@@ -68,6 +69,7 @@ const transactionTypeCardBackgrounds: Record<TransactionType, string> = {
   income: transactionTypeColorCssVar("income", 0),
   expense: transactionTypeColorCssVar("expense", 0),
   saving: transactionTypeColorCssVar("saving", 0),
+  transfer: transactionTypeColorCssVar("transfer", 0),
 };
 
 const quickPaymentMethodTypes: QuickPaymentMethodType[] = ["cash", "debit_card", "other"];
@@ -239,6 +241,7 @@ export default function TransactionsPage() {
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<TransactionRow | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [didApplyUrlFilters, setDidApplyUrlFilters] = useState(false);
@@ -253,6 +256,7 @@ export default function TransactionsPage() {
       income: mapTransactionTypeLabel("income", t),
       expense: mapTransactionTypeLabel("expense", t),
       saving: mapTransactionTypeLabel("saving", t),
+      transfer: mapTransactionTypeLabel("transfer", t),
     }),
     [t],
   );
@@ -1115,18 +1119,24 @@ export default function TransactionsPage() {
   async function deleteTransaction(row: TransactionRow) {
     setDeletingId(row.id);
 
-    const response = await supabase
-      .from("transactions")
-      .delete()
-      .eq("id", row.id)
-      .eq("workspace_id", workspace.id);
+    let query = supabase.from("transactions").delete().eq("workspace_id", workspace.id);
 
+    if (row.type === "transfer" && row.transfer_group_id) {
+      query = query.eq("transfer_group_id", row.transfer_group_id);
+    } else {
+      query = query.eq("id", row.id);
+    }
+
+    const response = await query;
     setDeletingId(null);
 
     if (response.error) {
       notifications.show({
         color: "red",
-        title: t("transactions.notifications.deleteError"),
+        title:
+          row.type === "transfer"
+            ? t("transactions.notifications.transferDeleteError")
+            : t("transactions.notifications.deleteError"),
         message: response.error.message,
       });
       return;
@@ -1134,8 +1144,14 @@ export default function TransactionsPage() {
 
     notifications.show({
       color: "cyan",
-      title: t("transactions.notifications.deletedTitle"),
-      message: t("transactions.notifications.deletedMessage"),
+      title:
+        row.type === "transfer"
+          ? t("transactions.notifications.transferDeletedTitle")
+          : t("transactions.notifications.deletedTitle"),
+      message:
+        row.type === "transfer"
+          ? t("transactions.notifications.transferDeletedMessage")
+          : t("transactions.notifications.deletedMessage"),
     });
 
     await loadTransactions();
@@ -1176,9 +1192,18 @@ export default function TransactionsPage() {
         </Stack>
 
         {!isMobile ? (
-          <Button onClick={() => openCreateModal()} disabled={!hasAnyActiveCategory}>
-            {t("transactions.new")}
-          </Button>
+          <Group gap="xs">
+            <Button onClick={() => openCreateModal()} disabled={!hasAnyActiveCategory}>
+              {t("transactions.new")}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsTransferModalOpen(true)}
+              disabled={!hasAnyActiveCategory}
+            >
+              {t("transactions.transfer")}
+            </Button>
+          </Group>
         ) : null}
       </Group>
 
@@ -1605,6 +1630,14 @@ export default function TransactionsPage() {
           </Stack>
         </form>
       </Modal>
+
+      <TransferModal
+        opened={isTransferModalOpen}
+        onClose={() => setIsTransferModalOpen(false)}
+        categories={categories}
+        paymentMethods={paymentMethods}
+        onSuccess={loadTransactions}
+      />
     </Stack>
   );
 }

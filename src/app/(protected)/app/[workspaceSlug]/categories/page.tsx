@@ -51,6 +51,7 @@ const categoryTypeOrder: Record<TransactionType, number> = {
   income: 0,
   expense: 1,
   saving: 2,
+  transfer: 3,
 };
 
 const categoryTypeSectionOrder: TransactionType[] = ["income", "expense", "saving"];
@@ -59,18 +60,21 @@ const categoryGroupBackgroundColor: Record<TransactionType, string> = {
   expense: transactionTypeColorCssVar("expense", 0),
   income: transactionTypeColorCssVar("income", 0),
   saving: transactionTypeColorCssVar("saving", 0),
+  transfer: transactionTypeColorCssVar("transfer", 0),
 };
 
 const categoryGroupHeaderColor: Record<TransactionType, string> = {
   expense: transactionTypeColorCssVar("expense", 6),
   income: transactionTypeColorCssVar("income", 6),
   saving: transactionTypeColorCssVar("saving", 6),
+  transfer: transactionTypeColorCssVar("transfer", 6),
 };
 
 const categoryGroupBorderColor: Record<TransactionType, string> = {
   expense: transactionTypeColorCssVar("expense", 4),
   income: transactionTypeColorCssVar("income", 4),
   saving: transactionTypeColorCssVar("saving", 4),
+  transfer: transactionTypeColorCssVar("transfer", 4),
 };
 
 function normalizeSearchText(value: string, locale: "es" | "en") {
@@ -104,7 +108,7 @@ function toCategoryDefaults(row?: CategoryRow): CategoryFormValues {
 
   return {
     name: row.name,
-    type: row.type,
+    type: row.type === "transfer" ? "expense" : row.type,
     expenseBehavior: row.type === "expense" ? (row.expense_behavior ?? "variable") : null,
     sortOrder: row.sort_order,
   };
@@ -191,6 +195,7 @@ export default function CategoriesPage() {
       income: mapTransactionTypeLabel("income", t),
       expense: mapTransactionTypeLabel("expense", t),
       saving: mapTransactionTypeLabel("saving", t),
+      transfer: mapTransactionTypeLabel("transfer", t),
     }),
     [t],
   );
@@ -199,6 +204,7 @@ export default function CategoriesPage() {
       expense: mapTransactionTypeLabel("expense", t, { plural: true }),
       income: mapTransactionTypeLabel("income", t, { plural: true }),
       saving: mapTransactionTypeLabel("saving", t, { plural: true }),
+      transfer: mapTransactionTypeLabel("transfer", t, { plural: true }),
     }),
     [t],
   );
@@ -376,6 +382,7 @@ export default function CategoriesPage() {
       income: [],
       expense: [],
       saving: [],
+      transfer: [],
     };
 
     for (const row of visibleRows) {

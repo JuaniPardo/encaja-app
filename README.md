@@ -22,6 +22,18 @@ Implementado: **MVP1 — Base operativa inicial**
 - Supabase (Auth + Postgres + RLS)
 - React Hook Form + Zod
 
+## Development workflow
+
+El flujo de trabajo de desarrollo, versionado y releases está documentado en:
+
+`/docs/dev-workflow.md`
+
+Seguir este documento para:
+
+- branching strategy
+- versionado semántico (SemVer)
+- proceso de releases
+
 ## Setup
 
 ### 1. Instalar dependencias
