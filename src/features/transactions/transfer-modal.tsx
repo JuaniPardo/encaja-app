@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Button,
   Group,
   Modal,
   NativeSelect,
+  Paper,
   Stack,
+  Text,
   TextInput,
   Textarea,
 } from "@mantine/core";
@@ -16,6 +18,7 @@ import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import {
+  formatBudgetAmount,
   parseBudgetAmount,
   sanitizeBudgetTypingValue,
 } from "@/features/budget/amount-format";
@@ -38,6 +41,19 @@ const transferSchema = z.object({
 });
 
 type TransferFormValues = z.infer<typeof transferSchema>;
+
+function toTransferDefaults(categories: CategoryRow[]): TransferFormValues {
+  return {
+    amount: "",
+    categoryId: categories[0]?.id ?? "",
+    fromPaymentMethodId: "",
+    toPaymentMethodId: "",
+    transactionDate: toDateInputValue(new Date()),
+    effectiveDate: "",
+    description: "",
+    notes: "",
+  };
+}
 
 interface TransferModalProps {
   opened: boolean;
@@ -66,8 +82,14 @@ export function TransferModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showOptional, setShowOptional] = useState(false);
 
-  const transferCategories = categories.filter((c) => c.type === "transfer" && c.is_active);
-  const activePaymentMethods = paymentMethods.filter((pm) => pm.is_active);
+  const transferCategories = useMemo(
+    () => categories.filter((c) => c.type === "transfer" && c.is_active),
+    [categories],
+  );
+  const activePaymentMethods = useMemo(
+    () => paymentMethods.filter((pm) => pm.is_active),
+    [paymentMethods],
+  );
 
   const {
     control,
@@ -77,17 +99,16 @@ export function TransferModal({
   } = useForm<TransferFormValues>({
     resolver: zodResolver(transferSchema),
     mode: "onChange",
-    defaultValues: {
-      amount: "",
-      categoryId: transferCategories[0]?.id ?? "",
-      fromPaymentMethodId: "",
-      toPaymentMethodId: "",
-      transactionDate: toDateInputValue(new Date()),
-      effectiveDate: "",
-      description: "",
-      notes: "",
-    },
+    defaultValues: toTransferDefaults(transferCategories),
   });
+
+  useEffect(() => {
+    if (!opened) {
+      return;
+    }
+
+    reset(toTransferDefaults(transferCategories));
+  }, [opened, reset, transferCategories]);
 
   const onSubmit = async (values: TransferFormValues) => {
     if (values.fromPaymentMethodId === values.toPaymentMethodId) {
@@ -156,7 +177,8 @@ export function TransferModal({
       message: t("transactions.notifications.transferCreatedMessage"),
     });
 
-    reset();
+    reset(toTransferDefaults(transferCategories));
+    setShowOptional(false);
     onSuccess();
     onClose();
   };
@@ -170,68 +192,88 @@ export function TransferModal({
       centered
     >
       <form onSubmit={handleSubmit(onSubmit)}>
-        <Stack gap="md">
-          <Controller
-            name="amount"
-            control={control}
-            render={({ field }) => (
-              <TextInput
-                label={t("transactions.form.amount")}
-                placeholder="0.00"
-                required
-                data-autofocus
-                value={field.value}
-                onChange={(e) => field.onChange(sanitizeBudgetTypingValue(e.target.value))}
-                error={errors.amount?.message}
-              />
-            )}
-          />
+        <Stack gap="sm">
+          <Group grow align="start">
+            <Controller
+              name="fromPaymentMethodId"
+              control={control}
+              render={({ field }) => (
+                <NativeSelect
+                  label={t("transactions.form.fromPaymentMethod")}
+                  required
+                  data={[{ label: t("transactions.form.noPaymentMethod"), value: "" }].concat(
+                    activePaymentMethods.map((pm) => ({ label: pm.name, value: pm.id })),
+                  )}
+                  {...field}
+                  error={errors.fromPaymentMethodId?.message}
+                />
+              )}
+            />
 
-          <Controller
-            name="fromPaymentMethodId"
-            control={control}
-            render={({ field }) => (
-              <NativeSelect
-                label={t("transactions.form.fromPaymentMethod")}
-                required
-                data={[{ label: t("transactions.form.noPaymentMethod"), value: "" }].concat(
-                  activePaymentMethods.map((pm) => ({ label: pm.name, value: pm.id }))
-                )}
-                {...field}
-                error={errors.fromPaymentMethodId?.message}
-              />
-            )}
-          />
+            <Controller
+              name="toPaymentMethodId"
+              control={control}
+              render={({ field }) => (
+                <NativeSelect
+                  label={t("transactions.form.toPaymentMethod")}
+                  required
+                  data={[{ label: t("transactions.form.noPaymentMethod"), value: "" }].concat(
+                    activePaymentMethods.map((pm) => ({ label: pm.name, value: pm.id })),
+                  )}
+                  {...field}
+                  error={errors.toPaymentMethodId?.message}
+                />
+              )}
+            />
+          </Group>
 
-          <Controller
-            name="toPaymentMethodId"
-            control={control}
-            render={({ field }) => (
-              <NativeSelect
-                label={t("transactions.form.toPaymentMethod")}
-                required
-                data={[{ label: t("transactions.form.noPaymentMethod"), value: "" }].concat(
-                  activePaymentMethods.map((pm) => ({ label: pm.name, value: pm.id }))
-                )}
-                {...field}
-                error={errors.toPaymentMethodId?.message}
-              />
-            )}
-          />
+          <Group grow align="start">
+            <Controller
+              name="categoryId"
+              control={control}
+              render={({ field }) => (
+                <NativeSelect
+                  label={t("transactions.category")}
+                  required
+                  data={[{ label: t("transactions.form.selectCategory"), value: "" }].concat(
+                    transferCategories.map((c) => ({ label: c.name, value: c.id })),
+                  )}
+                  {...field}
+                  error={errors.categoryId?.message}
+                />
+              )}
+            />
 
-          <Controller
-            name="categoryId"
-            control={control}
-            render={({ field }) => (
-              <NativeSelect
-                label={t("transactions.category")}
-                required
-                data={transferCategories.map((c) => ({ label: c.name, value: c.id }))}
-                {...field}
-                error={errors.categoryId?.message}
-              />
-            )}
-          />
+            <Controller
+              name="amount"
+              control={control}
+              render={({ field }) => (
+                <TextInput
+                  label={t("transactions.form.amount")}
+                  inputMode="decimal"
+                  placeholder="0"
+                  required
+                  data-autofocus
+                  error={errors.amount?.message}
+                  value={field.value}
+                  onChange={(event) => {
+                    field.onChange(sanitizeBudgetTypingValue(event.currentTarget.value));
+                  }}
+                  onBlur={(event) => {
+                    const parsed = parseBudgetAmount(event.currentTarget.value);
+                    field.onChange(parsed === null ? "" : formatBudgetAmount(parsed));
+                  }}
+                  leftSection={
+                    <Text size="xs" c="dimmed" fw={700}>
+                      $
+                    </Text>
+                  }
+                  leftSectionWidth={24}
+                  styles={{ input: { textAlign: "right", fontVariantNumeric: "tabular-nums" } }}
+                />
+              )}
+            />
+          </Group>
 
           <Controller
             name="transactionDate"
@@ -247,57 +289,76 @@ export function TransferModal({
             )}
           />
 
-          <Button
-            variant="subtle"
-            size="xs"
-            onClick={() => setShowOptional(!showOptional)}
-            fullWidth={false}
-          >
-            {t("transactions.form.optionalFields")}
-          </Button>
+          <Paper withBorder radius="md" p="sm">
+            <Stack gap="xs">
+              <Text size="xs" c="dimmed" fw={600}>
+                {t("transactions.form.optionalFields")}
+              </Text>
 
-          {showOptional ? (
-            <Stack gap="md">
-              <Controller
-                name="effectiveDate"
-                control={control}
-                render={({ field }) => (
-                  <TextInput
-                    type="date"
-                    label={t("transactions.form.effectiveDate")}
-                    {...field}
-                  />
-                )}
-              />
+              <Button
+                variant="subtle"
+                size="xs"
+                onClick={() => setShowOptional(!showOptional)}
+                fullWidth={false}
+              >
+                {t("transactions.form.optionalFields")}
+              </Button>
 
-              <Controller
-                name="description"
-                control={control}
-                render={({ field }) => (
-                  <TextInput
-                    label={t("transactions.form.description")}
-                    placeholder={t("transactions.form.descriptionPlaceholder")}
-                    {...field}
+              {showOptional ? (
+                <Stack gap="md">
+                  <Controller
+                    name="effectiveDate"
+                    control={control}
+                    render={({ field }) => (
+                      <TextInput
+                        type="date"
+                        label={t("transactions.form.effectiveDate")}
+                        {...field}
+                      />
+                    )}
                   />
-                )}
-              />
 
-              <Controller
-                name="notes"
-                control={control}
-                render={({ field }) => (
-                  <Textarea
-                    label={t("transactions.form.notes")}
-                    placeholder={t("transactions.form.notesPlaceholder")}
-                    {...field}
+                  <Controller
+                    name="description"
+                    control={control}
+                    render={({ field }) => (
+                      <TextInput
+                        label={t("transactions.form.description")}
+                        placeholder={t("transactions.form.descriptionPlaceholder")}
+                        {...field}
+                      />
+                    )}
                   />
-                )}
-              />
+
+                  <Controller
+                    name="notes"
+                    control={control}
+                    render={({ field }) => (
+                      <Textarea
+                        label={t("transactions.form.notes")}
+                        placeholder={t("transactions.form.notesPlaceholder")}
+                        minRows={2}
+                        autosize
+                        {...field}
+                      />
+                    )}
+                  />
+                </Stack>
+              ) : null}
             </Stack>
-          ) : null}
+          </Paper>
 
-          <Group justify="flex-end" mt="xl">
-            <Button variant="subtle" onClick={onClose} disabled={isSubmitting}>
+          <Group justify="flex-end" mt="sm">
+            <Button
+              type="button"
+              variant="light"
+              color="gray"
+              onClick={() => {
+                setShowOptional(false);
+                onClose();
+              }}
+              disabled={isSubmitting}
+            >
               {t("common.actions.cancel")}
             </Button>
             <Button type="submit" loading={isSubmitting} disabled={!isValid}>
