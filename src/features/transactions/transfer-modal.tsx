@@ -80,7 +80,6 @@ export function TransferModal({
   const { supabase, workspace, user } = useWorkspace();
   const { t } = useI18n();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showOptional, setShowOptional] = useState(false);
 
   const transferCategories = useMemo(
     () => categories.filter((c) => c.type === "transfer" && c.is_active),
@@ -178,7 +177,6 @@ export function TransferModal({
     });
 
     reset(toTransferDefaults(transferCategories));
-    setShowOptional(false);
     onSuccess();
     onClose();
   };
@@ -295,56 +293,45 @@ export function TransferModal({
                 {t("transactions.form.optionalFields")}
               </Text>
 
-              <Button
-                variant="subtle"
-                size="xs"
-                onClick={() => setShowOptional(!showOptional)}
-                fullWidth={false}
-              >
-                {t("transactions.form.optionalFields")}
-              </Button>
+              <Stack gap="md">
+                <Controller
+                  name="effectiveDate"
+                  control={control}
+                  render={({ field }) => (
+                    <TextInput
+                      type="date"
+                      label={t("transactions.form.effectiveDate")}
+                      {...field}
+                    />
+                  )}
+                />
 
-              {showOptional ? (
-                <Stack gap="md">
-                  <Controller
-                    name="effectiveDate"
-                    control={control}
-                    render={({ field }) => (
-                      <TextInput
-                        type="date"
-                        label={t("transactions.form.effectiveDate")}
-                        {...field}
-                      />
-                    )}
-                  />
+                <Controller
+                  name="description"
+                  control={control}
+                  render={({ field }) => (
+                    <TextInput
+                      label={t("transactions.form.description")}
+                      placeholder={t("transactions.form.descriptionPlaceholder")}
+                      {...field}
+                    />
+                  )}
+                />
 
-                  <Controller
-                    name="description"
-                    control={control}
-                    render={({ field }) => (
-                      <TextInput
-                        label={t("transactions.form.description")}
-                        placeholder={t("transactions.form.descriptionPlaceholder")}
-                        {...field}
-                      />
-                    )}
-                  />
-
-                  <Controller
-                    name="notes"
-                    control={control}
-                    render={({ field }) => (
-                      <Textarea
-                        label={t("transactions.form.notes")}
-                        placeholder={t("transactions.form.notesPlaceholder")}
-                        minRows={2}
-                        autosize
-                        {...field}
-                      />
-                    )}
-                  />
-                </Stack>
-              ) : null}
+                <Controller
+                  name="notes"
+                  control={control}
+                  render={({ field }) => (
+                    <Textarea
+                      label={t("transactions.form.notes")}
+                      placeholder={t("transactions.form.notesPlaceholder")}
+                      minRows={2}
+                      autosize
+                      {...field}
+                    />
+                  )}
+                />
+              </Stack>
             </Stack>
           </Paper>
 
@@ -353,10 +340,7 @@ export function TransferModal({
               type="button"
               variant="light"
               color="gray"
-              onClick={() => {
-                setShowOptional(false);
-                onClose();
-              }}
+              onClick={onClose}
               disabled={isSubmitting}
             >
               {t("common.actions.cancel")}
