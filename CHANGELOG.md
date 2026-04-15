@@ -1,4 +1,49 @@
-# CHANGELOG
+## [1.1.0] - 2026-04-15
+
+### Resumen
+Primera evolución funcional post v1.0.0 enfocada en mejorar la consistencia financiera del sistema y corregir un problema conceptual clave: la duplicación de gastos al pagar tarjetas de crédito.
+
+### Nuevas funcionalidades
+- **Transferencias entre cuentas**:
+  - Nuevo tipo de movimiento interno (`transfer`)
+  - Permite mover dinero entre medios de pago sin afectar el presupuesto
+  - Implementación basada en doble registro (in/out) con `transfer_group_id`
+
+- **Pago de tarjetas correctamente modelado**:
+  - Las transferencias hacia cuentas de tipo `credit_card` se presentan como "Pago de tarjeta"
+  - Se elimina la duplicación de gasto en el sistema
+
+### Mejoras
+- **Separación conceptual sólida**:
+  - Presupuesto = consumo real
+  - Transferencias = movimiento interno
+
+- **Cálculo de balances mejorado**:
+  - Las transferencias ahora impactan correctamente en los balances de cuentas
+
+- **Queries blindadas**:
+  - Exclusión sistemática de `transfer` en:
+    - dashboard
+    - insights
+    - budget
+    - KPIs
+
+- **UI/UX refinada**:
+  - Nuevo color semántico para transferencias (Mantine Yellow)
+  - Mejor claridad en la representación de movimientos
+
+### Cambios técnicos
+- Extensión de `transactions` con:
+  - `transfer_group_id`
+  - `direction` (in/out)
+- Introducción de helpers de query (`excludeTransfers`)
+- Validaciones para evitar transferencias inválidas
+
+### Notas
+- Este release mantiene compatibilidad hacia atrás
+- Sienta las bases para futuras mejoras en manejo de tarjetas y conciliación
+
+---
 
 ## [1.0.0] - 2026-04-15
 

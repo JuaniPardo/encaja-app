@@ -58,6 +58,10 @@ function getProgressVisualScale(type: TransactionType, value: number): ProgressV
       reached: transactionTypeColorCssVar("saving", 6),
       exceeded: transactionTypeColorCssVar("saving", 7),
     },
+    transfer: {
+      reached: transactionTypeColorCssVar("transfer", 6),
+      exceeded: transactionTypeColorCssVar("transfer", 7),
+    }
   };
 
   return {

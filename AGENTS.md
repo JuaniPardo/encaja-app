@@ -1,8 +1,6 @@
-<!-- BEGIN:nextjs-agent-rules -->
 # This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
-<!-- END:nextjs-agent-rules -->
 
 # Encaja App — AGENTS.md
 
@@ -155,3 +153,29 @@ Cada cambio debería dejar el proyecto:
 - más consistente
 - más alineado con los documentos
 - más cerca del MVP actual
+
+---
+
+## 14. Versionado y workflow de releases
+
+El sistema de versionado y releases del proyecto está definido en:
+
+`/docs/dev-workflow.md`
+
+Todo agente debe respetar:
+
+- versionado semántico (SemVer)
+- flujo feature → develop → main
+- reglas de branching
+- proceso de releases
+
+Reglas clave:
+
+- ❌ No modificar versiones en branches `feature/*`
+- ❌ No modificar versiones en `develop`
+- ✅ Versionar únicamente al hacer release
+- ✅ La versión siempre representa el estado de `main`
+
+Este flujo es obligatorio para mantener consistencia, trazabilidad y estabilidad del producto.
+
+---

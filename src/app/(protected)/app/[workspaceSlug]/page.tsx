@@ -34,6 +34,7 @@ import { useI18n } from "@/features/i18n/provider";
 import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
 import { transactionTypeColorCssVar } from "@/features/transactions/type-colors";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
+import { excludeTransfers } from "@/features/transactions/queries";
 import type { Database, PaymentMethodType, TransactionType } from "@/types/database";
 
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
@@ -50,7 +51,7 @@ type BudgetItemLiteRow = Pick<
 >;
 type TransactionLiteRow = Pick<
   Database["public"]["Tables"]["transactions"]["Row"],
-  "category_id" | "amount" | "transaction_date" | "effective_date" | "type" | "payment_method_id"
+  "category_id" | "amount" | "transaction_date" | "effective_date" | "type" | "payment_method_id" | "direction"
 >;
 type PaymentMethodBalanceRow = Pick<
   Database["public"]["Tables"]["payment_methods"]["Row"],
@@ -105,6 +106,7 @@ const typeOrder: Record<TransactionType, number> = {
   income: 0,
   expense: 1,
   saving: 2,
+  transfer: 3,
 };
 
 const compactSummaryTheme: Record<
@@ -125,6 +127,10 @@ const compactSummaryTheme: Record<
   saving: {
     color: transactionTypeColorCssVar("saving", 6),
     textColor: transactionTypeColorCssVar("saving", 7),
+  },
+  transfer: {
+    color: transactionTypeColorCssVar("transfer", 6),
+    textColor: transactionTypeColorCssVar("transfer", 7),
   },
 };
 
@@ -173,6 +179,18 @@ const typeTheme: Record<
       transactionTypeColorCssVar("saving", 3),
       transactionTypeColorCssVar("saving", 2),
       transactionTypeColorCssVar("saving", 1),
+    ],
+  },
+  transfer: {
+    main: transactionTypeColorCssVar("transfer", 6),
+    header: transactionTypeColorCssVar("transfer", 7),
+    palette: [
+      transactionTypeColorCssVar("transfer", 6),
+      transactionTypeColorCssVar("transfer", 5),
+      transactionTypeColorCssVar("transfer", 4),
+      transactionTypeColorCssVar("transfer", 3),
+      transactionTypeColorCssVar("transfer", 2),
+      transactionTypeColorCssVar("transfer", 1),
     ],
   },
 };
@@ -280,6 +298,7 @@ export default function DashboardPage() {
       income: mapTransactionTypeLabel("income", t, { plural: true }),
       expense: mapTransactionTypeLabel("expense", t, { plural: true }),
       saving: mapTransactionTypeLabel("saving", t, { plural: true }),
+      transfer: t("transactions.transfer"),
     }),
     [t],
   );
@@ -435,11 +454,13 @@ export default function DashboardPage() {
       `and(effective_date.is.null,transaction_date.gte.${start},transaction_date.lt.${end})`,
     ].join(",");
 
-    const transactionsResponsePromise = supabase
-      .from("transactions")
-      .select("category_id, amount, transaction_date, effective_date, type, payment_method_id")
-      .eq("workspace_id", workspace.id)
-      .or(transactionFilter);
+    const transactionsResponsePromise = excludeTransfers(
+      supabase
+        .from("transactions")
+        .select("category_id, amount, transaction_date, effective_date, type, payment_method_id")
+        .eq("workspace_id", workspace.id)
+        .or(transactionFilter)
+    );
 
     const historicalFilter = [
       `effective_date.lt.${end}`,
@@ -448,7 +469,7 @@ export default function DashboardPage() {
 
     const historicalTransactionsPromise = supabase
       .from("transactions")
-      .select("amount, type, payment_method_id, transaction_date, effective_date")
+      .select("amount, type, payment_method_id, transaction_date, effective_date, direction")
       .eq("workspace_id", workspace.id)
       .or(historicalFilter);
 
@@ -499,7 +520,18 @@ export default function DashboardPage() {
         }
 
         const parsedAmount = parseAmountValue(row.amount);
-        const signedAmount = row.type === "income" ? parsedAmount : -parsedAmount;
+        let signedAmount = 0;
+        if (row.type === "income") {
+          signedAmount = parsedAmount;
+        } else if (row.type === "expense" || row.type === "saving") {
+          signedAmount = -parsedAmount;
+        } else if (row.type === "transfer") {
+          // In a transfer, we have two records.
+          // The OUT record decreases balance, the IN record increases it.
+          // This is why we DON'T exclude transfers from historical calculation,
+          // because we need them to calculate the current balance correctly.
+          signedAmount = row.direction === "in" ? parsedAmount : -parsedAmount;
+        }
         const previousAmount = impactMap.get(row.payment_method_id) ?? 0;
         impactMap.set(row.payment_method_id, roundMoney(previousAmount + signedAmount));
       }
@@ -575,12 +607,14 @@ export default function DashboardPage() {
       income: [],
       expense: [],
       saving: [],
+      transfer: [],
     };
 
     const totalsByType: TotalsByType = {
       income: { budget: 0, real: 0, deviation: 0 },
       expense: { budget: 0, real: 0, deviation: 0 },
       saving: { budget: 0, real: 0, deviation: 0 },
+      transfer: { budget: 0, real: 0, deviation: 0 },
     };
 
     const categoryById = new Map(categories.map((category) => [category.id, category]));
@@ -672,6 +706,7 @@ export default function DashboardPage() {
       income: { total: 0, slices: [] },
       expense: { total: 0, slices: [] },
       saving: { total: 0, slices: [] },
+      transfer: { total: 0, slices: [] },
     };
 
     for (const type of Object.keys(metrics.groupedRows) as TransactionType[]) {
