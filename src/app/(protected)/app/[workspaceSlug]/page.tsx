@@ -965,7 +965,7 @@ export default function DashboardPage() {
                       fw={700}
                       c={row.monthImpact >= 0 ? "#087f5b" : "#c92a2a"}
                     >
-                      {formatSignedCurrency(row.monthImpact, currencyFormatter)}
+                      {t("dashboard.monthlyMovementLabel")}: {formatSignedCurrency(row.monthImpact, currencyFormatter)}
                     </Text>
                   </Stack>
                 </Group>

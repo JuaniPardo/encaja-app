@@ -105,8 +105,9 @@ const dictionaries = {
     dashboard: {
       financialDashboard: "Tablero financiero",
       financialMethods: "Medios financieros",
-      totalBalance: "Balance total",
-      monthImpact: "Impacto mes",
+      totalBalance: "Balance actual",
+      monthImpact: "Este mes",
+      monthlyMovementLabel: "este mes",
       activeInBalance: "{{count}} activos en balance",
       positivesCount: "{{count}} positivos",
       negativesCount: "{{count}} negativos",
@@ -1020,8 +1021,9 @@ const dictionaries = {
     dashboard: {
       financialDashboard: "Financial dashboard",
       financialMethods: "Financial methods",
-      totalBalance: "Total balance",
-      monthImpact: "Month impact",
+      totalBalance: "Current balance",
+      monthImpact: "This month",
+      monthlyMovementLabel: "this month",
       activeInBalance: "{{count}} active in balance",
       positivesCount: "{{count}} positive",
       negativesCount: "{{count}} negative",
