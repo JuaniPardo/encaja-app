@@ -446,14 +446,14 @@ const dictionaries = {
         workspace: "Workspace",
         collaboration: "Colaboración",
         links: "Vínculos",
-        personal: "Personal",
+        personal: "Feedback",
         advanced: "Avanzado",
       },
       sections: {
         personal: {
-          title: "Preferencias personales",
-          description: "Configuraciones que aplican a tu experiencia individual dentro de Encaja.",
-          scope: "Solo vos",
+          title: "Feedback",
+          description: "Tu opinión me ayuda a mejorar Encaja.",
+          scope: "Mejora continua",
         },
         workspace: {
           title: "Workspace actual",
@@ -1360,14 +1360,14 @@ const dictionaries = {
         workspace: "Workspace",
         collaboration: "Collaboration",
         links: "Links",
-        personal: "Personal",
+        personal: "Feedback",
         advanced: "Advanced",
       },
       sections: {
         personal: {
-          title: "Personal preferences",
-          description: "Settings that apply to your own experience in Encaja.",
-          scope: "Only you",
+          title: "Feedback",
+          description: "Your feedback helps me improve Encaja.",
+          scope: "Continuous improvement",
         },
         workspace: {
           title: "Current workspace",
@@ -1876,7 +1876,7 @@ function interpolate(template: string, values?: Record<string, string | number>)
     return template;
   }
 
-  return template.replace(/\{\{(\w+)\}\}/g, (_, token: string) => {
+  return template.replace(/{{(\w+)}}/g, (_, token: string) => {
     const replacement = values[token];
     if (replacement === undefined) {
       return "";

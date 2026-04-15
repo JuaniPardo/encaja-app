@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -752,7 +751,16 @@ export default function SettingsPage() {
       });
 
       if (error) {
-        throw error;
+        setIsLeavingWorkspace(false);
+        notifications.show({
+          color: "red",
+          title: t("workspaceSettings.notifications.leaveWorkspaceError"),
+          message: getErrorMessage(
+            error,
+            t("workspaceSettings.notifications.unexpectedLeaveWorkspaceError"),
+          ),
+        });
+        return;
       }
 
       notifications.show({
@@ -1548,24 +1556,6 @@ export default function SettingsPage() {
 
         <Tabs.Panel value="personal" pt="sm">
           <Stack gap="md">
-            <Paper withBorder radius="md" p="md">
-              <Stack gap="sm">
-                <Text fw={600}>{t("settings.profile.title")}</Text>
-                <Text size="sm" c="dimmed">
-                  {t("settings.profile.description")}
-                </Text>
-                <Group justify="flex-end">
-                  <Button
-                    component={Link}
-                    href={buildWorkspaceHref(workspace.slug, ROUTES.PROFILE)}
-                    variant="light"
-                  >
-                    {t("settings.profile.openButton")}
-                  </Button>
-                </Group>
-              </Stack>
-            </Paper>
-
             <Paper withBorder radius="md" p="md">
               <form onSubmit={onSubmitFeedback}>
                 <Stack gap="sm">
