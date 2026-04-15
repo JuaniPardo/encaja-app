@@ -1,3 +1,8 @@
+## [1.1.1] - 2026-04-15
+
+### Fixed
+- prevent crash in transfer modal when categories or payment methods are undefined on initial render
+
 ## [1.1.0] - 2026-04-15
 
 ### Resumen
