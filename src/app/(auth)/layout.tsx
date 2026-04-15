@@ -9,7 +9,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <Stack gap="md">
         <AuthLanguageSwitcher />
         <Stack gap={6} align="center">
-          <Image src="/logo-EnCaja.svg" alt="Encaja" width={56} height={56} priority />
+          <Image src="/logo-EnCaja.svg" alt="Encaja" width={84} height={84} priority />
         </Stack>
         {children}
       </Stack>

@@ -7,6 +7,8 @@ import "@mantine/dates/styles.css";
 import "@mantine/notifications/styles.css";
 import "./globals.css";
 
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { AppProviders } from "@/app/providers";
 import { defaultLocale, localeCookieName, normalizeLocale } from "@/features/i18n/config";
 
@@ -76,6 +78,8 @@ export default async function RootLayout({
     <html lang={initialLocale} className={`${sans.variable} ${condensed.variable}`}>
       <body>
         <AppProviders initialLocale={initialLocale}>{children}</AppProviders>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
