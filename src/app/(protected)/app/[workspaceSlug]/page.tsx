@@ -736,7 +736,7 @@ export default function DashboardPage() {
         id: row.id,
         name: row.name,
         type: row.type,
-        currentBalance: roundMoney(allTransactionsImpact.get(row.id) ?? 0),
+        currentBalance: roundMoney((row.current_balance ?? 0) + (allTransactionsImpact.get(row.id) ?? 0)),
         monthImpact: roundMoney(monthImpactByMethodId.get(row.id) ?? 0),
       }))
       .sort((a, b) => {

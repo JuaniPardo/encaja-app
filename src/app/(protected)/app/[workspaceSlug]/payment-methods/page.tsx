@@ -68,16 +68,6 @@ function roundMoney(value: number) {
   return Math.round(value * 100) / 100;
 }
 
-function buildMonthRange(year: number, month: number) {
-  const monthStart = String(month).padStart(2, "0");
-  const start = `${year}-${monthStart}-01`;
-  const nextMonth = month === 12 ? 1 : month + 1;
-  const nextYear = month === 12 ? year + 1 : year;
-  const nextMonthStart = String(nextMonth).padStart(2, "0");
-  const end = `${nextYear}-${nextMonthStart}-01`;
-  return { start, end };
-}
-
 function DotsIcon({ size = 14 }: { size?: number }) {
   return (
     <svg
@@ -205,11 +195,6 @@ export default function PaymentMethodsPage() {
 
   const loadRows = useCallback(async () => {
     setIsLoading(true);
-    const { start, end } = buildMonthRange(currentYear, currentMonth);
-    const periodFilter = [
-      `and(effective_date.gte.${start},effective_date.lt.${end})`,
-      `and(effective_date.is.null,transaction_date.gte.${start},transaction_date.lt.${end})`,
-    ].join(",");
     const [paymentMethodsResponse, settingsResponse, transactionsResponse] = await Promise.all([
       supabase
         .from("payment_methods")
@@ -225,8 +210,7 @@ export default function PaymentMethodsPage() {
         .from("transactions")
         .select("payment_method_id, amount, type, transaction_date, effective_date")
         .eq("workspace_id", workspace.id)
-        .not("payment_method_id", "is", null)
-        .or(periodFilter),
+        .not("payment_method_id", "is", null),
     ]);
 
     setIsLoading(false);
@@ -279,7 +263,7 @@ export default function PaymentMethodsPage() {
     }
 
     setRows(paymentMethodsResponse.data);
-  }, [currentMonth, currentYear, getSignedMovementAmount, supabase, t, workspace.id]);
+  }, [getSignedMovementAmount, supabase, t, workspace.id]);
 
   const showPermissionDenied = useCallback(() => {
     notifications.show({
@@ -319,10 +303,11 @@ export default function PaymentMethodsPage() {
   const computedRows = useMemo<PaymentMethodCardRow[]>(() => {
     return rows.map((row) => {
       const movementBalance = roundMoney(movementByMethodId[row.id] ?? 0);
+      const startingBalance = row.current_balance ?? 0;
 
       return {
         ...row,
-        displayedBalance: movementBalance,
+        displayedBalance: roundMoney(startingBalance + movementBalance),
       };
     });
   }, [movementByMethodId, rows]);
@@ -676,6 +661,10 @@ export default function PaymentMethodsPage() {
               error={errors.currentBalance?.message}
               {...register("currentBalance")}
             />
+
+            <Text size="xs" c="dimmed">
+              {t("paymentMethods.form.initialBalanceHint")}
+            </Text>
 
             {selectedType === "credit_card" ? (
               <Text size="xs" c="dimmed">
