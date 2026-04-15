@@ -441,11 +441,16 @@ export default function DashboardPage() {
       .eq("workspace_id", workspace.id)
       .or(transactionFilter);
 
+    const historicalFilter = [
+      `effective_date.lt.${end}`,
+      `and(effective_date.is.null,transaction_date.lt.${end})`,
+    ].join(",");
+
     const historicalTransactionsPromise = supabase
       .from("transactions")
-      .select("amount, type, payment_method_id")
+      .select("amount, type, payment_method_id, transaction_date, effective_date")
       .eq("workspace_id", workspace.id)
-      .lt("effective_date", end);
+      .or(historicalFilter);
 
     const linkedWorkspaceSummaryPromise = supabase.rpc("list_linked_workspace_summaries", {
       p_source_workspace_id: workspace.id,

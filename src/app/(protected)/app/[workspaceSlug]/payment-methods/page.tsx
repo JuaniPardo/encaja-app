@@ -168,8 +168,6 @@ export default function PaymentMethodsPage() {
   });
 
   const selectedType = useWatch({ control, name: "type" });
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth() + 1;
   const currentPeriodLabel = useMemo(() => {
     return new Intl.DateTimeFormat(intlLocale, { month: "long", year: "numeric" })
       .format(now)
@@ -341,11 +339,9 @@ export default function PaymentMethodsPage() {
     (paymentMethodId: string) =>
       buildTransactionsDrilldownHref({
         workspaceSlug: workspace.slug,
-        year: currentYear,
-        month: currentMonth,
         paymentMethodId,
       }),
-    [currentMonth, currentYear, workspace.slug],
+    [workspace.slug],
   );
 
   const onSubmit = handleSubmit(async (values) => {
