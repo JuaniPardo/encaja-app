@@ -356,22 +356,6 @@ export default function TransactionsPage() {
     return options;
   }, [selectedYear, startYear]);
 
-  const categoryOptions = useMemo(() => {
-    const currentCategoryId = editingRow?.category_id ?? null;
-
-    return categories
-      .filter(
-        (category) =>
-          category.type === formInitialValues.type && (category.is_active || category.id === currentCategoryId),
-      )
-      .sort((a, b) => sortCategories(a, b, locale))
-      .map((category) => ({
-        value: category.id,
-        label: category.is_active
-          ? category.name
-          : `${category.name} (${t("transactions.inactiveCategorySuffix")})`,
-      }));
-  }, [categories, editingRow?.category_id, locale, formInitialValues.type, t]);
 
   const categoryFilterOptions = useMemo(() => {
     const sortedCategories = [...categories].sort((a, b) => sortCategories(a, b, locale));
@@ -1402,7 +1386,7 @@ export default function TransactionsPage() {
         opened={isModalOpen}
         onClose={closeModal}
         editingRow={editingRow}
-        categoryOptions={categoryOptions}
+        categories={categories}
         paymentMethodOptions={paymentMethodOptions}
         transactionTypeSelectData={transactionTypeSelectData}
         isMobile={isMobile}

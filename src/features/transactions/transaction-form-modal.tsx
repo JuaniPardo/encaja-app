@@ -14,6 +14,7 @@ import {
   Textarea,
 } from "@mantine/core";
 import { Controller, useForm, useWatch } from "react-hook-form";
+import { useEffect, useMemo } from "react";
 
 import {
   formatBudgetAmount,
@@ -32,13 +33,14 @@ import { useI18n } from "@/features/i18n/provider";
 import type { Database, TransactionType } from "@/types/database";
 
 type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
+type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
 type QuickPaymentMethodType = "cash" | "debit_card" | "other";
 
 type TransactionFormModalProps = {
   opened: boolean;
   onClose: () => void;
   editingRow: TransactionRow | null;
-  categoryOptions: Array<{ value: string; label: string }>;
+  categories: CategoryRow[];
   paymentMethodOptions: Array<{ value: string; label: string }>;
   transactionTypeSelectData: Array<{ value: string; label: string }>;
   isMobile: boolean | undefined;
@@ -54,7 +56,7 @@ export function TransactionFormModal({
   opened,
   onClose,
   editingRow,
-  categoryOptions,
+  categories,
   paymentMethodOptions,
   transactionTypeSelectData,
   isMobile,
@@ -71,6 +73,7 @@ export function TransactionFormModal({
     register,
     handleSubmit,
     control,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<TransactionFormInputValues, unknown, TransactionFormValues>({
     resolver: zodResolver(
@@ -89,7 +92,53 @@ export function TransactionFormModal({
     defaultValues: initialValues,
   });
 
+  useEffect(() => {
+    reset(initialValues);
+  }, [initialValues, reset]);
+
   const selectedType = useWatch({ control, name: "type" });
+
+  const categoryOptions = useMemo(() => {
+    const currentCategoryId = editingRow?.category_id ?? null;
+
+    return categories
+      .filter(
+        (category) =>
+          category.type === (selectedType ?? "expense") &&
+          (category.is_active || category.id === currentCategoryId),
+      )
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((category) => ({
+        value: category.id,
+        label: category.is_active
+          ? category.name
+          : `${category.name} (${t("transactions.inactiveCategorySuffix")})`,
+      }));
+  }, [categories, editingRow?.category_id, selectedType, t]);
+
+  const selectedCategoryId = useWatch({ control, name: "categoryId" });
+
+  useEffect(() => {
+    if (!selectedCategoryId) {
+      return;
+    }
+
+    const isAvailable = categoryOptions.some((option) => option.value === selectedCategoryId);
+    if (!isAvailable) {
+      reset(
+        {
+          ...control._formValues,
+          categoryId: "",
+        },
+        {
+          keepErrors: true,
+          keepDirty: true,
+          keepTouched: true,
+        },
+      );
+    }
+  }, [categoryOptions, control._formValues, reset, selectedCategoryId]);
+
   const selectedTypeColor = transactionTypeMantineColor[selectedType ?? "expense"];
 
   const typeSegmentStyles = {
@@ -242,40 +291,40 @@ export function TransactionFormModal({
                 )}
               </Group>
 
-              {shouldShowQuickPaymentSetup ? (
-                <Text size="xs" c="dimmed">
-                  {t("transactions.quickPayment.hint")}
-                </Text>
-              ) : null}
+                {shouldShowQuickPaymentSetup ? (
+                  <Text size="xs" c="dimmed">
+                    {t("transactions.quickPayment.hint")}
+                  </Text>
+                ) : null}
 
-              <TextInput
-                label={t("transactions.form.description")}
-                placeholder={t("transactions.form.descriptionPlaceholder")}
-                error={errors.description?.message}
-                {...register("description")}
-              />
+                <TextInput
+                  label={t("transactions.form.description")}
+                  placeholder={t("transactions.form.descriptionPlaceholder")}
+                  error={errors.description?.message}
+                  {...register("description")}
+                />
 
-              <Textarea
-                label={t("transactions.form.notes")}
-                placeholder={t("transactions.form.notesPlaceholder")}
-                minRows={2}
-                autosize
-                error={errors.notes?.message}
-                {...register("notes")}
-              />
-            </Stack>
-          </Paper>
+                <Textarea
+                  label={t("transactions.form.notes")}
+                  placeholder={t("transactions.form.notesPlaceholder")}
+                  minRows={2}
+                  autosize
+                  error={errors.notes?.message}
+                  {...register("notes")}
+                />
+              </Stack>
+            </Paper>
 
-          <Group justify="flex-end" mt="sm">
-            <Button type="button" variant="light" color="gray" onClick={onClose}>
-              {t("common.actions.cancel")}
-            </Button>
-            <Button type="submit" loading={isSubmitting}>
-              {editingRow ? t("common.actions.save") : t("common.actions.create")}
-            </Button>
-          </Group>
-        </Stack>
-      </form>
-    </Modal>
-  );
+            <Group justify="flex-end" mt="sm">
+              <Button type="button" variant="light" color="gray" onClick={onClose}>
+                {t("common.actions.cancel")}
+              </Button>
+              <Button type="submit" loading={isSubmitting}>
+                {editingRow ? t("common.actions.save") : t("common.actions.create")}
+              </Button>
+            </Group>
+          </Stack>
+        </form>
+      </Modal>
+    );
 }
