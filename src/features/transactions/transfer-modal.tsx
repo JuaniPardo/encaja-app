@@ -297,7 +297,7 @@ export function TransferModal({
 
           <Group justify="flex-end" mt="xl">
             <Button variant="subtle" onClick={onClose} disabled={isSubmitting}>
-              {t("common.cancel")}
+              {t("actions.cancel")}
             </Button>
             <Button type="submit" loading={isSubmitting} disabled={!isValid}>
               {t("transactions.transfer")}
