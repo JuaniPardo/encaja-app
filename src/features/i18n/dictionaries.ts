@@ -444,7 +444,7 @@ const dictionaries = {
       },
     },
     workspaceSettings: {
-      title: "Settings de la Caja workspace",
+      title: "Settings de la Caja",
       subtitle: "Estás en {{workspaceName}} con rol {{role}}.",
       notApplicable: "N/A",
       tabs: {
@@ -533,7 +533,7 @@ const dictionaries = {
       members: {
         title: "Miembros de la Caja",
         count: "{{count}} miembro{{pluralSuffix}}",
-        description: "Invitá personas por email para colaborar en este workspace compartido.",
+        description: "Invitá personas por email para colaborar en esta Caja compartida.",
         noAdminTitle: "Sin permisos de administración",
         noAdminMessage:
           "Podés ver miembros, pero solo el owner puede invitar o remover acceso.",
@@ -590,7 +590,7 @@ const dictionaries = {
       dangerZone: {
         title: "Zona de peligro",
         description:
-          "Podés eliminar este workspace si tenés otro disponible. Esta acción es irreversible.",
+          "Podés eliminar esta Caja si tenés otra disponible. Esta acción es irreversible.",
         ownerOnlyMessage: "Solo el owner puede eliminar Cajas.",
         leaveWorkspaceDescription: "Como miembro, podés abandonar esta Caja si ya no necesitás acceder a él.",
         leaveWorkspaceButton: "Abandonar Caja",
