@@ -506,7 +506,7 @@ const dictionaries = {
         deferredIncomeDay: "Día de diferimiento",
         currency: "Moneda",
         currencyDescription:
-          "Moneda única y obligatoria del workspace. Todas las transacciones se registran en esta moneda.",
+          "Moneda única y obligatoria de la Caja. Todas las transacciones se registran en esta moneda.",
         showCents: "Mostrar centavos en la UI",
         showCentsDescription:
           "Solo cambia la visualización. Los valores reales y cálculos internos mantienen precisión completa.",
