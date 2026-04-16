@@ -29,6 +29,9 @@ const dictionaries = {
           expenses: "Gastos",
           savings: "Ahorro",
         },
+        workspaceLinkVisibilityMode: {
+          summary_only: "Resumen",
+        },
         paymentMethodType: {
           cash: "Efectivo",
           debit_card: "Tarjeta débito",
@@ -1009,6 +1012,11 @@ const dictionaries = {
           invalidTargetWorkspace: "Select a valid target workspace.",
           minNameLength: "Name must be at least 2 characters.",
           maxNameLength: "Name must be at most 80 characters.",
+        },
+      },
+      domain: {
+        workspaceLinkVisibilityMode: {
+          summary_only: "Summary only",
         },
       },
     },

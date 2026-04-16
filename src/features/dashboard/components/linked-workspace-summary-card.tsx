@@ -1,5 +1,6 @@
 import { Group, Paper, Stack, Text } from "@mantine/core";
 
+import { mapWorkspaceVisibilityModeLabel } from "@/features/i18n/formatting";
 import type { PaymentMethodType } from "@/types/database";
 
 type LinkedWorkspaceBalanceGroup = {
@@ -67,7 +68,7 @@ export function LinkedWorkspaceSummaryCard({
                     {group.workspaceName}
                   </Text>
                   <Text size="xs" c="#667085">
-                    {group.currencyCode} · {group.visibilityMode}
+                    {group.currencyCode} · {mapWorkspaceVisibilityModeLabel(group.visibilityMode, t)}
                   </Text>
                 </Stack>
 

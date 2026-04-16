@@ -1,5 +1,5 @@
 import type { Locale } from "@/features/i18n/config";
-import type { PaymentMethodType, TransactionType } from "@/types/database";
+import type { PaymentMethodType, TransactionType, WorkspaceLinkVisibilityMode } from "@/types/database";
 
 export function buildMonthOptions(intlLocale: string) {
   const formatter = new Intl.DateTimeFormat(intlLocale, { month: "long" });
@@ -50,4 +50,17 @@ export function mapPaymentMethodTypeLabel(
   t: (key: string, fallback?: string) => string,
 ) {
   return t(`common.domain.paymentMethodType.${type}`);
+}
+
+export function mapWorkspaceVisibilityModeLabel(
+  mode: string,
+  t: (key: string, fallback?: string) => string,
+) {
+  const normalizedMode = mode.toLowerCase() as WorkspaceLinkVisibilityMode;
+
+  if (normalizedMode === "summary_only") {
+    return t("common.domain.workspaceLinkVisibilityMode.summary_only", "Summary only");
+  }
+
+  return mode;
 }
