@@ -1,3 +1,8 @@
+## [1.1.3] - 2026-04-16
+
+### Changed
+- Changed linked workspace to show accounts balance summary
+
 ## [1.1.2] - 2026-04-15
 
 ### Fixed
