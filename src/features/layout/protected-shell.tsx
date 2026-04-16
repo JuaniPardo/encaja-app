@@ -294,7 +294,7 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
         }}
       >
           <Group h="100%" px={isMobile ? "xs" : "md"} justify="space-between">
-            <Group>
+            <Group gap="xs" wrap="nowrap">
               <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
               <ActionIcon
                 variant="light"
@@ -310,37 +310,35 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
                   {desktopCollapsed ? "›" : "‹"}
                 </Text>
               </ActionIcon>
-              <Box>
-                <Group gap={8} wrap="nowrap">
-                  <Image src="/logo-EnCaja.svg" alt="Encaja" width={isMobile ? 26 : 30} height={isMobile ? 26 : 30} />
-                  <Title order={isMobile ? 4 : 3}>Encaja</Title>
-                </Group>
-                {workspaces.length > 1 ? (
-                  <NativeSelect
-                    value={workspace.slug}
-                    onChange={(event) => {
-                      const nextSlug = event.currentTarget.value;
-                      if (nextSlug && nextSlug !== workspace.slug) {
-                        switchWorkspace(nextSlug, sectionPath);
-                      }
-                    }}
-                    data={workspaceSelectData}
-                    size="xs"
-                    maw={220}
-                  />
-                ) : (
-                  <Text size="xs" c="dimmed">
-                    {workspace.name}
-                  </Text>
-                )}
-              </Box>
+              <Group gap={8} wrap="nowrap">
+                <Image src="/logo-EnCaja.svg" alt="Encaja" width={isMobile ? 26 : 30} height={isMobile ? 26 : 30} />
+                <Title order={isMobile ? 4 : 3}>Encaja</Title>
+              </Group>
             </Group>
 
-            <Group gap="sm" visibleFrom="sm">
-              <Text size="sm" c="dimmed">
+            <Stack gap={2} align="flex-end" style={{ minWidth: 0 }}>
+              {workspaces.length > 1 ? (
+                <NativeSelect
+                  value={workspace.slug}
+                  onChange={(event) => {
+                    const nextSlug = event.currentTarget.value;
+                    if (nextSlug && nextSlug !== workspace.slug) {
+                      switchWorkspace(nextSlug, sectionPath);
+                    }
+                  }}
+                  data={workspaceSelectData}
+                  size="xs"
+                  maw={isMobile ? 160 : 220}
+                />
+              ) : (
+                <Text size="xs" c="dimmed" truncate maw={isMobile ? 160 : 220}>
+                  {workspace.name}
+                </Text>
+              )}
+              <Text size="sm" c="dimmed" truncate maw={isMobile ? 160 : 220}>
                 {user.email}
               </Text>
-            </Group>
+            </Stack>
           </Group>
       </AppShell.Header>
 
