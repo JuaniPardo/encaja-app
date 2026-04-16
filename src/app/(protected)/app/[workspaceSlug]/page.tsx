@@ -43,8 +43,8 @@ type WorkspaceSettingsLiteRow = Pick<
   Database["public"]["Tables"]["workspace_settings"]["Row"],
   "start_year" | "currency_code" | "show_cents"
 >;
-type LinkedWorkspaceSummaryRow =
-  Database["public"]["Functions"]["list_linked_workspace_summaries"]["Returns"][number];
+type LinkedWorkspacePaymentMethodBalanceRow =
+  Database["public"]["Functions"]["list_linked_workspace_payment_method_balances"]["Returns"][number];
 type BudgetPeriodIdRow = Pick<Database["public"]["Tables"]["budget_periods"]["Row"], "id">;
 type BudgetItemLiteRow = Pick<
   Database["public"]["Tables"]["budget_items"]["Row"],
@@ -322,8 +322,8 @@ export default function DashboardPage() {
   const [transactionRows, setTransactionRows] = useState<TransactionLiteRow[]>([]);
   const [allTransactionsImpact, setAllTransactionsImpact] = useState<Map<string, number>>(new Map());
   const [paymentMethodRows, setPaymentMethodRows] = useState<PaymentMethodBalanceRow[]>([]);
-  const [linkedWorkspaceSummaries, setLinkedWorkspaceSummaries] = useState<
-    LinkedWorkspaceSummaryRow[]
+  const [linkedWorkspacePaymentMethodBalances, setLinkedWorkspacePaymentMethodBalances] = useState<
+    LinkedWorkspacePaymentMethodBalanceRow[]
   >([]);
   const [startYear, setStartYear] = useState(now.getFullYear());
   const [currencyCode, setCurrencyCode] = useState("ARS");
@@ -476,11 +476,12 @@ export default function DashboardPage() {
       .eq("workspace_id", workspace.id)
       .or(historicalFilter);
 
-    const linkedWorkspaceSummaryPromise = supabase.rpc("list_linked_workspace_summaries", {
-      p_source_workspace_id: workspace.id,
-      p_year: selectedYear,
-      p_month: selectedMonth,
-    });
+    const linkedWorkspaceSummaryPromise = supabase.rpc(
+      "list_linked_workspace_payment_method_balances",
+      {
+        p_source_workspace_id: workspace.id,
+      },
+    );
 
     const [
       periodResponse,
@@ -547,10 +548,10 @@ export default function DashboardPage() {
         title: t("dashboard.notifications.loadExternalSummariesError"),
         message: linkedWorkspaceSummaryResponse.error.message,
       });
-      setLinkedWorkspaceSummaries([]);
+      setLinkedWorkspacePaymentMethodBalances([]);
     } else {
-      setLinkedWorkspaceSummaries(
-        (linkedWorkspaceSummaryResponse.data ?? []) as LinkedWorkspaceSummaryRow[],
+      setLinkedWorkspacePaymentMethodBalances(
+        (linkedWorkspaceSummaryResponse.data ?? []) as LinkedWorkspacePaymentMethodBalanceRow[],
       );
     }
 
@@ -810,50 +811,84 @@ export default function DashboardPage() {
     };
   }, [allTransactionsImpact, locale, paymentMethodRows, transactionRows]);
 
-  const normalizedLinkedWorkspaceSummaries = useMemo(() => {
-    return linkedWorkspaceSummaries.map((row) => {
-      const incomeTotal = roundMoney(parseAmountValue(row.income_total));
-      const expenseTotal = roundMoney(parseAmountValue(row.expense_total));
-      const savingTotal = roundMoney(parseAmountValue(row.saving_total));
-      const balanceTotal = roundMoney(parseAmountValue(row.balance_total));
+  const normalizedLinkedWorkspacePaymentMethodBalances = useMemo(() => {
+    return linkedWorkspacePaymentMethodBalances.map((row) => {
+      const paymentMethodBalance = roundMoney(parseAmountValue(row.payment_method_balance));
+      const workspaceTotalBalance = roundMoney(parseAmountValue(row.workspace_total_balance));
 
       return {
         ...row,
-        incomeTotal,
-        expenseTotal,
-        savingTotal,
-        balanceTotal,
+        paymentMethodBalance,
+        workspaceTotalBalance,
       };
     });
-  }, [linkedWorkspaceSummaries]);
+  }, [linkedWorkspacePaymentMethodBalances]);
 
-  const linkedWorkspaceSummariesByCurrency = useMemo(() => {
-    const summariesByCurrency = new Map<string, typeof normalizedLinkedWorkspaceSummaries>();
-
-    for (const row of normalizedLinkedWorkspaceSummaries) {
-      const currencyKey = (row.target_currency_code ?? "N/A").toUpperCase();
-      const existingRows = summariesByCurrency.get(currencyKey);
-      if (existingRows) {
-        existingRows.push(row);
-      } else {
-        summariesByCurrency.set(currencyKey, [row]);
+  const linkedWorkspaceBalanceGroups = useMemo(() => {
+    const groupsByWorkspaceId = new Map<
+      string,
+      {
+        linkId: string;
+        workspaceId: string;
+        workspaceName: string;
+        currencyCode: string;
+        visibilityMode: string;
+        totalBalance: number;
+        paymentMethods: Array<{
+          id: string;
+          name: string;
+          type: PaymentMethodType;
+          balance: number;
+        }>;
       }
+    >();
+
+    for (const row of normalizedLinkedWorkspacePaymentMethodBalances) {
+      const workspaceId = row.target_workspace_id;
+      const existingGroup = groupsByWorkspaceId.get(workspaceId);
+
+      if (existingGroup) {
+        existingGroup.paymentMethods.push({
+          id: row.payment_method_id,
+          name: row.payment_method_name,
+          type: row.payment_method_type as PaymentMethodType,
+          balance: row.paymentMethodBalance,
+        });
+        continue;
+      }
+
+      groupsByWorkspaceId.set(workspaceId, {
+        linkId: row.link_id,
+        workspaceId,
+        workspaceName: row.target_workspace_name,
+        currencyCode: (row.target_currency_code ?? "N/A").toUpperCase(),
+        visibilityMode: row.visibility_mode,
+        totalBalance: row.workspaceTotalBalance,
+        paymentMethods: [
+          {
+            id: row.payment_method_id,
+            name: row.payment_method_name,
+            type: row.payment_method_type as PaymentMethodType,
+            balance: row.paymentMethodBalance,
+          },
+        ],
+      });
     }
 
-    return Array.from(summariesByCurrency.entries())
-      .sort(([currencyA], [currencyB]) => currencyA.localeCompare(currencyB, intlLocale))
-      .map(([currencyCode, rows]) => ({
-        currencyCode,
-        rows: [...rows].sort((a, b) =>
-          localeCompareByName(a.target_workspace_name, b.target_workspace_name, locale),
+    return Array.from(groupsByWorkspaceId.values())
+      .map((group) => ({
+        ...group,
+        paymentMethods: [...group.paymentMethods].sort((a, b) =>
+          localeCompareByName(a.name, b.name, locale),
         ),
-      }));
-  }, [intlLocale, locale, normalizedLinkedWorkspaceSummaries]);
+      }))
+      .sort((a, b) => localeCompareByName(a.workspaceName, b.workspaceName, locale));
+  }, [locale, normalizedLinkedWorkspacePaymentMethodBalances]);
 
   const linkedWorkspaceCurrencyFormatters = useMemo(() => {
     const formattersByCode = new Map<string, Intl.NumberFormat>();
 
-    for (const group of linkedWorkspaceSummariesByCurrency) {
+    for (const group of linkedWorkspaceBalanceGroups) {
       formattersByCode.set(
         group.currencyCode,
         buildSafeCurrencyFormatter(intlLocale, group.currencyCode, showCents, currencyFormatter),
@@ -861,11 +896,11 @@ export default function DashboardPage() {
     }
 
     return formattersByCode;
-  }, [currencyFormatter, intlLocale, linkedWorkspaceSummariesByCurrency, showCents]);
+  }, [currencyFormatter, intlLocale, linkedWorkspaceBalanceGroups, showCents]);
 
   const shouldShowLinkedWorkspaceSummary = useMemo(() => {
-    return normalizedLinkedWorkspaceSummaries.length > 0;
-  }, [normalizedLinkedWorkspaceSummaries]);
+    return linkedWorkspaceBalanceGroups.length > 0;
+  }, [linkedWorkspaceBalanceGroups]);
 
   const selectedPeriodLabel = `${monthLabelFromOptions(
     selectedMonth,
@@ -1276,9 +1311,7 @@ export default function DashboardPage() {
       {shouldShowLinkedWorkspaceSummary ? (
         <LinkedWorkspaceSummaryCard
           isMobile={isMobile}
-          currencyFormatter={currencyFormatter}
-          normalizedLinkedWorkspaceSummaries={normalizedLinkedWorkspaceSummaries}
-          linkedWorkspaceSummariesByCurrency={linkedWorkspaceSummariesByCurrency}
+          linkedWorkspaceBalanceGroups={linkedWorkspaceBalanceGroups}
           linkedWorkspaceCurrencyFormatters={linkedWorkspaceCurrencyFormatters}
           t={t}
         />

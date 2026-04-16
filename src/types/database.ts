@@ -508,6 +508,23 @@ export interface Database {
           balance_total: number;
         }[];
       };
+      list_linked_workspace_payment_method_balances: {
+        Args: {
+          p_source_workspace_id: string;
+        };
+        Returns: {
+          link_id: string;
+          target_workspace_id: string;
+          target_workspace_name: string;
+          target_currency_code: string | null;
+          visibility_mode: string;
+          payment_method_id: string;
+          payment_method_name: string;
+          payment_method_type: PaymentMethodType;
+          payment_method_balance: number;
+          workspace_total_balance: number;
+        }[];
+      };
       list_workspace_links: {
         Args: {
           p_source_workspace_id: string;
