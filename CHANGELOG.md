@@ -1,3 +1,8 @@
+## [1.1.2] - 2026-04-15
+
+### Fixed
+exclude `transfer` type from dashboard summaries and charts to avoid misleading aggregates (internal movements have no net impact)
+
 ## [1.1.1] - 2026-04-15
 
 ### Fixed
