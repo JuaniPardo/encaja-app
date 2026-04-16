@@ -1,3 +1,9 @@
+## [1.1.4] - 2026-04-16
+
+### Changed
+- Moved `workspace` selector to right side of header
+- Changed workspace naming in Spanish to "Caja" to match branding
+
 ## [1.1.3] - 2026-04-16
 
 ### Changed
