@@ -187,7 +187,7 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
   const [desktopCollapsed, setDesktopCollapsed] = useState(false);
   const isMobile = useMediaQuery("(max-width: 47.99em)");
   const { t } = useI18n();
-  const { workspace, workspaces, user, switchWorkspace, signOut } = useWorkspace();
+  const { workspace, workspaces, switchWorkspace, signOut } = useWorkspace();
   const sectionPath = getWorkspaceScopedSectionPath(pathname ?? "");
   const pathWithoutWorkspace = stripWorkspaceSlugFromPathname(pathname ?? "/app");
   const workspaceSelectData = useMemo(
@@ -316,7 +316,7 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
               </Group>
             </Group>
 
-            <Stack gap={2} align="flex-end" style={{ minWidth: 0 }}>
+            <Box style={{ minWidth: 0 }}>
               {workspaces.length > 1 ? (
                 <NativeSelect
                   value={workspace.slug}
@@ -335,10 +335,7 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
                   {workspace.name}
                 </Text>
               )}
-              <Text size="sm" c="dimmed" truncate maw={isMobile ? 160 : 220}>
-                {user.email}
-              </Text>
-            </Stack>
+            </Box>
           </Group>
       </AppShell.Header>
 
