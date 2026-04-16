@@ -109,6 +109,8 @@ const typeOrder: Record<TransactionType, number> = {
   transfer: 3,
 };
 
+const dashboardVisibleTypes: TransactionType[] = ["income", "expense", "saving"];
+
 const compactSummaryTheme: Record<
   TransactionType,
   {
@@ -747,7 +749,7 @@ export default function DashboardPage() {
   }, [metrics.groupedRows, t]);
 
   const summaryRows = useMemo(() => {
-    return (Object.keys(metrics.groupedRows) as TransactionType[]).map((type) => ({
+    return dashboardVisibleTypes.map((type) => ({
       type,
       rows: metrics.groupedRows[type],
     }));
@@ -1192,7 +1194,7 @@ export default function DashboardPage() {
           }}
         >
           <SimpleGrid cols={3} spacing={8}>
-            {(Object.keys(compactSummaryTheme) as TransactionType[]).map((type) => {
+            {dashboardVisibleTypes.map((type) => {
               const realValue = roundMoney(Math.max(0, metrics.totalsByType[type].real));
               const budgetValue = roundMoney(Math.max(0, metrics.totalsByType[type].budget));
               const theme = compactSummaryTheme[type];
@@ -1571,7 +1573,7 @@ export default function DashboardPage() {
             </Text>
 
             <SimpleGrid cols={distributionColumns} spacing={isMobile ? 6 : "xs"}>
-              {(Object.keys(typeLabels) as TransactionType[]).map((type) => {
+              {dashboardVisibleTypes.map((type) => {
                 const donut = donutData[type];
                 const hasData = donut.slices.length > 0;
 
