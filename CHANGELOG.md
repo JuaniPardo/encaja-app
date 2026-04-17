@@ -1,3 +1,14 @@
+## [1.1.5] - 2026-04-17
+
+### Added
+- Added onboarding CTA block in dashboard for workspaces with low initial activity.
+- Added global feedback entrypoint in header with modal form.
+
+### Changed
+- Reorganized Settings into two top-level tabs (`Workspace` and `Cuenta/Account`).
+- Unified workspace actions inside `Workspace` (General, Members, Connections, Danger zone) to reduce navigation friction.
+- Moved feedback out of Settings primary navigation while keeping secondary access in Settings.
+
 ## [1.1.4] - 2026-04-16
 
 ### Changed
