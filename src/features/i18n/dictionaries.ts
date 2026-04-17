@@ -157,10 +157,18 @@ const dictionaries = {
       otherCategories: "Otras categorías",
       realBudgetCompact: "Real {{real}} · Presup {{budget}}",
       realBudgetFull: "Real: {{real}} · Presup: {{budget}}",
+      gettingStarted: {
+        title: "Empezá a configurar tu caja",
+        description:
+          "Configurá tus cuentas y registrá tus primeros movimientos para empezar a ver tu balance con contexto real.",
+        primaryCta: "Crear mi primera cuenta",
+        secondaryCta: "Ver guía",
+      },
       notifications: {
         loadCategoriesError: "No pudimos cargar categorías",
         loadSettingsError: "No pudimos cargar settings",
         loadFinancialMethodsError: "No pudimos cargar medios financieros",
+        loadOnboardingSignalsError: "No pudimos cargar el estado inicial del dashboard",
         loadPeriodTransactionsError: "No pudimos cargar transacciones del período",
         loadExternalSummariesError: "No pudimos cargar resúmenes externos",
         loadBudgetPeriodError: "No pudimos cargar el período presupuestario",
@@ -1087,10 +1095,18 @@ const dictionaries = {
       otherCategories: "Other categories",
       realBudgetCompact: "Actual {{real}} · Budget {{budget}}",
       realBudgetFull: "Actual: {{real}} · Budget: {{budget}}",
+      gettingStarted: {
+        title: "Start setting up your cash flow",
+        description:
+          "Set up your accounts and log your first movements to start viewing your balance with real context.",
+        primaryCta: "Create my first account",
+        secondaryCta: "View guide",
+      },
       notifications: {
         loadCategoriesError: "We couldn't load categories",
         loadSettingsError: "We couldn't load settings",
         loadFinancialMethodsError: "We couldn't load financial methods",
+        loadOnboardingSignalsError: "We couldn't load dashboard setup status",
         loadPeriodTransactionsError: "We couldn't load period transactions",
         loadExternalSummariesError: "We couldn't load external summaries",
         loadBudgetPeriodError: "We couldn't load budget period",
