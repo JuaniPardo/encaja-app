@@ -1,12 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Alert,
   Badge,
   Button,
   Checkbox,
+  Divider,
   Group,
   LoadingOverlay,
   Modal,
@@ -16,20 +18,14 @@ import {
   Stack,
   Tabs,
   Text,
-  Textarea,
   TextInput,
   Title,
 } from "@mantine/core";
 import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { usePathname } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 
-import {
-  createFeedbackFormSchema,
-  type FeedbackFormInputValues,
-  type FeedbackFormValues,
-} from "@/features/feedback/schema";
+import { FeedbackForm } from "@/features/feedback/components/feedback-form";
 import { useI18n } from "@/features/i18n/provider";
 import {
   createSettingsFormSchema,
@@ -59,7 +55,6 @@ import {
 } from "@/features/workspace/permissions";
 import { buildWorkspaceHref } from "@/features/workspace/routing";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
-import { createFeedback } from "@/lib/feedback/create-feedback";
 import { ROUTES } from "@/lib/routes";
 import type { Database } from "@/types/database";
 
@@ -74,13 +69,10 @@ type WorkspaceSettingsCurrencyRow = Pick<
 
 const DEFAULT_CURRENCY_CODE = "ARS";
 const WORKSPACE_CURRENCY_CODES = ["ARS", "USD", "EUR", "CLP", "UYU", "BRL", "MXN", "COP", "PEN"] as const;
-type SettingsTabValue = "workspace" | "collaboration" | "links" | "personal" | "advanced";
+type SettingsTabValue = "workspace" | "account";
 const settingsTabAccentColor: Record<SettingsTabValue, string> = {
   workspace: "cyan",
-  collaboration: "blue",
-  links: "cyan",
-  personal: "indigo",
-  advanced: "red",
+  account: "indigo",
 };
 
 function getMemberDisplayName(member: WorkspaceMemberSummary) {
@@ -107,7 +99,6 @@ function getErrorMessage(error: unknown, fallbackMessage: string) {
 }
 
 export default function SettingsPage() {
-  const pathname = usePathname();
   const { t } = useI18n();
   const {
     supabase,
@@ -154,17 +145,6 @@ export default function SettingsPage() {
     () => [
       { value: "manual", label: t("workspaceSettings.savingsRateMode.manual") },
       { value: "percentage", label: t("workspaceSettings.savingsRateMode.percentage") },
-    ],
-    [t],
-  );
-
-  const feedbackTypeOptions = useMemo(
-    () => [
-      { value: "", label: t("settings.feedback.typePlaceholder") },
-      { value: "bug", label: t("settings.feedback.typeOptions.bug") },
-      { value: "suggestion", label: t("settings.feedback.typeOptions.suggestion") },
-      { value: "question", label: t("settings.feedback.typeOptions.question") },
-      { value: "other", label: t("settings.feedback.typeOptions.other") },
     ],
     [t],
   );
@@ -228,16 +208,6 @@ export default function SettingsPage() {
       createWorkspaceLinkFormSchema({
         requiredTargetWorkspace: t("common.forms.workspace.requiredTargetWorkspace"),
         invalidTargetWorkspace: t("common.forms.workspace.invalidTargetWorkspace"),
-      }),
-    [t],
-  );
-  const feedbackSchema = useMemo(
-    () =>
-      createFeedbackFormSchema({
-        requiredType: t("common.forms.feedback.requiredType"),
-        invalidType: t("common.forms.feedback.invalidType"),
-        requiredMessage: t("common.forms.feedback.requiredMessage"),
-        maxMessageLength: t("common.forms.feedback.maxMessageLength"),
       }),
     [t],
   );
@@ -314,21 +284,6 @@ export default function SettingsPage() {
     resolver: zodResolver(workspaceLinkSchema),
     defaultValues: {
       targetWorkspaceId: "",
-    },
-  });
-  const {
-    register: registerFeedback,
-    handleSubmit: handleSubmitFeedback,
-    reset: resetFeedback,
-    formState: {
-      errors: feedbackErrors,
-      isSubmitting: isFeedbackSubmitting,
-    },
-  } = useForm<FeedbackFormInputValues, unknown, FeedbackFormValues>({
-    resolver: zodResolver(feedbackSchema),
-    defaultValues: {
-      type: "",
-      message: "",
     },
   });
 
@@ -579,35 +534,6 @@ export default function SettingsPage() {
 
     setWorkspaceCurrencyCode(payload.currency_code);
     await loadWorkspaceCurrencies();
-  });
-
-  const onSubmitFeedback = handleSubmitFeedback(async (values) => {
-    try {
-      await createFeedback({
-        supabase,
-        workspaceId: workspace.id,
-        type: values.type,
-        message: values.message,
-        route: pathname ?? null,
-      });
-
-      notifications.show({
-        color: "cyan",
-        title: t("settings.feedback.successTitle"),
-        message: t("settings.feedback.successMessage"),
-      });
-
-      resetFeedback({
-        type: "",
-        message: "",
-      });
-    } catch (error) {
-      notifications.show({
-        color: "red",
-        title: t("settings.feedback.errorTitle"),
-        message: getErrorMessage(error, t("settings.feedback.errorFallbackMessage")),
-      });
-    }
   });
 
   const onSubmitWorkspace = handleSubmitWorkspace(async (values) => {
@@ -1182,7 +1108,7 @@ export default function SettingsPage() {
             borderRadius: 10,
             padding: 6,
             display: "grid",
-            gridTemplateColumns: isMobile ? "repeat(3, minmax(0, 1fr))" : "repeat(5, minmax(0, 1fr))",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
             gap: isMobile ? 4 : 6,
             boxShadow: isMobile ? "0 1px 0 rgba(0,0,0,0.04)" : undefined,
           }}
@@ -1190,113 +1116,114 @@ export default function SettingsPage() {
           <Tabs.Tab value="workspace" style={getSettingsTabStyle("workspace")}>
             {t("workspaceSettings.tabs.workspace")}
           </Tabs.Tab>
-          <Tabs.Tab value="collaboration" style={getSettingsTabStyle("collaboration")}>
-            {t("workspaceSettings.tabs.collaboration")}
-          </Tabs.Tab>
-          <Tabs.Tab value="links" style={getSettingsTabStyle("links")}>
-            {t("workspaceSettings.tabs.links")}
-          </Tabs.Tab>
-          <Tabs.Tab value="personal" style={getSettingsTabStyle("personal")}>
-            {t("workspaceSettings.tabs.personal")}
-          </Tabs.Tab>
-          <Tabs.Tab value="advanced" style={getSettingsTabStyle("advanced")}>
-            {t("workspaceSettings.tabs.advanced")}
+          <Tabs.Tab value="account" style={getSettingsTabStyle("account")}>
+            {t("workspaceSettings.tabs.account")}
           </Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="workspace" pt="sm">
           <Stack gap="md">
             <Paper withBorder radius="md" p="md">
-              <form onSubmit={onSubmitWorkspace}>
-                <Stack gap="sm">
-                  <Group justify="space-between" align="center">
-                    <Text fw={600}>{t("workspaceSettings.identity.title")}</Text>
-                    {canCreateWorkspace ? (
-                      <Button variant="subtle" size="xs" onClick={openCreateWorkspace}>
-                        {t("workspaceSettings.identity.createWorkspaceButton")}
-                      </Button>
-                    ) : null}
-                  </Group>
-                  <TextInput
-                    label={t("workspaceSettings.forms.workspaceDisplayName")}
-                    placeholder={t("workspaceSettings.forms.workspaceDisplayNamePlaceholderShort")}
-                    disabled={!canEditWorkspaceSettings}
-                    error={workspaceErrors.name?.message}
-                    {...registerWorkspace("name")}
-                  />
-                  <Group justify="flex-end">
-                    <Button
-                      type="submit"
-                      loading={isWorkspaceSubmitting}
-                      disabled={!canEditWorkspaceSettings}
-                    >
-                      {t("workspaceSettings.identity.saveNameButton")}
-                    </Button>
-                  </Group>
+              <Stack gap="md">
+                <Stack gap={2}>
+                  <Text fw={600}>{t("workspaceSettings.general.title")}</Text>
+                  <Text size="sm" c="dimmed">
+                    {t("workspaceSettings.general.description")}
+                  </Text>
                 </Stack>
-              </form>
+
+                <form onSubmit={onSubmitWorkspace}>
+                  <Stack gap="sm">
+                    <Group justify="space-between" align="center">
+                      <Text fw={500}>{t("workspaceSettings.identity.title")}</Text>
+                      {canCreateWorkspace ? (
+                        <Button variant="subtle" size="xs" onClick={openCreateWorkspace}>
+                          {t("workspaceSettings.identity.createWorkspaceButton")}
+                        </Button>
+                      ) : null}
+                    </Group>
+                    <TextInput
+                      label={t("workspaceSettings.forms.workspaceDisplayName")}
+                      placeholder={t("workspaceSettings.forms.workspaceDisplayNamePlaceholderShort")}
+                      disabled={!canEditWorkspaceSettings}
+                      error={workspaceErrors.name?.message}
+                      {...registerWorkspace("name")}
+                    />
+                    <Group justify="flex-end">
+                      <Button
+                        type="submit"
+                        loading={isWorkspaceSubmitting}
+                        disabled={!canEditWorkspaceSettings}
+                      >
+                        {t("workspaceSettings.identity.saveNameButton")}
+                      </Button>
+                    </Group>
+                  </Stack>
+                </form>
+
+                <Divider />
+
+                <form onSubmit={onSubmit}>
+                  <Stack gap="sm">
+                    <NativeSelect
+                      label={t("workspaceSettings.forms.currency")}
+                      data={workspaceCurrencyOptions}
+                      disabled={!canEditWorkspaceSettings}
+                      error={errors.currencyCode?.message}
+                      {...register("currencyCode")}
+                    />
+                    <Text size="xs" c="dimmed">
+                      {t("workspaceSettings.forms.currencyDescription")}
+                    </Text>
+
+                    <Controller
+                      control={control}
+                      name="showCents"
+                      render={({ field }) => (
+                        <Checkbox
+                          checked={field.value}
+                          disabled={!canEditWorkspaceSettings}
+                          onChange={(event) => field.onChange(event.currentTarget.checked)}
+                          label={t("workspaceSettings.forms.showCents")}
+                        />
+                      )}
+                    />
+                    <Text size="xs" c="dimmed">
+                      {t("workspaceSettings.forms.showCentsDescription")}
+                    </Text>
+
+                    <NativeSelect
+                      label={t("workspaceSettings.forms.savingsMode")}
+                      data={savingsRateModeSelectData}
+                      disabled={!canEditWorkspaceSettings}
+                      error={errors.savingsRateMode?.message}
+                      {...register("savingsRateMode")}
+                    />
+
+                    <Group justify="flex-end">
+                      <Button
+                        type="button"
+                        variant="light"
+                        color="gray"
+                        onClick={() => void loadSettings()}
+                        disabled={!canEditWorkspaceSettings}
+                      >
+                        {t("workspaceSettings.forms.revertButton")}
+                      </Button>
+                      <Button
+                        type="submit"
+                        loading={isSubmitting}
+                        disabled={!canEditWorkspaceSettings}
+                      >
+                        {t("workspaceSettings.forms.saveSettingsButton")}
+                      </Button>
+                    </Group>
+                  </Stack>
+                </form>
+              </Stack>
             </Paper>
 
             <Paper withBorder radius="md" p="md">
-              <form onSubmit={onSubmit}>
-                <Stack gap="sm">
-                  <NativeSelect
-                    label={t("workspaceSettings.forms.currency")}
-                    data={workspaceCurrencyOptions}
-                    disabled={!canEditWorkspaceSettings}
-                    error={errors.currencyCode?.message}
-                    {...register("currencyCode")}
-                  />
-                  <Text size="xs" c="dimmed">
-                    {t("workspaceSettings.forms.currencyDescription")}
-                  </Text>
-
-                  <Controller
-                    control={control}
-                    name="showCents"
-                    render={({ field }) => (
-                      <Checkbox
-                        checked={field.value}
-                        disabled={!canEditWorkspaceSettings}
-                        onChange={(event) => field.onChange(event.currentTarget.checked)}
-                        label={t("workspaceSettings.forms.showCents")}
-                      />
-                    )}
-                  />
-                  <Text size="xs" c="dimmed">
-                    {t("workspaceSettings.forms.showCentsDescription")}
-                  </Text>
-
-                  <NativeSelect
-                    label={t("workspaceSettings.forms.savingsMode")}
-                    data={savingsRateModeSelectData}
-                    disabled={!canEditWorkspaceSettings}
-                    error={errors.savingsRateMode?.message}
-                    {...register("savingsRateMode")}
-                  />
-
-                  <Group justify="flex-end">
-                    <Button
-                      type="button"
-                      variant="light"
-                      color="gray"
-                      onClick={() => void loadSettings()}
-                      disabled={!canEditWorkspaceSettings}
-                    >
-                      {t("workspaceSettings.forms.revertButton")}
-                    </Button>
-                    <Button type="submit" loading={isSubmitting} disabled={!canEditWorkspaceSettings}>
-                      {t("workspaceSettings.forms.saveSettingsButton")}
-                    </Button>
-                  </Group>
-                </Stack>
-              </form>
-            </Paper>
-          </Stack>
-        </Tabs.Panel>
-
-        <Tabs.Panel value="collaboration" pt="sm">
-          <Paper withBorder radius="md" p="md">
             <Stack gap="sm">
               <Group justify="space-between" align="center">
                 <Text fw={600}>{t("workspaceSettings.members.title")}</Text>
@@ -1388,10 +1315,8 @@ export default function SettingsPage() {
               )}
             </Stack>
           </Paper>
-        </Tabs.Panel>
 
-        <Tabs.Panel value="links" pt="sm">
-          <Paper withBorder radius="md" p="md">
+            <Paper withBorder radius="md" p="md">
             <Stack gap="sm">
               <Group justify="space-between" align="center">
                 <Text fw={600}>{t("workspaceSettings.workspaceLinks.title")}</Text>
@@ -1552,51 +1477,13 @@ export default function SettingsPage() {
               )}
             </Stack>
           </Paper>
-        </Tabs.Panel>
 
-        <Tabs.Panel value="personal" pt="sm">
-          <Stack gap="md">
-            <Paper withBorder radius="md" p="md">
-              <form onSubmit={onSubmitFeedback}>
-                <Stack gap="sm">
-                  <Text fw={600}>{t("settings.feedback.title")}</Text>
-                  <Text size="sm" c="dimmed">
-                    {t("settings.feedback.description")}
-                  </Text>
-                  <NativeSelect
-                    label={t("settings.feedback.typeLabel")}
-                    data={feedbackTypeOptions}
-                    error={feedbackErrors.type?.message}
-                    {...registerFeedback("type")}
-                  />
-                  <Textarea
-                    label={t("settings.feedback.messageLabel")}
-                    placeholder={t("settings.feedback.messagePlaceholder")}
-                    autosize
-                    minRows={4}
-                    maxRows={7}
-                    maxLength={1500}
-                    error={feedbackErrors.message?.message}
-                    {...registerFeedback("message")}
-                  />
-                  <Group justify="flex-end">
-                    <Button type="submit" loading={isFeedbackSubmitting}>
-                      {t("settings.feedback.sendButton")}
-                    </Button>
-                  </Group>
-                </Stack>
-              </form>
-            </Paper>
-          </Stack>
-        </Tabs.Panel>
-
-        <Tabs.Panel value="advanced" pt="sm">
-          <Paper
-            withBorder
-            radius="md"
-            p="md"
-            style={{ borderColor: "var(--mantine-color-red-3)" }}
-          >
+            <Paper
+              withBorder
+              radius="md"
+              p="md"
+              style={{ borderColor: "var(--mantine-color-red-3)" }}
+            >
             <Stack gap="sm">
               <Text fw={600} c="red.6">
                 {t("workspaceSettings.dangerZone.title")}
@@ -1643,6 +1530,38 @@ export default function SettingsPage() {
               </Group>
             </Stack>
           </Paper>
+          </Stack>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="account" pt="sm">
+          <Stack gap="md">
+            <Paper withBorder radius="md" p="md">
+              <Group justify="space-between" align="flex-end" wrap="wrap" gap="sm">
+                <Stack gap={2}>
+                  <Text fw={600}>{t("settings.profile.title")}</Text>
+                  <Text size="sm" c="dimmed">
+                    {t("settings.profile.description")}
+                  </Text>
+                </Stack>
+                <Button
+                  component={Link}
+                  href={buildWorkspaceHref(workspace.slug, ROUTES.PROFILE)}
+                  variant="light"
+                >
+                  {t("settings.profile.openButton")}
+                </Button>
+              </Group>
+            </Paper>
+
+            <Paper withBorder radius="md" p="md">
+              <Stack gap="sm">
+                <Text size="sm" c="dimmed">
+                  {t("settings.feedback.secondaryHint")}
+                </Text>
+                <FeedbackForm />
+              </Stack>
+            </Paper>
+          </Stack>
         </Tabs.Panel>
       </Tabs>
     </Stack>

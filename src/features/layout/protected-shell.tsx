@@ -21,6 +21,7 @@ import {
 import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import { useEffect, useMemo, useState } from "react";
 
+import { GlobalFeedbackButton } from "@/features/feedback/components/global-feedback-button";
 import { useI18n } from "@/features/i18n/provider";
 import {
   buildWorkspaceHref,
@@ -316,26 +317,29 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
               </Group>
             </Group>
 
-            <Box style={{ minWidth: 0 }}>
-              {workspaces.length > 1 ? (
-                <NativeSelect
-                  value={workspace.slug}
-                  onChange={(event) => {
-                    const nextSlug = event.currentTarget.value;
-                    if (nextSlug && nextSlug !== workspace.slug) {
-                      switchWorkspace(nextSlug, sectionPath);
-                    }
-                  }}
-                  data={workspaceSelectData}
-                  size="xs"
-                  maw={isMobile ? 160 : 220}
-                />
-              ) : (
-                <Text size="xs" c="dimmed" truncate maw={isMobile ? 160 : 220}>
-                  {workspace.name}
-                </Text>
-              )}
-            </Box>
+            <Group gap="xs" wrap="nowrap">
+              <GlobalFeedbackButton />
+              <Box style={{ minWidth: 0 }}>
+                {workspaces.length > 1 ? (
+                  <NativeSelect
+                    value={workspace.slug}
+                    onChange={(event) => {
+                      const nextSlug = event.currentTarget.value;
+                      if (nextSlug && nextSlug !== workspace.slug) {
+                        switchWorkspace(nextSlug, sectionPath);
+                      }
+                    }}
+                    data={workspaceSelectData}
+                    size="xs"
+                    maw={isMobile ? 148 : 220}
+                  />
+                ) : (
+                  <Text size="xs" c="dimmed" truncate maw={isMobile ? 148 : 220}>
+                    {workspace.name}
+                  </Text>
+                )}
+              </Box>
+            </Group>
           </Group>
       </AppShell.Header>
 

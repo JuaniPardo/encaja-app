@@ -22,8 +22,10 @@ import {
 import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 
-import { ProgressCell } from "@/features/dashboard/progress-cell";
+import { DashboardOnboardingCtaCard } from "@/features/dashboard/components/dashboard-onboarding-cta-card";
 import { LinkedWorkspaceSummaryCard } from "@/features/dashboard/components/linked-workspace-summary-card";
+import { shouldShowDashboardOnboardingCta } from "@/features/dashboard/onboarding-cta-visibility";
+import { ProgressCell } from "@/features/dashboard/progress-cell";
 import {
   buildMonthOptions,
   localeCompareByName,
@@ -33,9 +35,10 @@ import {
 } from "@/features/i18n/formatting";
 import { useI18n } from "@/features/i18n/provider";
 import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
-import { transactionTypeColorCssVar } from "@/features/transactions/type-colors";
-import { useWorkspace } from "@/features/workspace/workspace-provider";
 import { excludeTransfers } from "@/features/transactions/queries";
+import { transactionTypeColorCssVar } from "@/features/transactions/type-colors";
+import { buildWorkspaceHref } from "@/features/workspace/routing";
+import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { Database, PaymentMethodType, TransactionType } from "@/types/database";
 
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
@@ -54,6 +57,7 @@ type TransactionLiteRow = Pick<
   Database["public"]["Tables"]["transactions"]["Row"],
   "category_id" | "amount" | "transaction_date" | "effective_date" | "type" | "payment_method_id" | "direction"
 >;
+type TransactionIdRow = Pick<Database["public"]["Tables"]["transactions"]["Row"], "id">;
 type PaymentMethodBalanceRow = Pick<
   Database["public"]["Tables"]["payment_methods"]["Row"],
   "id" | "name" | "type" | "is_active" | "include_in_balance" | "current_balance"
@@ -328,6 +332,7 @@ export default function DashboardPage() {
   const [startYear, setStartYear] = useState(now.getFullYear());
   const [currencyCode, setCurrencyCode] = useState("ARS");
   const [showCents, setShowCents] = useState(false);
+  const [hasAnyTransactions, setHasAnyTransactions] = useState(false);
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
@@ -382,23 +387,29 @@ export default function DashboardPage() {
   }, [selectedYear, startYear]);
 
   const loadBaseData = useCallback(async () => {
-    const [categoriesResponse, paymentMethodsResponse, settingsResponse] = await Promise.all([
-      supabase
-        .from("categories")
-        .select("*")
-        .eq("workspace_id", workspace.id)
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("payment_methods")
-        .select("id, name, type, is_active, include_in_balance, current_balance")
-        .eq("workspace_id", workspace.id)
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("workspace_settings")
-        .select("start_year, currency_code, show_cents")
-        .eq("workspace_id", workspace.id)
-        .maybeSingle(),
-    ]);
+    const [categoriesResponse, paymentMethodsResponse, settingsResponse, anyTransactionsResponse] =
+      await Promise.all([
+        supabase
+          .from("categories")
+          .select("*")
+          .eq("workspace_id", workspace.id)
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("payment_methods")
+          .select("id, name, type, is_active, include_in_balance, current_balance")
+          .eq("workspace_id", workspace.id)
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("workspace_settings")
+          .select("start_year, currency_code, show_cents")
+          .eq("workspace_id", workspace.id)
+          .maybeSingle(),
+        supabase
+          .from("transactions")
+          .select("id")
+          .eq("workspace_id", workspace.id)
+          .limit(1),
+      ]);
 
     if (categoriesResponse.error) {
       notifications.show({
@@ -437,6 +448,18 @@ export default function DashboardPage() {
       setPaymentMethodRows([]);
     } else {
       setPaymentMethodRows((paymentMethodsResponse.data ?? []) as PaymentMethodBalanceRow[]);
+    }
+
+    if (anyTransactionsResponse.error) {
+      notifications.show({
+        color: "red",
+        title: t("dashboard.notifications.loadOnboardingSignalsError"),
+        message: anyTransactionsResponse.error.message,
+      });
+      setHasAnyTransactions(false);
+    } else {
+      const rows = (anyTransactionsResponse.data ?? []) as TransactionIdRow[];
+      setHasAnyTransactions(rows.length > 0);
     }
 
     setIsBootstrapping(false);
@@ -901,6 +924,17 @@ export default function DashboardPage() {
   const shouldShowLinkedWorkspaceSummary = useMemo(() => {
     return linkedWorkspaceBalanceGroups.length > 0;
   }, [linkedWorkspaceBalanceGroups]);
+  const shouldShowOnboardingCta = useMemo(() => {
+    if (isBootstrapping) {
+      return false;
+    }
+
+    return shouldShowDashboardOnboardingCta({
+      paymentMethodCount: paymentMethodRows.length,
+      hasAnyTransactions,
+    });
+  }, [hasAnyTransactions, isBootstrapping, paymentMethodRows.length]);
+  const onboardingHref = useMemo(() => buildWorkspaceHref(workspace.slug, "/start"), [workspace.slug]);
 
   const selectedPeriodLabel = `${monthLabelFromOptions(
     selectedMonth,
@@ -1103,6 +1137,10 @@ export default function DashboardPage() {
   return (
     <Stack gap={isMobile ? "xs" : "sm"} pos="relative">
       <LoadingOverlay visible={isBootstrapping || isLoadingSummary} />
+
+      {shouldShowOnboardingCta ? (
+        <DashboardOnboardingCtaCard onboardingHref={onboardingHref} t={t} />
+      ) : null}
 
       <Paper
         radius="sm"
