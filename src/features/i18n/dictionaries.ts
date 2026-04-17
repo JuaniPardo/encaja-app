@@ -408,6 +408,10 @@ const dictionaries = {
       feedback: {
         title: "¿Encontraste algo que no funciona bien?",
         description: "Tu feedback me ayuda a mejorar Encaja.",
+        secondaryHint: "También podés abrir feedback desde el botón global del header.",
+        globalButton: "Enviar feedback",
+        globalButtonAria: "Abrir formulario de feedback",
+        modalTitle: "Feedback",
         typeLabel: "Tipo",
         typePlaceholder: "Seleccioná un tipo",
         typeOptions: {
@@ -457,10 +461,11 @@ const dictionaries = {
       notApplicable: "N/A",
       tabs: {
         workspace: "Caja",
-        collaboration: "Colaboración",
-        links: "Vínculos",
-        personal: "Feedback",
-        advanced: "Avanzado",
+        account: "Cuenta",
+      },
+      general: {
+        title: "General",
+        description: "Configuración base de esta Caja: nombre, moneda y preferencias visibles.",
       },
       sections: {
         personal: {
@@ -553,7 +558,7 @@ const dictionaries = {
         removeButton: "Remover",
       },
       workspaceLinks: {
-        title: "Cajas vinculadas",
+        title: "Conexiones de la Caja",
         activeCount: "{{count}} activos",
         description:
           "Vinculá Cajas para ver un resumen externo sin mezclar transacciones ni categorías con esta Caja.",
@@ -1347,6 +1352,10 @@ const dictionaries = {
       feedback: {
         title: "Did you find something that is not working well?",
         description: "Your feedback helps me improve Encaja.",
+        secondaryHint: "You can also open feedback from the global button in the header.",
+        globalButton: "Send feedback",
+        globalButtonAria: "Open feedback form",
+        modalTitle: "Feedback",
         typeLabel: "Type",
         typePlaceholder: "Select a type",
         typeOptions: {
@@ -1396,10 +1405,11 @@ const dictionaries = {
       notApplicable: "N/A",
       tabs: {
         workspace: "Workspace",
-        collaboration: "Collaboration",
-        links: "Links",
-        personal: "Feedback",
-        advanced: "Advanced",
+        account: "Account",
+      },
+      general: {
+        title: "General",
+        description: "Core workspace setup: name, currency, and visible preferences.",
       },
       sections: {
         personal: {
@@ -1491,7 +1501,7 @@ const dictionaries = {
         removeButton: "Remove",
       },
       workspaceLinks: {
-        title: "Linked workspaces",
+        title: "Workspace connections",
         activeCount: "{{count}} active",
         description:
           "Link workspaces to see an external summary (income, expenses, savings, and balance) without mixing transactions or categories with this workspace.",
