@@ -14,7 +14,7 @@ import {
   Textarea,
 } from "@mantine/core";
 import { Controller, useForm, useWatch } from "react-hook-form";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, type CSSProperties } from "react";
 
 import {
   formatBudgetAmount,
@@ -31,6 +31,7 @@ import {
 } from "@/features/transactions/type-colors";
 import { useI18n } from "@/features/i18n/provider";
 import type { Database, TransactionType } from "@/types/database";
+import classes from "./transaction-form-modal.module.css";
 
 type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
@@ -163,29 +164,11 @@ export function TransactionFormModal({
   }, [categoryOptions, control._formValues, reset, selectedCategoryId]);
 
   const selectedTypeColor = transactionTypeMantineColor[selectedType ?? "expense"];
-
-  const typeSegmentStyles = {
-    root: {
-      backgroundColor: "var(--mantine-color-gray-0)",
-      border: "1px solid var(--mantine-color-gray-2)",
-    },
-    indicator: {
-      backgroundColor: `var(--mantine-color-${selectedTypeColor}-0)`,
-      border: `1px solid var(--mantine-color-${selectedTypeColor}-2)`,
-    },
-    label: {
-      color: "var(--mantine-color-gray-7)",
-      fontWeight: 500,
-      "&[data-active]": {
-        color: `var(--mantine-color-${selectedTypeColor}-7)`,
-        fontWeight: 700,
-      },
-    },
-  } satisfies {
-    root: React.CSSProperties;
-    indicator: React.CSSProperties;
-    label: React.CSSProperties & { "&[data-active]": React.CSSProperties };
-  };
+  const typeSegmentVars = {
+    "--transaction-type-active-label-color": `var(--mantine-color-${selectedTypeColor}-7)`,
+    "--transaction-type-indicator-background": `var(--mantine-color-${selectedTypeColor}-0)`,
+    "--transaction-type-indicator-border": `var(--mantine-color-${selectedTypeColor}-2)`,
+  } as CSSProperties;
 
   return (
     <Modal
@@ -210,7 +193,13 @@ export function TransactionFormModal({
                   data={transactionTypeSelectData}
                   value={field.value}
                   onChange={(value) => field.onChange(value as TransactionType)}
-                  styles={typeSegmentStyles}
+                  classNames={{
+                    root: classes.typeSegmentRoot,
+                    indicator: classes.typeSegmentIndicator,
+                    label: classes.typeSegmentLabel,
+                    innerLabel: classes.typeSegmentInnerLabel,
+                  }}
+                  style={typeSegmentVars}
                 />
               )}
             />
