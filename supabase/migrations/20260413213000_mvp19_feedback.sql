@@ -20,6 +20,7 @@ create index if not exists idx_feedback_user_created_at
 
 alter table public.feedback enable row level security;
 
+drop policy if exists "feedback_insert_workspace_member" on public.feedback;
 create policy "feedback_insert_workspace_member"
 on public.feedback
 for insert

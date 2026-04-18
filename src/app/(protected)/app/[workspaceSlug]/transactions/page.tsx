@@ -48,6 +48,8 @@ type WorkspaceSettingsLiteRow = Pick<
 
 type TypeFilter = TransactionType | "all";
 type QuickPaymentMethodType = "cash" | "debit_card" | "other";
+type CategoryFilterOption = { value: string; label: string };
+type CategoryFilterOptionGroup = { group: string; items: CategoryFilterOption[] };
 
 type TransactionGroup = {
   key: string;
@@ -359,16 +361,35 @@ export default function TransactionsPage() {
 
   const categoryFilterOptions = useMemo(() => {
     const sortedCategories = [...categories].sort((a, b) => sortCategories(a, b, locale));
+    const toOption = (category: CategoryRow): CategoryFilterOption => ({
+      value: category.id,
+      label: category.is_active
+        ? category.name
+        : `${category.name} (${t("transactions.inactiveCategorySuffix")})`,
+    });
+    const systemItems = sortedCategories
+      .filter((category) => category.source === "system")
+      .map(toOption);
+    const customItems = sortedCategories
+      .filter((category) => category.source === "custom")
+      .map(toOption);
+    const groupedOptions: CategoryFilterOptionGroup[] = [];
 
-    return [
-      { value: "all", label: t("transactions.allCategories") },
-      ...sortedCategories.map((category) => ({
-        value: category.id,
-        label: category.is_active
-          ? category.name
-          : `${category.name} (${t("transactions.inactiveCategorySuffix")})`,
-      })),
-    ];
+    if (systemItems.length > 0) {
+      groupedOptions.push({
+        group: t("categories.source.system"),
+        items: systemItems,
+      });
+    }
+
+    if (customItems.length > 0) {
+      groupedOptions.push({
+        group: t("categories.source.custom"),
+        items: customItems,
+      });
+    }
+
+    return [{ value: "all", label: t("transactions.allCategories") }, ...groupedOptions];
   }, [categories, locale, t]);
 
   const paymentMethodOptions = useMemo(() => {
@@ -614,7 +635,11 @@ export default function TransactionsPage() {
       return;
     }
 
-    const isFilterAvailable = categoryFilterOptions.some((option) => option.value === categoryFilter);
+    const isFilterAvailable = categoryFilterOptions.some((option) =>
+      "items" in option
+        ? option.items.some((item) => item.value === categoryFilter)
+        : option.value === categoryFilter,
+    );
     if (!isFilterAvailable) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCategoryFilter("all");

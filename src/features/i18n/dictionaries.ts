@@ -850,11 +850,16 @@ const dictionaries = {
       filters: {
         type: "Tipo",
         status: "Estado",
+        source: "Origen",
         search: "Buscar",
         searchPlaceholder: "Nombre, tipo o estado",
         all: "Todos",
         active: "Activas",
         inactive: "Inactivas",
+      },
+      source: {
+        system: "sistema",
+        custom: "personalizada",
       },
       status: {
         active: "activa",
@@ -878,6 +883,8 @@ const dictionaries = {
         optionalConfiguration: "Configuración opcional",
         sortOrder: "Orden interno",
         sortOrderDescription: "Si no lo definís, la categoría queda al final de su tipo.",
+        systemTypeLocked:
+          "Las categorías del sistema mantienen su tipo base. Solo podés editar nombre, comportamiento y configuración.",
       },
       notifications: {
         loadError: "No pudimos cargar categorías",
@@ -1796,11 +1803,16 @@ const dictionaries = {
       filters: {
         type: "Type",
         status: "Status",
+        source: "Source",
         search: "Search",
         searchPlaceholder: "Name, type, or status",
         all: "All",
         active: "Active",
         inactive: "Inactive",
+      },
+      source: {
+        system: "system",
+        custom: "custom",
       },
       status: {
         active: "active",
@@ -1824,6 +1836,8 @@ const dictionaries = {
         optionalConfiguration: "Optional configuration",
         sortOrder: "Internal order",
         sortOrderDescription: "If omitted, the category is placed at the end of its type.",
+        systemTypeLocked:
+          "System categories keep their base type. You can only edit name, behavior, and configuration.",
       },
       notifications: {
         loadError: "We couldn't load categories",

@@ -34,13 +34,14 @@ import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldow
 import { transactionTypeColorCssVar } from "@/features/transactions/type-colors";
 import { canManageCategories } from "@/features/workspace/permissions";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
-import type { Database, ExpenseBehavior, TransactionType } from "@/types/database";
+import type { CategorySource, Database, ExpenseBehavior, TransactionType } from "@/types/database";
 
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
 type CategoryUsageLiteRow = Pick<Database["public"]["Tables"]["transactions"]["Row"], "category_id">;
 
 type TypeFilter = TransactionType | "all";
 type StatusFilter = "all" | "active" | "inactive";
+type SourceFilter = CategorySource | "all";
 type GroupedCategoryRows = {
   type: TransactionType;
   label: string;
@@ -188,6 +189,7 @@ export default function CategoriesPage() {
   const [editingRow, setEditingRow] = useState<CategoryRow | null>(null);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const [searchFilter, setSearchFilter] = useState("");
   const roleLabel = t(`common.role.${workspace.role}`, workspace.role);
   const categoryTypeLabels = useMemo<Record<TransactionType, string>>(
@@ -230,6 +232,13 @@ export default function CategoriesPage() {
         label: categoryExpenseBehaviorLabels[value],
       })),
     [categoryExpenseBehaviorLabels],
+  );
+  const categorySourceLabels = useMemo<Record<CategorySource, string>>(
+    () => ({
+      system: t("categories.source.system"),
+      custom: t("categories.source.custom"),
+    }),
+    [t],
   );
 
   const {
@@ -345,6 +354,7 @@ export default function CategoriesPage() {
   const visibleRows = useMemo(() => {
     return rows.filter((row) => {
       const passesType = typeFilter === "all" ? true : row.type === typeFilter;
+      const passesSource = sourceFilter === "all" ? true : row.source === sourceFilter;
       const passesStatus =
         statusFilter === "all"
           ? true
@@ -360,18 +370,20 @@ export default function CategoriesPage() {
               row.type === "expense"
                 ? categoryExpenseBehaviorLabels[row.expense_behavior ?? "variable"]
                 : ""
-            }`
+            } ${categorySourceLabels[row.source]}`
               .toLocaleLowerCase(locale === "en" ? "en" : "es")
               .includes(normalizedSearchFilter);
 
-      return passesType && passesStatus && passesSearch;
+      return passesType && passesSource && passesStatus && passesSearch;
     });
   }, [
     categoryExpenseBehaviorLabels,
+    categorySourceLabels,
     categoryTypeLabels,
     locale,
     normalizedSearchFilter,
     rows,
+    sourceFilter,
     statusFilter,
     t,
     typeFilter,
@@ -400,6 +412,7 @@ export default function CategoriesPage() {
 
   const activeFiltersCount =
     Number(typeFilter !== "all") +
+    Number(sourceFilter !== "all") +
     Number(statusFilter !== "all") +
     Number(normalizedSearchFilter !== "");
   const categoryDrilldownHref = useCallback(
@@ -418,10 +431,12 @@ export default function CategoriesPage() {
       return;
     }
 
-    const expenseBehavior = values.type === "expense" ? values.expenseBehavior : null;
+    const categoryType =
+      editingRow && editingRow.source === "system" ? editingRow.type : values.type;
+    const expenseBehavior = categoryType === "expense" ? values.expenseBehavior : null;
     const payload = {
       name: values.name.trim(),
-      type: values.type,
+      type: categoryType,
       expense_behavior: expenseBehavior,
       sort_order: values.sortOrder,
       updated_at: new Date().toISOString(),
@@ -453,6 +468,8 @@ export default function CategoriesPage() {
         workspace_id: workspace.id,
         name: payload.name,
         type: payload.type,
+        source: "custom",
+        system_category_id: null,
         expense_behavior: payload.expense_behavior,
         sort_order: payload.sort_order,
         is_active: true,
@@ -573,6 +590,18 @@ export default function CategoriesPage() {
               style={{ minWidth: 140 }}
             />
 
+            <NativeSelect
+              label={t("categories.filters.source")}
+              value={sourceFilter}
+              onChange={(event) => setSourceFilter(event.currentTarget.value as SourceFilter)}
+              data={[
+                { value: "all", label: t("categories.filters.all") },
+                { value: "system", label: categorySourceLabels.system },
+                { value: "custom", label: categorySourceLabels.custom },
+              ]}
+              style={{ minWidth: 160 }}
+            />
+
             <TextInput
               label={t("categories.filters.search")}
               placeholder={t("categories.filters.searchPlaceholder")}
@@ -660,6 +689,16 @@ export default function CategoriesPage() {
                             <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
                               <Text fw={600} size="sm" lineClamp={1} style={{ lineHeight: 1.2 }}>
                                 {row.name}
+                              </Text>
+
+                              <Text
+                                size="10px"
+                                c="gray.7"
+                                fw={500}
+                                tt="uppercase"
+                                style={{ letterSpacing: "0.03em" }}
+                              >
+                                {categorySourceLabels[row.source]}
                               </Text>
 
                               {hasUsageData ? (
@@ -768,10 +807,16 @@ export default function CategoriesPage() {
             <NativeSelect
               label={t("categories.filters.type")}
               data={categoryTypeSelectData}
-              disabled={!canManageStructure}
+              disabled={!canManageStructure || editingRow?.source === "system"}
               error={errors.type?.message}
               {...register("type")}
             />
+
+            {editingRow?.source === "system" ? (
+              <Text size="xs" c="dimmed">
+                {t("categories.form.systemTypeLocked")}
+              </Text>
+            ) : null}
 
             {selectedType === "expense" ? (
               <NativeSelect

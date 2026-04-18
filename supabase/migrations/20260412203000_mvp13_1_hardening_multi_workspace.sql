@@ -184,6 +184,7 @@ end;
 $$;
 
 drop policy if exists "workspaces_update_owner_admin" on public.workspaces;
+drop policy if exists "workspaces_update_owner" on public.workspaces;
 create policy "workspaces_update_owner"
 on public.workspaces
 for update
@@ -191,12 +192,14 @@ using (public.is_workspace_owner(id))
 with check (public.is_workspace_owner(id));
 
 drop policy if exists "workspace_settings_insert_owner_admin" on public.workspace_settings;
+drop policy if exists "workspace_settings_insert_owner" on public.workspace_settings;
 create policy "workspace_settings_insert_owner"
 on public.workspace_settings
 for insert
 with check (public.is_workspace_owner(workspace_id));
 
 drop policy if exists "workspace_settings_update_owner_admin" on public.workspace_settings;
+drop policy if exists "workspace_settings_update_owner" on public.workspace_settings;
 create policy "workspace_settings_update_owner"
 on public.workspace_settings
 for update
@@ -204,12 +207,14 @@ using (public.is_workspace_owner(workspace_id))
 with check (public.is_workspace_owner(workspace_id));
 
 drop policy if exists "subscriptions_insert_owner_admin" on public.subscriptions;
+drop policy if exists "subscriptions_insert_owner" on public.subscriptions;
 create policy "subscriptions_insert_owner"
 on public.subscriptions
 for insert
 with check (public.is_workspace_owner(workspace_id));
 
 drop policy if exists "subscriptions_update_owner_admin" on public.subscriptions;
+drop policy if exists "subscriptions_update_owner" on public.subscriptions;
 create policy "subscriptions_update_owner"
 on public.subscriptions
 for update

@@ -35,6 +35,8 @@ import type { Database, TransactionType } from "@/types/database";
 type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
 type QuickPaymentMethodType = "cash" | "debit_card" | "other";
+type CategoryOption = { value: string; label: string };
+type CategoryOptionGroup = { group: string; items: CategoryOption[] };
 
 type TransactionFormModalProps = {
   opened: boolean;
@@ -101,19 +103,38 @@ export function TransactionFormModal({
   const categoryOptions = useMemo(() => {
     const currentCategoryId = editingRow?.category_id ?? null;
 
-    return categories
+    const availableRows = categories
       .filter(
         (category) =>
           category.type === (selectedType ?? "expense") &&
           (category.is_active || category.id === currentCategoryId),
       )
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map((category) => ({
-        value: category.id,
-        label: category.is_active
-          ? category.name
-          : `${category.name} (${t("transactions.inactiveCategorySuffix")})`,
-      }));
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    const toOption = (category: CategoryRow): CategoryOption => ({
+      value: category.id,
+      label: category.is_active
+        ? category.name
+        : `${category.name} (${t("transactions.inactiveCategorySuffix")})`,
+    });
+
+    const systemItems = availableRows
+      .filter((category) => category.source === "system")
+      .map(toOption);
+    const customItems = availableRows
+      .filter((category) => category.source === "custom")
+      .map(toOption);
+    const groupedOptions: CategoryOptionGroup[] = [];
+
+    if (systemItems.length > 0) {
+      groupedOptions.push({ group: t("categories.source.system"), items: systemItems });
+    }
+
+    if (customItems.length > 0) {
+      groupedOptions.push({ group: t("categories.source.custom"), items: customItems });
+    }
+
+    return groupedOptions;
   }, [categories, editingRow?.category_id, selectedType, t]);
 
   const selectedCategoryId = useWatch({ control, name: "categoryId" });
@@ -123,7 +144,9 @@ export function TransactionFormModal({
       return;
     }
 
-    const isAvailable = categoryOptions.some((option) => option.value === selectedCategoryId);
+    const isAvailable = categoryOptions.some((option) =>
+      option.items.some((item) => item.value === selectedCategoryId),
+    );
     if (!isAvailable) {
       reset(
         {

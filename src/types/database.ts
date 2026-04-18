@@ -6,6 +6,7 @@ export type PaymentMethodType =
   | "bank_transfer"
   | "other";
 export type ExpenseBehavior = "fixed" | "variable";
+export type CategorySource = "system" | "custom";
 export type WorkspaceRole = "owner" | "member";
 export type SavingsRateMode = "manual" | "percentage";
 export type BudgetPeriodStatus = "draft" | "active" | "closed";
@@ -207,12 +208,54 @@ export interface Database {
         };
         Relationships: [];
       };
+      system_categories: {
+        Row: {
+          id: string;
+          key: string;
+          type: TransactionType;
+          default_name_es: string;
+          default_name_en: string;
+          default_expense_behavior: ExpenseBehavior | null;
+          default_sort_order: number | null;
+          default_color: string | null;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          key: string;
+          type: TransactionType;
+          default_name_es: string;
+          default_name_en: string;
+          default_expense_behavior?: ExpenseBehavior | null;
+          default_sort_order?: number | null;
+          default_color?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          key?: string;
+          type?: TransactionType;
+          default_name_es?: string;
+          default_name_en?: string;
+          default_expense_behavior?: ExpenseBehavior | null;
+          default_sort_order?: number | null;
+          default_color?: string | null;
+          is_active?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       categories: {
         Row: {
           id: string;
           workspace_id: string;
           name: string;
           type: TransactionType;
+          source: CategorySource;
+          system_category_id: string | null;
           expense_behavior: ExpenseBehavior | null;
           is_active: boolean;
           sort_order: number | null;
@@ -227,6 +270,8 @@ export interface Database {
           workspace_id: string;
           name: string;
           type: TransactionType;
+          source?: CategorySource;
+          system_category_id?: string | null;
           expense_behavior?: ExpenseBehavior | null;
           is_active?: boolean;
           sort_order?: number | null;
@@ -239,6 +284,8 @@ export interface Database {
         Update: {
           name?: string;
           type?: TransactionType;
+          source?: CategorySource;
+          system_category_id?: string | null;
           expense_behavior?: ExpenseBehavior | null;
           is_active?: boolean;
           sort_order?: number | null;
