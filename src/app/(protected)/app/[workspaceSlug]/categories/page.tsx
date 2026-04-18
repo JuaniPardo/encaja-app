@@ -103,7 +103,6 @@ function toCategoryDefaults(row?: CategoryRow): CategoryFormValues {
       name: "",
       type: "expense",
       expenseBehavior: "variable",
-      sortOrder: null,
     };
   }
 
@@ -111,7 +110,6 @@ function toCategoryDefaults(row?: CategoryRow): CategoryFormValues {
     name: row.name,
     type: row.type === "transfer" ? "expense" : row.type,
     expenseBehavior: row.type === "expense" ? (row.expense_behavior ?? "variable") : null,
-    sortOrder: row.sort_order,
   };
 }
 
@@ -250,8 +248,6 @@ export default function CategoriesPage() {
   } = useForm<CategoryFormInputValues, unknown, CategoryFormValues>({
     resolver: zodResolver(
       createCategoryFormSchema({
-        integerNumber: t("common.validation.integerNumber"),
-        nonNegative: t("common.validation.nonNegative"),
         requiredName: t("common.validation.requiredName"),
         maxNameLength: t("common.validation.maxName80"),
         requiredExpenseBehavior: t("common.forms.category.requiredExpenseBehavior"),
@@ -438,7 +434,6 @@ export default function CategoriesPage() {
       name: values.name.trim(),
       type: categoryType,
       expense_behavior: expenseBehavior,
-      sort_order: values.sortOrder,
       updated_at: new Date().toISOString(),
     };
 
@@ -471,7 +466,6 @@ export default function CategoriesPage() {
         source: "custom",
         system_category_id: null,
         expense_behavior: payload.expense_behavior,
-        sort_order: payload.sort_order,
         is_active: true,
         created_by: user.id,
       });
@@ -828,23 +822,6 @@ export default function CategoriesPage() {
                 {...register("expenseBehavior")}
               />
             ) : null}
-
-            <Paper withBorder radius="md" p="sm">
-              <Stack gap={4}>
-                <Text size="xs" c="dimmed" fw={600}>
-                  {t("categories.form.optionalConfiguration")}
-                </Text>
-                <TextInput
-                  label={t("categories.form.sortOrder")}
-                  description={t("categories.form.sortOrderDescription")}
-                  placeholder="0"
-                  type="number"
-                  disabled={!canManageStructure}
-                  error={errors.sortOrder?.message}
-                  {...register("sortOrder")}
-                />
-              </Stack>
-            </Paper>
 
             <Group justify="flex-end" mt="sm">
               <Button
