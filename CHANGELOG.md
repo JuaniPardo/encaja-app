@@ -1,3 +1,9 @@
+## [1.2.1] - 2026-04-18
+
+## Changed
+- Refactored Dashboard, Settings, and Transactions modules to reduce coupling and extract reusable components, hooks, and view-model logic without functional changes.
+- Simplified Settings navigation by removing profile access from Settings, since it now has a dedicated page.
+
 ## [1.2.0] - 2026-04-18
 
 ### Added
@@ -39,7 +45,7 @@
 ## [1.1.2] - 2026-04-15
 
 ### Fixed
-exclude `transfer` type from dashboard summaries and charts to avoid misleading aggregates (internal movements have no net impact)
+- Excluded `transfer` type from dashboard summaries and charts to avoid misleading aggregates (internal movements have no net impact)
 
 ## [1.1.1] - 2026-04-15
 
