@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { Button, Group, Paper, Stack, Text, Title } from "@mantine/core";
 
+import type { TranslationFn } from "@/features/dashboard/types/dashboard";
+
 type DashboardOnboardingCtaCardProps = {
   onboardingHref: string;
-  t: (key: string, fallback?: string, values?: Record<string, string | number>) => string;
+  t: TranslationFn;
 };
 
 export function DashboardOnboardingCtaCard({ onboardingHref, t }: DashboardOnboardingCtaCardProps) {

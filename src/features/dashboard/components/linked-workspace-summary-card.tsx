@@ -1,28 +1,13 @@
 import { Group, Paper, Stack, Text } from "@mantine/core";
 
+import type { LinkedWorkspaceBalanceGroup, TranslationFn } from "@/features/dashboard/types/dashboard";
 import { mapWorkspaceVisibilityModeLabel } from "@/features/i18n/formatting";
-import type { PaymentMethodType } from "@/types/database";
-
-type LinkedWorkspaceBalanceGroup = {
-  linkId: string;
-  workspaceId: string;
-  workspaceName: string;
-  currencyCode: string;
-  visibilityMode: string;
-  totalBalance: number;
-  paymentMethods: Array<{
-    id: string;
-    name: string;
-    type: PaymentMethodType;
-    balance: number;
-  }>;
-};
 
 type LinkedWorkspaceSummaryCardProps = {
   isMobile: boolean;
   linkedWorkspaceBalanceGroups: LinkedWorkspaceBalanceGroup[];
   linkedWorkspaceCurrencyFormatters: Map<string, Intl.NumberFormat>;
-  t: (key: string, fallback?: string, values?: Record<string, string | number>) => string;
+  t: TranslationFn;
 };
 
 export function LinkedWorkspaceSummaryCard({
