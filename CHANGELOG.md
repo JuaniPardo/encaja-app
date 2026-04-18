@@ -1,3 +1,19 @@
+## [1.2.0] - 2026-04-18
+
+### Added
+- Added a system category catalog (`system_categories`) with semantic keys for income, expense, saving, and transfer flows.
+- Added automatic workspace seeding/backfill for system category instances, including new semantic buckets like `expense_subscriptions`, `expense_other`, and `expense_deliveries`.
+- Added manual and alias-based migration mappings to reclassify legacy custom categories into system categories for better historical analytics quality.
+
+### Changed
+- Revamped category model to support `source` (`system`/`custom`) and `system_category_id`.
+- Updated category and transaction UIs to support the new semantic category model.
+- Removed manual `sort_order` input from category creation flow to reduce user friction.
+
+### Fixed
+- Hardened migrations for idempotency and release safety (constraint ordering, policy recreation guards, robust type validation).
+- Added cleanup migration to safely merge budget item collisions and delete orphaned custom categories after mapping.
+
 ## [1.1.5] - 2026-04-17
 
 ### Added
