@@ -1,0 +1,23 @@
+.typeSegmentRoot {
+  background-color: var(--mantine-color-gray-0);
+  border: 1px solid var(--mantine-color-gray-2);
+}
+
+.typeSegmentIndicator {
+  background-color: var(--transaction-type-indicator-background);
+  border: 1px solid var(--transaction-type-indicator-border);
+}
+
+.typeSegmentLabel {
+  color: var(--mantine-color-gray-7);
+  font-weight: 500;
+}
+
+.typeSegmentLabel[data-active] {
+  color: var(--transaction-type-active-label-color);
+  font-weight: 700;
+}
+
+.typeSegmentInnerLabel {
+  font-weight: inherit;
+}

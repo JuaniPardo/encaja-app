@@ -29,18 +29,31 @@ import type { Database } from "@/types/database";
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
 type PaymentMethodRow = Database["public"]["Tables"]["payment_methods"]["Row"];
 
-const transferSchema = z.object({
-  amount: z.string().min(1),
-  categoryId: z.string().min(1),
-  fromPaymentMethodId: z.string().min(1),
-  toPaymentMethodId: z.string().min(1),
-  transactionDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  effectiveDate: z.string().optional(),
-  description: z.string().optional(),
-  notes: z.string().optional(),
-});
+function createTransferSchema(t: ReturnType<typeof useI18n>["t"]) {
+  return z.object({
+    amount: z
+      .string()
+      .refine((value) => {
+        const parsed = parseBudgetAmount(value);
+        return parsed !== null && parsed > 0;
+      }, t("common.validation.amountGtZero")),
+    categoryId: z.string().min(1, t("common.forms.transaction.requiredCategory")),
+    fromPaymentMethodId: z.string().min(1, t("common.validation.invalidOption")),
+    toPaymentMethodId: z.string().min(1, t("common.validation.invalidOption")),
+    transactionDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, t("common.forms.transaction.requiredTransactionDate")),
+    effectiveDate: z
+      .string()
+      .optional()
+      .refine(
+        (value) => value === undefined || value === "" || /^\d{4}-\d{2}-\d{2}$/.test(value),
+        t("common.validation.invalidDate"),
+      ),
+    description: z.string().max(120, t("common.forms.transaction.descriptionMaxLength")).optional(),
+    notes: z.string().max(240, t("common.forms.transaction.notesMaxLength")).optional(),
+  });
+}
 
-type TransferFormValues = z.infer<typeof transferSchema>;
+type TransferFormValues = z.infer<ReturnType<typeof createTransferSchema>>;
 
 function toTransferDefaults(categories: CategoryRow[]): TransferFormValues {
   return {
@@ -80,6 +93,7 @@ export function TransferModal({
   const { supabase, workspace, user } = useWorkspace();
   const { t } = useI18n();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const transferSchema = useMemo(() => createTransferSchema(t), [t]);
 
   const transferCategories = useMemo(
     () => categories.filter((c) => c.type === "transfer" && c.is_active),

@@ -1,0 +1,6 @@
+[    1582ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:3101/transactions:0
+[    1743ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:3101/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[    1822ms] [LOG] [HMR] connected @ http://127.0.0.1:3101/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[    6713ms] [ERROR] Failed to load resource: net::ERR_CONTENT_LENGTH_MISMATCH @ http://127.0.0.1:3101/_next/static/chunks/src_app_layout_tsx_004glpo._.js:0
+[    6718ms] ChunkLoadError: Failed to load chunk /_next/static/chunks/src_app_layout_tsx_004glpo._.js from module [project]/node_modules/next/dist/compiled/react-server-dom-turbopack/cjs/react-server-dom-turbopack-client.browser.development.js [app-client] (ecmascript)
+    at http://127.0.0.1:3101/_next/static/chunks/turbopack-_0p44nws._.js:698:25

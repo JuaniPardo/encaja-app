@@ -1,0 +1,187 @@
+- generic [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e45] [cursor=pointer]:
+    - img [ref=e46]
+  - dialog "Nueva transacción" [ref=e345]:
+    - banner [ref=e346]:
+      - heading "Nueva transacción" [level=2] [ref=e347]
+      - button [ref=e348] [cursor=pointer]:
+        - img [ref=e349]
+    - generic [ref=e353]:
+      - generic [ref=e354]:
+        - paragraph [ref=e355]: Tipo
+        - radiogroup [ref=e356]:
+          - generic [ref=e358]:
+            - radio "Ingreso"
+            - generic [ref=e359] [cursor=pointer]: Ingreso
+          - generic [ref=e360]:
+            - radio "Gasto"
+            - generic [ref=e361] [cursor=pointer]: Gasto
+          - generic [ref=e362]:
+            - radio "Ahorro" [checked] [active]
+            - generic [ref=e363] [cursor=pointer]: Ahorro
+      - generic [ref=e364]:
+        - generic [ref=e365]:
+          - generic [ref=e366]: Categoría
+          - generic [ref=e367]:
+            - combobox "Categoría" [ref=e368] [cursor=pointer]:
+              - option "Seleccionar categoría" [selected]
+              - option "Ahorro mensual"
+            - generic:
+              - img
+        - generic [ref=e369]:
+          - generic [ref=e370]: Monto
+          - generic [ref=e371]:
+            - paragraph [ref=e373]: $
+            - textbox "Monto" [ref=e374]:
+              - /placeholder: "0"
+      - generic [ref=e375]:
+        - generic [ref=e376]: Fecha de transacción
+        - textbox "Fecha de transacción" [ref=e378]: 2026-04-18
+      - generic [ref=e380]:
+        - paragraph [ref=e381]: Campos opcionales
+        - generic [ref=e382]:
+          - generic [ref=e383]:
+            - generic [ref=e384]: Fecha efectiva
+            - textbox "Fecha efectiva" [ref=e386]
+          - generic [ref=e387]:
+            - generic [ref=e388]: Medio de pago
+            - generic [ref=e389]:
+              - combobox "Medio de pago" [ref=e390] [cursor=pointer]:
+                - option "Sin medio de pago" [selected]
+                - option "Efectivo"
+              - generic:
+                - img
+        - generic [ref=e391]:
+          - generic [ref=e392]: Descripción
+          - textbox "Descripción" [ref=e394]:
+            - /placeholder: "Ej: Compra semanal"
+        - generic [ref=e395]:
+          - generic [ref=e396]: Notas
+          - textbox "Notas" [ref=e398]:
+            - /placeholder: Detalle adicional del movimiento
+      - generic [ref=e399]:
+        - button "Cancelar" [ref=e400] [cursor=pointer]:
+          - generic [ref=e402]: Cancelar
+        - button "Crear" [ref=e403] [cursor=pointer]:
+          - generic [ref=e405]: Crear
+  - alert [ref=e39]: Transacciones
+  - generic [ref=e62]:
+    - banner [ref=e63]:
+      - generic [ref=e64]:
+        - generic [ref=e65]:
+          - button [ref=e321] [cursor=pointer]
+          - generic [ref=e69]:
+            - img "Encaja" [ref=e70]
+            - heading "Encaja" [level=4] [ref=e323]
+        - generic [ref=e72]:
+          - button "Abrir formulario de feedback" [ref=e73] [cursor=pointer]:
+            - img [ref=e75]
+          - generic [ref=e79]:
+            - combobox [ref=e80] [cursor=pointer]:
+              - option "JuaniPardo · owner" [selected]
+              - option "Caja CTA 132351 · owner"
+            - generic:
+              - img
+    - navigation [ref=e81]:
+      - generic [ref=e82]:
+        - img "Encaja" [ref=e83]
+        - paragraph [ref=e84]: Encaja
+      - generic [ref=e85]:
+        - link "Resumen" [ref=e86] [cursor=pointer]:
+          - /url: /app/workspace-de-juani
+          - generic [ref=e87]:
+            - img [ref=e89]
+            - paragraph [ref=e91]: Resumen
+        - link "Transacciones" [ref=e92] [cursor=pointer]:
+          - /url: /app/workspace-de-juani/transactions
+          - generic [ref=e93]:
+            - img [ref=e95]
+            - paragraph [ref=e98]: Transacciones
+        - link "Presupuesto" [ref=e99] [cursor=pointer]:
+          - /url: /app/workspace-de-juani/budget
+          - generic [ref=e100]:
+            - img [ref=e102]
+            - paragraph [ref=e104]: Presupuesto
+        - link "Categorías" [ref=e105] [cursor=pointer]:
+          - /url: /app/workspace-de-juani/categories
+          - generic [ref=e106]:
+            - img [ref=e108]
+            - paragraph [ref=e113]: Categorías
+        - link "Medios de pago" [ref=e114] [cursor=pointer]:
+          - /url: /app/workspace-de-juani/payment-methods
+          - generic [ref=e115]:
+            - img [ref=e117]
+            - paragraph [ref=e119]: Medios de pago
+        - paragraph [ref=e120]: Más
+        - separator [ref=e121]
+        - link "Empezar" [ref=e122] [cursor=pointer]:
+          - /url: /app/workspace-de-juani/start
+          - generic [ref=e123]:
+            - img [ref=e125]
+            - paragraph [ref=e127]: Empezar
+        - link "Insights" [ref=e128] [cursor=pointer]:
+          - /url: /app/workspace-de-juani/insights
+          - generic [ref=e129]:
+            - img [ref=e131]
+            - paragraph [ref=e132]: Insights
+        - link "Configuración" [ref=e133] [cursor=pointer]:
+          - /url: /app/workspace-de-juani/settings
+          - generic [ref=e134]:
+            - img [ref=e136]
+            - paragraph [ref=e139]: Configuración
+        - link "Perfil" [ref=e140] [cursor=pointer]:
+          - /url: /app/workspace-de-juani/profile
+          - generic [ref=e141]:
+            - img [ref=e143]
+            - paragraph [ref=e146]: Perfil
+      - button "Salir" [ref=e148] [cursor=pointer]:
+        - generic [ref=e149]:
+          - img [ref=e150]
+          - paragraph [ref=e153]: Salir
+    - main [ref=e154]:
+      - generic [ref=e155]:
+        - generic [ref=e164]:
+          - generic [ref=e166]:
+            - heading "Transacciones" [level=1] [ref=e167]
+            - paragraph [ref=e168]: Vista operativa de movimientos reales del período.
+          - generic [ref=e177]:
+            - generic [ref=e324]:
+              - paragraph [ref=e325]: Filtros
+              - button "Mostrar" [ref=e327] [cursor=pointer]:
+                - generic [ref=e329]: Mostrar
+            - paragraph [ref=e204]: Abril 2026 · 2 movimientos
+          - generic [ref=e206]:
+            - generic [ref=e207]:
+              - paragraph [ref=e208]: 14 de abril
+              - generic [ref=e211]:
+                - generic [ref=e212]:
+                  - paragraph [ref=e214]: Sueldo
+                  - paragraph [ref=e216]: $ 55.000
+                - generic [ref=e217]:
+                  - paragraph [ref=e218]: 14 abr · Efectivo
+                  - generic [ref=e219]:
+                    - button "Editar transacción" [ref=e220] [cursor=pointer]:
+                      - img [ref=e223]
+                    - button "Eliminar transacción" [ref=e226] [cursor=pointer]:
+                      - img [ref=e229]
+            - generic [ref=e233]:
+              - paragraph [ref=e234]: 13 de abril
+              - generic [ref=e237]:
+                - generic [ref=e238]:
+                  - paragraph [ref=e240]: Alquiler
+                  - paragraph [ref=e242]: $ 50.000
+                - generic [ref=e243]:
+                  - paragraph [ref=e244]: 13 abr · Efectivo
+                  - generic [ref=e245]:
+                    - button "Editar transacción" [ref=e246] [cursor=pointer]:
+                      - img [ref=e249]
+                    - button "Eliminar transacción" [ref=e252] [cursor=pointer]:
+                      - img [ref=e255]
+          - generic [ref=e337]:
+            - button "Nueva transacción" [ref=e338] [cursor=pointer]:
+              - generic [ref=e340]: Nueva transacción
+            - button "Transferir" [disabled] [ref=e341]:
+              - generic [ref=e343]: Transferir
+        - generic [ref=e161]:
+          - paragraph [ref=e162]: Built by Juan Pardo
+          - paragraph [ref=e163]: v1.2.0
