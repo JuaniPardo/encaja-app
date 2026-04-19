@@ -2,9 +2,7 @@ export type TransactionType = "income" | "expense" | "saving" | "transfer";
 export type PaymentMethodType =
   | "cash"
   | "debit_card"
-  | "credit_card"
-  | "bank_transfer"
-  | "other";
+  | "credit_card";
 export type ExpenseBehavior = "fixed" | "variable";
 export type CategorySource = "system" | "custom";
 export type WorkspaceRole = "owner" | "member";
@@ -464,6 +462,25 @@ export interface Database {
       [_ in never]: never;
     };
     Functions: {
+      create_transfer_transaction: {
+        Args: {
+          p_workspace_id: string;
+          p_from_payment_method_id: string;
+          p_to_payment_method_id: string;
+          p_amount: number;
+          p_transaction_date: string;
+          p_effective_date?: string | null;
+          p_description?: string | null;
+          p_notes?: string | null;
+        };
+        Returns: {
+          out_transaction_id: string;
+          in_transaction_id: string;
+          transfer_group_id: string;
+          resolved_category_id: string;
+          resolved_system_key: string;
+        }[];
+      };
       create_workspace_with_defaults: {
         Args: {
           p_workspace_name: string;
