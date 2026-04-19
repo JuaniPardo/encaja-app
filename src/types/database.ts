@@ -219,6 +219,9 @@ export interface Database {
           default_sort_order: number | null;
           default_color: string | null;
           is_active: boolean;
+          is_exceptional: boolean;
+          warning_message_es: string | null;
+          warning_message_en: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -232,6 +235,9 @@ export interface Database {
           default_sort_order?: number | null;
           default_color?: string | null;
           is_active?: boolean;
+          is_exceptional?: boolean;
+          warning_message_es?: string | null;
+          warning_message_en?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -244,6 +250,9 @@ export interface Database {
           default_sort_order?: number | null;
           default_color?: string | null;
           is_active?: boolean;
+          is_exceptional?: boolean;
+          warning_message_es?: string | null;
+          warning_message_en?: string | null;
           updated_at?: string;
         };
         Relationships: [];
@@ -258,6 +267,9 @@ export interface Database {
           system_category_id: string | null;
           expense_behavior: ExpenseBehavior | null;
           is_active: boolean;
+          is_editable: boolean;
+          is_exceptional: boolean;
+          warning_message: string | null;
           sort_order: number | null;
           color: string | null;
           icon: string | null;
@@ -274,6 +286,9 @@ export interface Database {
           system_category_id?: string | null;
           expense_behavior?: ExpenseBehavior | null;
           is_active?: boolean;
+          is_editable?: boolean;
+          is_exceptional?: boolean;
+          warning_message?: string | null;
           sort_order?: number | null;
           color?: string | null;
           icon?: string | null;
@@ -288,6 +303,9 @@ export interface Database {
           system_category_id?: string | null;
           expense_behavior?: ExpenseBehavior | null;
           is_active?: boolean;
+          is_editable?: boolean;
+          is_exceptional?: boolean;
+          warning_message?: string | null;
           sort_order?: number | null;
           color?: string | null;
           icon?: string | null;

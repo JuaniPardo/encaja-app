@@ -709,6 +709,12 @@ const dictionaries = {
       realPrefix: "Real",
       today: "Hoy",
       yesterday: "Ayer",
+      exceptionalCategory: {
+        title: "Uso excepcional",
+        suffix: "excepcional",
+        defaultWarning:
+          "Usá esta categoría para realinear tu balance cuando te falten registros. Para mejores resultados, reservála para casos excepcionales.",
+      },
       form: {
         selectCategory: "Seleccionar categoría",
         fromPaymentMethod: "Desde cuenta",
@@ -874,6 +880,9 @@ const dictionaries = {
         none: "Sin uso",
         count: "{{count}} movimiento{{pluralSuffix}}",
       },
+      exceptional: {
+        label: "uso excepcional",
+      },
       form: {
         name: "Nombre",
         namePlaceholder: "Ej: Supermercado",
@@ -883,8 +892,10 @@ const dictionaries = {
         optionalConfiguration: "Configuración opcional",
         sortOrder: "Orden interno",
         sortOrderDescription: "Si no lo definís, la categoría queda al final de su tipo.",
+        systemNameLocked:
+          "Las categorías del sistema mantienen su nombre oficial. El nombre no se puede editar.",
         systemTypeLocked:
-          "Las categorías del sistema mantienen su tipo base. Solo podés editar nombre, comportamiento y configuración.",
+          "Las categorías del sistema mantienen su tipo base. Solo podés ajustar configuración operativa.",
       },
       notifications: {
         loadError: "No pudimos cargar categorías",
@@ -901,6 +912,9 @@ const dictionaries = {
         activatedTitle: "Categoría activada",
         deactivatedTitle: "Categoría desactivada",
         statusUpdatedMessage: "Estado actualizado correctamente.",
+        exceptionalToggleDeniedTitle: "Categoría excepcional protegida",
+        exceptionalToggleDeniedMessage:
+          "Las categorías excepcionales deben permanecer activas para mantener continuidad.",
       },
     },
     paymentMethods: {
@@ -1661,6 +1675,12 @@ const dictionaries = {
       realPrefix: "Real",
       today: "Today",
       yesterday: "Yesterday",
+      exceptionalCategory: {
+        title: "Exceptional use",
+        suffix: "exceptional",
+        defaultWarning:
+          "Use this category to realign your balance when records are missing. For better results, reserve it for exceptional cases.",
+      },
       form: {
         selectCategory: "Select category",
         fromPaymentMethod: "From account",
@@ -1827,6 +1847,9 @@ const dictionaries = {
         none: "No usage",
         count: "{{count}} movement{{pluralSuffix}}",
       },
+      exceptional: {
+        label: "exceptional use",
+      },
       form: {
         name: "Name",
         namePlaceholder: "e.g. Groceries",
@@ -1836,8 +1859,10 @@ const dictionaries = {
         optionalConfiguration: "Optional configuration",
         sortOrder: "Internal order",
         sortOrderDescription: "If omitted, the category is placed at the end of its type.",
+        systemNameLocked:
+          "System categories keep their official name. Name cannot be edited.",
         systemTypeLocked:
-          "System categories keep their base type. You can only edit name, behavior, and configuration.",
+          "System categories keep their base type. You can only adjust operational configuration.",
       },
       notifications: {
         loadError: "We couldn't load categories",
@@ -1854,6 +1879,9 @@ const dictionaries = {
         activatedTitle: "Category activated",
         deactivatedTitle: "Category deactivated",
         statusUpdatedMessage: "Status updated successfully.",
+        exceptionalToggleDeniedTitle: "Exceptional category is protected",
+        exceptionalToggleDeniedMessage:
+          "Exceptional categories must remain active to preserve continuity.",
       },
     },
     paymentMethods: {

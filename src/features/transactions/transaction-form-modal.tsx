@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  Alert,
   Button,
   Group,
   Modal,
@@ -115,8 +116,12 @@ export function TransactionFormModal({
     const toOption = (category: CategoryRow): CategoryOption => ({
       value: category.id,
       label: category.is_active
-        ? category.name
-        : `${category.name} (${t("transactions.inactiveCategorySuffix")})`,
+        ? `${category.name}${
+            category.is_exceptional ? ` (${t("transactions.exceptionalCategory.suffix")})` : ""
+          }`
+        : `${category.name}${
+            category.is_exceptional ? ` (${t("transactions.exceptionalCategory.suffix")})` : ""
+          } (${t("transactions.inactiveCategorySuffix")})`,
     });
 
     const systemItems = availableRows
@@ -139,6 +144,13 @@ export function TransactionFormModal({
   }, [categories, editingRow?.category_id, selectedType, t]);
 
   const selectedCategoryId = useWatch({ control, name: "categoryId" });
+  const selectedCategory = useMemo(
+    () => categories.find((category) => category.id === selectedCategoryId) ?? null,
+    [categories, selectedCategoryId],
+  );
+  const selectedExceptionalWarning = selectedCategory?.is_exceptional
+    ? selectedCategory.warning_message ?? t("transactions.exceptionalCategory.defaultWarning")
+    : null;
 
   useEffect(() => {
     if (!selectedCategoryId) {
@@ -254,6 +266,12 @@ export function TransactionFormModal({
               )}
             />
           </Group>
+
+          {selectedExceptionalWarning ? (
+            <Alert color="yellow" variant="light" title={t("transactions.exceptionalCategory.title")}>
+              {selectedExceptionalWarning}
+            </Alert>
+          ) : null}
 
           <TextInput
             label={t("transactions.form.transactionDate")}
