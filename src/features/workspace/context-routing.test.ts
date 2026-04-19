@@ -12,6 +12,7 @@ function buildWorkspace(id: string, slug: string): WorkspaceSummary {
     id,
     slug,
     name: slug,
+    isDemo: false,
     role: "owner",
     subscription: {
       plan: "premium",

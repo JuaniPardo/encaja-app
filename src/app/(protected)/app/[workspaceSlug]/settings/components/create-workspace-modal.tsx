@@ -10,18 +10,22 @@ type CreateWorkspaceModalProps = {
   opened: boolean;
   onClose: () => void;
   onSubmit: FormEventHandler<HTMLFormElement>;
+  onCreateDemoWorkspace: () => void;
   nameInputProps: UseFormRegisterReturn;
   nameError?: string;
   isSubmitting: boolean;
+  isCreatingDemoWorkspace: boolean;
 };
 
 export function CreateWorkspaceModal({
   opened,
   onClose,
   onSubmit,
+  onCreateDemoWorkspace,
   nameInputProps,
   nameError,
   isSubmitting,
+  isCreatingDemoWorkspace,
 }: CreateWorkspaceModalProps) {
   const { t } = useI18n();
 
@@ -43,6 +47,16 @@ export function CreateWorkspaceModal({
           <Group justify="flex-end">
             <Button type="button" variant="light" color="gray" onClick={onClose}>
               {t("common.actions.cancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="light"
+              color="blue"
+              onClick={onCreateDemoWorkspace}
+              loading={isCreatingDemoWorkspace}
+              disabled={isSubmitting}
+            >
+              {t("workspaceSettings.modals.createWorkspace.createDemoButton")}
             </Button>
             <Button type="submit" loading={isSubmitting}>
               {t("common.actions.create")}

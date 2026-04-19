@@ -1,3 +1,21 @@
+## [1.4.0] - 2026-04-19
+
+### Added
+- Added end-to-end Workspace Demo creation flow (`Caja Demo`) from Settings, including seeded realistic data for previous and current month.
+- Added deterministic demo seed engine (`buildDemoSeed(referenceDate)`) with validated date rules, transfer pair generation, and no-future filtering for current month.
+- Added automatic demo payment-method bootstrap (`Tarjeta de Débito`, `Efectivo`, `Tarjeta de Crédito`) with `current_balance = 0`.
+- Added release documentation for MVP25 Workspace Demo under `docs/releases/`.
+
+### Changed
+- Extended workspace creation RPC contract to support demo workspaces (`p_is_demo`) and return demo metadata.
+- Updated workspace domain/state model to include `isDemo`.
+- Consolidated demo adjustment semantic key to `balance_adjustment` and ensured compatibility with legacy workspaces through migration-safe backfill logic.
+
+### Fixed
+- Enforced single active demo workspace per creator at database level (`workspaces.is_demo` + partial unique index).
+- Added rollback safeguards in demo creation flow when post-workspace bootstrap steps fail.
+- Fixed balance-adjustment migration compatibility with immutable system-category rules from Smart Categories hardening.
+
 ## [1.3.1] - 2026-04-19
 
 ### Changed

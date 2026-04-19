@@ -1,6 +1,12 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 
 import { defaultLocale, normalizeLocale, type Locale } from "@/features/i18n/config";
+import {
+  BALANCE_ADJUSTMENT_SYSTEM_KEY,
+  createDemoPaymentMethods,
+  resolveBalanceAdjustmentCategoryForWorkspace,
+} from "@/lib/workspace/demo";
+import { buildDemoSeed, materializeDemoSeedTransactions } from "@/lib/workspace/demo-seed";
 import type {
   Database,
   SubscriptionPlan,
@@ -10,7 +16,7 @@ import type {
 
 type WorkspaceRow = Pick<
   Database["public"]["Tables"]["workspaces"]["Row"],
-  "id" | "name" | "slug" | "created_at"
+  "id" | "name" | "slug" | "is_demo" | "created_at"
 >;
 
 type WorkspaceMemberRow = Pick<
@@ -21,6 +27,14 @@ type WorkspaceMemberRow = Pick<
 type SubscriptionRow = Pick<
   Database["public"]["Tables"]["subscriptions"]["Row"],
   "workspace_id" | "plan" | "status"
+>;
+type SystemCategoryRow = Pick<
+  Database["public"]["Tables"]["system_categories"]["Row"],
+  "id" | "key"
+>;
+type WorkspaceCategoryBySystemRow = Pick<
+  Database["public"]["Tables"]["categories"]["Row"],
+  "id" | "system_category_id"
 >;
 
 type CreateWorkspaceRpcRow =
@@ -37,6 +51,7 @@ export interface WorkspaceSummary {
   id: string;
   name: string;
   slug: string;
+  isDemo: boolean;
   role: WorkspaceRole;
   subscription: WorkspaceSubscription | null;
 }
@@ -60,6 +75,13 @@ interface CreateWorkspaceOptions {
   preferredLanguageHint?: Locale;
 }
 
+interface CreateDemoWorkspaceOptions {
+  supabase: SupabaseClient<Database>;
+  user: User;
+  name: string;
+  preferredLanguageHint?: Locale;
+}
+
 interface DeleteWorkspaceOptions {
   supabase: SupabaseClient<Database>;
   workspaceId: string;
@@ -71,12 +93,14 @@ const workspaceBootstrapMessages = {
     defaultWorkspaceName: "Mi Workspace",
     createWorkspaceFailed: "No pudimos crear el workspace.",
     workspaceNameMinLength: "El nombre del workspace debe tener al menos 2 caracteres.",
+    demoWorkspaceAlreadyExists: "Ya tenés una Caja Demo activa.",
   },
   en: {
     workspacePrefix: "Workspace for",
     defaultWorkspaceName: "My Workspace",
     createWorkspaceFailed: "We couldn't create the workspace.",
     workspaceNameMinLength: "Workspace name must be at least 2 characters.",
+    demoWorkspaceAlreadyExists: "You already have an active Demo workspace.",
   },
 } as const;
 
@@ -112,6 +136,7 @@ function toWorkspaceSummary(
     id: workspace.id,
     name: workspace.name,
     slug: workspace.slug,
+    isDemo: workspace.is_demo,
     role: role ?? "member",
     subscription: subscription
       ? {
@@ -127,12 +152,28 @@ function toWorkspaceSummaryFromRpc(row: CreateWorkspaceRpcRow): WorkspaceSummary
     id: row.workspace_id,
     name: row.workspace_name,
     slug: row.workspace_slug,
+    isDemo: row.workspace_is_demo,
     role: row.workspace_role,
     subscription: {
       plan: row.subscription_plan,
       status: row.subscription_status,
     },
   };
+}
+
+function resolveErrorMessage(error: unknown, fallbackMessage: string) {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const maybeMessage = (error as { message?: unknown }).message;
+    if (typeof maybeMessage === "string" && maybeMessage.trim().length > 0) {
+      return maybeMessage;
+    }
+  }
+
+  return fallbackMessage;
 }
 
 async function ensureUserProfile(
@@ -177,13 +218,19 @@ async function ensureUserProfile(
 async function createWorkspaceWithDefaults(
   supabase: SupabaseClient<Database>,
   workspaceName: string,
+  isDemo = false,
   preferredLanguageHint?: Locale,
 ): Promise<WorkspaceSummary> {
   const rpcResponse = await supabase.rpc("create_workspace_with_defaults", {
     p_workspace_name: workspaceName,
+    p_is_demo: isDemo,
   });
 
   if (rpcResponse.error) {
+    if (isDemo && rpcResponse.error.code === "23505") {
+      const messages = resolveWorkspaceBootstrapMessages(preferredLanguageHint);
+      throw new Error(messages.demoWorkspaceAlreadyExists);
+    }
     throw rpcResponse.error;
   }
 
@@ -210,7 +257,168 @@ export async function createWorkspaceForUser({
     throw new Error(messages.workspaceNameMinLength);
   }
 
-  return createWorkspaceWithDefaults(supabase, workspaceName, preferredLanguageHint);
+  return createWorkspaceWithDefaults(supabase, workspaceName, false, preferredLanguageHint);
+}
+
+export async function createDemoWorkspaceForUser({
+  supabase,
+  user,
+  name,
+  preferredLanguageHint,
+}: CreateDemoWorkspaceOptions): Promise<WorkspaceSummary> {
+  await ensureUserProfile(supabase, user, undefined, preferredLanguageHint);
+  const messages = resolveWorkspaceBootstrapMessages(preferredLanguageHint);
+
+  const workspaceName = name.trim();
+  if (workspaceName.length < 2) {
+    throw new Error(messages.workspaceNameMinLength);
+  }
+
+  const existingDemoResponse = await supabase
+    .from("workspaces")
+    .select("id")
+    .eq("created_by", user.id)
+    .eq("is_demo", true)
+    .limit(1);
+
+  if (existingDemoResponse.error) {
+    throw existingDemoResponse.error;
+  }
+
+  if ((existingDemoResponse.data ?? []).length > 0) {
+    throw new Error(messages.demoWorkspaceAlreadyExists);
+  }
+
+  let createdWorkspace: WorkspaceSummary | null = null;
+
+  try {
+    createdWorkspace = await createWorkspaceWithDefaults(
+      supabase,
+      workspaceName,
+      true,
+      preferredLanguageHint,
+    );
+
+    const demoPaymentMethods = await createDemoPaymentMethods({
+      supabase,
+      workspaceId: createdWorkspace.id,
+      userId: user.id,
+    });
+
+    const balanceAdjustmentCategory = await resolveBalanceAdjustmentCategoryForWorkspace({
+      supabase,
+      workspaceId: createdWorkspace.id,
+    });
+
+    const seed = buildDemoSeed(new Date());
+    const requiredSystemKeys = Array.from(
+      new Set(seed.transactions.map((transaction) => transaction.categoryKey)),
+    );
+
+    const systemCategoriesResponse = await supabase
+      .from("system_categories")
+      .select("id, key")
+      .in("key", requiredSystemKeys);
+
+    if (systemCategoriesResponse.error) {
+      throw systemCategoriesResponse.error;
+    }
+
+    const systemCategoryRows = (systemCategoriesResponse.data ?? []) as SystemCategoryRow[];
+    const systemCategoryIdByKey = new Map(
+      systemCategoryRows.map((systemCategory) => [systemCategory.key, systemCategory.id]),
+    );
+
+    if (
+      !systemCategoryIdByKey.has(BALANCE_ADJUSTMENT_SYSTEM_KEY) &&
+      systemCategoryIdByKey.has(balanceAdjustmentCategory.systemKey)
+    ) {
+      systemCategoryIdByKey.set(
+        BALANCE_ADJUSTMENT_SYSTEM_KEY,
+        systemCategoryIdByKey.get(balanceAdjustmentCategory.systemKey) as string,
+      );
+    }
+
+    const missingSystemKeys = requiredSystemKeys.filter((key) => !systemCategoryIdByKey.has(key));
+    if (missingSystemKeys.length > 0) {
+      throw new Error(`Faltan categorías sistema para el demo: ${missingSystemKeys.join(", ")}`);
+    }
+
+    const requiredSystemCategoryIds = Array.from(
+      new Set(
+        requiredSystemKeys
+          .map((key) => systemCategoryIdByKey.get(key))
+          .filter((systemCategoryId): systemCategoryId is string => Boolean(systemCategoryId)),
+      ),
+    );
+
+    const workspaceCategoriesResponse = await supabase
+      .from("categories")
+      .select("id, system_category_id")
+      .eq("workspace_id", createdWorkspace.id)
+      .eq("source", "system")
+      .in("system_category_id", requiredSystemCategoryIds);
+
+    if (workspaceCategoriesResponse.error) {
+      throw workspaceCategoriesResponse.error;
+    }
+
+    const workspaceCategoryRows = (workspaceCategoriesResponse.data ?? []) as WorkspaceCategoryBySystemRow[];
+    const workspaceCategoryIdBySystemCategoryId = new Map(
+      workspaceCategoryRows
+        .filter(
+          (
+            workspaceCategory,
+          ): workspaceCategory is WorkspaceCategoryBySystemRow & { system_category_id: string } =>
+            Boolean(workspaceCategory.system_category_id),
+        )
+        .map((workspaceCategory) => [workspaceCategory.system_category_id, workspaceCategory.id]),
+    );
+
+    const categoryIdByKey = Object.fromEntries(
+      requiredSystemKeys.map((key) => {
+        const systemCategoryId = systemCategoryIdByKey.get(key) as string;
+        const categoryId = workspaceCategoryIdBySystemCategoryId.get(systemCategoryId);
+        if (!categoryId) {
+          throw new Error(`No encontramos la categoría del workspace para ${key}.`);
+        }
+
+        return [key, categoryId];
+      }),
+    );
+
+    const transactions = materializeDemoSeedTransactions({
+      workspaceId: createdWorkspace.id,
+      userId: user.id,
+      seed,
+      categoryIdByKey,
+      paymentMethodIdByKey: {
+        debit: demoPaymentMethods.debit.id,
+        cash: demoPaymentMethods.cash.id,
+        credit: demoPaymentMethods.credit.id,
+      },
+    });
+
+    if (transactions.length === 0) {
+      throw new Error("No pudimos generar transacciones demo.");
+    }
+
+    const transactionsInsertResponse = await supabase.from("transactions").insert(transactions);
+    if (transactionsInsertResponse.error) {
+      throw transactionsInsertResponse.error;
+    }
+
+    return createdWorkspace;
+  } catch (error) {
+    if (createdWorkspace) {
+      await deleteWorkspaceForUser({
+        supabase,
+        workspaceId: createdWorkspace.id,
+      }).catch(() => undefined);
+    }
+
+    throw new Error(resolveErrorMessage(error, messages.createWorkspaceFailed));
+  }
 }
 
 export async function deleteWorkspaceForUser({
@@ -240,7 +448,7 @@ export async function listUserWorkspaces({
   const [workspacesResponse, membershipsResponse] = await Promise.all([
     supabase
       .from("workspaces")
-      .select("id, name, slug, created_at")
+      .select("id, name, slug, is_demo, created_at")
       .order("created_at", { ascending: true }),
     supabase
       .from("workspace_members")
@@ -308,5 +516,5 @@ export async function bootstrapUserWorkspace({
   }
 
   const workspaceName = buildWorkspaceName(fullNameHint, user.email, preferredLanguageHint);
-  return createWorkspaceWithDefaults(supabase, workspaceName, preferredLanguageHint);
+  return createWorkspaceWithDefaults(supabase, workspaceName, false, preferredLanguageHint);
 }
