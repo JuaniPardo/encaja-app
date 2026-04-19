@@ -35,9 +35,13 @@ export default function SettingsPage() {
         opened={general.isCreateWorkspaceOpen}
         onClose={general.closeCreateWorkspace}
         onSubmit={general.onSubmitCreateWorkspace}
+        onCreateDemoWorkspace={() => {
+          void general.onCreateDemoWorkspace();
+        }}
         nameInputProps={general.registerCreateWorkspace("name")}
         nameError={general.createWorkspaceErrors.name?.message}
         isSubmitting={general.isCreatingWorkspace}
+        isCreatingDemoWorkspace={general.isCreatingDemoWorkspace}
       />
 
       <DeleteWorkspaceModal

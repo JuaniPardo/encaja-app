@@ -588,6 +588,8 @@ const dictionaries = {
       modals: {
         createWorkspace: {
           title: "Crear Caja",
+          createDemoButton: "Crear demo",
+          demoDefaultName: "Caja Demo",
         },
         deleteWorkspace: {
           title: "Eliminar Caja",
@@ -628,7 +630,10 @@ const dictionaries = {
         createWorkspacePermissionDenied: "Solo el owner puede crear Cajas.",
         workspaceCreatedTitle: "Caja creada",
         workspaceCreatedMessage: "{{workspaceName}} ya está disponible.",
+        demoWorkspaceCreatedTitle: "Caja demo creada",
+        demoWorkspaceCreatedMessage: "{{workspaceName}} ya está lista con datos de ejemplo.",
         createWorkspaceError: "No pudimos crear la Caja",
+        createDemoWorkspaceError: "No pudimos crear la Caja Demo",
         unexpectedCreateWorkspaceError:
           "Ocurrió un error inesperado al crear la Caja.",
         deleteWorkspacePermissionDenied:
@@ -1565,6 +1570,8 @@ const dictionaries = {
       modals: {
         createWorkspace: {
           title: "Create workspace",
+          createDemoButton: "Create demo",
+          demoDefaultName: "Demo workspace",
         },
         deleteWorkspace: {
           title: "Delete workspace",
@@ -1606,7 +1613,10 @@ const dictionaries = {
         createWorkspacePermissionDenied: "Only the owner can create workspaces.",
         workspaceCreatedTitle: "Workspace created",
         workspaceCreatedMessage: "{{workspaceName}} is now available.",
+        demoWorkspaceCreatedTitle: "Demo workspace created",
+        demoWorkspaceCreatedMessage: "{{workspaceName}} is ready with sample data.",
         createWorkspaceError: "We couldn't create workspace",
+        createDemoWorkspaceError: "We couldn't create demo workspace",
         unexpectedCreateWorkspaceError:
           "An unexpected error occurred while creating workspace.",
         deleteWorkspacePermissionDenied:

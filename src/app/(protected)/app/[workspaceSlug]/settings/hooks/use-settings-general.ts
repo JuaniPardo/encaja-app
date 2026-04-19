@@ -33,6 +33,7 @@ export function useSettingsGeneral(options?: UseSettingsGeneralOptions) {
     workspace,
     refreshWorkspace,
     createWorkspace,
+    createDemoWorkspace,
     switchWorkspace,
     canUseWorkspaceFeature,
   } = useWorkspace();
@@ -43,6 +44,7 @@ export function useSettingsGeneral(options?: UseSettingsGeneralOptions) {
   const [isLoading, setIsLoading] = useState(true);
   const [workspaceCurrencyCode, setWorkspaceCurrencyCode] = useState(DEFAULT_CURRENCY_CODE);
   const [settingsId, setSettingsId] = useState<string | null>(null);
+  const [isCreatingDemoWorkspace, setIsCreatingDemoWorkspace] = useState(false);
   const [isCreateWorkspaceOpen, { open: openCreateWorkspace, close: closeCreateWorkspace }] =
     useDisclosure(false);
 
@@ -141,6 +143,7 @@ export function useSettingsGeneral(options?: UseSettingsGeneralOptions) {
     register: registerCreateWorkspace,
     handleSubmit: handleSubmitCreateWorkspace,
     reset: resetCreateWorkspace,
+    getValues: getCreateWorkspaceFormValues,
     formState: {
       errors: createWorkspaceErrors,
       isSubmitting: isCreatingWorkspace,
@@ -375,6 +378,50 @@ export function useSettingsGeneral(options?: UseSettingsGeneralOptions) {
     [setValue],
   );
 
+  const onCreateDemoWorkspace = async () => {
+    if (!canCreateWorkspace) {
+      notifications.show({
+        color: "red",
+        title: t("workspaceSettings.notifications.permissionDeniedTitle"),
+        message: t("workspaceSettings.notifications.createWorkspacePermissionDenied"),
+      });
+      return;
+    }
+
+    const rawWorkspaceName = getCreateWorkspaceFormValues("name");
+    const fallbackWorkspaceName = t("workspaceSettings.modals.createWorkspace.demoDefaultName");
+    const workspaceName =
+      typeof rawWorkspaceName === "string" && rawWorkspaceName.trim().length > 0
+        ? rawWorkspaceName.trim()
+        : fallbackWorkspaceName;
+
+    setIsCreatingDemoWorkspace(true);
+
+    try {
+      const createdWorkspace = await createDemoWorkspace(workspaceName);
+      notifications.show({
+        color: "cyan",
+        title: t("workspaceSettings.notifications.demoWorkspaceCreatedTitle"),
+        message: t("workspaceSettings.notifications.demoWorkspaceCreatedMessage", undefined, {
+          workspaceName: createdWorkspace.name,
+        }),
+      });
+      closeCreateWorkspace();
+      switchWorkspace(createdWorkspace.slug, "/settings");
+    } catch (error) {
+      notifications.show({
+        color: "red",
+        title: t("workspaceSettings.notifications.createDemoWorkspaceError"),
+        message:
+          error instanceof Error
+            ? error.message
+            : t("workspaceSettings.notifications.unexpectedCreateWorkspaceError"),
+      });
+    } finally {
+      setIsCreatingDemoWorkspace(false);
+    }
+  };
+
   return {
     canEditWorkspaceSettings,
     canCreateWorkspace,
@@ -393,9 +440,11 @@ export function useSettingsGeneral(options?: UseSettingsGeneralOptions) {
     registerCreateWorkspace,
     createWorkspaceErrors,
     isCreatingWorkspace,
+    isCreatingDemoWorkspace,
     onSubmitSettings,
     onSubmitWorkspace,
     onSubmitCreateWorkspace,
+    onCreateDemoWorkspace,
     loadSettings,
     isCreateWorkspaceOpen,
     openCreateWorkspace,

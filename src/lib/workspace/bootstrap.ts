@@ -1,6 +1,12 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 
 import { defaultLocale, normalizeLocale, type Locale } from "@/features/i18n/config";
+import {
+  BALANCE_ADJUSTMENT_SYSTEM_KEY,
+  createDemoPaymentMethods,
+  resolveBalanceAdjustmentCategoryForWorkspace,
+} from "@/lib/workspace/demo";
+import { buildDemoSeed, materializeDemoSeedTransactions } from "@/lib/workspace/demo-seed";
 import type {
   Database,
   SubscriptionPlan,
@@ -21,6 +27,14 @@ type WorkspaceMemberRow = Pick<
 type SubscriptionRow = Pick<
   Database["public"]["Tables"]["subscriptions"]["Row"],
   "workspace_id" | "plan" | "status"
+>;
+type SystemCategoryRow = Pick<
+  Database["public"]["Tables"]["system_categories"]["Row"],
+  "id" | "key"
+>;
+type WorkspaceCategoryBySystemRow = Pick<
+  Database["public"]["Tables"]["categories"]["Row"],
+  "id" | "system_category_id"
 >;
 
 type CreateWorkspaceRpcRow =
@@ -147,6 +161,21 @@ function toWorkspaceSummaryFromRpc(row: CreateWorkspaceRpcRow): WorkspaceSummary
   };
 }
 
+function resolveErrorMessage(error: unknown, fallbackMessage: string) {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const maybeMessage = (error as { message?: unknown }).message;
+    if (typeof maybeMessage === "string" && maybeMessage.trim().length > 0) {
+      return maybeMessage;
+    }
+  }
+
+  return fallbackMessage;
+}
+
 async function ensureUserProfile(
   supabase: SupabaseClient<Database>,
   user: User,
@@ -260,7 +289,136 @@ export async function createDemoWorkspaceForUser({
     throw new Error(messages.demoWorkspaceAlreadyExists);
   }
 
-  return createWorkspaceWithDefaults(supabase, workspaceName, true, preferredLanguageHint);
+  let createdWorkspace: WorkspaceSummary | null = null;
+
+  try {
+    createdWorkspace = await createWorkspaceWithDefaults(
+      supabase,
+      workspaceName,
+      true,
+      preferredLanguageHint,
+    );
+
+    const demoPaymentMethods = await createDemoPaymentMethods({
+      supabase,
+      workspaceId: createdWorkspace.id,
+      userId: user.id,
+    });
+
+    const balanceAdjustmentCategory = await resolveBalanceAdjustmentCategoryForWorkspace({
+      supabase,
+      workspaceId: createdWorkspace.id,
+    });
+
+    const seed = buildDemoSeed(new Date());
+    const requiredSystemKeys = Array.from(
+      new Set(seed.transactions.map((transaction) => transaction.categoryKey)),
+    );
+
+    const systemCategoriesResponse = await supabase
+      .from("system_categories")
+      .select("id, key")
+      .in("key", requiredSystemKeys);
+
+    if (systemCategoriesResponse.error) {
+      throw systemCategoriesResponse.error;
+    }
+
+    const systemCategoryRows = (systemCategoriesResponse.data ?? []) as SystemCategoryRow[];
+    const systemCategoryIdByKey = new Map(
+      systemCategoryRows.map((systemCategory) => [systemCategory.key, systemCategory.id]),
+    );
+
+    if (
+      !systemCategoryIdByKey.has(BALANCE_ADJUSTMENT_SYSTEM_KEY) &&
+      systemCategoryIdByKey.has(balanceAdjustmentCategory.systemKey)
+    ) {
+      systemCategoryIdByKey.set(
+        BALANCE_ADJUSTMENT_SYSTEM_KEY,
+        systemCategoryIdByKey.get(balanceAdjustmentCategory.systemKey) as string,
+      );
+    }
+
+    const missingSystemKeys = requiredSystemKeys.filter((key) => !systemCategoryIdByKey.has(key));
+    if (missingSystemKeys.length > 0) {
+      throw new Error(`Faltan categorías sistema para el demo: ${missingSystemKeys.join(", ")}`);
+    }
+
+    const requiredSystemCategoryIds = Array.from(
+      new Set(
+        requiredSystemKeys
+          .map((key) => systemCategoryIdByKey.get(key))
+          .filter((systemCategoryId): systemCategoryId is string => Boolean(systemCategoryId)),
+      ),
+    );
+
+    const workspaceCategoriesResponse = await supabase
+      .from("categories")
+      .select("id, system_category_id")
+      .eq("workspace_id", createdWorkspace.id)
+      .eq("source", "system")
+      .in("system_category_id", requiredSystemCategoryIds);
+
+    if (workspaceCategoriesResponse.error) {
+      throw workspaceCategoriesResponse.error;
+    }
+
+    const workspaceCategoryRows = (workspaceCategoriesResponse.data ?? []) as WorkspaceCategoryBySystemRow[];
+    const workspaceCategoryIdBySystemCategoryId = new Map(
+      workspaceCategoryRows
+        .filter(
+          (
+            workspaceCategory,
+          ): workspaceCategory is WorkspaceCategoryBySystemRow & { system_category_id: string } =>
+            Boolean(workspaceCategory.system_category_id),
+        )
+        .map((workspaceCategory) => [workspaceCategory.system_category_id, workspaceCategory.id]),
+    );
+
+    const categoryIdByKey = Object.fromEntries(
+      requiredSystemKeys.map((key) => {
+        const systemCategoryId = systemCategoryIdByKey.get(key) as string;
+        const categoryId = workspaceCategoryIdBySystemCategoryId.get(systemCategoryId);
+        if (!categoryId) {
+          throw new Error(`No encontramos la categoría del workspace para ${key}.`);
+        }
+
+        return [key, categoryId];
+      }),
+    );
+
+    const transactions = materializeDemoSeedTransactions({
+      workspaceId: createdWorkspace.id,
+      userId: user.id,
+      seed,
+      categoryIdByKey,
+      paymentMethodIdByKey: {
+        debit: demoPaymentMethods.debit.id,
+        cash: demoPaymentMethods.cash.id,
+        credit: demoPaymentMethods.credit.id,
+      },
+    });
+
+    if (transactions.length === 0) {
+      throw new Error("No pudimos generar transacciones demo.");
+    }
+
+    const transactionsInsertResponse = await supabase.from("transactions").insert(transactions);
+    if (transactionsInsertResponse.error) {
+      throw transactionsInsertResponse.error;
+    }
+
+    return createdWorkspace;
+  } catch (error) {
+    if (createdWorkspace) {
+      await deleteWorkspaceForUser({
+        supabase,
+        workspaceId: createdWorkspace.id,
+      }).catch(() => undefined);
+    }
+
+    throw new Error(resolveErrorMessage(error, messages.createWorkspaceFailed));
+  }
 }
 
 export async function deleteWorkspaceForUser({

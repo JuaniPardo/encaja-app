@@ -2,7 +2,6 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
 
 import {
-  createDemoWorkspaceForUser,
   createWorkspaceForUser,
   deleteWorkspaceForUser,
 } from "@/lib/workspace/bootstrap";
@@ -115,62 +114,6 @@ describe("workspace bootstrap", () => {
     expect(deletedWorkspace).toMatchObject({
       deleted_workspace_id: "workspace-1",
       deleted_workspace_slug: "hogar",
-    });
-  });
-
-  it("creates demo workspace when user has no active demo", async () => {
-    const { supabase, rpc } = buildSupabaseMock();
-    const user = {
-      id: "user-1",
-      email: "owner@encaja.app",
-    } as User;
-
-    rpc.mockResolvedValueOnce({
-      error: null,
-      data: [
-        {
-          workspace_id: "workspace-demo",
-          workspace_name: "Caja Demo",
-          workspace_slug: "caja-demo",
-          workspace_is_demo: true,
-          workspace_role: "owner",
-          subscription_plan: "premium",
-          subscription_status: "active",
-        },
-      ],
-    });
-
-    const workspace = await createDemoWorkspaceForUser({
-      supabase,
-      user,
-      name: "Caja Demo",
-    });
-
-    expect(rpc).toHaveBeenCalledWith("create_workspace_with_defaults", {
-      p_workspace_name: "Caja Demo",
-      p_is_demo: true,
-    });
-    expect(workspace.isDemo).toBe(true);
-  });
-
-  it("blocks creating a second active demo workspace", async () => {
-    const { supabase, rpc } = buildSupabaseMock({ existingDemo: true });
-    const user = {
-      id: "user-1",
-      email: "owner@encaja.app",
-    } as User;
-
-    await expect(
-      createDemoWorkspaceForUser({
-        supabase,
-        user,
-        name: "Caja Demo",
-      }),
-    ).rejects.toThrow("Ya tenés una Caja Demo activa.");
-
-    expect(rpc).not.toHaveBeenCalledWith("create_workspace_with_defaults", {
-      p_workspace_name: "Caja Demo",
-      p_is_demo: true,
     });
   });
 });
