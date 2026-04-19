@@ -28,6 +28,7 @@ import { LAST_WORKSPACE_SLUG_STORAGE_KEY } from "@/features/workspace/storage";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import {
   bootstrapUserWorkspace,
+  createDemoWorkspaceForUser,
   createWorkspaceForUser,
   deleteWorkspaceForUser,
   listUserWorkspaces,
@@ -42,6 +43,7 @@ interface WorkspaceContextValue {
   workspaces: WorkspaceSummary[];
   refreshWorkspace: () => Promise<void>;
   createWorkspace: (name: string) => Promise<WorkspaceSummary>;
+  createDemoWorkspace: (name: string) => Promise<WorkspaceSummary>;
   deleteWorkspace: (workspaceId: string) => Promise<WorkspaceSummary>;
   switchWorkspace: (workspaceSlug: string, sectionPath?: string) => void;
   canUseWorkspaceFeature: (feature: WorkspaceFeature) => boolean;
@@ -276,6 +278,37 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     [locale, state.user, supabase, t],
   );
 
+  const createDemoWorkspace = useCallback(
+    async (name: string) => {
+      if (!state.user) {
+        throw new Error(t("workspace.noSessionAvailable"));
+      }
+
+      const createdWorkspace = await createDemoWorkspaceForUser({
+        supabase,
+        user: state.user,
+        name,
+        preferredLanguageHint: locale,
+      });
+
+      const workspaces = await listUserWorkspaces({
+        supabase,
+        user: state.user,
+      });
+
+      setState((prev) => ({
+        ...prev,
+        workspaces,
+        workspace: createdWorkspace,
+        errorMessage: null,
+      }));
+
+      rememberLastWorkspaceSlug(createdWorkspace.slug);
+      return createdWorkspace;
+    },
+    [locale, state.user, supabase, t],
+  );
+
   const deleteWorkspace = useCallback(
     async (workspaceId: string) => {
       if (!state.user) {
@@ -486,6 +519,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         workspaces: state.workspaces,
         refreshWorkspace,
         createWorkspace,
+        createDemoWorkspace,
         deleteWorkspace,
         switchWorkspace,
         canUseWorkspaceFeature,

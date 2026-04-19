@@ -27,23 +27,23 @@ describe("workspace role permissions", () => {
     expect(canManageTransactions("owner")).toBe(true);
   });
 
-  it("blocks member from structural actions but keeps transaction operations", () => {
-    expect(canManageWorkspaceStructure("member")).toBe(false);
+  it("allows member structural actions but blocks owner-only actions", () => {
+    expect(canManageWorkspaceStructure("member")).toBe(true);
     expect(canManageWorkspaceSettings("member")).toBe(false);
     expect(canBootstrapWorkspaceFoundations("member")).toBe(false);
     expect(canDeleteWorkspace("member")).toBe(false);
     expect(canManageWorkspaceMembers("member")).toBe(false);
     expect(canManageWorkspaceLinks("member")).toBe(false);
-    expect(canManageCategories("member")).toBe(false);
-    expect(canManagePaymentMethods("member")).toBe(false);
-    expect(canManageBudgetStructure("member")).toBe(false);
+    expect(canManageCategories("member")).toBe(true);
+    expect(canManagePaymentMethods("member")).toBe(true);
+    expect(canManageBudgetStructure("member")).toBe(true);
     expect(canManageTransactions("member")).toBe(true);
   });
 
-  it("enforces hardening scenarios for owner/member", () => {
-    expect(canManageCategories("member")).toBe(false);
-    expect(canManagePaymentMethods("member")).toBe(false);
-    expect(canManageBudgetStructure("member")).toBe(false);
+  it("keeps owner/member structural permissions consistent", () => {
+    expect(canManageCategories("member")).toBe(true);
+    expect(canManagePaymentMethods("member")).toBe(true);
+    expect(canManageBudgetStructure("member")).toBe(true);
     expect(canManageCategories("owner")).toBe(true);
   });
 });
