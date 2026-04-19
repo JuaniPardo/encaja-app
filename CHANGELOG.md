@@ -1,6 +1,21 @@
+## [1.3.0] - 2026-04-19
+
+### Added
+- Added Smart Categories semantic contract fields for system and workspace category instances (`is_editable`, `is_exceptional`, `warning_message`).
+- Added first exceptional system category for manual balance realignment (`expense_manual_adjustment`) with contextual guidance copy.
+- Added contextual warning rendering in transaction creation when an exceptional category is selected.
+
+### Changed
+- Hardened system category behavior to keep semantic properties immutable at data level.
+- Updated category management UI to reflect immutable system naming and exceptional category state.
+- Updated workspace bootstrap function to instantiate new smart-category metadata for all new workspaces.
+
+### Fixed
+- Corrected changelog section formatting for release `1.2.1` (`### Changed`).
+
 ## [1.2.1] - 2026-04-18
 
-## Changed
+### Changed
 - Refactored Dashboard, Settings, and Transactions modules to reduce coupling and extract reusable components, hooks, and view-model logic without functional changes.
 - Simplified Settings navigation by removing profile access from Settings, since it now has a dedicated page.
 
