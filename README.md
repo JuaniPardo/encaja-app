@@ -4,9 +4,9 @@ Aplicación web de presupuesto y control financiero personal/workspace-first, na
 
 ## Estado actual del producto
 
-- Fase funcional: **MVP23**
-- Último release registrado: **1.2.0** (fecha: **2026-04-18**)
-- Estado general: base operativa completa para uso real, con foco en robustez de modelo de datos y refactors de mantenibilidad.
+- Fase funcional: **MVP25**
+- Último release registrado: **1.4.0** (fecha: **2026-04-19**)
+- Estado general: base operativa completa para uso real, con onboarding asistido por **Caja Demo** y foco en robustez de modelo de datos.
 
 ### Funcionalidad implementada hoy
 
@@ -23,6 +23,7 @@ Aplicación web de presupuesto y control financiero personal/workspace-first, na
 - Settings del workspace (general, miembros, links entre workspaces, danger zone).
 - Perfil de usuario separado de settings (`/profile`).
 - Base i18n (`es`/`en`).
+- Flujo de creación de **workspace demo** con datos realistas para acelerar onboarding.
 
 ## Qué hace Encaja
 
@@ -69,7 +70,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 
 ### 3) Aplicar migraciones de base de datos
 
-Este repo incluye migraciones acumuladas en `supabase/migrations/` (hasta MVP23).
+Este repo incluye migraciones acumuladas en `supabase/migrations/` (hasta MVP25).
 
 Opciones:
 
@@ -116,7 +117,7 @@ Nota para entorno Codex: puede requerir `PATH="/usr/local/bin:/opt/homebrew/bin:
 ## Roadmap (tentativo)
 
 1. Seguir reduciendo acoplamiento en páginas grandes (`transactions`, `insights`, `budget`).
-2. Profundizar insights aprovechando la normalización semántica de categorías (MVP23).
+2. Profundizar insights aprovechando la normalización semántica de categorías y datos demo (MVP25).
 3. Mejoras incrementales de colaboración/workspaces vinculados.
 4. Continuar hardening de permisos, RLS y calidad de datos para releases estables.
 
