@@ -85,8 +85,6 @@ export function useDashboardPresentation({
       cash: mapPaymentMethodTypeLabel("cash", t),
       debit_card: mapPaymentMethodTypeLabel("debit_card", t),
       credit_card: mapPaymentMethodTypeLabel("credit_card", t),
-      bank_transfer: mapPaymentMethodTypeLabel("bank_transfer", t),
-      other: mapPaymentMethodTypeLabel("other", t),
     }),
     [t],
   );

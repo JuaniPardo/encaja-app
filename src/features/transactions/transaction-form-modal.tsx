@@ -36,7 +36,7 @@ import classes from "./transaction-form-modal.module.css";
 
 type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
-type QuickPaymentMethodType = "cash" | "debit_card" | "other";
+type QuickPaymentMethodType = "cash" | "debit_card";
 type CategoryOption = { value: string; label: string };
 type CategoryOptionGroup = { group: string; items: CategoryOption[] };
 

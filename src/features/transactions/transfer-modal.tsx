@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  Alert,
   Button,
   Group,
   Modal,
@@ -14,7 +15,7 @@ import {
   Textarea,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
 import {
@@ -23,10 +24,10 @@ import {
   sanitizeBudgetTypingValue,
 } from "@/features/budget/amount-format";
 import { useI18n } from "@/features/i18n/provider";
+import { resolveTransferSystemCategoryKey } from "@/features/transactions/transfer-category";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { Database } from "@/types/database";
 
-type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
 type PaymentMethodRow = Database["public"]["Tables"]["payment_methods"]["Row"];
 
 function createTransferSchema(t: ReturnType<typeof useI18n>["t"]) {
@@ -37,15 +38,14 @@ function createTransferSchema(t: ReturnType<typeof useI18n>["t"]) {
         const parsed = parseBudgetAmount(value);
         return parsed !== null && parsed > 0;
       }, t("common.validation.amountGtZero")),
-    categoryId: z.string().min(1, t("common.forms.transaction.requiredCategory")),
     fromPaymentMethodId: z.string().min(1, t("common.validation.invalidOption")),
     toPaymentMethodId: z.string().min(1, t("common.validation.invalidOption")),
-    transactionDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, t("common.forms.transaction.requiredTransactionDate")),
+    transactionDate: z.string().regex(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/, t("common.forms.transaction.requiredTransactionDate")),
     effectiveDate: z
       .string()
       .optional()
       .refine(
-        (value) => value === undefined || value === "" || /^\d{4}-\d{2}-\d{2}$/.test(value),
+        (value) => value === undefined || value === "" || /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(value),
         t("common.validation.invalidDate"),
       ),
     description: z.string().max(120, t("common.forms.transaction.descriptionMaxLength")).optional(),
@@ -55,10 +55,9 @@ function createTransferSchema(t: ReturnType<typeof useI18n>["t"]) {
 
 type TransferFormValues = z.infer<ReturnType<typeof createTransferSchema>>;
 
-function toTransferDefaults(categories: CategoryRow[]): TransferFormValues {
+function toTransferDefaults(): TransferFormValues {
   return {
     amount: "",
-    categoryId: categories[0]?.id ?? "",
     fromPaymentMethodId: "",
     toPaymentMethodId: "",
     transactionDate: toDateInputValue(new Date()),
@@ -71,7 +70,6 @@ function toTransferDefaults(categories: CategoryRow[]): TransferFormValues {
 interface TransferModalProps {
   opened: boolean;
   onClose: () => void;
-  categories: CategoryRow[];
   paymentMethods: PaymentMethodRow[];
   onSuccess: () => void;
 }
@@ -86,22 +84,21 @@ function toDateInputValue(date: Date) {
 export function TransferModal({
   opened,
   onClose,
-  categories,
   paymentMethods,
   onSuccess,
 }: TransferModalProps) {
-  const { supabase, workspace, user } = useWorkspace();
+  const { supabase, workspace } = useWorkspace();
   const { t } = useI18n();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const transferSchema = useMemo(() => createTransferSchema(t), [t]);
 
-  const transferCategories = useMemo(
-    () => categories.filter((c) => c.type === "transfer" && c.is_active),
-    [categories],
-  );
   const activePaymentMethods = useMemo(
     () => paymentMethods.filter((pm) => pm.is_active),
     [paymentMethods],
+  );
+  const paymentMethodById = useMemo(
+    () => new Map(activePaymentMethods.map((pm) => [pm.id, pm])),
+    [activePaymentMethods],
   );
 
   const {
@@ -112,16 +109,63 @@ export function TransferModal({
   } = useForm<TransferFormValues>({
     resolver: zodResolver(transferSchema),
     mode: "onChange",
-    defaultValues: toTransferDefaults(transferCategories),
+    defaultValues: toTransferDefaults(),
   });
+
+  const fromPaymentMethodId = useWatch({ control, name: "fromPaymentMethodId" });
+  const toPaymentMethodId = useWatch({ control, name: "toPaymentMethodId" });
+
+  const inferredTransfer = useMemo(() => {
+    if (!fromPaymentMethodId || !toPaymentMethodId) {
+      return {
+        systemKey: null,
+        message: t("transactions.transferInference.pending"),
+        isError: false,
+      };
+    }
+
+    if (fromPaymentMethodId === toPaymentMethodId) {
+      return {
+        systemKey: null,
+        message: t("transactions.notifications.samePaymentMethodError"),
+        isError: true,
+      };
+    }
+
+    const fromMethod = paymentMethodById.get(fromPaymentMethodId);
+    const toMethod = paymentMethodById.get(toPaymentMethodId);
+
+    if (!fromMethod || !toMethod) {
+      return {
+        systemKey: null,
+        message: t("transactions.notifications.invalidPaymentMethodMessage"),
+        isError: true,
+      };
+    }
+
+    try {
+      const systemKey = resolveTransferSystemCategoryKey(fromMethod.type, toMethod.type);
+      return {
+        systemKey,
+        message: t(`transactions.transferInference.${systemKey}`),
+        isError: false,
+      };
+    } catch {
+      return {
+        systemKey: null,
+        message: t("transactions.notifications.invalidTransferCombinationError"),
+        isError: true,
+      };
+    }
+  }, [fromPaymentMethodId, paymentMethodById, t, toPaymentMethodId]);
 
   useEffect(() => {
     if (!opened) {
       return;
     }
 
-    reset(toTransferDefaults(transferCategories));
-  }, [opened, reset, transferCategories]);
+    reset(toTransferDefaults());
+  }, [opened, reset]);
 
   const onSubmit = async (values: TransferFormValues) => {
     if (values.fromPaymentMethodId === values.toPaymentMethodId) {
@@ -133,7 +177,6 @@ export function TransferModal({
       return;
     }
 
-    setIsSubmitting(true);
     const amount = parseBudgetAmount(values.amount);
     if (amount == null) {
       notifications.show({
@@ -141,58 +184,53 @@ export function TransferModal({
         title: t("transactions.notifications.registerError"),
         message: t("transactions.notifications.invalidAmountError"),
       });
-      setIsSubmitting(false);
       return;
     }
-    const transferGroupId = crypto.randomUUID();
 
-    const common = {
-      workspace_id: workspace.id,
-      type: "transfer" as const,
-      category_id: values.categoryId,
-      amount: Math.round(amount * 100) / 100,
-      transaction_date: values.transactionDate,
-      effective_date: values.effectiveDate || null,
-      description: values.description || null,
-      notes: values.notes || null,
-      transfer_group_id: transferGroupId,
-      created_by: user.id,
-    };
-
-    const outMovement = {
-      ...common,
-      direction: "out" as const,
-      payment_method_id: values.fromPaymentMethodId,
-    };
-
-    const inMovement = {
-      ...common,
-      direction: "in" as const,
-      payment_method_id: values.toPaymentMethodId,
-    };
-
-    const { error } = await supabase.from("transactions").insert([outMovement, inMovement]);
-
-    setIsSubmitting(false);
-
-    if (error) {
+    if (inferredTransfer.isError || !inferredTransfer.systemKey) {
       notifications.show({
         color: "red",
         title: t("transactions.notifications.registerError"),
-        message: error.message,
+        message: inferredTransfer.message,
       });
       return;
     }
 
-    notifications.show({
-      color: "cyan",
-      title: t("transactions.notifications.transferCreatedTitle"),
-      message: t("transactions.notifications.transferCreatedMessage"),
-    });
+    setIsSubmitting(true);
 
-    reset(toTransferDefaults(transferCategories));
-    onSuccess();
-    onClose();
+    try {
+      const { error } = await supabase.rpc("create_transfer_transaction", {
+        p_workspace_id: workspace.id,
+        p_from_payment_method_id: values.fromPaymentMethodId,
+        p_to_payment_method_id: values.toPaymentMethodId,
+        p_amount: Math.round(amount * 100) / 100,
+        p_transaction_date: values.transactionDate,
+        p_effective_date: values.effectiveDate || null,
+        p_description: values.description || null,
+        p_notes: values.notes || null,
+      });
+
+      if (error) {
+        notifications.show({
+          color: "red",
+          title: t("transactions.notifications.registerError"),
+          message: error.message,
+        });
+        return;
+      }
+
+      notifications.show({
+        color: "cyan",
+        title: t("transactions.notifications.transferCreatedTitle"),
+        message: t("transactions.notifications.transferCreatedMessage"),
+      });
+
+      reset(toTransferDefaults());
+      onSuccess();
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -239,53 +277,39 @@ export function TransferModal({
             />
           </Group>
 
-          <Group grow align="start">
-            <Controller
-              name="categoryId"
-              control={control}
-              render={({ field }) => (
-                <NativeSelect
-                  label={t("transactions.category")}
-                  required
-                  data={[{ label: t("transactions.form.selectCategory"), value: "" }].concat(
-                    transferCategories.map((c) => ({ label: c.name, value: c.id })),
-                  )}
-                  {...field}
-                  error={errors.categoryId?.message}
-                />
-              )}
-            />
+          <Alert color={inferredTransfer.isError ? "red" : "cyan"} variant="light">
+            {inferredTransfer.message}
+          </Alert>
 
-            <Controller
-              name="amount"
-              control={control}
-              render={({ field }) => (
-                <TextInput
-                  label={t("transactions.form.amount")}
-                  inputMode="decimal"
-                  placeholder="0"
-                  required
-                  data-autofocus
-                  error={errors.amount?.message}
-                  value={field.value}
-                  onChange={(event) => {
-                    field.onChange(sanitizeBudgetTypingValue(event.currentTarget.value));
-                  }}
-                  onBlur={(event) => {
-                    const parsed = parseBudgetAmount(event.currentTarget.value);
-                    field.onChange(parsed === null ? "" : formatBudgetAmount(parsed));
-                  }}
-                  leftSection={
-                    <Text size="xs" c="dimmed" fw={700}>
-                      $
-                    </Text>
-                  }
-                  leftSectionWidth={24}
-                  styles={{ input: { textAlign: "right", fontVariantNumeric: "tabular-nums" } }}
-                />
-              )}
-            />
-          </Group>
+          <Controller
+            name="amount"
+            control={control}
+            render={({ field }) => (
+              <TextInput
+                label={t("transactions.form.amount")}
+                inputMode="decimal"
+                placeholder="0"
+                required
+                data-autofocus
+                error={errors.amount?.message}
+                value={field.value}
+                onChange={(event) => {
+                  field.onChange(sanitizeBudgetTypingValue(event.currentTarget.value));
+                }}
+                onBlur={(event) => {
+                  const parsed = parseBudgetAmount(event.currentTarget.value);
+                  field.onChange(parsed === null ? "" : formatBudgetAmount(parsed));
+                }}
+                leftSection={
+                  <Text size="xs" c="dimmed" fw={700}>
+                    $
+                  </Text>
+                }
+                leftSectionWidth={24}
+                styles={{ input: { textAlign: "right", fontVariantNumeric: "tabular-nums" } }}
+              />
+            )}
+          />
 
           <Controller
             name="transactionDate"
@@ -359,7 +383,11 @@ export function TransferModal({
             >
               {t("common.actions.cancel")}
             </Button>
-            <Button type="submit" loading={isSubmitting} disabled={!isValid}>
+            <Button
+              type="submit"
+              loading={isSubmitting}
+              disabled={!isValid || inferredTransfer.systemKey === null || inferredTransfer.isError}
+            >
               {t("transactions.transfer")}
             </Button>
           </Group>
