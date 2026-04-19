@@ -1,0 +1,11 @@
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e45] [cursor=pointer]:
+    - img [ref=e46]
+  - alert [ref=e51]:
+    - generic [ref=e52]:
+      - generic [ref=e53]: Bienvenido
+      - generic [ref=e54]: Sesión iniciada correctamente.
+    - button [ref=e55] [cursor=pointer]:
+      - img [ref=e56]
+  - alert [ref=e39]
+  - paragraph [ref=e61]: Preparando tus Cajas...

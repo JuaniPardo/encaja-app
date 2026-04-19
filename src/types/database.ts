@@ -2,9 +2,7 @@ export type TransactionType = "income" | "expense" | "saving" | "transfer";
 export type PaymentMethodType =
   | "cash"
   | "debit_card"
-  | "credit_card"
-  | "bank_transfer"
-  | "other";
+  | "credit_card";
 export type ExpenseBehavior = "fixed" | "variable";
 export type CategorySource = "system" | "custom";
 export type WorkspaceRole = "owner" | "member";
@@ -219,6 +217,9 @@ export interface Database {
           default_sort_order: number | null;
           default_color: string | null;
           is_active: boolean;
+          is_exceptional: boolean;
+          warning_message_es: string | null;
+          warning_message_en: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -232,6 +233,9 @@ export interface Database {
           default_sort_order?: number | null;
           default_color?: string | null;
           is_active?: boolean;
+          is_exceptional?: boolean;
+          warning_message_es?: string | null;
+          warning_message_en?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -244,6 +248,9 @@ export interface Database {
           default_sort_order?: number | null;
           default_color?: string | null;
           is_active?: boolean;
+          is_exceptional?: boolean;
+          warning_message_es?: string | null;
+          warning_message_en?: string | null;
           updated_at?: string;
         };
         Relationships: [];
@@ -258,6 +265,9 @@ export interface Database {
           system_category_id: string | null;
           expense_behavior: ExpenseBehavior | null;
           is_active: boolean;
+          is_editable: boolean;
+          is_exceptional: boolean;
+          warning_message: string | null;
           sort_order: number | null;
           color: string | null;
           icon: string | null;
@@ -274,6 +284,9 @@ export interface Database {
           system_category_id?: string | null;
           expense_behavior?: ExpenseBehavior | null;
           is_active?: boolean;
+          is_editable?: boolean;
+          is_exceptional?: boolean;
+          warning_message?: string | null;
           sort_order?: number | null;
           color?: string | null;
           icon?: string | null;
@@ -288,6 +301,9 @@ export interface Database {
           system_category_id?: string | null;
           expense_behavior?: ExpenseBehavior | null;
           is_active?: boolean;
+          is_editable?: boolean;
+          is_exceptional?: boolean;
+          warning_message?: string | null;
           sort_order?: number | null;
           color?: string | null;
           icon?: string | null;
@@ -446,6 +462,25 @@ export interface Database {
       [_ in never]: never;
     };
     Functions: {
+      create_transfer_transaction: {
+        Args: {
+          p_workspace_id: string;
+          p_from_payment_method_id: string;
+          p_to_payment_method_id: string;
+          p_amount: number;
+          p_transaction_date: string;
+          p_effective_date?: string | null;
+          p_description?: string | null;
+          p_notes?: string | null;
+        };
+        Returns: {
+          out_transaction_id: string;
+          in_transaction_id: string;
+          transfer_group_id: string;
+          resolved_category_id: string;
+          resolved_system_key: string;
+        }[];
+      };
       create_workspace_with_defaults: {
         Args: {
           p_workspace_name: string;

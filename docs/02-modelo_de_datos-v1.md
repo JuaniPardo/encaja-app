@@ -135,8 +135,6 @@ Tipos:
 - cash
 - debit_card
 - credit_card
-- bank_transfer
-- other
 
 Checks:
 - closing_day between 1 and 31 (o null)

@@ -366,7 +366,9 @@ export default function CategoriesPage() {
               row.type === "expense"
                 ? categoryExpenseBehaviorLabels[row.expense_behavior ?? "variable"]
                 : ""
-            } ${categorySourceLabels[row.source]}`
+            } ${categorySourceLabels[row.source]} ${
+              row.is_exceptional ? t("categories.exceptional.label") : ""
+            } ${row.warning_message ?? ""}`
               .toLocaleLowerCase(locale === "en" ? "en" : "es")
               .includes(normalizedSearchFilter);
 
@@ -429,9 +431,11 @@ export default function CategoriesPage() {
 
     const categoryType =
       editingRow && editingRow.source === "system" ? editingRow.type : values.type;
+    const categoryName =
+      editingRow && editingRow.source === "system" ? editingRow.name : values.name.trim();
     const expenseBehavior = categoryType === "expense" ? values.expenseBehavior : null;
     const payload = {
-      name: values.name.trim(),
+      name: categoryName,
       type: categoryType,
       expense_behavior: expenseBehavior,
       updated_at: new Date().toISOString(),
@@ -496,6 +500,15 @@ export default function CategoriesPage() {
   async function toggleActive(row: CategoryRow) {
     if (!canManageStructure) {
       showPermissionDenied();
+      return;
+    }
+
+    if (row.is_exceptional) {
+      notifications.show({
+        color: "yellow",
+        title: t("categories.notifications.exceptionalToggleDeniedTitle"),
+        message: t("categories.notifications.exceptionalToggleDeniedMessage"),
+      });
       return;
     }
 
@@ -695,6 +708,24 @@ export default function CategoriesPage() {
                                 {categorySourceLabels[row.source]}
                               </Text>
 
+                              {row.is_exceptional ? (
+                                <Text
+                                  size="10px"
+                                  c="orange.8"
+                                  fw={600}
+                                  tt="uppercase"
+                                  style={{ letterSpacing: "0.03em" }}
+                                >
+                                  {t("categories.exceptional.label")}
+                                </Text>
+                              ) : null}
+
+                              {row.is_exceptional && row.warning_message ? (
+                                <Text size="11px" c="dimmed">
+                                  {row.warning_message}
+                                </Text>
+                              ) : null}
+
                               {hasUsageData ? (
                                 <Text size="11px" c="dimmed" lineClamp={1}>
                                   {usageLabel}
@@ -762,7 +793,7 @@ export default function CategoriesPage() {
                                 <Menu.Item
                                   color={row.is_active ? "gray" : "cyan"}
                                   leftSection={<ToggleActiveIcon size={13} />}
-                                  disabled={!canManageStructure}
+                                  disabled={!canManageStructure || row.is_exceptional}
                                   onClick={() => void toggleActive(row)}
                                 >
                                   {row.is_active ? t("categories.deactivate") : t("categories.activate")}
@@ -794,9 +825,16 @@ export default function CategoriesPage() {
               placeholder={t("categories.form.namePlaceholder")}
               autoFocus
               disabled={!canManageStructure}
+              readOnly={editingRow?.source === "system"}
               error={errors.name?.message}
               {...register("name")}
             />
+
+            {editingRow?.source === "system" ? (
+              <Text size="xs" c="dimmed">
+                {t("categories.form.systemNameLocked")}
+              </Text>
+            ) : null}
 
             <NativeSelect
               label={t("categories.filters.type")}

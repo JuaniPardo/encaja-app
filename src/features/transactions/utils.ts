@@ -13,9 +13,9 @@ export type WorkspaceSettingsLiteRow = Pick<
 >;
 
 export type TypeFilter = TransactionType | "all";
-export type QuickPaymentMethodType = "cash" | "debit_card" | "other";
+export type QuickPaymentMethodType = "cash" | "debit_card";
 
-export const quickPaymentMethodTypes: QuickPaymentMethodType[] = ["cash", "debit_card", "other"];
+export const quickPaymentMethodTypes: QuickPaymentMethodType[] = ["cash", "debit_card"];
 
 export function toDateInputValue(date: Date) {
   const year = date.getFullYear();

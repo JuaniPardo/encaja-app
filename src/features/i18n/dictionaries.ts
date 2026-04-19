@@ -36,8 +36,6 @@ const dictionaries = {
           cash: "Efectivo",
           debit_card: "Tarjeta débito",
           credit_card: "Tarjeta crédito",
-          bank_transfer: "Transferencia",
-          other: "Otro",
         },
         expenseBehavior: {
           fixed: "Fijo",
@@ -709,6 +707,12 @@ const dictionaries = {
       realPrefix: "Real",
       today: "Hoy",
       yesterday: "Ayer",
+      exceptionalCategory: {
+        title: "Uso excepcional",
+        suffix: "excepcional",
+        defaultWarning:
+          "Usá esta categoría para realinear tu balance cuando te falten registros. Para mejores resultados, reservála para casos excepcionales.",
+      },
       form: {
         selectCategory: "Seleccionar categoría",
         fromPaymentMethod: "Desde cuenta",
@@ -729,13 +733,18 @@ const dictionaries = {
         options: {
           cash: "Efectivo",
           debit_card: "Tarjeta",
-          other: "Otro",
         },
         defaultNames: {
           cash: "Efectivo",
           debit_card: "Tarjeta",
-          other: "Otro",
         },
+      },
+      transferInference: {
+        pending: "Seleccioná cuentas de origen y destino para inferir la categoría.",
+        transfer: "Se registrará como Transferencia",
+        credit_card_payment: "Se registrará como Pago de tarjeta",
+        cash_withdrawal: "Se registrará como Extracción",
+        cash_deposit: "Se registrará como Depósito",
       },
       notifications: {
         loadCategoriesError: "No pudimos cargar categorías",
@@ -757,6 +766,7 @@ const dictionaries = {
         quickPaymentCreateError: "No pudimos crear el medio de pago inicial",
         unexpectedQuickPaymentCreateError:
           "No recibimos un medio de pago válido al intentar crearlo.",
+        invalidAmountError: "Ingresá un monto válido.",
         saveChangesError: "No pudimos guardar cambios",
         updatedTitle: "Transacción actualizada",
         updatedMessage: "Los cambios se guardaron correctamente.",
@@ -772,6 +782,8 @@ const dictionaries = {
         transferDeletedTitle: "Transferencia eliminada",
         transferDeletedMessage: "Se eliminaron ambos movimientos de la transferencia.",
         samePaymentMethodError: "Las cuentas de origen y destino deben ser distintas.",
+        invalidTransferCombinationError:
+          "Combinación inválida: una tarjeta de crédito no puede ser cuenta de origen.",
       },
       confirmDeleteBody:
         "Esta acción no se puede deshacer. La transacción se eliminará del período actual.",
@@ -874,6 +886,9 @@ const dictionaries = {
         none: "Sin uso",
         count: "{{count}} movimiento{{pluralSuffix}}",
       },
+      exceptional: {
+        label: "uso excepcional",
+      },
       form: {
         name: "Nombre",
         namePlaceholder: "Ej: Supermercado",
@@ -883,8 +898,10 @@ const dictionaries = {
         optionalConfiguration: "Configuración opcional",
         sortOrder: "Orden interno",
         sortOrderDescription: "Si no lo definís, la categoría queda al final de su tipo.",
+        systemNameLocked:
+          "Las categorías del sistema mantienen su nombre oficial. El nombre no se puede editar.",
         systemTypeLocked:
-          "Las categorías del sistema mantienen su tipo base. Solo podés editar nombre, comportamiento y configuración.",
+          "Las categorías del sistema mantienen su tipo base. Solo podés ajustar configuración operativa.",
       },
       notifications: {
         loadError: "No pudimos cargar categorías",
@@ -901,6 +918,9 @@ const dictionaries = {
         activatedTitle: "Categoría activada",
         deactivatedTitle: "Categoría desactivada",
         statusUpdatedMessage: "Estado actualizado correctamente.",
+        exceptionalToggleDeniedTitle: "Categoría excepcional protegida",
+        exceptionalToggleDeniedMessage:
+          "Las categorías excepcionales deben permanecer activas para mantener continuidad.",
       },
     },
     paymentMethods: {
@@ -1037,6 +1057,11 @@ const dictionaries = {
       domain: {
         workspaceLinkVisibilityMode: {
           summary_only: "Summary only",
+        },
+        paymentMethodType: {
+          cash: "Cash",
+          debit_card: "Debit card",
+          credit_card: "Credit card",
         },
       },
     },
@@ -1661,6 +1686,12 @@ const dictionaries = {
       realPrefix: "Real",
       today: "Today",
       yesterday: "Yesterday",
+      exceptionalCategory: {
+        title: "Exceptional use",
+        suffix: "exceptional",
+        defaultWarning:
+          "Use this category to realign your balance when records are missing. For better results, reserve it for exceptional cases.",
+      },
       form: {
         selectCategory: "Select category",
         fromPaymentMethod: "From account",
@@ -1681,13 +1712,18 @@ const dictionaries = {
         options: {
           cash: "Cash",
           debit_card: "Card",
-          other: "Other",
         },
         defaultNames: {
           cash: "Cash",
           debit_card: "Card",
-          other: "Other",
         },
+      },
+      transferInference: {
+        pending: "Select source and destination accounts to infer the category.",
+        transfer: "It will be registered as Transfer",
+        credit_card_payment: "It will be registered as Credit card payment",
+        cash_withdrawal: "It will be registered as Cash withdrawal",
+        cash_deposit: "It will be registered as Cash deposit",
       },
       notifications: {
         loadCategoriesError: "We couldn't load categories",
@@ -1709,6 +1745,7 @@ const dictionaries = {
         quickPaymentCreateError: "We couldn't create the starter payment method",
         unexpectedQuickPaymentCreateError:
           "We did not receive a valid payment method after creating it.",
+        invalidAmountError: "Enter a valid amount.",
         saveChangesError: "We couldn't save changes",
         updatedTitle: "Transaction updated",
         updatedMessage: "Changes were saved successfully.",
@@ -1724,6 +1761,8 @@ const dictionaries = {
         transferDeletedTitle: "Transfer deleted",
         transferDeletedMessage: "Both movements of the transfer were deleted.",
         samePaymentMethodError: "Source and destination accounts must be different.",
+        invalidTransferCombinationError:
+          "Invalid combination: a credit card cannot be used as the source account.",
       },
       confirmDeleteBody:
         "This action cannot be undone. The transaction will be removed from the current period.",
@@ -1827,6 +1866,9 @@ const dictionaries = {
         none: "No usage",
         count: "{{count}} movement{{pluralSuffix}}",
       },
+      exceptional: {
+        label: "exceptional use",
+      },
       form: {
         name: "Name",
         namePlaceholder: "e.g. Groceries",
@@ -1836,8 +1878,10 @@ const dictionaries = {
         optionalConfiguration: "Optional configuration",
         sortOrder: "Internal order",
         sortOrderDescription: "If omitted, the category is placed at the end of its type.",
+        systemNameLocked:
+          "System categories keep their official name. Name cannot be edited.",
         systemTypeLocked:
-          "System categories keep their base type. You can only edit name, behavior, and configuration.",
+          "System categories keep their base type. You can only adjust operational configuration.",
       },
       notifications: {
         loadError: "We couldn't load categories",
@@ -1854,6 +1898,9 @@ const dictionaries = {
         activatedTitle: "Category activated",
         deactivatedTitle: "Category deactivated",
         statusUpdatedMessage: "Status updated successfully.",
+        exceptionalToggleDeniedTitle: "Exceptional category is protected",
+        exceptionalToggleDeniedMessage:
+          "Exceptional categories must remain active to preserve continuity.",
       },
     },
     paymentMethods: {
