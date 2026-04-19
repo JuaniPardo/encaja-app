@@ -64,36 +64,6 @@ update public.system_categories
 set is_active = false
 where key = 'expense_manual_adjustment';
 
-update public.categories c
-set is_active = false
-from public.system_categories sc
-where sc.key = 'expense_manual_adjustment'
-  and c.source = 'system'
-  and c.system_category_id = sc.id
-  and c.is_active = true;
-
-update public.categories c
-set
-  name = case
-    when coalesce(p.preferred_language, 'es') = 'en' then sc.default_name_en
-    else sc.default_name_es
-  end,
-  is_active = true,
-  is_editable = false,
-  is_exceptional = true,
-  warning_message = case
-    when coalesce(p.preferred_language, 'es') = 'en' then sc.warning_message_en
-    else sc.warning_message_es
-  end,
-  sort_order = sc.default_sort_order,
-  color = sc.default_color
-from public.system_categories sc
-left join public.profiles p
-  on p.id = c.created_by
-where sc.key = 'balance_adjustment'
-  and c.source = 'system'
-  and c.system_category_id = sc.id;
-
 insert into public.categories (
   workspace_id,
   name,
