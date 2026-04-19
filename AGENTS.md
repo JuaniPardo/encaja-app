@@ -43,6 +43,12 @@ La aplicación está diseñada para comenzar como una experiencia simple, pero c
     - `cd /tmp/supabase-cli && curl -fL https://github.com/supabase/cli/releases/download/v2.90.0/supabase_darwin_arm64.tar.gz -o supabase.tar.gz`
     - `cd /tmp/supabase-cli && tar -xzf supabase.tar.gz && chmod +x /tmp/supabase-cli/supabase`
 
+## 2.2 Regla operativa de consultas DB
+
+- Las consultas a base de datos (Supabase/Postgres) deben ejecutarse de forma secuencial.
+- No lanzar consultas en paralelo, porque puede bloquear el acceso (errores de auth/pooler y timeouts).
+- Esperar a que termine cada consulta antes de iniciar la siguiente.
+
 ---
 
 ## 3. Restricción crítica sobre Next.js

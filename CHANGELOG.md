@@ -1,3 +1,13 @@
+## [1.3.1] - 2026-04-19
+
+### Changed
+- Transfer creation now resolves system transfer category automatically from source/destination payment method types through backend RPC.
+- Restricted payment method types to `cash`, `debit_card`, and `credit_card` across forms, dictionaries, and dashboard labels.
+
+### Fixed
+- Fixed transfer category resolution for card payment flows (`cash/debit_card -> credit_card`) with canonical system-category backfill for workspaces with legacy name collisions.
+- Prevented invalid transfer combinations with `credit_card` as source account and surfaced clear validation feedback in transfer UI.
+
 ## [1.3.0] - 2026-04-19
 
 ### Added

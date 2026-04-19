@@ -142,7 +142,6 @@ export default function TransactionsPage() {
       <TransferModal
         opened={mutations.isTransferModalOpen}
         onClose={() => mutations.setIsTransferModalOpen(false)}
-        categories={data.categories}
         paymentMethods={data.paymentMethods}
         onSuccess={data.loadTransactions}
       />

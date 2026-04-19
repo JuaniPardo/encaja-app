@@ -131,8 +131,6 @@ export default function PaymentMethodsPage() {
       cash: mapPaymentMethodTypeLabel("cash", t),
       debit_card: mapPaymentMethodTypeLabel("debit_card", t),
       credit_card: mapPaymentMethodTypeLabel("credit_card", t),
-      bank_transfer: mapPaymentMethodTypeLabel("bank_transfer", t),
-      other: mapPaymentMethodTypeLabel("other", t),
     }),
     [t],
   );
@@ -141,8 +139,6 @@ export default function PaymentMethodsPage() {
       { value: "cash", label: mapPaymentMethodTypeLabel("cash", t) },
       { value: "debit_card", label: mapPaymentMethodTypeLabel("debit_card", t) },
       { value: "credit_card", label: mapPaymentMethodTypeLabel("credit_card", t) },
-      { value: "bank_transfer", label: mapPaymentMethodTypeLabel("bank_transfer", t) },
-      { value: "other", label: mapPaymentMethodTypeLabel("other", t) },
     ],
     [t],
   );

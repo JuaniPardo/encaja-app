@@ -4,8 +4,6 @@ export const paymentMethodTypeOptions = [
   "cash",
   "debit_card",
   "credit_card",
-  "bank_transfer",
-  "other",
 ] as const;
 
 export interface PaymentMethodSchemaMessages {

@@ -36,8 +36,6 @@ const dictionaries = {
           cash: "Efectivo",
           debit_card: "Tarjeta débito",
           credit_card: "Tarjeta crédito",
-          bank_transfer: "Transferencia",
-          other: "Otro",
         },
         expenseBehavior: {
           fixed: "Fijo",
@@ -735,13 +733,18 @@ const dictionaries = {
         options: {
           cash: "Efectivo",
           debit_card: "Tarjeta",
-          other: "Otro",
         },
         defaultNames: {
           cash: "Efectivo",
           debit_card: "Tarjeta",
-          other: "Otro",
         },
+      },
+      transferInference: {
+        pending: "Seleccioná cuentas de origen y destino para inferir la categoría.",
+        transfer: "Se registrará como Transferencia",
+        credit_card_payment: "Se registrará como Pago de tarjeta",
+        cash_withdrawal: "Se registrará como Extracción",
+        cash_deposit: "Se registrará como Depósito",
       },
       notifications: {
         loadCategoriesError: "No pudimos cargar categorías",
@@ -763,6 +766,7 @@ const dictionaries = {
         quickPaymentCreateError: "No pudimos crear el medio de pago inicial",
         unexpectedQuickPaymentCreateError:
           "No recibimos un medio de pago válido al intentar crearlo.",
+        invalidAmountError: "Ingresá un monto válido.",
         saveChangesError: "No pudimos guardar cambios",
         updatedTitle: "Transacción actualizada",
         updatedMessage: "Los cambios se guardaron correctamente.",
@@ -778,6 +782,8 @@ const dictionaries = {
         transferDeletedTitle: "Transferencia eliminada",
         transferDeletedMessage: "Se eliminaron ambos movimientos de la transferencia.",
         samePaymentMethodError: "Las cuentas de origen y destino deben ser distintas.",
+        invalidTransferCombinationError:
+          "Combinación inválida: una tarjeta de crédito no puede ser cuenta de origen.",
       },
       confirmDeleteBody:
         "Esta acción no se puede deshacer. La transacción se eliminará del período actual.",
@@ -1051,6 +1057,11 @@ const dictionaries = {
       domain: {
         workspaceLinkVisibilityMode: {
           summary_only: "Summary only",
+        },
+        paymentMethodType: {
+          cash: "Cash",
+          debit_card: "Debit card",
+          credit_card: "Credit card",
         },
       },
     },
@@ -1701,13 +1712,18 @@ const dictionaries = {
         options: {
           cash: "Cash",
           debit_card: "Card",
-          other: "Other",
         },
         defaultNames: {
           cash: "Cash",
           debit_card: "Card",
-          other: "Other",
         },
+      },
+      transferInference: {
+        pending: "Select source and destination accounts to infer the category.",
+        transfer: "It will be registered as Transfer",
+        credit_card_payment: "It will be registered as Credit card payment",
+        cash_withdrawal: "It will be registered as Cash withdrawal",
+        cash_deposit: "It will be registered as Cash deposit",
       },
       notifications: {
         loadCategoriesError: "We couldn't load categories",
@@ -1729,6 +1745,7 @@ const dictionaries = {
         quickPaymentCreateError: "We couldn't create the starter payment method",
         unexpectedQuickPaymentCreateError:
           "We did not receive a valid payment method after creating it.",
+        invalidAmountError: "Enter a valid amount.",
         saveChangesError: "We couldn't save changes",
         updatedTitle: "Transaction updated",
         updatedMessage: "Changes were saved successfully.",
@@ -1744,6 +1761,8 @@ const dictionaries = {
         transferDeletedTitle: "Transfer deleted",
         transferDeletedMessage: "Both movements of the transfer were deleted.",
         samePaymentMethodError: "Source and destination accounts must be different.",
+        invalidTransferCombinationError:
+          "Invalid combination: a credit card cannot be used as the source account.",
       },
       confirmDeleteBody:
         "This action cannot be undone. The transaction will be removed from the current period.",
