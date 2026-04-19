@@ -10,7 +10,7 @@ import type {
 
 type WorkspaceRow = Pick<
   Database["public"]["Tables"]["workspaces"]["Row"],
-  "id" | "name" | "slug" | "created_at"
+  "id" | "name" | "slug" | "is_demo" | "created_at"
 >;
 
 type WorkspaceMemberRow = Pick<
@@ -37,6 +37,7 @@ export interface WorkspaceSummary {
   id: string;
   name: string;
   slug: string;
+  isDemo: boolean;
   role: WorkspaceRole;
   subscription: WorkspaceSubscription | null;
 }
@@ -60,6 +61,13 @@ interface CreateWorkspaceOptions {
   preferredLanguageHint?: Locale;
 }
 
+interface CreateDemoWorkspaceOptions {
+  supabase: SupabaseClient<Database>;
+  user: User;
+  name: string;
+  preferredLanguageHint?: Locale;
+}
+
 interface DeleteWorkspaceOptions {
   supabase: SupabaseClient<Database>;
   workspaceId: string;
@@ -71,12 +79,14 @@ const workspaceBootstrapMessages = {
     defaultWorkspaceName: "Mi Workspace",
     createWorkspaceFailed: "No pudimos crear el workspace.",
     workspaceNameMinLength: "El nombre del workspace debe tener al menos 2 caracteres.",
+    demoWorkspaceAlreadyExists: "Ya tenés una Caja Demo activa.",
   },
   en: {
     workspacePrefix: "Workspace for",
     defaultWorkspaceName: "My Workspace",
     createWorkspaceFailed: "We couldn't create the workspace.",
     workspaceNameMinLength: "Workspace name must be at least 2 characters.",
+    demoWorkspaceAlreadyExists: "You already have an active Demo workspace.",
   },
 } as const;
 
@@ -112,6 +122,7 @@ function toWorkspaceSummary(
     id: workspace.id,
     name: workspace.name,
     slug: workspace.slug,
+    isDemo: workspace.is_demo,
     role: role ?? "member",
     subscription: subscription
       ? {
@@ -127,6 +138,7 @@ function toWorkspaceSummaryFromRpc(row: CreateWorkspaceRpcRow): WorkspaceSummary
     id: row.workspace_id,
     name: row.workspace_name,
     slug: row.workspace_slug,
+    isDemo: row.workspace_is_demo,
     role: row.workspace_role,
     subscription: {
       plan: row.subscription_plan,
@@ -177,13 +189,19 @@ async function ensureUserProfile(
 async function createWorkspaceWithDefaults(
   supabase: SupabaseClient<Database>,
   workspaceName: string,
+  isDemo = false,
   preferredLanguageHint?: Locale,
 ): Promise<WorkspaceSummary> {
   const rpcResponse = await supabase.rpc("create_workspace_with_defaults", {
     p_workspace_name: workspaceName,
+    p_is_demo: isDemo,
   });
 
   if (rpcResponse.error) {
+    if (isDemo && rpcResponse.error.code === "23505") {
+      const messages = resolveWorkspaceBootstrapMessages(preferredLanguageHint);
+      throw new Error(messages.demoWorkspaceAlreadyExists);
+    }
     throw rpcResponse.error;
   }
 
@@ -210,7 +228,39 @@ export async function createWorkspaceForUser({
     throw new Error(messages.workspaceNameMinLength);
   }
 
-  return createWorkspaceWithDefaults(supabase, workspaceName, preferredLanguageHint);
+  return createWorkspaceWithDefaults(supabase, workspaceName, false, preferredLanguageHint);
+}
+
+export async function createDemoWorkspaceForUser({
+  supabase,
+  user,
+  name,
+  preferredLanguageHint,
+}: CreateDemoWorkspaceOptions): Promise<WorkspaceSummary> {
+  await ensureUserProfile(supabase, user, undefined, preferredLanguageHint);
+  const messages = resolveWorkspaceBootstrapMessages(preferredLanguageHint);
+
+  const workspaceName = name.trim();
+  if (workspaceName.length < 2) {
+    throw new Error(messages.workspaceNameMinLength);
+  }
+
+  const existingDemoResponse = await supabase
+    .from("workspaces")
+    .select("id")
+    .eq("created_by", user.id)
+    .eq("is_demo", true)
+    .limit(1);
+
+  if (existingDemoResponse.error) {
+    throw existingDemoResponse.error;
+  }
+
+  if ((existingDemoResponse.data ?? []).length > 0) {
+    throw new Error(messages.demoWorkspaceAlreadyExists);
+  }
+
+  return createWorkspaceWithDefaults(supabase, workspaceName, true, preferredLanguageHint);
 }
 
 export async function deleteWorkspaceForUser({
@@ -240,7 +290,7 @@ export async function listUserWorkspaces({
   const [workspacesResponse, membershipsResponse] = await Promise.all([
     supabase
       .from("workspaces")
-      .select("id, name, slug, created_at")
+      .select("id, name, slug, is_demo, created_at")
       .order("created_at", { ascending: true }),
     supabase
       .from("workspace_members")
@@ -308,5 +358,5 @@ export async function bootstrapUserWorkspace({
   }
 
   const workspaceName = buildWorkspaceName(fullNameHint, user.email, preferredLanguageHint);
-  return createWorkspaceWithDefaults(supabase, workspaceName, preferredLanguageHint);
+  return createWorkspaceWithDefaults(supabase, workspaceName, false, preferredLanguageHint);
 }

@@ -47,6 +47,7 @@ export interface Database {
           id: string;
           name: string;
           slug: string;
+          is_demo: boolean;
           created_by: string;
           created_at: string;
           updated_at: string;
@@ -55,6 +56,7 @@ export interface Database {
           id?: string;
           name: string;
           slug: string;
+          is_demo?: boolean;
           created_by: string;
           created_at?: string;
           updated_at?: string;
@@ -62,6 +64,7 @@ export interface Database {
         Update: {
           name?: string;
           slug?: string;
+          is_demo?: boolean;
           updated_at?: string;
         };
         Relationships: [];
@@ -484,11 +487,13 @@ export interface Database {
       create_workspace_with_defaults: {
         Args: {
           p_workspace_name: string;
+          p_is_demo?: boolean;
         };
         Returns: {
           workspace_id: string;
           workspace_name: string;
           workspace_slug: string;
+          workspace_is_demo: boolean;
           workspace_role: WorkspaceRole;
           subscription_plan: SubscriptionPlan;
           subscription_status: SubscriptionStatus;
