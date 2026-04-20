@@ -66,6 +66,10 @@ export function QuickActionsFab() {
               color="gray"
               variant="light"
               onClick={() => setOpened(false)}
+              style={{
+                outline: "2px solid var(--mantine-primary-color-filled)",
+                outlineOffset: "1px",
+              }}
             >
               {t("common.quickActions.transfer")}
             </Button>
