@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { Grid, LoadingOverlay, Stack } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 
 import { DashboardCompactSummaryStrip } from "@/features/dashboard/components/dashboard-compact-summary-strip";
 import { DashboardDistributionPanel } from "@/features/dashboard/components/dashboard-distribution-panel";
@@ -16,16 +17,28 @@ import { useDashboardViewModel } from "@/features/dashboard/hooks/use-dashboard-
 import { useDashboardResponsive } from "@/features/dashboard/lib/dashboard-responsive";
 import { buildMonthOptions } from "@/features/i18n/formatting";
 import { useI18n } from "@/features/i18n/provider";
+import { canManageWorkspaceSettings } from "@/features/workspace/permissions";
+import { buildWorkspaceHref } from "@/features/workspace/routing";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 
 export default function DashboardPage() {
-  const { supabase, workspace } = useWorkspace();
+  const { supabase, workspace, workspaces, createDemoWorkspace, switchWorkspace } = useWorkspace();
   const { intlLocale, locale, t } = useI18n();
   const monthOptions = useMemo(() => buildMonthOptions(intlLocale), [intlLocale]);
+  const canCreateDemoWorkspace = canManageWorkspaceSettings(workspace.role);
+  const [isCreatingDemoWorkspace, setIsCreatingDemoWorkspace] = useState(false);
 
   const now = useMemo(() => new Date(), []);
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
+  const demoWorkspace = useMemo(
+    () => workspaces.find((workspaceItem) => workspaceItem.isDemo) ?? null,
+    [workspaces],
+  );
+  const demoWorkspaceHref = useMemo(
+    () => (demoWorkspace ? buildWorkspaceHref(demoWorkspace.slug) : null),
+    [demoWorkspace],
+  );
 
   const {
     categories,
@@ -153,11 +166,62 @@ export default function DashboardPage() {
     [setIsLoadingSummary],
   );
 
+  const handleCreateDemoWorkspace = useCallback(async () => {
+    if (!canCreateDemoWorkspace) {
+      notifications.show({
+        color: "yellow",
+        title: t("workspaceSettings.notifications.permissionDeniedTitle"),
+        message: t("dashboard.gettingStarted.demoWorkspaceNotAllowed"),
+      });
+      return;
+    }
+
+    if (demoWorkspace) {
+      switchWorkspace(demoWorkspace.slug);
+      return;
+    }
+
+    setIsCreatingDemoWorkspace(true);
+
+    try {
+      const defaultDemoWorkspaceName = t("workspaceSettings.modals.createWorkspace.demoDefaultName");
+      const createdWorkspace = await createDemoWorkspace(defaultDemoWorkspaceName);
+      notifications.show({
+        color: "cyan",
+        title: t("dashboard.notifications.demoWorkspaceCreatedTitle"),
+        message: t("dashboard.notifications.demoWorkspaceCreatedMessage", undefined, {
+          workspaceName: createdWorkspace.name,
+        }),
+      });
+      switchWorkspace(createdWorkspace.slug);
+    } catch (error) {
+      notifications.show({
+        color: "red",
+        title: t("dashboard.notifications.createDemoWorkspaceError"),
+        message: error instanceof Error ? error.message : t("dashboard.notifications.createDemoWorkspaceError"),
+      });
+    } finally {
+      setIsCreatingDemoWorkspace(false);
+    }
+  }, [canCreateDemoWorkspace, createDemoWorkspace, demoWorkspace, switchWorkspace, t]);
+
   return (
     <Stack gap={isMobile ? "xs" : "sm"} pos="relative">
       <LoadingOverlay visible={isBootstrapping || isLoadingSummary} />
 
-      {shouldShowOnboardingCta ? <DashboardOnboardingCtaCard onboardingHref={onboardingHref} t={t} /> : null}
+      {shouldShowOnboardingCta ? (
+        <DashboardOnboardingCtaCard
+          onboardingHref={onboardingHref}
+          demoWorkspaceHref={demoWorkspaceHref}
+          hasDemoWorkspace={demoWorkspace !== null}
+          canCreateDemoWorkspace={canCreateDemoWorkspace}
+          isCreatingDemoWorkspace={isCreatingDemoWorkspace}
+          onCreateDemoWorkspace={() => {
+            void handleCreateDemoWorkspace();
+          }}
+          t={t}
+        />
+      ) : null}
 
       <DashboardHeaderCard
         isMobile={isMobile}

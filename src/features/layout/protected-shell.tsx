@@ -23,6 +23,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { GlobalFeedbackButton } from "@/features/feedback/components/global-feedback-button";
 import { useI18n } from "@/features/i18n/provider";
+import { QuickActionsFab } from "@/features/layout/quick-actions-fab";
 import {
   buildWorkspaceHref,
   getWorkspaceScopedSectionPath,
@@ -444,6 +445,7 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
             </Stack>
           </Box>
         </Container>
+        <QuickActionsFab key={pathname ?? ""} />
       </AppShell.Main>
     </AppShell>
   );

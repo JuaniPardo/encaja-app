@@ -29,7 +29,7 @@ export function canManageCategories(role: WorkspaceRole) {
 }
 
 export function canManagePaymentMethods(role: WorkspaceRole) {
-  return canManageWorkspaceStructure(role);
+  return role === "owner";
 }
 
 export function canManageBudgetStructure(role: WorkspaceRole) {

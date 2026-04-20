@@ -5,10 +5,23 @@ import type { TranslationFn } from "@/features/dashboard/types/dashboard";
 
 type DashboardOnboardingCtaCardProps = {
   onboardingHref: string;
+  demoWorkspaceHref: string | null;
+  hasDemoWorkspace: boolean;
+  canCreateDemoWorkspace: boolean;
+  isCreatingDemoWorkspace: boolean;
+  onCreateDemoWorkspace: () => void;
   t: TranslationFn;
 };
 
-export function DashboardOnboardingCtaCard({ onboardingHref, t }: DashboardOnboardingCtaCardProps) {
+export function DashboardOnboardingCtaCard({
+  onboardingHref,
+  demoWorkspaceHref,
+  hasDemoWorkspace,
+  canCreateDemoWorkspace,
+  isCreatingDemoWorkspace,
+  onCreateDemoWorkspace,
+  t,
+}: DashboardOnboardingCtaCardProps) {
   return (
     <Paper
       radius="sm"
@@ -31,13 +44,26 @@ export function DashboardOnboardingCtaCard({ onboardingHref, t }: DashboardOnboa
         </Stack>
 
         <Group gap="xs" wrap="wrap">
-          <Button component={Link} href={onboardingHref} color="blue" radius="md">
-            {t("dashboard.gettingStarted.primaryCta")}
-          </Button>
           <Button component={Link} href={onboardingHref} variant="default" radius="md">
-            {t("dashboard.gettingStarted.secondaryCta")}
+            {t("dashboard.gettingStarted.guideCta")}
           </Button>
+          {hasDemoWorkspace && demoWorkspaceHref ? (
+            <Button component={Link} href={demoWorkspaceHref} color="blue" radius="md">
+              {t("dashboard.gettingStarted.openDemoWorkspace")}
+            </Button>
+          ) : null}
+          {!hasDemoWorkspace && canCreateDemoWorkspace ? (
+            <Button color="blue" radius="md" onClick={onCreateDemoWorkspace} loading={isCreatingDemoWorkspace}>
+              {t("dashboard.gettingStarted.createDemoWorkspace")}
+            </Button>
+          ) : null}
         </Group>
+
+        {hasDemoWorkspace ? (
+          <Text size="xs" c="dimmed">
+            {t("dashboard.gettingStarted.demoWorkspaceExists")}
+          </Text>
+        ) : null}
       </Stack>
     </Paper>
   );
