@@ -27,7 +27,7 @@ describe("workspace role permissions", () => {
     expect(canManageTransactions("owner")).toBe(true);
   });
 
-  it("allows member structural actions but blocks owner-only actions", () => {
+  it("allows member structural actions where applicable but blocks owner-only actions", () => {
     expect(canManageWorkspaceStructure("member")).toBe(true);
     expect(canManageWorkspaceSettings("member")).toBe(false);
     expect(canBootstrapWorkspaceFoundations("member")).toBe(false);
@@ -35,14 +35,14 @@ describe("workspace role permissions", () => {
     expect(canManageWorkspaceMembers("member")).toBe(false);
     expect(canManageWorkspaceLinks("member")).toBe(false);
     expect(canManageCategories("member")).toBe(true);
-    expect(canManagePaymentMethods("member")).toBe(true);
+    expect(canManagePaymentMethods("member")).toBe(false);
     expect(canManageBudgetStructure("member")).toBe(true);
     expect(canManageTransactions("member")).toBe(true);
   });
 
   it("keeps owner/member structural permissions consistent", () => {
     expect(canManageCategories("member")).toBe(true);
-    expect(canManagePaymentMethods("member")).toBe(true);
+    expect(canManagePaymentMethods("member")).toBe(false);
     expect(canManageBudgetStructure("member")).toBe(true);
     expect(canManageCategories("owner")).toBe(true);
   });

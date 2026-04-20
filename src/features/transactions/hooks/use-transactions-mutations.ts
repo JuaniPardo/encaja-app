@@ -31,6 +31,8 @@ type UseTransactionsMutationsOptions = {
   isBootstrapping: boolean;
   createModalTypeFromQuery: TransactionType | null;
   setCreateModalTypeFromQuery: Dispatch<SetStateAction<TransactionType | null>>;
+  openTransferModalFromQuery: boolean;
+  setOpenTransferModalFromQuery: Dispatch<SetStateAction<boolean>>;
 };
 
 export function useTransactionsMutations({
@@ -45,6 +47,8 @@ export function useTransactionsMutations({
   isBootstrapping,
   createModalTypeFromQuery,
   setCreateModalTypeFromQuery,
+  openTransferModalFromQuery,
+  setOpenTransferModalFromQuery,
 }: UseTransactionsMutationsOptions) {
   const { supabase, workspace, user } = useWorkspace();
   const { locale, t } = useI18n();
@@ -135,6 +139,27 @@ export function useTransactionsMutations({
     openCreateModal,
     setCreateModalTypeFromQuery,
   ]);
+
+  useEffect(() => {
+    if (!openTransferModalFromQuery || isBootstrapping || isTransferModalOpen) {
+      return;
+    }
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsTransferModalOpen(true);
+    setOpenTransferModalFromQuery(false);
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    params.delete("newTransfer");
+
+    const query = params.toString();
+    const nextUrl = query.length > 0 ? `${window.location.pathname}?${query}` : window.location.pathname;
+    window.history.replaceState(window.history.state, "", nextUrl);
+  }, [isBootstrapping, isTransferModalOpen, openTransferModalFromQuery, setOpenTransferModalFromQuery]);
 
   const onSubmit = async (values: TransactionFormValues) => {
     const category = categoryById.get(values.categoryId);

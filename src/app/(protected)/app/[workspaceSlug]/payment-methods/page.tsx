@@ -1,27 +1,21 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Alert,
-  ActionIcon,
-  Badge,
   Button,
-  Checkbox,
   Group,
   LoadingOverlay,
-  Menu,
-  Modal,
   NativeSelect,
   Paper,
   SimpleGrid,
   Stack,
   Text,
-  TextInput,
   Title,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
+import { modals } from "@mantine/modals";
 import { notifications } from "@mantine/notifications";
 import { useForm, useWatch } from "react-hook-form";
 
@@ -30,6 +24,11 @@ import {
   type PaymentMethodFormInputValues,
   type PaymentMethodFormValues,
 } from "@/features/payment-methods/schema";
+import {
+  PaymentMethodCard,
+  type PaymentMethodCardData,
+} from "@/features/payment-methods/components/payment-method-card";
+import { PaymentMethodFormModal } from "@/features/payment-methods/components/payment-method-form-modal";
 import { localeCompareByName, mapPaymentMethodTypeLabel } from "@/features/i18n/formatting";
 import { useI18n } from "@/features/i18n/provider";
 import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
@@ -40,15 +39,12 @@ import type { Database, PaymentMethodType, TransactionType } from "@/types/datab
 type PaymentMethodRow = Database["public"]["Tables"]["payment_methods"]["Row"];
 type PaymentMethodTransactionLiteRow = Pick<
   Database["public"]["Tables"]["transactions"]["Row"],
-  "payment_method_id" | "amount" | "type" | "transaction_date" | "effective_date"
+  "payment_method_id" | "amount" | "type"
 >;
 type WorkspaceSettingsLiteRow = Pick<
   Database["public"]["Tables"]["workspace_settings"]["Row"],
   "currency_code" | "show_cents"
 >;
-type PaymentMethodCardRow = PaymentMethodRow & {
-  displayedBalance: number;
-};
 
 type StatusFilter = "all" | "active" | "inactive";
 
@@ -68,33 +64,12 @@ function roundMoney(value: number) {
   return Math.round(value * 100) / 100;
 }
 
-function DotsIcon({ size = 14 }: { size?: number }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="5" r="1" />
-      <circle cx="12" cy="12" r="1" />
-      <circle cx="12" cy="19" r="1" />
-    </svg>
-  );
-}
-
 function toDefaults(row?: PaymentMethodRow): PaymentMethodFormValues {
   if (!row) {
     return {
       name: "",
       type: "cash",
-      currentBalance: 0,
+      startingBalance: 0,
       includeInBalance: true,
       closingDay: null,
       dueDay: null,
@@ -104,7 +79,7 @@ function toDefaults(row?: PaymentMethodRow): PaymentMethodFormValues {
   return {
     name: row.name,
     type: row.type,
-    currentBalance: row.type === "credit_card" ? Math.abs(row.current_balance) : row.current_balance,
+    startingBalance: row.type === "credit_card" ? Math.abs(row.current_balance) : row.current_balance,
     includeInBalance: row.include_in_balance,
     closingDay: row.closing_day,
     dueDay: row.due_day,
@@ -119,6 +94,7 @@ export default function PaymentMethodsPage() {
   const now = useMemo(() => new Date(), []);
   const [rows, setRows] = useState<PaymentMethodRow[]>([]);
   const [movementByMethodId, setMovementByMethodId] = useState<Record<string, number>>({});
+  const [movementCountByMethodId, setMovementCountByMethodId] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<PaymentMethodRow | null>(null);
@@ -134,7 +110,7 @@ export default function PaymentMethodsPage() {
     }),
     [t],
   );
-  const paymentTypeSelectData = useMemo(
+  const paymentTypeSelectData = useMemo<Array<{ value: PaymentMethodType; label: string }>>(
     () => [
       { value: "cash", label: mapPaymentMethodTypeLabel("cash", t) },
       { value: "debit_card", label: mapPaymentMethodTypeLabel("debit_card", t) },
@@ -189,23 +165,24 @@ export default function PaymentMethodsPage() {
 
   const loadRows = useCallback(async () => {
     setIsLoading(true);
-    const [paymentMethodsResponse, settingsResponse, transactionsResponse] = await Promise.all([
-      supabase
-        .from("payment_methods")
-        .select("*")
-        .eq("workspace_id", workspace.id)
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("workspace_settings")
-        .select("currency_code, show_cents")
-        .eq("workspace_id", workspace.id)
-        .maybeSingle(),
-      supabase
-        .from("transactions")
-        .select("payment_method_id, amount, type, transaction_date, effective_date")
-        .eq("workspace_id", workspace.id)
-        .not("payment_method_id", "is", null),
-    ]);
+
+    const paymentMethodsResponse = await supabase
+      .from("payment_methods")
+      .select("*")
+      .eq("workspace_id", workspace.id)
+      .order("created_at", { ascending: true });
+
+    const settingsResponse = await supabase
+      .from("workspace_settings")
+      .select("currency_code, show_cents")
+      .eq("workspace_id", workspace.id)
+      .maybeSingle();
+
+    const transactionsResponse = await supabase
+      .from("transactions")
+      .select("payment_method_id, amount, type")
+      .eq("workspace_id", workspace.id)
+      .not("payment_method_id", "is", null);
 
     setIsLoading(false);
 
@@ -239,8 +216,10 @@ export default function PaymentMethodsPage() {
         message: transactionsResponse.error.message,
       });
       setMovementByMethodId({});
+      setMovementCountByMethodId({});
     } else {
       const movementCounter: Record<string, number> = {};
+      const movementCountCounter: Record<string, number> = {};
       const movementRows = (transactionsResponse.data ?? []) as PaymentMethodTransactionLiteRow[];
 
       for (const row of movementRows) {
@@ -251,9 +230,11 @@ export default function PaymentMethodsPage() {
 
         const signedAmount = getSignedMovementAmount(row.type, row.amount);
         movementCounter[methodId] = roundMoney((movementCounter[methodId] ?? 0) + signedAmount);
+        movementCountCounter[methodId] = (movementCountCounter[methodId] ?? 0) + 1;
       }
 
       setMovementByMethodId(movementCounter);
+      setMovementCountByMethodId(movementCountCounter);
     }
 
     setRows(paymentMethodsResponse.data);
@@ -294,19 +275,22 @@ export default function PaymentMethodsPage() {
     setIsModalOpen(true);
   }
 
-  const computedRows = useMemo<PaymentMethodCardRow[]>(() => {
+  const computedRows = useMemo<PaymentMethodCardData[]>(() => {
     return rows.map((row) => {
       const movementBalance = roundMoney(movementByMethodId[row.id] ?? 0);
+      const movementCount = movementCountByMethodId[row.id] ?? 0;
       const startingBalance = row.current_balance ?? 0;
 
       return {
         ...row,
+        movementCount,
+        canDelete: movementCount === 0,
         displayedBalance: roundMoney(startingBalance + movementBalance),
       };
     });
-  }, [movementByMethodId, rows]);
+  }, [movementByMethodId, movementCountByMethodId, rows]);
 
-  const visibleRows = useMemo<PaymentMethodCardRow[]>(() => {
+  const visibleRows = useMemo<PaymentMethodCardData[]>(() => {
     return computedRows
       .filter((row) => {
         if (statusFilter === "all") {
@@ -346,13 +330,13 @@ export default function PaymentMethodsPage() {
       return;
     }
 
-    const normalizedCurrentBalance = normalizeBalanceByType(values.type, values.currentBalance);
+    const normalizedStartingBalance = normalizeBalanceByType(values.type, values.startingBalance);
     const isCreditCard = values.type === "credit_card";
 
     const payload = {
       name: values.name.trim(),
       type: values.type,
-      current_balance: normalizedCurrentBalance,
+      current_balance: normalizedStartingBalance,
       include_in_balance: values.includeInBalance,
       closing_day: isCreditCard ? values.closingDay : null,
       due_day: isCreditCard ? values.dueDay : null,
@@ -450,6 +434,67 @@ export default function PaymentMethodsPage() {
     await loadRows();
   }
 
+  async function deletePaymentMethod(row: PaymentMethodCardData) {
+    const response = await supabase
+      .from("payment_methods")
+      .delete()
+      .eq("id", row.id)
+      .eq("workspace_id", workspace.id);
+
+    if (response.error) {
+      notifications.show({
+        color: "red",
+        title: t("paymentMethods.notifications.deleteError"),
+        message: response.error.message,
+      });
+      return;
+    }
+
+    notifications.show({
+      color: "cyan",
+      title: t("paymentMethods.notifications.deletedTitle"),
+      message: t("paymentMethods.notifications.deletedMessage"),
+    });
+
+    await loadRows();
+  }
+
+  function confirmDelete(row: PaymentMethodCardData) {
+    if (!canManageStructure) {
+      showPermissionDenied();
+      return;
+    }
+
+    if (!row.canDelete) {
+      notifications.show({
+        color: "yellow",
+        title: t("paymentMethods.notifications.deleteBlockedTitle"),
+        message: t("paymentMethods.notifications.deleteBlockedMessage", undefined, {
+          count: row.movementCount,
+        }),
+      });
+      return;
+    }
+
+    modals.openConfirmModal({
+      title: t("paymentMethods.confirmDeleteTitle"),
+      centered: true,
+      labels: {
+        confirm: t("paymentMethods.delete"),
+        cancel: t("common.actions.cancel"),
+      },
+      confirmProps: {
+        color: "red",
+      },
+      children: t("paymentMethods.confirmDeleteBody", undefined, {
+        name: row.name,
+      }),
+      onConfirm: () => {
+        void deletePaymentMethod(row);
+      },
+    });
+  }
+
   return (
     <Stack gap="md" pos="relative">
       <LoadingOverlay visible={isLoading} />
@@ -496,13 +541,7 @@ export default function PaymentMethodsPage() {
             fw={900}
             size="2rem"
             lh={1}
-            c={
-              consolidatedBalance > 0
-                ? "#087f5b"
-                : consolidatedBalance < 0
-                  ? "#c92a2a"
-                  : "#475467"
-            }
+            c={consolidatedBalance > 0 ? "#087f5b" : consolidatedBalance < 0 ? "#c92a2a" : "#475467"}
           >
             {currencyFormatter.format(consolidatedBalance)}
           </Text>
@@ -520,191 +559,37 @@ export default function PaymentMethodsPage() {
         ) : (
           <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="sm">
             {visibleRows.map((row) => (
-              <Paper key={row.id} withBorder radius="md" p="md" bg="#ffffff">
-                <Stack gap="xs">
-                  <Group justify="space-between" align="flex-start" wrap="nowrap" gap="xs">
-                    <Stack gap={4} style={{ minWidth: 0, flex: 1 }}>
-                      <Text fw={700} size="lg" lineClamp={1} style={{ lineHeight: 1.2 }}>
-                        {row.name}
-                      </Text>
-                      <Group gap={6} wrap="wrap">
-                        <Badge variant="light">{paymentTypeLabels[row.type]}</Badge>
-                        <Badge color={row.is_active ? "cyan" : "gray"} variant="outline">
-                          {row.is_active
-                            ? t("paymentMethods.status.active")
-                            : t("paymentMethods.status.inactive")}
-                        </Badge>
-                      </Group>
-                    </Stack>
-
-                    <Menu position="bottom-end" withArrow>
-                      <Menu.Target>
-                        <ActionIcon
-                          variant="subtle"
-                          color="gray"
-                          aria-label={t("paymentMethods.actionsFor", undefined, { name: row.name })}
-                        >
-                          <DotsIcon />
-                        </ActionIcon>
-                      </Menu.Target>
-
-                      <Menu.Dropdown>
-                        <Menu.Item disabled={!canManageStructure} onClick={() => openEditModal(row)}>
-                          {t("paymentMethods.edit")}
-                        </Menu.Item>
-                        <Menu.Item
-                          color={row.is_active ? "gray" : "cyan"}
-                          disabled={!canManageStructure}
-                          onClick={() => void toggleActive(row)}
-                        >
-                          {row.is_active ? t("paymentMethods.deactivate") : t("paymentMethods.activate")}
-                        </Menu.Item>
-                      </Menu.Dropdown>
-                    </Menu>
-                  </Group>
-
-                  <Text
-                    fw={900}
-                    size="2rem"
-                    lh={1}
-                    c={
-                      row.displayedBalance > 0
-                        ? "#087f5b"
-                        : row.displayedBalance < 0
-                          ? "#c92a2a"
-                          : "#475467"
-                    }
-                  >
-                    {currencyFormatter.format(row.displayedBalance)}
-                  </Text>
-
-                  <Group justify="space-between" wrap="wrap" gap={6}>
-                    <Badge variant={row.include_in_balance ? "light" : "outline"} color="blue">
-                      {row.include_in_balance
-                        ? t("paymentMethods.includedInBalance")
-                        : t("paymentMethods.excludedFromBalance")}
-                    </Badge>
-                    {row.type === "credit_card" ? (
-                      <Text size="xs" c="dimmed">
-                        {t("paymentMethods.creditCardDays", undefined, {
-                          closingDay: row.closing_day ?? "-",
-                          dueDay: row.due_day ?? "-",
-                        })}
-                      </Text>
-                    ) : null}
-                  </Group>
-
-                  <Button
-                    component={Link}
-                    href={paymentMethodDrilldownHref(row.id)}
-                    variant="subtle"
-                    color="gray"
-                    size="compact-xs"
-                    px={0}
-                    justify="flex-start"
-                  >
-                    {t("paymentMethods.viewMovements")}
-                  </Button>
-                </Stack>
-              </Paper>
+              <PaymentMethodCard
+                key={row.id}
+                row={row}
+                canManageStructure={canManageStructure}
+                paymentTypeLabels={paymentTypeLabels}
+                currencyFormatter={currencyFormatter}
+                paymentMethodDrilldownHref={paymentMethodDrilldownHref}
+                onEdit={openEditModal}
+                onToggleActive={toggleActive}
+                onDelete={confirmDelete}
+                t={t}
+              />
             ))}
           </SimpleGrid>
         )}
       </Paper>
 
-      <Modal
+      <PaymentMethodFormModal
         opened={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingRow ? t("paymentMethods.edit") : t("paymentMethods.new")}
-        fullScreen={isMobile}
-      >
-        <form onSubmit={onSubmit}>
-          <Stack>
-            <TextInput
-              label={t("paymentMethods.form.name")}
-              placeholder={t("paymentMethods.form.namePlaceholder")}
-              disabled={!canManageStructure}
-              error={errors.name?.message}
-              {...register("name")}
-            />
-
-            <NativeSelect
-              label={t("paymentMethods.form.type")}
-              data={paymentTypeSelectData}
-              disabled={!canManageStructure}
-              error={errors.type?.message}
-              {...register("type")}
-            />
-
-            <TextInput
-              label={
-                selectedType === "credit_card"
-                  ? t("paymentMethods.form.currentDebt")
-                  : t("paymentMethods.form.currentBalance")
-              }
-              type="number"
-              step="0.01"
-              placeholder={
-                selectedType === "credit_card"
-                  ? t("paymentMethods.form.currentDebtPlaceholder")
-                  : t("paymentMethods.form.currentBalancePlaceholder")
-              }
-              disabled={!canManageStructure}
-              error={errors.currentBalance?.message}
-              {...register("currentBalance")}
-            />
-
-            <Text size="xs" c="dimmed">
-              {t("paymentMethods.form.initialBalanceHint")}
-            </Text>
-
-            {selectedType === "credit_card" ? (
-              <Text size="xs" c="dimmed">
-                {t("paymentMethods.form.creditCardHint")}
-              </Text>
-            ) : null}
-
-            <Checkbox
-              label={t("paymentMethods.form.includeInBalance")}
-              description={t("paymentMethods.form.includeInBalanceDescription")}
-              disabled={!canManageStructure}
-              {...register("includeInBalance")}
-            />
-
-            <TextInput
-              label={t("paymentMethods.form.closingDay")}
-              type="number"
-              placeholder={t("paymentMethods.form.closingDayPlaceholder")}
-              disabled={!canManageStructure || selectedType !== "credit_card"}
-              error={errors.closingDay?.message}
-              {...register("closingDay")}
-            />
-
-            <TextInput
-              label={t("paymentMethods.form.dueDay")}
-              type="number"
-              placeholder={t("paymentMethods.form.dueDayPlaceholder")}
-              disabled={!canManageStructure || selectedType !== "credit_card"}
-              error={errors.dueDay?.message}
-              {...register("dueDay")}
-            />
-
-            <Group justify="flex-end" mt="sm">
-              <Button
-                type="button"
-                variant="light"
-                color="gray"
-                onClick={() => setIsModalOpen(false)}
-              >
-                {t("common.actions.cancel")}
-              </Button>
-              <Button type="submit" loading={isSubmitting} disabled={!canManageStructure}>
-                {editingRow ? t("common.actions.save") : t("common.actions.create")}
-              </Button>
-            </Group>
-          </Stack>
-        </form>
-      </Modal>
+        isEditing={editingRow !== null}
+        isMobile={isMobile}
+        canManageStructure={canManageStructure}
+        isSubmitting={isSubmitting}
+        selectedType={selectedType}
+        paymentTypeSelectData={paymentTypeSelectData}
+        register={register}
+        errors={errors}
+        onSubmit={onSubmit}
+        t={t}
+      />
     </Stack>
   );
 }

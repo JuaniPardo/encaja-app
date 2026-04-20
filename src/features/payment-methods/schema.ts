@@ -46,7 +46,7 @@ export function createPaymentMethodFormSchema(messages?: Partial<PaymentMethodSc
       .nullable(),
   );
 
-  const requiredCurrentBalance = z.preprocess(
+  const requiredStartingBalance = z.preprocess(
     (value) => {
       if (value === null || value === undefined || value === "") {
         return Number.NaN;
@@ -69,7 +69,7 @@ export function createPaymentMethodFormSchema(messages?: Partial<PaymentMethodSc
       .min(1, resolvedMessages.requiredName)
       .max(80, resolvedMessages.maxNameLength),
     type: z.enum(paymentMethodTypeOptions),
-    currentBalance: requiredCurrentBalance,
+    startingBalance: requiredStartingBalance,
     includeInBalance: z.boolean(),
     closingDay: optionalDay,
     dueDay: optionalDay,
