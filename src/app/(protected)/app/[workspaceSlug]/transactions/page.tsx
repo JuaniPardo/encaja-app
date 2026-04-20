@@ -34,6 +34,8 @@ export default function TransactionsPage() {
     isBootstrapping: data.isBootstrapping,
     createModalTypeFromQuery: data.createModalTypeFromQuery,
     setCreateModalTypeFromQuery: data.setCreateModalTypeFromQuery,
+    openTransferModalFromQuery: data.openTransferModalFromQuery,
+    setOpenTransferModalFromQuery: data.setOpenTransferModalFromQuery,
   });
 
   return (

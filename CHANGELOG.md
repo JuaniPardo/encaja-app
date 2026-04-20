@@ -1,3 +1,17 @@
+## [1.4.1] - 2026-04-20
+
+### Added
+- Added global dashboard quick actions FAB to create transactions and transfers with one tap.
+- Added reusable payment methods UI components (`payment-method-card` and `payment-method-form-modal`) to simplify maintenance.
+
+### Changed
+- Refactored payment methods page flow to use the new componentized structure and `startingBalance` naming.
+- Simplified dashboard onboarding CTA actions for low-activity workspaces.
+
+### Fixed
+- Enforced safe delete for payment methods with associated transactions via RLS delete policy guard.
+- Improved transfer quick-action button contrast while keeping consistent visual size across breakpoints.
+
 ## [1.4.0] - 2026-04-19
 
 ### Added

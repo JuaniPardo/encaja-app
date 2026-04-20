@@ -56,6 +56,7 @@ export function useTransactionsData() {
   const [mobileFiltersOpened, setMobileFiltersOpened] = useState(false);
   const [createModalTypeFromQuery, setCreateModalTypeFromQuery] =
     useState<TransactionType | null>(null);
+  const [openTransferModalFromQuery, setOpenTransferModalFromQuery] = useState(false);
 
   const monthOptions = useMemo(() => buildMonthOptions(intlLocale), [intlLocale]);
 
@@ -430,6 +431,10 @@ export function useTransactionsData() {
       }
     }
 
+    if (params.get("newTransfer") === "1") {
+      setOpenTransferModalFromQuery(true);
+    }
+
     setDidApplyUrlFilters(true);
   }, [didApplyUrlFilters]);
 
@@ -632,6 +637,8 @@ export function useTransactionsData() {
     isLoadingTransactions,
     createModalTypeFromQuery,
     setCreateModalTypeFromQuery,
+    openTransferModalFromQuery,
+    setOpenTransferModalFromQuery,
     monthOptions,
     transactionTypeSelectData,
     categoryById,
