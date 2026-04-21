@@ -281,11 +281,54 @@ describe("buildDemoSeed", () => {
       byMonthAndCategory.set(`${month}|${categoryKey}`, Number(item.amount));
     }
 
-    expect(byMonthAndCategory.get("3|income_salary")).toBe(1_750_000);
-    expect(byMonthAndCategory.get("3|expense_utilities")).toBe(110_000);
-    expect(byMonthAndCategory.get("4|expense_utilities")).toBe(110_000);
-    expect(byMonthAndCategory.get("3|expense_other")).toBe(270_000);
-    expect(byMonthAndCategory.get("4|expense_other")).toBe(260_000);
+    const rawByMonthAndCategory = new Map<string, number>();
+    for (const transaction of seed.transactions) {
+      if (transaction.type === "transfer") {
+        continue;
+      }
+      if (transaction.categoryKey === "balance_adjustment") {
+        continue;
+      }
+
+      const isInstallment =
+        transaction.installmentPurchaseKey !== null &&
+        transaction.installmentNumber !== null &&
+        transaction.installmentCount !== null;
+      const operationalDate =
+        isInstallment && transaction.installmentNumber === 1
+          ? transaction.transactionDate
+          : (transaction.effectiveDate ?? transaction.transactionDate);
+      const month = Number(operationalDate.slice(5, 7));
+      if (month !== 3 && month !== 4) {
+        continue;
+      }
+
+      const key = `${month}|${transaction.categoryKey}`;
+      rawByMonthAndCategory.set(key, (rawByMonthAndCategory.get(key) ?? 0) + transaction.amount);
+    }
+
+    const previousIncomeBudget = byMonthAndCategory.get("3|income_salary");
+    const previousIncomeRaw = rawByMonthAndCategory.get("3|income_salary");
+    const previousRentBudget = byMonthAndCategory.get("3|expense_rent");
+    const previousRentRaw = rawByMonthAndCategory.get("3|expense_rent");
+    const currentIncomeBudget = byMonthAndCategory.get("4|income_salary");
+    const currentIncomeRaw = rawByMonthAndCategory.get("4|income_salary");
+    const currentRentBudget = byMonthAndCategory.get("4|expense_rent");
+    const currentRentRaw = rawByMonthAndCategory.get("4|expense_rent");
+
+    expect(previousIncomeBudget).toBeDefined();
+    expect(previousIncomeRaw).toBeDefined();
+    expect(previousRentBudget).toBeDefined();
+    expect(previousRentRaw).toBeDefined();
+    expect(currentIncomeBudget).toBeDefined();
+    expect(currentIncomeRaw).toBeDefined();
+    expect(currentRentBudget).toBeDefined();
+    expect(currentRentRaw).toBeDefined();
+
+    expect(previousIncomeBudget as number).toBeLessThan(previousIncomeRaw as number);
+    expect(currentIncomeBudget as number).toBeLessThan(currentIncomeRaw as number);
+    expect(previousRentBudget as number).toBeGreaterThan(previousRentRaw as number);
+    expect(currentRentBudget as number).toBeGreaterThan(currentRentRaw as number);
 
     expect(Array.from(byMonthAndCategory.keys()).some((key) => key.endsWith("|credit_card_payment"))).toBe(
       false,

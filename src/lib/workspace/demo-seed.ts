@@ -677,9 +677,31 @@ function resolveSeedOperationalDate(
   return transaction.effectiveDate ?? transaction.transactionDate;
 }
 
-function approximateBudgetAmount(amount: number) {
+function resolveBudgetVarianceMultiplier(
+  periodKey: DemoSeedBudgetPeriodDraft["key"],
+  categoryKey: string,
+) {
+  if (categoryKey.startsWith("income_")) {
+    return periodKey === "current_month" ? 0.94 : 0.96;
+  }
+
+  if (categoryKey === "expense_rent") {
+    return 1.05;
+  }
+
+  const hash = fnv1aHash(`${periodKey}:${categoryKey}`);
+  return hash % 2 === 0 ? 1.1 : 0.9;
+}
+
+function approximateBudgetAmount(
+  amount: number,
+  periodKey: DemoSeedBudgetPeriodDraft["key"],
+  categoryKey: string,
+) {
+  const multiplier = resolveBudgetVarianceMultiplier(periodKey, categoryKey);
+  const variedAmount = amount * multiplier;
   const roundingStep = 10_000;
-  const rounded = Math.round(amount / roundingStep) * roundingStep;
+  const rounded = Math.round(variedAmount / roundingStep) * roundingStep;
   return Math.max(roundingStep, rounded);
 }
 
@@ -828,7 +850,11 @@ export function materializeDemoSeedBudget({
       throw new Error(`Missing category mapping for key: ${categoryKey}`);
     }
 
-    const amount = approximateBudgetAmount(rawAmount);
+    const amount = approximateBudgetAmount(
+      rawAmount,
+      periodKey as DemoSeedBudgetPeriodDraft["key"],
+      categoryKey,
+    );
     if (amount <= 0) {
       continue;
     }
