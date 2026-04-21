@@ -811,15 +811,24 @@ const dictionaries = {
         installmentCreatedTitle: "Compra en cuotas registrada",
         installmentCreatedMessage: "Las cuotas se distribuyeron en los meses correspondientes.",
         installmentRegisterError: "No pudimos registrar la compra en cuotas",
+        installmentLoadEditError: "No pudimos cargar la compra en cuotas para editarla",
+        installmentUpdateError: "No pudimos actualizar la compra en cuotas",
+        installmentUpdatedTitle: "Compra en cuotas actualizada",
+        installmentUpdatedMessage: "Los cambios de la compra en cuotas se guardaron correctamente.",
         installmentDeleteError: "No pudimos eliminar la compra en cuotas",
         installmentDeletedTitle: "Compra en cuotas eliminada",
         installmentDeletedMessage: "Se eliminaron todas las cuotas de la compra.",
         installmentEditBlockedTitle: "Edición no disponible",
         installmentEditBlockedMessage:
           "Las compras en cuotas no se editan desde transacciones individuales.",
+        installmentCreateFromEditBlockedTitle: "Conversión no disponible",
+        installmentCreateFromEditBlockedMessage:
+          "Por ahora, solo podés crear cuotas desde una transacción nueva.",
         invalidInstallmentTypeTitle: "Tipo incompatible con cuotas",
         invalidInstallmentTypeMessage:
           "Las cuotas solo están disponibles para transacciones de gasto.",
+        installmentsRequireAtLeastTwo:
+          "Las compras en cuotas requieren una cantidad mínima de 2 cuotas.",
         invalidInstallmentPaymentMethodTitle: "Medio de pago incompatible",
         invalidInstallmentPaymentMethodMessage:
           "Seleccioná una tarjeta de crédito para registrar cuotas.",
@@ -1847,6 +1856,11 @@ const dictionaries = {
         installmentCreatedMessage:
           "Installments were distributed across the corresponding months.",
         installmentRegisterError: "We couldn't register the installment purchase",
+        installmentLoadEditError: "We couldn't load the installment purchase for editing",
+        installmentUpdateError: "We couldn't update the installment purchase",
+        installmentUpdatedTitle: "Installment purchase updated",
+        installmentUpdatedMessage:
+          "Installment purchase changes were saved successfully.",
         installmentDeleteError: "We couldn't delete the installment purchase",
         installmentDeletedTitle: "Installment purchase deleted",
         installmentDeletedMessage:
@@ -1854,9 +1868,14 @@ const dictionaries = {
         installmentEditBlockedTitle: "Editing is not available",
         installmentEditBlockedMessage:
           "Installment purchases cannot be edited from individual transactions.",
+        installmentCreateFromEditBlockedTitle: "Conversion not available",
+        installmentCreateFromEditBlockedMessage:
+          "For now, you can only create installments from a new transaction.",
         invalidInstallmentTypeTitle: "Type incompatible with installments",
         invalidInstallmentTypeMessage:
           "Installments are only available for expense transactions.",
+        installmentsRequireAtLeastTwo:
+          "Installment purchases require at least 2 installments.",
         invalidInstallmentPaymentMethodTitle: "Incompatible payment method",
         invalidInstallmentPaymentMethodMessage:
           "Select a credit card to register installments.",
