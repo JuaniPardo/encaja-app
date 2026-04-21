@@ -38,8 +38,24 @@ export function buildMonthRange(year: number, month: number) {
 }
 
 export function resolveOperationalDate(
-  row: Pick<TransactionRow, "effective_date" | "transaction_date">,
+  row: Pick<
+    TransactionRow,
+    | "effective_date"
+    | "transaction_date"
+    | "installment_purchase_id"
+    | "installment_number"
+    | "installment_count"
+  >,
 ) {
+  const isInstallment =
+    row.installment_purchase_id !== null &&
+    row.installment_number !== null &&
+    row.installment_count !== null;
+
+  if (isInstallment && row.installment_number === 1) {
+    return row.transaction_date;
+  }
+
   return row.effective_date ?? row.transaction_date;
 }
 
