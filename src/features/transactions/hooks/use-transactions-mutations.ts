@@ -162,6 +162,15 @@ export function useTransactionsMutations({
   }, [isBootstrapping, isTransferModalOpen, openTransferModalFromQuery, setOpenTransferModalFromQuery]);
 
   const onSubmit = async (values: TransactionFormValues) => {
+    if (editingRow?.installment_purchase_id) {
+      notifications.show({
+        color: "red",
+        title: t("transactions.notifications.installmentEditBlockedTitle"),
+        message: t("transactions.notifications.installmentEditBlockedMessage"),
+      });
+      return;
+    }
+
     const category = categoryById.get(values.categoryId);
     if (!category || category.workspace_id !== workspace.id) {
       notifications.show({
@@ -264,6 +273,81 @@ export function useTransactionsMutations({
       return;
     }
 
+    const installmentsCount = values.installmentsCount;
+
+    if (installmentsCount > 1) {
+      if (editingRow) {
+        notifications.show({
+          color: "red",
+          title: t("transactions.notifications.installmentEditBlockedTitle"),
+          message: t("transactions.notifications.installmentEditBlockedMessage"),
+        });
+        return;
+      }
+
+      if (values.type !== "expense") {
+        notifications.show({
+          color: "red",
+          title: t("transactions.notifications.invalidInstallmentTypeTitle"),
+          message: t("transactions.notifications.invalidInstallmentTypeMessage"),
+        });
+        return;
+      }
+
+      if (!paymentMethod) {
+        notifications.show({
+          color: "red",
+          title: t("transactions.notifications.invalidInstallmentPaymentMethodTitle"),
+          message: t("transactions.notifications.invalidInstallmentPaymentMethodMessage"),
+        });
+        return;
+      }
+
+      if (paymentMethod.type !== "credit_card") {
+        notifications.show({
+          color: "red",
+          title: t("transactions.notifications.invalidInstallmentPaymentMethodTitle"),
+          message: t("transactions.notifications.installmentsRequireCreditCard"),
+        });
+        return;
+      }
+
+      const createInstallmentResponse = await supabase.rpc(
+        "create_installment_purchase_transaction",
+        {
+          p_workspace_id: workspace.id,
+          p_payment_method_id: paymentMethod.id,
+          p_category_id: category.id,
+          p_amount: Math.round(values.amount * 100) / 100,
+          p_installments_count: installmentsCount,
+          p_transaction_date: values.transactionDate,
+          p_effective_date: values.effectiveDate,
+          p_description: values.description,
+          p_notes: values.notes,
+        },
+      );
+
+      if (createInstallmentResponse.error) {
+        notifications.show({
+          color: "red",
+          title: t("transactions.notifications.installmentRegisterError"),
+          message: createInstallmentResponse.error.message,
+        });
+        return;
+      }
+
+      notifications.show({
+        color: "cyan",
+        title: t("transactions.notifications.installmentCreatedTitle"),
+        message: t("transactions.notifications.installmentCreatedMessage"),
+      });
+
+      closeModal();
+      setFormInitialValues(toFormDefaults(undefined, values.type));
+      await loadTransactions();
+      return;
+    }
+
     const payload = {
       type: values.type,
       category_id: values.categoryId,
@@ -338,24 +422,37 @@ export function useTransactionsMutations({
   async function deleteTransaction(row: TransactionRow) {
     setDeletingId(row.id);
 
-    let query = supabase.from("transactions").delete().eq("workspace_id", workspace.id);
+    let response;
 
-    if (row.type === "transfer" && row.transfer_group_id) {
-      query = query.eq("transfer_group_id", row.transfer_group_id);
+    if (row.installment_purchase_id) {
+      response = await supabase
+        .from("installment_purchases")
+        .delete()
+        .eq("id", row.installment_purchase_id)
+        .eq("workspace_id", workspace.id);
     } else {
-      query = query.eq("id", row.id);
+      let query = supabase.from("transactions").delete().eq("workspace_id", workspace.id);
+
+      if (row.type === "transfer" && row.transfer_group_id) {
+        query = query.eq("transfer_group_id", row.transfer_group_id);
+      } else {
+        query = query.eq("id", row.id);
+      }
+
+      response = await query;
     }
 
-    const response = await query;
     setDeletingId(null);
 
     if (response.error) {
       notifications.show({
         color: "red",
         title:
-          row.type === "transfer"
-            ? t("transactions.notifications.transferDeleteError")
-            : t("transactions.notifications.deleteError"),
+          row.installment_purchase_id
+            ? t("transactions.notifications.installmentDeleteError")
+            : row.type === "transfer"
+              ? t("transactions.notifications.transferDeleteError")
+              : t("transactions.notifications.deleteError"),
         message: response.error.message,
       });
       return;
@@ -364,19 +461,27 @@ export function useTransactionsMutations({
     notifications.show({
       color: "cyan",
       title:
-        row.type === "transfer"
-          ? t("transactions.notifications.transferDeletedTitle")
-          : t("transactions.notifications.deletedTitle"),
+        row.installment_purchase_id
+          ? t("transactions.notifications.installmentDeletedTitle")
+          : row.type === "transfer"
+            ? t("transactions.notifications.transferDeletedTitle")
+            : t("transactions.notifications.deletedTitle"),
       message:
-        row.type === "transfer"
-          ? t("transactions.notifications.transferDeletedMessage")
-          : t("transactions.notifications.deletedMessage"),
+        row.installment_purchase_id
+          ? t("transactions.notifications.installmentDeletedMessage")
+          : row.type === "transfer"
+            ? t("transactions.notifications.transferDeletedMessage")
+            : t("transactions.notifications.deletedMessage"),
     });
 
     await loadTransactions();
   }
 
   function confirmDelete(row: TransactionRow) {
+    const confirmBody = row.installment_purchase_id
+      ? t("transactions.confirmDeleteInstallmentBody")
+      : t("transactions.confirmDeleteBody");
+
     modals.openConfirmModal({
       title: t("transactions.delete"),
       centered: true,
@@ -387,7 +492,7 @@ export function useTransactionsMutations({
       confirmProps: {
         color: "red",
       },
-      children: t("transactions.confirmDeleteBody"),
+      children: confirmBody,
       onConfirm: () => {
         void deleteTransaction(row);
       },

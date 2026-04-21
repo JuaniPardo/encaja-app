@@ -1,0 +1,127 @@
+- generic [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e612] [cursor=pointer]:
+    - generic [ref=e615]:
+      - text: Rendering
+      - generic [ref=e616]:
+        - generic [ref=e617]: .
+        - generic [ref=e618]: .
+        - generic [ref=e619]: .
+  - alert [ref=e15]: Empezar
+  - generic [ref=e16]:
+    - banner [ref=e17]:
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - button "Colapsar menú" [ref=e20] [cursor=pointer]:
+            - paragraph [ref=e22]: ‹
+          - generic [ref=e23]:
+            - img "Encaja" [ref=e24]
+            - heading "Encaja" [level=3] [ref=e25]
+        - generic [ref=e26]:
+          - button "Abrir formulario de feedback" [ref=e27] [cursor=pointer]:
+            - img [ref=e29]
+          - generic [ref=e33]:
+            - combobox [ref=e34] [cursor=pointer]:
+              - option "JuaniPardo · owner"
+              - option "Caja CTA 132351 · owner" [selected]
+            - generic:
+              - img
+    - navigation [ref=e35]:
+      - generic [ref=e36]:
+        - img "Encaja" [ref=e37]
+        - paragraph [ref=e38]: Encaja
+      - generic [ref=e39]:
+        - link "Resumen" [active] [ref=e40] [cursor=pointer]:
+          - /url: /app/caja-cta-132351
+          - generic [ref=e41]:
+            - img [ref=e43]
+            - paragraph [ref=e45]: Resumen
+        - link "Transacciones" [ref=e46] [cursor=pointer]:
+          - /url: /app/caja-cta-132351/transactions
+          - generic [ref=e47]:
+            - img [ref=e49]
+            - paragraph [ref=e52]: Transacciones
+        - link "Presupuesto" [ref=e53] [cursor=pointer]:
+          - /url: /app/caja-cta-132351/budget
+          - generic [ref=e54]:
+            - img [ref=e56]
+            - paragraph [ref=e58]: Presupuesto
+        - link "Categorías" [ref=e59] [cursor=pointer]:
+          - /url: /app/caja-cta-132351/categories
+          - generic [ref=e60]:
+            - img [ref=e62]
+            - paragraph [ref=e67]: Categorías
+        - link "Medios de pago" [ref=e68] [cursor=pointer]:
+          - /url: /app/caja-cta-132351/payment-methods
+          - generic [ref=e69]:
+            - img [ref=e71]
+            - paragraph [ref=e73]: Medios de pago
+        - paragraph [ref=e74]: Más
+        - separator [ref=e75]
+        - link "Empezar" [ref=e76] [cursor=pointer]:
+          - /url: /app/caja-cta-132351/start
+          - generic [ref=e77]:
+            - img [ref=e79]
+            - paragraph [ref=e81]: Empezar
+        - link "Insights" [ref=e82] [cursor=pointer]:
+          - /url: /app/caja-cta-132351/insights
+          - generic [ref=e83]:
+            - img [ref=e85]
+            - paragraph [ref=e86]: Insights
+        - link "Configuración" [ref=e87] [cursor=pointer]:
+          - /url: /app/caja-cta-132351/settings
+          - generic [ref=e88]:
+            - img [ref=e90]
+            - paragraph [ref=e93]: Configuración
+        - link "Perfil" [ref=e94] [cursor=pointer]:
+          - /url: /app/caja-cta-132351/profile
+          - generic [ref=e95]:
+            - img [ref=e97]
+            - paragraph [ref=e100]: Perfil
+      - button "Salir" [ref=e102] [cursor=pointer]:
+        - generic [ref=e103]:
+          - img [ref=e104]
+          - paragraph [ref=e107]: Salir
+    - main [ref=e108]:
+      - generic [ref=e109]:
+        - generic [ref=e564]:
+          - generic [ref=e565]:
+            - heading "Empezar" [level=1] [ref=e566]
+            - paragraph [ref=e567]: Guía rápida para tus primeros pasos en Encaja.
+          - generic [ref=e569]:
+            - paragraph [ref=e570]: Estado actual
+            - paragraph [ref=e571]: Todavía no registraste movimientos
+          - generic [ref=e573]:
+            - generic [ref=e574]:
+              - paragraph [ref=e575]: Acción principal
+              - paragraph [ref=e576]: Registrá tu primer gasto
+            - link "Nueva transacción" [ref=e577] [cursor=pointer]:
+              - /url: /app/caja-cta-132351/transactions?new=1&prefillType=expense
+              - generic [ref=e579]: Nueva transacción
+          - generic [ref=e581]:
+            - paragraph [ref=e582]: Insight breve
+            - paragraph [ref=e583]: Es normal acordarse de cosas a mitad de camino y agregarlas después.
+          - generic [ref=e585]:
+            - generic [ref=e586]:
+              - paragraph [ref=e587]: Checklist de progreso
+              - paragraph [ref=e588]: 0/3 completado
+            - generic [ref=e589]:
+              - generic [ref=e591]:
+                - generic [ref=e592]:
+                  - checkbox "Registrar primer ingreso" [ref=e593]
+                  - img
+                - generic [ref=e595]: Registrar primer ingreso
+              - generic [ref=e597]:
+                - generic [ref=e598]:
+                  - checkbox "Registrar 3 gastos" [ref=e599]
+                  - img
+                - generic [ref=e601]: Registrar 3 gastos
+              - generic [ref=e603]:
+                - generic [ref=e604]:
+                  - checkbox "Revisar balance del mes" [ref=e605]
+                  - img
+                - generic [ref=e607]: Revisar balance del mes
+        - generic [ref=e549]:
+          - paragraph [ref=e550]: Built by Juan Pardo
+          - paragraph [ref=e551]: v1.4.0
+      - button "Abrir acciones rápidas" [ref=e609] [cursor=pointer]:
+        - img [ref=e611]

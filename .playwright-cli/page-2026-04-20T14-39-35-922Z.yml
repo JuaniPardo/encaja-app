@@ -1,0 +1,247 @@
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e44] [cursor=pointer]:
+    - img [ref=e45]
+  - alert [ref=e48]: Transacciones
+  - generic [ref=e62]:
+    - banner [ref=e63]:
+      - generic [ref=e64]:
+        - generic [ref=e65]:
+          - button "Colapsar menú" [ref=e66] [cursor=pointer]:
+            - paragraph [ref=e68]: ‹
+          - generic [ref=e69]:
+            - img "Encaja" [ref=e70]
+            - heading "Encaja" [level=3] [ref=e71]
+        - generic [ref=e72]:
+          - button "Abrir formulario de feedback" [ref=e73] [cursor=pointer]:
+            - img [ref=e75]
+          - generic [ref=e79]:
+            - combobox [ref=e80] [cursor=pointer]:
+              - option "JuaniPardo · owner" [selected]
+              - option "Caja CTA 132351 · owner"
+            - generic:
+              - img
+    - navigation [ref=e81]:
+      - generic [ref=e82]:
+        - img "Encaja" [ref=e83]
+        - paragraph [ref=e84]: Encaja
+      - generic [ref=e85]:
+        - link "Resumen" [ref=e86] [cursor=pointer]:
+          - /url: /app/workspace-de-juani
+          - generic [ref=e87]:
+            - img [ref=e89]
+            - paragraph [ref=e91]: Resumen
+        - link "Transacciones" [ref=e92] [cursor=pointer]:
+          - /url: /app/workspace-de-juani/transactions
+          - generic [ref=e93]:
+            - img [ref=e95]
+            - paragraph [ref=e98]: Transacciones
+        - link "Presupuesto" [ref=e99] [cursor=pointer]:
+          - /url: /app/workspace-de-juani/budget
+          - generic [ref=e100]:
+            - img [ref=e102]
+            - paragraph [ref=e104]: Presupuesto
+        - link "Categorías" [ref=e105] [cursor=pointer]:
+          - /url: /app/workspace-de-juani/categories
+          - generic [ref=e106]:
+            - img [ref=e108]
+            - paragraph [ref=e113]: Categorías
+        - link "Medios de pago" [ref=e114] [cursor=pointer]:
+          - /url: /app/workspace-de-juani/payment-methods
+          - generic [ref=e115]:
+            - img [ref=e117]
+            - paragraph [ref=e119]: Medios de pago
+        - paragraph [ref=e120]: Más
+        - separator [ref=e121]
+        - link "Empezar" [ref=e122] [cursor=pointer]:
+          - /url: /app/workspace-de-juani/start
+          - generic [ref=e123]:
+            - img [ref=e125]
+            - paragraph [ref=e127]: Empezar
+        - link "Insights" [ref=e128] [cursor=pointer]:
+          - /url: /app/workspace-de-juani/insights
+          - generic [ref=e129]:
+            - img [ref=e131]
+            - paragraph [ref=e132]: Insights
+        - link "Configuración" [ref=e133] [cursor=pointer]:
+          - /url: /app/workspace-de-juani/settings
+          - generic [ref=e134]:
+            - img [ref=e136]
+            - paragraph [ref=e139]: Configuración
+        - link "Perfil" [ref=e140] [cursor=pointer]:
+          - /url: /app/workspace-de-juani/profile
+          - generic [ref=e141]:
+            - img [ref=e143]
+            - paragraph [ref=e146]: Perfil
+      - button "Salir" [ref=e148] [cursor=pointer]:
+        - generic [ref=e149]:
+          - img [ref=e150]
+          - paragraph [ref=e153]: Salir
+    - main [ref=e154]:
+      - generic [ref=e155]:
+        - generic [ref=e624]:
+          - generic [ref=e628]:
+            - generic [ref=e629]:
+              - heading "Transacciones" [level=1] [ref=e630]
+              - paragraph [ref=e631]: Vista operativa de movimientos reales del período.
+            - generic [ref=e632]:
+              - button "Nueva transacción" [ref=e633] [cursor=pointer]:
+                - generic [ref=e635]: Nueva transacción
+              - button "Transferir" [ref=e636] [cursor=pointer]:
+                - generic [ref=e638]: Transferir
+          - generic [ref=e640]:
+            - generic [ref=e642]:
+              - generic [ref=e643]:
+                - generic [ref=e644]: Año
+                - generic [ref=e645]:
+                  - combobox "Año" [ref=e646] [cursor=pointer]:
+                    - option "2028"
+                    - option "2027"
+                    - option "2026" [selected]
+                    - option "2025"
+                  - generic:
+                    - img
+              - generic [ref=e647]:
+                - generic [ref=e648]: Mes
+                - generic [ref=e649]:
+                  - combobox "Mes" [ref=e650] [cursor=pointer]:
+                    - option "Enero"
+                    - option "Febrero"
+                    - option "Marzo"
+                    - option "Abril" [selected]
+                    - option "Mayo"
+                    - option "Junio"
+                    - option "Julio"
+                    - option "Agosto"
+                    - option "Septiembre"
+                    - option "Octubre"
+                    - option "Noviembre"
+                    - option "Diciembre"
+                  - generic:
+                    - img
+              - generic [ref=e651]:
+                - generic [ref=e652]: Tipo
+                - generic [ref=e653]:
+                  - combobox "Tipo" [ref=e654] [cursor=pointer]:
+                    - option "Todos" [selected]
+                    - option "Ingreso"
+                    - option "Gasto"
+                    - option "Ahorro"
+                  - generic:
+                    - img
+              - generic [ref=e655]:
+                - generic [ref=e656]: Categoría
+                - generic [ref=e657]:
+                  - combobox "Categoría" [ref=e658] [cursor=pointer]:
+                    - option "Todas" [selected]
+                    - option "Ahorro mensual"
+                    - option "Alquiler"
+                    - option "Sueldo"
+                    - option "Transferencia"
+                    - option "Transferencias internas (inactiva)"
+                    - option "Ingresos extra"
+                    - option "Pago de tarjeta (inactiva)"
+                    - option "Pago de tarjeta (sistema)"
+                    - option "Servicios"
+                    - option "Alimentos"
+                    - option "Extracción"
+                    - option "Depósito"
+                    - option "Transporte"
+                    - option "Delivery"
+                    - option "Suscripciones"
+                    - option "Entretenimiento"
+                    - option "Regalos"
+                    - option "Viajes"
+                    - option "Mantenimiento"
+                    - option "Salud"
+                    - option "Educación"
+                    - option "Seguros"
+                    - option "Impuestos"
+                    - option "Ajuste manual"
+                    - option "Otros gastos"
+                  - generic:
+                    - img
+              - generic [ref=e659]:
+                - generic [ref=e660]: Medio
+                - generic [ref=e661]:
+                  - combobox "Medio" [ref=e662] [cursor=pointer]:
+                    - option "Todos" [selected]
+                    - option "Efectivo"
+                    - option "Tarjeta Smoke"
+                  - generic:
+                    - img
+              - generic [ref=e663]:
+                - generic [ref=e664]: Buscar
+                - textbox "Buscar" [ref=e666]:
+                  - /placeholder: Categoría, descripción, nota...
+            - paragraph [ref=e667]: Abril 2026 · 4 movimientos
+          - generic [ref=e732]:
+            - generic [ref=e733]:
+              - paragraph [ref=e734]: Ayer
+              - generic [ref=e735]:
+                - generic [ref=e737]:
+                  - generic [ref=e738]:
+                    - paragraph [ref=e740]: Pago de tarjeta (sistema)
+                    - paragraph [ref=e742]: $ 1.000
+                  - generic [ref=e743]:
+                    - paragraph [ref=e744]: 19 abr · Efectivo
+                    - generic [ref=e745]:
+                      - button "Editar transacción" [ref=e746] [cursor=pointer]:
+                        - generic [ref=e747]:
+                          - img [ref=e749]
+                          - generic [ref=e751]: Editar transacción
+                      - button "Eliminar transacción" [ref=e752] [cursor=pointer]:
+                        - generic [ref=e753]:
+                          - img [ref=e755]
+                          - generic [ref=e758]: Eliminar transacción
+                - generic [ref=e760]:
+                  - generic [ref=e761]:
+                    - paragraph [ref=e763]: Pago de tarjeta (sistema)
+                    - paragraph [ref=e765]: $ 1.000
+                  - generic [ref=e766]:
+                    - paragraph [ref=e767]: 19 abr · Tarjeta Smoke
+                    - generic [ref=e768]:
+                      - button "Editar transacción" [ref=e769] [cursor=pointer]:
+                        - generic [ref=e770]:
+                          - img [ref=e772]
+                          - generic [ref=e774]: Editar transacción
+                      - button "Eliminar transacción" [ref=e775] [cursor=pointer]:
+                        - generic [ref=e776]:
+                          - img [ref=e778]
+                          - generic [ref=e781]: Eliminar transacción
+            - generic [ref=e782]:
+              - paragraph [ref=e783]: 14 de abril
+              - generic [ref=e786]:
+                - generic [ref=e787]:
+                  - paragraph [ref=e789]: Sueldo
+                  - paragraph [ref=e791]: $ 55.000
+                - generic [ref=e792]:
+                  - paragraph [ref=e793]: 14 abr · Efectivo
+                  - generic [ref=e794]:
+                    - button "Editar transacción" [ref=e795] [cursor=pointer]:
+                      - generic [ref=e796]:
+                        - img [ref=e798]
+                        - generic [ref=e800]: Editar transacción
+                    - button "Eliminar transacción" [ref=e801] [cursor=pointer]:
+                      - generic [ref=e802]:
+                        - img [ref=e804]
+                        - generic [ref=e807]: Eliminar transacción
+            - generic [ref=e808]:
+              - paragraph [ref=e809]: 13 de abril
+              - generic [ref=e812]:
+                - generic [ref=e813]:
+                  - paragraph [ref=e815]: Alquiler
+                  - paragraph [ref=e817]: $ 50.000
+                - generic [ref=e818]:
+                  - paragraph [ref=e819]: 13 abr · Efectivo
+                  - generic [ref=e820]:
+                    - button "Editar transacción" [ref=e821] [cursor=pointer]:
+                      - generic [ref=e822]:
+                        - img [ref=e824]
+                        - generic [ref=e826]: Editar transacción
+                    - button "Eliminar transacción" [ref=e827] [cursor=pointer]:
+                      - generic [ref=e828]:
+                        - img [ref=e830]
+                        - generic [ref=e833]: Eliminar transacción
+        - generic [ref=e607]:
+          - paragraph [ref=e608]: Built by Juan Pardo
+          - paragraph [ref=e609]: v1.4.0

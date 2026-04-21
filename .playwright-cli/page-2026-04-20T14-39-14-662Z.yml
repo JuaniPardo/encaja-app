@@ -1,0 +1,470 @@
+- generic [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e44] [cursor=pointer]:
+    - img [ref=e45]
+  - alert [ref=e48]
+  - generic [ref=e62]:
+    - banner [ref=e63]:
+      - generic [ref=e64]:
+        - generic [ref=e65]:
+          - button "Colapsar menú" [ref=e66] [cursor=pointer]:
+            - paragraph [ref=e68]: ‹
+          - generic [ref=e69]:
+            - img "Encaja" [ref=e70]
+            - heading "Encaja" [level=3] [ref=e71]
+        - generic [ref=e72]:
+          - button "Abrir formulario de feedback" [ref=e73] [cursor=pointer]:
+            - img [ref=e75]
+          - generic [ref=e79]:
+            - combobox [ref=e80] [cursor=pointer]:
+              - option "JuaniPardo · owner" [selected]
+              - option "Caja CTA 132351 · owner"
+            - generic:
+              - img
+    - navigation [ref=e81]:
+      - generic [ref=e82]:
+        - img "Encaja" [ref=e83]
+        - paragraph [ref=e84]: Encaja
+      - generic [ref=e85]:
+        - link "Resumen" [ref=e86] [cursor=pointer]:
+          - /url: /app/workspace-de-juani
+          - generic [ref=e87]:
+            - img [ref=e89]
+            - paragraph [ref=e91]: Resumen
+        - link "Transacciones" [ref=e92] [cursor=pointer]:
+          - /url: /app/workspace-de-juani/transactions
+          - generic [ref=e93]:
+            - img [ref=e95]
+            - paragraph [ref=e98]: Transacciones
+        - link "Presupuesto" [ref=e99] [cursor=pointer]:
+          - /url: /app/workspace-de-juani/budget
+          - generic [ref=e100]:
+            - img [ref=e102]
+            - paragraph [ref=e104]: Presupuesto
+        - link "Categorías" [ref=e105] [cursor=pointer]:
+          - /url: /app/workspace-de-juani/categories
+          - generic [ref=e106]:
+            - img [ref=e108]
+            - paragraph [ref=e113]: Categorías
+        - link "Medios de pago" [ref=e114] [cursor=pointer]:
+          - /url: /app/workspace-de-juani/payment-methods
+          - generic [ref=e115]:
+            - img [ref=e117]
+            - paragraph [ref=e119]: Medios de pago
+        - paragraph [ref=e120]: Más
+        - separator [ref=e121]
+        - link "Empezar" [ref=e122] [cursor=pointer]:
+          - /url: /app/workspace-de-juani/start
+          - generic [ref=e123]:
+            - img [ref=e125]
+            - paragraph [ref=e127]: Empezar
+        - link "Insights" [ref=e128] [cursor=pointer]:
+          - /url: /app/workspace-de-juani/insights
+          - generic [ref=e129]:
+            - img [ref=e131]
+            - paragraph [ref=e132]: Insights
+        - link "Configuración" [ref=e133] [cursor=pointer]:
+          - /url: /app/workspace-de-juani/settings
+          - generic [ref=e134]:
+            - img [ref=e136]
+            - paragraph [ref=e139]: Configuración
+        - link "Perfil" [ref=e140] [cursor=pointer]:
+          - /url: /app/workspace-de-juani/profile
+          - generic [ref=e141]:
+            - img [ref=e143]
+            - paragraph [ref=e146]: Perfil
+      - button "Salir" [ref=e148] [cursor=pointer]:
+        - generic [ref=e149]:
+          - img [ref=e150]
+          - paragraph [ref=e153]: Salir
+    - main [ref=e154]:
+      - generic [ref=e155]:
+        - generic [ref=e156]:
+          - generic [ref=e158]:
+            - generic [ref=e159]:
+              - heading "Tablero financiero" [level=1] [ref=e160]
+              - paragraph [ref=e161]: Abril 2026
+              - paragraph [ref=e162]: "Workspace: JuaniPardo · Moneda: ARS"
+            - generic [ref=e163]:
+              - link "Ver insights" [ref=e164] [cursor=pointer]:
+                - /url: /app/workspace-de-juani/insights
+                - generic [ref=e166]: Ver insights
+              - button "Abril 2026" [ref=e167] [cursor=pointer]
+          - generic [ref=e169]:
+            - generic [ref=e172]:
+              - generic [ref=e174]:
+                - paragraph [ref=e175]: Medios financieros
+                - paragraph [ref=e176]: "Balance actual: $ 5.000"
+                - paragraph [ref=e177]: "Este mes: +$ 5.000"
+                - paragraph [ref=e178]: 2 activos en balance
+              - generic [ref=e179]:
+                - 'link "Efectivo Efectivo · Ver movimientos $ 4.000 este mes: +$ 5.000" [ref=e180] [cursor=pointer]':
+                  - /url: /app/workspace-de-juani/transactions?year=2026&month=4&paymentMethodId=c45e4149-5d82-496f-95c3-18229c04dd7e
+                  - generic [ref=e181]:
+                    - generic [ref=e182]:
+                      - paragraph [ref=e183]: Efectivo
+                      - paragraph [ref=e184]: Efectivo · Ver movimientos
+                    - generic [ref=e185]:
+                      - paragraph [ref=e186]: $ 4.000
+                      - paragraph [ref=e187]: "este mes: +$ 5.000"
+                - 'link "Tarjeta Smoke Tarjeta crédito · Ver movimientos $ 1.000 este mes: $ 0" [ref=e188] [cursor=pointer]':
+                  - /url: /app/workspace-de-juani/transactions?year=2026&month=4&paymentMethodId=841e2892-6193-4c37-8c26-f30bc46219ea
+                  - generic [ref=e189]:
+                    - generic [ref=e190]:
+                      - paragraph [ref=e191]: Tarjeta Smoke
+                      - paragraph [ref=e192]: Tarjeta crédito · Ver movimientos
+                    - generic [ref=e193]:
+                      - paragraph [ref=e194]: $ 1.000
+                      - paragraph [ref=e195]: "este mes: $ 0"
+            - generic [ref=e197]:
+              - generic [ref=e199]:
+                - paragraph [ref=e200]: Balance período
+                - paragraph [ref=e201]: $ 5.000
+                - paragraph [ref=e202]: "Presup: $ 0"
+                - paragraph [ref=e203]: "Delta: +$ 5.000"
+              - generic [ref=e205]:
+                - paragraph [ref=e206]: Ahorro período
+                - paragraph [ref=e207]: $ 0
+                - paragraph [ref=e208]: "Presup: $ 0"
+                - paragraph [ref=e209]: "Ratio: 0,0% de ingresos"
+          - generic [ref=e210]:
+            - generic [ref=e211]:
+              - generic [ref=e213]:
+                - paragraph [ref=e214]: Ingresos
+                - paragraph [ref=e215]: "Real: $ 55.000 · Presup: $ 0"
+              - table [ref=e216]:
+                - rowgroup [ref=e217]:
+                  - row "Categoría Real Presup. % Compl. Desvío" [ref=e218]:
+                    - columnheader "Categoría" [ref=e219]
+                    - columnheader "Real" [ref=e220]
+                    - columnheader "Presup." [ref=e221]
+                    - columnheader "% Compl." [ref=e222]
+                    - columnheader "Desvío" [ref=e223]
+                - rowgroup [ref=e224]:
+                  - row "Sueldo 55 k 0 N/A +55 k" [ref=e225]:
+                    - cell "Sueldo" [ref=e226]:
+                      - link "Sueldo" [ref=e228] [cursor=pointer]:
+                        - /url: /app/workspace-de-juani/transactions?year=2026&month=4&type=income&categoryId=bfd10105-f7ac-4700-a20f-ca5ed228b771
+                    - cell "55 k" [ref=e229]:
+                      - paragraph [ref=e230]: 55 k
+                    - cell "0" [ref=e231]:
+                      - paragraph [ref=e232]: "0"
+                    - cell "N/A" [ref=e233]:
+                      - paragraph [ref=e236]: N/A
+                    - cell "+55 k" [ref=e237]:
+                      - paragraph [ref=e238]: +55 k
+                  - row "Ingresos extra 0 0 N/A 0" [ref=e239]:
+                    - cell "Ingresos extra" [ref=e240]:
+                      - link "Ingresos extra" [ref=e242] [cursor=pointer]:
+                        - /url: /app/workspace-de-juani/transactions?year=2026&month=4&type=income&categoryId=2fcb9210-00c5-42d0-ba08-02678f71ea4d
+                    - cell "0" [ref=e243]:
+                      - paragraph [ref=e244]: "0"
+                    - cell "0" [ref=e245]:
+                      - paragraph [ref=e246]: "0"
+                    - cell "N/A" [ref=e247]:
+                      - paragraph [ref=e250]: N/A
+                    - cell "0" [ref=e251]:
+                      - paragraph [ref=e252]: "0"
+                  - row "TOTAL 55 k 0 N/A +55 k" [ref=e253]:
+                    - cell "TOTAL" [ref=e254]:
+                      - paragraph [ref=e255]: TOTAL
+                    - cell "55 k" [ref=e256]:
+                      - paragraph [ref=e257]: 55 k
+                    - cell "0" [ref=e258]:
+                      - paragraph [ref=e259]: "0"
+                    - cell "N/A" [ref=e260]:
+                      - paragraph [ref=e263]: N/A
+                    - cell "+55 k" [ref=e264]:
+                      - paragraph [ref=e265]: +55 k
+            - generic [ref=e266]:
+              - generic [ref=e268]:
+                - paragraph [ref=e269]: Gastos
+                - paragraph [ref=e270]: "Real: $ 50.000 · Presup: $ 0"
+              - table [ref=e271]:
+                - rowgroup [ref=e272]:
+                  - row "Categoría Real Presup. % Compl. Desvío" [ref=e273]:
+                    - columnheader "Categoría" [ref=e274]
+                    - columnheader "Real" [ref=e275]
+                    - columnheader "Presup." [ref=e276]
+                    - columnheader "% Compl." [ref=e277]
+                    - columnheader "Desvío" [ref=e278]
+                - rowgroup [ref=e279]:
+                  - row "Alquiler 50 k 0 N/A +50 k" [ref=e280]:
+                    - cell "Alquiler" [ref=e281]:
+                      - link "Alquiler" [ref=e283] [cursor=pointer]:
+                        - /url: /app/workspace-de-juani/transactions?year=2026&month=4&type=expense&categoryId=e4889092-a65e-4501-bb76-b0ba903c8996
+                    - cell "50 k" [ref=e284]:
+                      - paragraph [ref=e285]: 50 k
+                    - cell "0" [ref=e286]:
+                      - paragraph [ref=e287]: "0"
+                    - cell "N/A" [ref=e288]:
+                      - paragraph [ref=e291]: N/A
+                    - cell "+50 k" [ref=e292]:
+                      - paragraph [ref=e293]: +50 k
+                  - row "Servicios 0 0 N/A 0" [ref=e294]:
+                    - cell "Servicios" [ref=e295]:
+                      - link "Servicios" [ref=e297] [cursor=pointer]:
+                        - /url: /app/workspace-de-juani/transactions?year=2026&month=4&type=expense&categoryId=e78f4c7c-1b2a-41ef-bffe-ec0935d26641
+                    - cell "0" [ref=e298]:
+                      - paragraph [ref=e299]: "0"
+                    - cell "0" [ref=e300]:
+                      - paragraph [ref=e301]: "0"
+                    - cell "N/A" [ref=e302]:
+                      - paragraph [ref=e305]: N/A
+                    - cell "0" [ref=e306]:
+                      - paragraph [ref=e307]: "0"
+                  - row "Alimentos 0 0 N/A 0" [ref=e308]:
+                    - cell "Alimentos" [ref=e309]:
+                      - link "Alimentos" [ref=e311] [cursor=pointer]:
+                        - /url: /app/workspace-de-juani/transactions?year=2026&month=4&type=expense&categoryId=fc2b515c-ec9d-4939-8e3d-58cc68a89383
+                    - cell "0" [ref=e312]:
+                      - paragraph [ref=e313]: "0"
+                    - cell "0" [ref=e314]:
+                      - paragraph [ref=e315]: "0"
+                    - cell "N/A" [ref=e316]:
+                      - paragraph [ref=e319]: N/A
+                    - cell "0" [ref=e320]:
+                      - paragraph [ref=e321]: "0"
+                  - row "Transporte 0 0 N/A 0" [ref=e322]:
+                    - cell "Transporte" [ref=e323]:
+                      - link "Transporte" [ref=e325] [cursor=pointer]:
+                        - /url: /app/workspace-de-juani/transactions?year=2026&month=4&type=expense&categoryId=c1f9f353-9ea2-4691-abdb-c6f422f696ad
+                    - cell "0" [ref=e326]:
+                      - paragraph [ref=e327]: "0"
+                    - cell "0" [ref=e328]:
+                      - paragraph [ref=e329]: "0"
+                    - cell "N/A" [ref=e330]:
+                      - paragraph [ref=e333]: N/A
+                    - cell "0" [ref=e334]:
+                      - paragraph [ref=e335]: "0"
+                  - row "Delivery 0 0 N/A 0" [ref=e336]:
+                    - cell "Delivery" [ref=e337]:
+                      - link "Delivery" [ref=e339] [cursor=pointer]:
+                        - /url: /app/workspace-de-juani/transactions?year=2026&month=4&type=expense&categoryId=713220b1-9d2b-42ba-8320-cec3a757f081
+                    - cell "0" [ref=e340]:
+                      - paragraph [ref=e341]: "0"
+                    - cell "0" [ref=e342]:
+                      - paragraph [ref=e343]: "0"
+                    - cell "N/A" [ref=e344]:
+                      - paragraph [ref=e347]: N/A
+                    - cell "0" [ref=e348]:
+                      - paragraph [ref=e349]: "0"
+                  - row "Suscripciones 0 0 N/A 0" [ref=e350]:
+                    - cell "Suscripciones" [ref=e351]:
+                      - link "Suscripciones" [ref=e353] [cursor=pointer]:
+                        - /url: /app/workspace-de-juani/transactions?year=2026&month=4&type=expense&categoryId=77a9a8cf-8c9a-4c9a-a41d-2fe6d6cb3f6a
+                    - cell "0" [ref=e354]:
+                      - paragraph [ref=e355]: "0"
+                    - cell "0" [ref=e356]:
+                      - paragraph [ref=e357]: "0"
+                    - cell "N/A" [ref=e358]:
+                      - paragraph [ref=e361]: N/A
+                    - cell "0" [ref=e362]:
+                      - paragraph [ref=e363]: "0"
+                  - row "Entretenimiento 0 0 N/A 0" [ref=e364]:
+                    - cell "Entretenimiento" [ref=e365]:
+                      - link "Entretenimiento" [ref=e367] [cursor=pointer]:
+                        - /url: /app/workspace-de-juani/transactions?year=2026&month=4&type=expense&categoryId=bf5797f4-3754-4144-a8f1-5bb4b9b4b5b4
+                    - cell "0" [ref=e368]:
+                      - paragraph [ref=e369]: "0"
+                    - cell "0" [ref=e370]:
+                      - paragraph [ref=e371]: "0"
+                    - cell "N/A" [ref=e372]:
+                      - paragraph [ref=e375]: N/A
+                    - cell "0" [ref=e376]:
+                      - paragraph [ref=e377]: "0"
+                  - row "Regalos 0 0 N/A 0" [ref=e378]:
+                    - cell "Regalos" [ref=e379]:
+                      - link "Regalos" [ref=e381] [cursor=pointer]:
+                        - /url: /app/workspace-de-juani/transactions?year=2026&month=4&type=expense&categoryId=7001214c-e7c3-4cee-860b-e1aaa19bd4b6
+                    - cell "0" [ref=e382]:
+                      - paragraph [ref=e383]: "0"
+                    - cell "0" [ref=e384]:
+                      - paragraph [ref=e385]: "0"
+                    - cell "N/A" [ref=e386]:
+                      - paragraph [ref=e389]: N/A
+                    - cell "0" [ref=e390]:
+                      - paragraph [ref=e391]: "0"
+                  - row "Viajes 0 0 N/A 0" [ref=e392]:
+                    - cell "Viajes" [ref=e393]:
+                      - link "Viajes" [ref=e395] [cursor=pointer]:
+                        - /url: /app/workspace-de-juani/transactions?year=2026&month=4&type=expense&categoryId=6ffb9d6d-c83b-4518-87ca-49ee9273281d
+                    - cell "0" [ref=e396]:
+                      - paragraph [ref=e397]: "0"
+                    - cell "0" [ref=e398]:
+                      - paragraph [ref=e399]: "0"
+                    - cell "N/A" [ref=e400]:
+                      - paragraph [ref=e403]: N/A
+                    - cell "0" [ref=e404]:
+                      - paragraph [ref=e405]: "0"
+                  - row "Mantenimiento 0 0 N/A 0" [ref=e406]:
+                    - cell "Mantenimiento" [ref=e407]:
+                      - link "Mantenimiento" [ref=e409] [cursor=pointer]:
+                        - /url: /app/workspace-de-juani/transactions?year=2026&month=4&type=expense&categoryId=cfff00d3-9601-4ca6-8268-5994a9a82c4c
+                    - cell "0" [ref=e410]:
+                      - paragraph [ref=e411]: "0"
+                    - cell "0" [ref=e412]:
+                      - paragraph [ref=e413]: "0"
+                    - cell "N/A" [ref=e414]:
+                      - paragraph [ref=e417]: N/A
+                    - cell "0" [ref=e418]:
+                      - paragraph [ref=e419]: "0"
+                  - row "Salud 0 0 N/A 0" [ref=e420]:
+                    - cell "Salud" [ref=e421]:
+                      - link "Salud" [ref=e423] [cursor=pointer]:
+                        - /url: /app/workspace-de-juani/transactions?year=2026&month=4&type=expense&categoryId=eee37e09-d06c-475d-ac2a-96c900fe3df6
+                    - cell "0" [ref=e424]:
+                      - paragraph [ref=e425]: "0"
+                    - cell "0" [ref=e426]:
+                      - paragraph [ref=e427]: "0"
+                    - cell "N/A" [ref=e428]:
+                      - paragraph [ref=e431]: N/A
+                    - cell "0" [ref=e432]:
+                      - paragraph [ref=e433]: "0"
+                  - row "Educación 0 0 N/A 0" [ref=e434]:
+                    - cell "Educación" [ref=e435]:
+                      - link "Educación" [ref=e437] [cursor=pointer]:
+                        - /url: /app/workspace-de-juani/transactions?year=2026&month=4&type=expense&categoryId=336a4c43-5d31-4d9f-a7bf-e0e226c964fd
+                    - cell "0" [ref=e438]:
+                      - paragraph [ref=e439]: "0"
+                    - cell "0" [ref=e440]:
+                      - paragraph [ref=e441]: "0"
+                    - cell "N/A" [ref=e442]:
+                      - paragraph [ref=e445]: N/A
+                    - cell "0" [ref=e446]:
+                      - paragraph [ref=e447]: "0"
+                  - row "Seguros 0 0 N/A 0" [ref=e448]:
+                    - cell "Seguros" [ref=e449]:
+                      - link "Seguros" [ref=e451] [cursor=pointer]:
+                        - /url: /app/workspace-de-juani/transactions?year=2026&month=4&type=expense&categoryId=9f8fd81a-2b8c-4038-bd4c-38b6567edb57
+                    - cell "0" [ref=e452]:
+                      - paragraph [ref=e453]: "0"
+                    - cell "0" [ref=e454]:
+                      - paragraph [ref=e455]: "0"
+                    - cell "N/A" [ref=e456]:
+                      - paragraph [ref=e459]: N/A
+                    - cell "0" [ref=e460]:
+                      - paragraph [ref=e461]: "0"
+                  - row "Impuestos 0 0 N/A 0" [ref=e462]:
+                    - cell "Impuestos" [ref=e463]:
+                      - link "Impuestos" [ref=e465] [cursor=pointer]:
+                        - /url: /app/workspace-de-juani/transactions?year=2026&month=4&type=expense&categoryId=8531730a-d51f-45aa-8ad1-fbd722b0f0f5
+                    - cell "0" [ref=e466]:
+                      - paragraph [ref=e467]: "0"
+                    - cell "0" [ref=e468]:
+                      - paragraph [ref=e469]: "0"
+                    - cell "N/A" [ref=e470]:
+                      - paragraph [ref=e473]: N/A
+                    - cell "0" [ref=e474]:
+                      - paragraph [ref=e475]: "0"
+                  - row "Ajuste manual 0 0 N/A 0" [ref=e476]:
+                    - cell "Ajuste manual" [ref=e477]:
+                      - link "Ajuste manual" [ref=e479] [cursor=pointer]:
+                        - /url: /app/workspace-de-juani/transactions?year=2026&month=4&type=expense&categoryId=017dc941-b59d-4b16-8925-a826ce496d5e
+                    - cell "0" [ref=e480]:
+                      - paragraph [ref=e481]: "0"
+                    - cell "0" [ref=e482]:
+                      - paragraph [ref=e483]: "0"
+                    - cell "N/A" [ref=e484]:
+                      - paragraph [ref=e487]: N/A
+                    - cell "0" [ref=e488]:
+                      - paragraph [ref=e489]: "0"
+                  - row "Otros gastos 0 0 N/A 0" [ref=e490]:
+                    - cell "Otros gastos" [ref=e491]:
+                      - link "Otros gastos" [ref=e493] [cursor=pointer]:
+                        - /url: /app/workspace-de-juani/transactions?year=2026&month=4&type=expense&categoryId=c1b0a20a-91fd-4ced-ac39-e2714d9848cf
+                    - cell "0" [ref=e494]:
+                      - paragraph [ref=e495]: "0"
+                    - cell "0" [ref=e496]:
+                      - paragraph [ref=e497]: "0"
+                    - cell "N/A" [ref=e498]:
+                      - paragraph [ref=e501]: N/A
+                    - cell "0" [ref=e502]:
+                      - paragraph [ref=e503]: "0"
+                  - row "TOTAL 50 k 0 N/A +50 k" [ref=e504]:
+                    - cell "TOTAL" [ref=e505]:
+                      - paragraph [ref=e506]: TOTAL
+                    - cell "50 k" [ref=e507]:
+                      - paragraph [ref=e508]: 50 k
+                    - cell "0" [ref=e509]:
+                      - paragraph [ref=e510]: "0"
+                    - cell "N/A" [ref=e511]:
+                      - paragraph [ref=e514]: N/A
+                    - cell "+50 k" [ref=e515]:
+                      - paragraph [ref=e516]: +50 k
+            - generic [ref=e517]:
+              - generic [ref=e519]:
+                - paragraph [ref=e520]: Ahorro
+                - paragraph [ref=e521]: "Real: $ 0 · Presup: $ 0"
+              - table [ref=e522]:
+                - rowgroup [ref=e523]:
+                  - row "Categoría Real Presup. % Compl. Desvío" [ref=e524]:
+                    - columnheader "Categoría" [ref=e525]
+                    - columnheader "Real" [ref=e526]
+                    - columnheader "Presup." [ref=e527]
+                    - columnheader "% Compl." [ref=e528]
+                    - columnheader "Desvío" [ref=e529]
+                - rowgroup [ref=e530]:
+                  - row "Ahorro mensual 0 0 N/A 0" [ref=e531]:
+                    - cell "Ahorro mensual" [ref=e532]:
+                      - link "Ahorro mensual" [ref=e534] [cursor=pointer]:
+                        - /url: /app/workspace-de-juani/transactions?year=2026&month=4&type=saving&categoryId=4d583176-e15f-4921-8f6d-c711ab3cb4b6
+                    - cell "0" [ref=e535]:
+                      - paragraph [ref=e536]: "0"
+                    - cell "0" [ref=e537]:
+                      - paragraph [ref=e538]: "0"
+                    - cell "N/A" [ref=e539]:
+                      - paragraph [ref=e542]: N/A
+                    - cell "0" [ref=e543]:
+                      - paragraph [ref=e544]: "0"
+                  - row "TOTAL 0 0 N/A 0" [ref=e545]:
+                    - cell "TOTAL" [ref=e546]:
+                      - paragraph [ref=e547]: TOTAL
+                    - cell "0" [ref=e548]:
+                      - paragraph [ref=e549]: "0"
+                    - cell "0" [ref=e550]:
+                      - paragraph [ref=e551]: "0"
+                    - cell "N/A" [ref=e552]:
+                      - paragraph [ref=e555]: N/A
+                    - cell "0" [ref=e556]:
+                      - paragraph [ref=e557]: "0"
+          - generic [ref=e559]:
+            - paragraph [ref=e560]: Distribución real por tipo
+            - generic [ref=e561]:
+              - generic [ref=e563]:
+                - generic [ref=e565]:
+                  - img [ref=e566]
+                  - paragraph [ref=e570]: $55 K
+                - generic [ref=e571]:
+                  - paragraph [ref=e572]: Ingresos
+                  - generic [ref=e573]:
+                    - paragraph [ref=e576]: Sueldo
+                    - paragraph [ref=e577]: $55 K
+              - generic [ref=e579]:
+                - generic [ref=e581]:
+                  - img [ref=e582]
+                  - paragraph [ref=e586]: $50 K
+                - generic [ref=e587]:
+                  - paragraph [ref=e588]: Gastos
+                  - generic [ref=e589]:
+                    - paragraph [ref=e592]: Alquiler
+                    - paragraph [ref=e593]: $50 K
+              - generic [ref=e595]:
+                - generic [ref=e597]:
+                  - img [ref=e598]
+                  - paragraph [ref=e602]: $ 0
+                - generic [ref=e603]:
+                  - paragraph [ref=e604]: Ahorro
+                  - paragraph [ref=e605]: Sin datos reales en el período.
+        - generic [ref=e607]:
+          - paragraph [ref=e608]: Built by Juan Pardo
+          - paragraph [ref=e609]: v1.4.0
+      - generic [ref=e610]:
+        - generic [ref=e614]:
+          - link "Transferencia" [ref=e615] [cursor=pointer]:
+            - /url: /app/workspace-de-juani/transactions?newTransfer=1
+            - generic [ref=e617]: Transferencia
+          - link "Transacción" [ref=e618] [cursor=pointer]:
+            - /url: /app/workspace-de-juani/transactions?new=1&prefillType=expense
+            - generic [ref=e620]: Transacción
+        - button "Cerrar acciones rápidas" [active] [ref=e621] [cursor=pointer]:
+          - img [ref=e613]

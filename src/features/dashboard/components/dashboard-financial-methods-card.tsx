@@ -41,6 +41,15 @@ export function DashboardFinancialMethodsCard({
             <Text size="xs" fw={700} c={financialSummary.totalMonthImpact >= 0 ? "#087f5b" : "#c92a2a"}>
               {t("dashboard.monthImpact")}: {formatSignedCurrency(financialSummary.totalMonthImpact, currencyFormatter)}
             </Text>
+            <Text
+              size="xs"
+              fw={700}
+              c={financialSummary.totalPendingInstallments >= 0 ? "#087f5b" : "#c92a2a"}
+            >
+              {t("dashboard.pendingInstallments")}:
+              {" "}
+              {formatSignedCurrency(financialSummary.totalPendingInstallments, currencyFormatter)}
+            </Text>
             <Text size="xs" c="#667085">
               {t("dashboard.activeInBalance", undefined, {
                 count: financialSummary.activeIncludedRows.length,
@@ -85,6 +94,13 @@ export function DashboardFinancialMethodsCard({
                     <Text size="10px" fw={700} c={row.monthImpact >= 0 ? "#087f5b" : "#c92a2a"}>
                       {t("dashboard.monthlyMovementLabel")}: {formatSignedCurrency(row.monthImpact, currencyFormatter)}
                     </Text>
+                    {row.type === "credit_card" && Math.abs(row.pendingInstallments) > 0.004 ? (
+                      <Text size="10px" fw={700} c={row.pendingInstallments >= 0 ? "#087f5b" : "#c92a2a"}>
+                        {t("dashboard.pendingInstallmentsShort")}:
+                        {" "}
+                        {formatSignedCurrency(row.pendingInstallments, currencyFormatter)}
+                      </Text>
+                    ) : null}
                   </Stack>
                 </Group>
               </UnstyledButton>

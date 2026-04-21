@@ -130,6 +130,7 @@ export default function TransactionsPage() {
         onClose={mutations.closeModal}
         editingRow={mutations.editingRow}
         categories={data.categories}
+        paymentMethods={data.paymentMethods}
         paymentMethodOptions={mutations.paymentMethodOptions}
         transactionTypeSelectData={data.transactionTypeSelectData}
         isMobile={isMobile}

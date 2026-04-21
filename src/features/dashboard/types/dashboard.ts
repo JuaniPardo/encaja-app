@@ -77,12 +77,14 @@ export type FinancialMethodRow = {
   type: PaymentMethodType;
   currentBalance: number;
   monthImpact: number;
+  pendingInstallments: number;
 };
 
 export type FinancialSummary = {
   activeIncludedRows: FinancialMethodRow[];
   totalBalance: number;
   totalMonthImpact: number;
+  totalPendingInstallments: number;
   excludedActiveCount: number;
   inactiveCount: number;
 };

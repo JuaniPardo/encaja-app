@@ -1,0 +1,34 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - radiogroup "Cambiar idioma del formulario de acceso" [ref=e4]:
+      - generic [ref=e6]:
+        - radio "Español" [checked]
+        - generic [ref=e7] [cursor=pointer]: Español
+      - generic [ref=e8]:
+        - radio "English"
+        - generic [ref=e9] [cursor=pointer]: English
+    - img "Encaja" [ref=e11]
+    - generic [ref=e13]:
+      - heading "Ingresar" [level=1] [ref=e14]
+      - paragraph [ref=e15]: Entrá a Encaja para administrar tu presupuesto familiar.
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - generic [ref=e19]: Email
+          - textbox "Email" [ref=e21]:
+            - /placeholder: nombre@email.com
+        - generic [ref=e22]:
+          - generic [ref=e23]: Contraseña
+          - generic [ref=e24]:
+            - textbox "Contraseña" [ref=e26]:
+              - /placeholder: "********"
+            - button "Toggle password visibility" [ref=e28] [cursor=pointer]:
+              - img [ref=e30]
+        - button "Iniciar sesión" [ref=e34] [cursor=pointer]:
+          - generic [ref=e36]: Iniciar sesión
+      - paragraph [ref=e37]:
+        - text: ¿Todavía no tenés cuenta?
+        - link "Registrate" [ref=e38] [cursor=pointer]:
+          - /url: /register
+  - button "Open Next.js Dev Tools" [ref=e44] [cursor=pointer]:
+    - img [ref=e45]
+  - alert [ref=e48]
