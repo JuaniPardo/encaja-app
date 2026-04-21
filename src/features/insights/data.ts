@@ -6,7 +6,7 @@ import type { Database } from "@/types/database";
 
 type PaymentMethodRow = Pick<
   Database["public"]["Tables"]["payment_methods"]["Row"],
-  "id" | "type" | "current_balance" | "due_day"
+  "id" | "type" | "current_balance"
 >;
 
 type TransactionRow = Pick<
@@ -65,7 +65,7 @@ export async function loadInsightsContext({
 
   const paymentMethodsResponse = await supabase
     .from("payment_methods")
-    .select("id, type, current_balance, due_day")
+    .select("id, type, current_balance")
     .eq("workspace_id", workspaceId)
     .eq("is_active", true);
 
@@ -204,16 +204,12 @@ export async function loadInsightsContext({
     }
   }
 
-  const todayDate = referenceDate.getDate();
-  const creditCardDueDatePassed = creditCards.some((row) => row.due_day !== null && todayDate > row.due_day);
-
   return {
     referenceDate,
     currentPeriod,
     previousPeriod,
     nextPeriod,
     creditCardCount: creditCards.length,
-    creditCardDueDatePassed,
     incomeCurrentMonth: roundMoney(incomeCurrentMonth),
     creditCardExpenseCurrentMonth: roundMoney(creditCardExpenseCurrentMonth),
     creditCardExpensePreviousMonth: roundMoney(creditCardExpensePreviousMonth),

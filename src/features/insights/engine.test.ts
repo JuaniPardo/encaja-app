@@ -19,7 +19,6 @@ function buildBaseContext(overrides: Partial<InsightsContext> = {}): InsightsCon
     previousPeriod: { start: "2026-03-01", end: "2026-04-01" },
     nextPeriod: { start: "2026-05-01", end: "2026-06-01" },
     creditCardCount: 1,
-    creditCardDueDatePassed: true,
     incomeCurrentMonth: 1_000_000,
     creditCardExpenseCurrentMonth: 400_000,
     creditCardExpensePreviousMonth: 300_000,
@@ -64,6 +63,20 @@ describe("buildInsightsResult", () => {
     expect(rolledDebtInsight?.severity).toBe("warning");
   });
 
+  it("detects rolled debt from payment vs previous month card spending", () => {
+    const result = buildInsightsResult({
+      context: buildBaseContext({
+        creditCardExpensePreviousMonth: 880_000,
+        creditCardPaymentsCurrentMonth: 800_000,
+      }),
+      t,
+      currencyFormatter,
+    });
+
+    const rolledDebtInsight = result.allInsights.find((insight) => insight.kind === "rolled_debt");
+    expect(rolledDebtInsight).toBeDefined();
+  });
+
   it("returns full payment positive insight when statement is fully paid", () => {
     const result = buildInsightsResult({
       context: buildBaseContext({
@@ -83,7 +96,6 @@ describe("buildInsightsResult", () => {
   it("prioritizes debt over high usage when both are present", () => {
     const result = buildInsightsResult({
       context: buildBaseContext({
-        creditCardDueDatePassed: false,
         incomeCurrentMonth: 900_000,
         creditCardExpenseCurrentMonth: 950_000,
         creditCardDebtTotal: 1_050_000,

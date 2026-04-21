@@ -64,26 +64,10 @@ export function generateCreditCardInsights({
   const nextMonthInstallments = context.creditCardNextMonthInstallments;
 
   const hasIncome = totalIncome > tolerance;
-  const isDueDatePassed = context.creditCardDueDatePassed;
   const hasPreviousStatementToPay = previousMonthCardExpense > tolerance;
 
-  if (isDueDatePassed && hasPreviousStatementToPay) {
-    if (monthlyCardPayments <= tolerance) {
-      insights.push(
-        createInsight({
-          id: "credit_card_unpaid",
-          kind: "unpaid",
-          severity: "alert",
-          priority: 980,
-          title: t("insightsV2.modules.creditCard.insights.unpaid.title"),
-          message: t("insightsV2.modules.creditCard.insights.unpaid.message"),
-          data: {
-            monthlyCardPayments,
-            previousMonthCardExpense,
-          },
-        }),
-      );
-    } else if (monthlyCardPayments + tolerance < previousMonthCardExpense) {
+  if (hasPreviousStatementToPay) {
+    if (monthlyCardPayments > tolerance && monthlyCardPayments + tolerance < previousMonthCardExpense) {
       insights.push(
         createInsight({
           id: "credit_card_rolled_debt",
@@ -98,7 +82,7 @@ export function generateCreditCardInsights({
           },
         }),
       );
-    } else {
+    } else if (monthlyCardPayments > tolerance && monthlyCardPayments + tolerance >= previousMonthCardExpense) {
       insights.push(
         createInsight({
           id: "credit_card_full_payment",
@@ -109,6 +93,21 @@ export function generateCreditCardInsights({
           message: t("insightsV2.modules.creditCard.insights.fullPayment.message"),
           data: {
             monthlyCardPayments,
+          },
+        }),
+      );
+    } else {
+      insights.push(
+        createInsight({
+          id: "credit_card_unpaid",
+          kind: "unpaid",
+          severity: "alert",
+          priority: 980,
+          title: t("insightsV2.modules.creditCard.insights.unpaid.title"),
+          message: t("insightsV2.modules.creditCard.insights.unpaid.message"),
+          data: {
+            monthlyCardPayments,
+            previousMonthCardExpense,
           },
         }),
       );
