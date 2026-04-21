@@ -71,6 +71,19 @@ export interface DemoSeedTransactionDraft {
   installmentCount: number | null;
 }
 
+export interface DemoSeedBudgetPeriodDraft {
+  key: "previous_month" | "current_month";
+  year: number;
+  month: number;
+  status: "draft";
+}
+
+export interface DemoSeedBudgetItemDraft {
+  periodKey: DemoSeedBudgetPeriodDraft["key"];
+  categoryKey: string;
+  amount: number;
+}
+
 export interface DemoSeedResult {
   referenceDate: string;
   previousMonthAnchor: string;
@@ -646,6 +659,30 @@ function materializeInstallmentTransactions(
   });
 }
 
+function resolveSeedOperationalDate(
+  transaction: Pick<
+    DemoSeedTransactionDraft,
+    "effectiveDate" | "transactionDate" | "installmentPurchaseKey" | "installmentNumber" | "installmentCount"
+  >,
+) {
+  const isInstallment =
+    transaction.installmentPurchaseKey !== null &&
+    transaction.installmentNumber !== null &&
+    transaction.installmentCount !== null;
+
+  if (isInstallment && transaction.installmentNumber === 1) {
+    return transaction.transactionDate;
+  }
+
+  return transaction.effectiveDate ?? transaction.transactionDate;
+}
+
+function approximateBudgetAmount(amount: number) {
+  const roundingStep = 10_000;
+  const rounded = Math.round(amount / roundingStep) * roundingStep;
+  return Math.max(roundingStep, rounded);
+}
+
 function fnv1aHash(input: string) {
   let hash = 0x811c9dc5;
 
@@ -703,6 +740,111 @@ export function buildDemoSeed(referenceDate: Date): DemoSeedResult {
 export type DemoInstallmentPurchaseInsert =
   Database["public"]["Tables"]["installment_purchases"]["Insert"];
 export type DemoTransactionInsert = Database["public"]["Tables"]["transactions"]["Insert"];
+export type DemoBudgetPeriodInsert = Database["public"]["Tables"]["budget_periods"]["Insert"];
+export type DemoBudgetItemInsert = Database["public"]["Tables"]["budget_items"]["Insert"];
+
+export function materializeDemoSeedBudget({
+  workspaceId,
+  userId,
+  seed,
+  categoryIdByKey,
+}: {
+  workspaceId: string;
+  userId: string;
+  seed: DemoSeedResult;
+  categoryIdByKey: Record<string, string>;
+}): {
+  periods: DemoBudgetPeriodInsert[];
+  items: DemoBudgetItemInsert[];
+} {
+  const previousMonth = parseDateOnly(seed.previousMonthAnchor);
+  const currentMonth = parseDateOnly(seed.currentMonthAnchor);
+  const periods: DemoSeedBudgetPeriodDraft[] = [
+    {
+      key: "previous_month",
+      year: previousMonth.year,
+      month: previousMonth.month,
+      status: "draft",
+    },
+    {
+      key: "current_month",
+      year: currentMonth.year,
+      month: currentMonth.month,
+      status: "draft",
+    },
+  ];
+
+  const periodByMonthKey = new Map(
+    periods.map((period) => [`${period.year}-${toPadded(period.month)}`, period]),
+  );
+  const totalByPeriodAndCategory = new Map<string, number>();
+
+  for (const transaction of seed.transactions) {
+    if (transaction.type === "transfer") {
+      continue;
+    }
+
+    if (transaction.categoryKey === BALANCE_ADJUSTMENT_SYSTEM_KEY) {
+      continue;
+    }
+
+    const operationalDate = resolveSeedOperationalDate(transaction);
+    const operationalMonthKey = operationalDate.slice(0, 7);
+    const period = periodByMonthKey.get(operationalMonthKey);
+    if (!period) {
+      continue;
+    }
+
+    const mapKey = `${period.key}|${transaction.categoryKey}`;
+    totalByPeriodAndCategory.set(mapKey, (totalByPeriodAndCategory.get(mapKey) ?? 0) + transaction.amount);
+  }
+
+  const periodIdByKey = new Map(
+    periods.map((period) => [
+      period.key,
+      toStableUuid(`${workspaceId}:${seed.currentMonthAnchor}:budget-period:${period.key}`),
+    ]),
+  );
+
+  const periodInserts: DemoBudgetPeriodInsert[] = periods.map((period) => ({
+    id: periodIdByKey.get(period.key) as string,
+    workspace_id: workspaceId,
+    year: period.year,
+    month: period.month,
+    status: period.status,
+    created_by: userId,
+  }));
+
+  const itemInserts: DemoBudgetItemInsert[] = [];
+  for (const [mapKey, rawAmount] of totalByPeriodAndCategory.entries()) {
+    const [periodKey, categoryKey] = mapKey.split("|");
+    const periodId = periodIdByKey.get(periodKey as DemoSeedBudgetPeriodDraft["key"]);
+    if (!periodId) {
+      throw new Error(`Missing period mapping for key: ${periodKey}`);
+    }
+
+    const categoryId = categoryIdByKey[categoryKey];
+    if (!categoryId) {
+      throw new Error(`Missing category mapping for key: ${categoryKey}`);
+    }
+
+    const amount = approximateBudgetAmount(rawAmount);
+    if (amount <= 0) {
+      continue;
+    }
+
+    itemInserts.push({
+      budget_period_id: periodId,
+      category_id: categoryId,
+      amount,
+    });
+  }
+
+  return {
+    periods: periodInserts,
+    items: itemInserts,
+  };
+}
 
 export function materializeDemoSeedInstallmentPurchases({
   workspaceId,

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { type DemoPaymentMethodKey } from "@/lib/workspace/demo";
 import {
   buildDemoSeed,
+  materializeDemoSeedBudget,
   materializeDemoSeedInstallmentPurchases,
   materializeDemoSeedTransactions,
 } from "@/lib/workspace/demo-seed";
@@ -237,5 +238,63 @@ describe("buildDemoSeed", () => {
         (row) => row.installment_purchase_id !== null && purchaseIds.has(row.installment_purchase_id),
       ),
     ).toBe(true);
+  });
+
+  it("materializes budget periods and items aligned with visible demo movements", () => {
+    const seed = buildDemoSeed(new Date("2026-04-19T12:00:00Z"));
+    const categoryIdByKey = Object.fromEntries(
+      Array.from(new Set(seed.transactions.map((transaction) => transaction.categoryKey))).map((key) => [
+        key,
+        `category-${key}`,
+      ]),
+    );
+
+    const budget = materializeDemoSeedBudget({
+      workspaceId: "workspace-1",
+      userId: "user-1",
+      seed,
+      categoryIdByKey,
+    });
+
+    expect(budget.periods).toHaveLength(2);
+    expect(
+      budget.periods
+        .map((period) => `${period.year}-${String(period.month).padStart(2, "0")}`)
+        .sort(),
+    ).toEqual(["2026-03", "2026-04"]);
+
+    const periodMonthById = new Map(
+      budget.periods.map((period) => [period.id as string, period.month]),
+    );
+    const categoryKeyById = new Map(
+      Object.entries(categoryIdByKey).map(([key, categoryId]) => [categoryId, key]),
+    );
+    const byMonthAndCategory = new Map<string, number>();
+
+    for (const item of budget.items) {
+      const month = periodMonthById.get(item.budget_period_id);
+      const categoryKey = categoryKeyById.get(item.category_id);
+      if (!month || !categoryKey) {
+        continue;
+      }
+
+      byMonthAndCategory.set(`${month}|${categoryKey}`, Number(item.amount));
+    }
+
+    expect(byMonthAndCategory.get("3|income_salary")).toBe(1_750_000);
+    expect(byMonthAndCategory.get("3|expense_utilities")).toBe(110_000);
+    expect(byMonthAndCategory.get("4|expense_utilities")).toBe(110_000);
+    expect(byMonthAndCategory.get("3|expense_other")).toBe(270_000);
+    expect(byMonthAndCategory.get("4|expense_other")).toBe(260_000);
+
+    expect(Array.from(byMonthAndCategory.keys()).some((key) => key.endsWith("|credit_card_payment"))).toBe(
+      false,
+    );
+    expect(Array.from(byMonthAndCategory.keys()).some((key) => key.endsWith("|cash_withdrawal"))).toBe(
+      false,
+    );
+    expect(Array.from(byMonthAndCategory.keys()).some((key) => key.endsWith("|balance_adjustment"))).toBe(
+      false,
+    );
   });
 });

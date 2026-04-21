@@ -8,6 +8,7 @@ import {
 } from "@/lib/workspace/demo";
 import {
   buildDemoSeed,
+  materializeDemoSeedBudget,
   materializeDemoSeedInstallmentPurchases,
   materializeDemoSeedTransactions,
 } from "@/lib/workspace/demo-seed";
@@ -417,9 +418,31 @@ export async function createDemoWorkspaceForUser({
         credit: demoPaymentMethods.credit.id,
       },
     });
+    const budget = materializeDemoSeedBudget({
+      workspaceId: createdWorkspace.id,
+      userId: user.id,
+      seed,
+      categoryIdByKey,
+    });
 
     if (transactions.length === 0) {
       throw new Error("No pudimos generar transacciones demo.");
+    }
+
+    if (budget.periods.length > 0) {
+      const budgetPeriodsInsertResponse = await supabase
+        .from("budget_periods")
+        .insert(budget.periods);
+      if (budgetPeriodsInsertResponse.error) {
+        throw budgetPeriodsInsertResponse.error;
+      }
+    }
+
+    if (budget.items.length > 0) {
+      const budgetItemsInsertResponse = await supabase.from("budget_items").insert(budget.items);
+      if (budgetItemsInsertResponse.error) {
+        throw budgetItemsInsertResponse.error;
+      }
     }
 
     if (installmentPurchases.length > 0) {
