@@ -196,20 +196,20 @@ export function TransactionsList({
                           </Text>
 
                           <Group gap={1} wrap="nowrap">
-                            {!isInstallment ? (
-                              <Button
-                                size="xs"
-                                variant="subtle"
-                                color="gray"
-                                leftSection={<EditIcon size={11} />}
-                                onClick={() => onOpenEditModal(row)}
-                                aria-label={t("transactions.edit")}
-                                px={isMobile ? 6 : 8}
-                                styles={{ label: { fontSize: "0.67rem", fontWeight: 500 } }}
-                              >
-                                {isMobile ? null : t("transactions.edit")}
-                              </Button>
-                            ) : null}
+                            <Button
+                              size="xs"
+                              variant="subtle"
+                              color="gray"
+                              leftSection={<EditIcon size={11} />}
+                              onClick={() => {
+                                void onOpenEditModal(row);
+                              }}
+                              aria-label={t("transactions.edit")}
+                              px={isMobile ? 6 : 8}
+                              styles={{ label: { fontSize: "0.67rem", fontWeight: 500 } }}
+                            >
+                              {isMobile ? null : t("transactions.edit")}
+                            </Button>
                             <Button
                               size="xs"
                               variant="subtle"

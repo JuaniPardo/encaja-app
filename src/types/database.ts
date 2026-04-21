@@ -538,6 +538,26 @@ export interface Database {
           last_installment_period: string;
         }[];
       };
+      update_installment_purchase_transaction: {
+        Args: {
+          p_installment_purchase_id: string;
+          p_workspace_id: string;
+          p_payment_method_id: string;
+          p_category_id: string;
+          p_amount: number;
+          p_installments_count: number;
+          p_transaction_date: string;
+          p_effective_date?: string | null;
+          p_description?: string | null;
+          p_notes?: string | null;
+        };
+        Returns: {
+          installment_purchase_id: string;
+          generated_installments: number;
+          first_installment_period: string;
+          last_installment_period: string;
+        }[];
+      };
       create_transfer_transaction: {
         Args: {
           p_workspace_id: string;

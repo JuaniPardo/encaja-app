@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { modals } from "@mantine/modals";
 import { notifications } from "@mantine/notifications";
 
+import { formatBudgetAmount } from "@/features/budget/amount-format";
 import { localeCompareByName } from "@/features/i18n/formatting";
 import { useI18n } from "@/features/i18n/provider";
 import {
@@ -16,8 +17,10 @@ import {
 } from "@/features/transactions/utils";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { TransactionFormInputValues, TransactionFormValues } from "@/features/transactions/schema";
-import type { TransactionType } from "@/types/database";
+import type { Database, TransactionType } from "@/types/database";
 import type { Dispatch, SetStateAction } from "react";
+
+type InstallmentPurchaseRow = Database["public"]["Tables"]["installment_purchases"]["Row"];
 
 type UseTransactionsMutationsOptions = {
   categoryById: Map<string, CategoryRow>;
@@ -63,6 +66,22 @@ export function useTransactionsMutations({
     toFormDefaults(),
   );
 
+  function toInstallmentPurchaseDefaults(
+    installmentPurchase: InstallmentPurchaseRow,
+  ): TransactionFormInputValues {
+    return {
+      type: "expense",
+      categoryId: installmentPurchase.category_id,
+      amount: formatBudgetAmount(installmentPurchase.total_amount),
+      transactionDate: installmentPurchase.purchase_date,
+      effectiveDate: installmentPurchase.effective_date ?? "",
+      paymentMethodId: installmentPurchase.payment_method_id,
+      installmentsCount: installmentPurchase.installments_count,
+      description: installmentPurchase.description ?? "",
+      notes: installmentPurchase.notes ?? "",
+    };
+  }
+
   function closeModal() {
     setIsModalOpen(false);
     setEditingRow(null);
@@ -105,9 +124,33 @@ export function useTransactionsMutations({
     ],
   );
 
-  function openEditModal(row: TransactionRow) {
+  async function openEditModal(row: TransactionRow) {
+    if (!row.installment_purchase_id) {
+      setEditingRow(row);
+      setFormInitialValues(toFormDefaults(row));
+      setQuickPaymentMethodType("cash");
+      setIsModalOpen(true);
+      return;
+    }
+
+    const installmentPurchaseResponse = await supabase
+      .from("installment_purchases")
+      .select("*")
+      .eq("workspace_id", workspace.id)
+      .eq("id", row.installment_purchase_id)
+      .single();
+
+    if (installmentPurchaseResponse.error) {
+      notifications.show({
+        color: "red",
+        title: t("transactions.notifications.installmentLoadEditError"),
+        message: installmentPurchaseResponse.error.message,
+      });
+      return;
+    }
+
     setEditingRow(row);
-    setFormInitialValues(toFormDefaults(row));
+    setFormInitialValues(toInstallmentPurchaseDefaults(installmentPurchaseResponse.data));
     setQuickPaymentMethodType("cash");
     setIsModalOpen(true);
   }
@@ -162,15 +205,6 @@ export function useTransactionsMutations({
   }, [isBootstrapping, isTransferModalOpen, openTransferModalFromQuery, setOpenTransferModalFromQuery]);
 
   const onSubmit = async (values: TransactionFormValues) => {
-    if (editingRow?.installment_purchase_id) {
-      notifications.show({
-        color: "red",
-        title: t("transactions.notifications.installmentEditBlockedTitle"),
-        message: t("transactions.notifications.installmentEditBlockedMessage"),
-      });
-      return;
-    }
-
     const category = categoryById.get(values.categoryId);
     if (!category || category.workspace_id !== workspace.id) {
       notifications.show({
@@ -274,13 +308,98 @@ export function useTransactionsMutations({
     }
 
     const installmentsCount = values.installmentsCount;
+    const isEditingInstallmentPurchase = Boolean(editingRow?.installment_purchase_id);
+
+    if (isEditingInstallmentPurchase) {
+      const installmentPurchaseId = editingRow?.installment_purchase_id;
+      if (!installmentPurchaseId) {
+        notifications.show({
+          color: "red",
+          title: t("transactions.notifications.installmentUpdateError"),
+          message: t("transactions.notifications.installmentUpdateError"),
+        });
+        return;
+      }
+
+      if (installmentsCount < 2) {
+        notifications.show({
+          color: "red",
+          title: t("transactions.notifications.invalidInstallmentTypeTitle"),
+          message: t("transactions.notifications.installmentsRequireAtLeastTwo"),
+        });
+        return;
+      }
+
+      if (values.type !== "expense") {
+        notifications.show({
+          color: "red",
+          title: t("transactions.notifications.invalidInstallmentTypeTitle"),
+          message: t("transactions.notifications.invalidInstallmentTypeMessage"),
+        });
+        return;
+      }
+
+      if (!paymentMethod) {
+        notifications.show({
+          color: "red",
+          title: t("transactions.notifications.invalidInstallmentPaymentMethodTitle"),
+          message: t("transactions.notifications.invalidInstallmentPaymentMethodMessage"),
+        });
+        return;
+      }
+
+      if (paymentMethod.type !== "credit_card") {
+        notifications.show({
+          color: "red",
+          title: t("transactions.notifications.invalidInstallmentPaymentMethodTitle"),
+          message: t("transactions.notifications.installmentsRequireCreditCard"),
+        });
+        return;
+      }
+
+      const updateInstallmentResponse = await supabase.rpc(
+        "update_installment_purchase_transaction",
+        {
+          p_installment_purchase_id: installmentPurchaseId,
+          p_workspace_id: workspace.id,
+          p_payment_method_id: paymentMethod.id,
+          p_category_id: category.id,
+          p_amount: Math.round(values.amount * 100) / 100,
+          p_installments_count: installmentsCount,
+          p_transaction_date: values.transactionDate,
+          p_effective_date: values.effectiveDate,
+          p_description: values.description,
+          p_notes: values.notes,
+        },
+      );
+
+      if (updateInstallmentResponse.error) {
+        notifications.show({
+          color: "red",
+          title: t("transactions.notifications.installmentUpdateError"),
+          message: updateInstallmentResponse.error.message,
+        });
+        return;
+      }
+
+      notifications.show({
+        color: "cyan",
+        title: t("transactions.notifications.installmentUpdatedTitle"),
+        message: t("transactions.notifications.installmentUpdatedMessage"),
+      });
+
+      closeModal();
+      setFormInitialValues(toFormDefaults(undefined, values.type));
+      await loadTransactions();
+      return;
+    }
 
     if (installmentsCount > 1) {
       if (editingRow) {
         notifications.show({
           color: "red",
-          title: t("transactions.notifications.installmentEditBlockedTitle"),
-          message: t("transactions.notifications.installmentEditBlockedMessage"),
+          title: t("transactions.notifications.installmentCreateFromEditBlockedTitle"),
+          message: t("transactions.notifications.installmentCreateFromEditBlockedMessage"),
         });
         return;
       }
