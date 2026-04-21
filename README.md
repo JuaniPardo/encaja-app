@@ -5,7 +5,7 @@ Aplicación web de presupuesto y control financiero personal/workspace-first, na
 ## Estado actual del producto
 
 - Fase funcional: **MVP26**
-- Último release registrado: **1.4.2** (fecha: **2026-04-21**)
+- Último release registrado: **1.5.0** (fecha: **2026-04-21**)
 - Estado general: base operativa completa para uso real, con onboarding asistido por **Caja Demo**, soporte de compras en cuotas con tarjeta de crédito y foco en robustez de modelo de datos.
 
 ### Funcionalidad implementada hoy

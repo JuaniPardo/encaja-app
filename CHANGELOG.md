@@ -1,3 +1,16 @@
+## [1.5.0] - 2026-04-21
+
+### Added
+- Extended **Caja Demo** seed to include installment purchases (`Celular` y `Ropa`) with linked transaction rows (`installment_purchase_id`, `installment_number`, `installment_count`).
+- Added demo budget seeding for previous and current month (`budget_periods` + `budget_items`) derived from seeded movement patterns.
+
+### Changed
+- Updated demo seed cash flow to include a debit-to-cash withdrawal so `Efectivo` does not start in an unrealistic negative state.
+- Adjusted demo budget generation to keep realistic variance (budget over/under execution) instead of perfectly mirroring transactions.
+
+### Fixed
+- Stabilized demo workspace bootstrap for installment data by ensuring complete installment schedules are materialized consistently with purchase metadata.
+
 ## [1.4.2] - 2026-04-21
 
 ### Added
