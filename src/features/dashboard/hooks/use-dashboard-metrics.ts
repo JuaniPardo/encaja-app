@@ -26,6 +26,7 @@ type UseDashboardMetricsOptions = {
   budgetItems: BudgetItemLiteRow[];
   transactionRows: TransactionLiteRow[];
   allTransactionsImpact: Map<string, number>;
+  pendingInstallmentsByMethodId: Map<string, number>;
   paymentMethodRows: PaymentMethodBalanceRow[];
 };
 
@@ -53,6 +54,7 @@ export function useDashboardMetrics({
   budgetItems,
   transactionRows,
   allTransactionsImpact,
+  pendingInstallmentsByMethodId,
   paymentMethodRows,
 }: UseDashboardMetricsOptions): DashboardMetricsModel {
   const metrics = useMemo(() => {
@@ -222,6 +224,10 @@ export function useDashboardMetrics({
         type: row.type,
         currentBalance: roundMoney((row.current_balance ?? 0) + (allTransactionsImpact.get(row.id) ?? 0)),
         monthImpact: roundMoney(monthImpactByMethodId.get(row.id) ?? 0),
+        pendingInstallments:
+          row.type === "credit_card"
+            ? roundMoney(pendingInstallmentsByMethodId.get(row.id) ?? 0)
+            : 0,
       }))
       .sort((a, b) => {
         if (b.currentBalance !== a.currentBalance) {
@@ -233,6 +239,9 @@ export function useDashboardMetrics({
 
     const totalBalance = roundMoney(activeIncludedRows.reduce((sum, row) => sum + row.currentBalance, 0));
     const totalMonthImpact = roundMoney(activeIncludedRows.reduce((sum, row) => sum + row.monthImpact, 0));
+    const totalPendingInstallments = roundMoney(
+      activeIncludedRows.reduce((sum, row) => sum + row.pendingInstallments, 0),
+    );
     const excludedActiveCount = paymentMethodRows.filter((row) => row.is_active && !row.include_in_balance).length;
     const inactiveCount = paymentMethodRows.filter((row) => !row.is_active).length;
 
@@ -240,10 +249,11 @@ export function useDashboardMetrics({
       activeIncludedRows,
       totalBalance,
       totalMonthImpact,
+      totalPendingInstallments,
       excludedActiveCount,
       inactiveCount,
     };
-  }, [allTransactionsImpact, locale, paymentMethodRows, transactionRows]);
+  }, [allTransactionsImpact, locale, paymentMethodRows, pendingInstallmentsByMethodId, transactionRows]);
 
   return {
     metrics,

@@ -38,9 +38,19 @@ export function DashboardFinancialMethodsCard({
             <Text fw={800} c={financialSummary.totalBalance >= 0 ? "#087f5b" : "#c92a2a"}>
               {t("dashboard.totalBalance")}: {currencyFormatter.format(financialSummary.totalBalance)}
             </Text>
-            <Text size="xs" fw={700} c={financialSummary.totalMonthImpact >= 0 ? "#087f5b" : "#c92a2a"}>
+            <Text size="xs" fw={700} c="#475467">
               {t("dashboard.monthImpact")}: {formatSignedCurrency(financialSummary.totalMonthImpact, currencyFormatter)}
             </Text>
+            <Text size="xs" fw={700} c="#b54708">
+              {t("dashboard.pendingInstallments")}:
+              {" "}
+              {formatSignedCurrency(financialSummary.totalPendingInstallments, currencyFormatter)}
+            </Text>
+            {Math.abs(financialSummary.totalPendingInstallments) > 0.004 ? (
+              <Text size="10px" c="#98a2b3">
+                {t("dashboard.futureCommitmentsExclusionHint")}
+              </Text>
+            ) : null}
             <Text size="xs" c="#667085">
               {t("dashboard.activeInBalance", undefined, {
                 count: financialSummary.activeIncludedRows.length,
@@ -79,12 +89,39 @@ export function DashboardFinancialMethodsCard({
                     </Text>
                   </Stack>
                   <Stack gap={0} style={{ minWidth: 0, textAlign: "right" }}>
-                    <Text size="sm" fw={800} c={row.currentBalance >= 0 ? "#087f5b" : "#c92a2a"}>
-                      {currencyFormatter.format(row.currentBalance)}
-                    </Text>
-                    <Text size="10px" fw={700} c={row.monthImpact >= 0 ? "#087f5b" : "#c92a2a"}>
-                      {t("dashboard.monthlyMovementLabel")}: {formatSignedCurrency(row.monthImpact, currencyFormatter)}
-                    </Text>
+                    {row.type === "credit_card" ? (
+                      <Stack gap={1} style={{ textAlign: "right" }}>
+                        <Text size="10px" fw={600} c="#667085">
+                          {t("dashboard.totalDebtLabel")}
+                        </Text>
+                        <Text size="sm" fw={800} c={row.currentBalance >= 0 ? "#087f5b" : "#c92a2a"}>
+                          {currencyFormatter.format(row.currentBalance)}
+                        </Text>
+                        <Text size="10px" fw={600} c="#667085">
+                          {t("dashboard.monthImpactSummaryLabel")}
+                        </Text>
+                        <Text size="10px" fw={700} c="#475467">
+                          {formatSignedCurrency(row.monthImpact, currencyFormatter)}
+                        </Text>
+                        <Text size="10px" fw={600} c="#98a2b3">
+                          {t("dashboard.futureInstallmentsLabel")}
+                        </Text>
+                        <Text size="10px" fw={700} c="#b54708">
+                          {formatSignedCurrency(row.pendingInstallments, currencyFormatter)}
+                        </Text>
+                      </Stack>
+                    ) : (
+                      <>
+                        <Text size="sm" fw={800} c={row.currentBalance >= 0 ? "#087f5b" : "#c92a2a"}>
+                          {currencyFormatter.format(row.currentBalance)}
+                        </Text>
+                        <Text size="10px" fw={700} c={row.monthImpact >= 0 ? "#087f5b" : "#c92a2a"}>
+                          {t("dashboard.monthlyMovementLabel")}:
+                          {" "}
+                          {formatSignedCurrency(row.monthImpact, currencyFormatter)}
+                        </Text>
+                      </>
+                    )}
                   </Stack>
                 </Group>
               </UnstyledButton>

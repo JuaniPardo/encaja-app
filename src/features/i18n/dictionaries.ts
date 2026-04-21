@@ -83,6 +83,8 @@ const dictionaries = {
           requiredTransactionDate: "La fecha de transacción es obligatoria.",
           descriptionMaxLength: "La descripción no puede superar 180 caracteres.",
           notesMaxLength: "Las notas no pueden superar 1000 caracteres.",
+          installmentsCountMin: "La cantidad mínima es 1.",
+          installmentsCountMax: "La cantidad máxima es 120.",
         },
         workspace: {
           requiredEmail: "El email es obligatorio.",
@@ -112,9 +114,15 @@ const dictionaries = {
     dashboard: {
       financialDashboard: "Tablero financiero",
       financialMethods: "Medios financieros",
-      totalBalance: "Balance actual",
+      totalBalance: "Balance total",
       monthImpact: "Este mes",
       monthlyMovementLabel: "este mes",
+      pendingInstallments: "Compromisos futuros",
+      pendingInstallmentsShort: "pendiente",
+      totalDebtLabel: "Deuda total",
+      monthImpactSummaryLabel: "Este mes (resumen)",
+      futureInstallmentsLabel: "A futuro (cuotas)",
+      futureCommitmentsExclusionHint: "No se incluyen en la deuda total.",
       activeInBalance: "{{count}} activos en balance",
       positivesCount: "{{count}} positivos",
       negativesCount: "{{count}} negativos",
@@ -177,6 +185,7 @@ const dictionaries = {
         loadFinancialMethodsError: "No pudimos cargar medios financieros",
         loadOnboardingSignalsError: "No pudimos cargar el estado inicial del dashboard",
         loadPeriodTransactionsError: "No pudimos cargar transacciones del período",
+        loadPendingInstallmentsError: "No pudimos cargar cuotas pendientes",
         loadExternalSummariesError: "No pudimos cargar resúmenes externos",
         loadBudgetPeriodError: "No pudimos cargar el período presupuestario",
         loadPeriodBudgetError: "No pudimos cargar presupuesto del período",
@@ -722,6 +731,7 @@ const dictionaries = {
       emptyState: "No hay transacciones para este período y filtros.",
       categoryUnavailable: "Categoría no disponible",
       realPrefix: "Real",
+      installmentBadge: "Cuota {{current}}/{{total}}",
       today: "Hoy",
       yesterday: "Ayer",
       exceptionalCategory: {
@@ -738,6 +748,10 @@ const dictionaries = {
         transactionDate: "Fecha de transacción",
         optionalFields: "Campos opcionales",
         effectiveDate: "Fecha efectiva",
+        installmentsCount: "Cantidad de cuotas",
+        installmentsHint: "Solo disponible para gastos con tarjeta de crédito.",
+        installmentsCountMin: "La cantidad mínima es 1.",
+        installmentsCountMax: "La cantidad máxima es 120.",
         noPaymentMethod: "Sin medio de pago",
         description: "Descripción",
         descriptionPlaceholder: "Ej: Compra semanal",
@@ -798,12 +812,40 @@ const dictionaries = {
         transferDeleteError: "No pudimos eliminar la transferencia completa",
         transferDeletedTitle: "Transferencia eliminada",
         transferDeletedMessage: "Se eliminaron ambos movimientos de la transferencia.",
+        installmentCreatedTitle: "Compra en cuotas registrada",
+        installmentCreatedMessage: "Las cuotas se distribuyeron en los meses correspondientes.",
+        installmentRegisterError: "No pudimos registrar la compra en cuotas",
+        installmentLoadEditError: "No pudimos cargar la compra en cuotas para editarla",
+        installmentUpdateError: "No pudimos actualizar la compra en cuotas",
+        installmentUpdatedTitle: "Compra en cuotas actualizada",
+        installmentUpdatedMessage: "Los cambios de la compra en cuotas se guardaron correctamente.",
+        installmentDeleteError: "No pudimos eliminar la compra en cuotas",
+        installmentDeletedTitle: "Compra en cuotas eliminada",
+        installmentDeletedMessage: "Se eliminaron todas las cuotas de la compra.",
+        installmentEditBlockedTitle: "Edición no disponible",
+        installmentEditBlockedMessage:
+          "Las compras en cuotas no se editan desde transacciones individuales.",
+        installmentCreateFromEditBlockedTitle: "Conversión no disponible",
+        installmentCreateFromEditBlockedMessage:
+          "Por ahora, solo podés crear cuotas desde una transacción nueva.",
+        invalidInstallmentTypeTitle: "Tipo incompatible con cuotas",
+        invalidInstallmentTypeMessage:
+          "Las cuotas solo están disponibles para transacciones de gasto.",
+        installmentsRequireAtLeastTwo:
+          "Las compras en cuotas requieren una cantidad mínima de 2 cuotas.",
+        invalidInstallmentPaymentMethodTitle: "Medio de pago incompatible",
+        invalidInstallmentPaymentMethodMessage:
+          "Seleccioná una tarjeta de crédito para registrar cuotas.",
+        installmentsRequireCreditCard:
+          "Las cuotas solo se pueden registrar con tarjeta de crédito.",
         samePaymentMethodError: "Las cuentas de origen y destino deben ser distintas.",
         invalidTransferCombinationError:
           "Combinación inválida: una tarjeta de crédito no puede ser cuenta de origen.",
       },
       confirmDeleteBody:
         "Esta acción no se puede deshacer. La transacción se eliminará del período actual.",
+      confirmDeleteInstallmentBody:
+        "Esta acción no se puede deshacer. Se eliminarán todas las cuotas asociadas a esta compra.",
     },
     budget: {
       title: "Presupuesto mensual",
@@ -1077,6 +1119,8 @@ const dictionaries = {
           requiredTransactionDate: "Transaction date is required.",
           descriptionMaxLength: "Description cannot exceed 180 characters.",
           notesMaxLength: "Notes cannot exceed 1000 characters.",
+          installmentsCountMin: "Minimum value is 1.",
+          installmentsCountMax: "Maximum value is 120.",
         },
         workspace: {
           requiredEmail: "Email is required.",
@@ -1116,9 +1160,15 @@ const dictionaries = {
     dashboard: {
       financialDashboard: "Financial dashboard",
       financialMethods: "Financial methods",
-      totalBalance: "Current balance",
+      totalBalance: "Total balance",
       monthImpact: "This month",
       monthlyMovementLabel: "this month",
+      pendingInstallments: "Future commitments",
+      pendingInstallmentsShort: "pending",
+      totalDebtLabel: "Total debt",
+      monthImpactSummaryLabel: "This month (summary)",
+      futureInstallmentsLabel: "Future (installments)",
+      futureCommitmentsExclusionHint: "Not included in total debt.",
       activeInBalance: "{{count}} active in balance",
       positivesCount: "{{count}} positive",
       negativesCount: "{{count}} negative",
@@ -1181,6 +1231,7 @@ const dictionaries = {
         loadFinancialMethodsError: "We couldn't load financial methods",
         loadOnboardingSignalsError: "We couldn't load dashboard setup status",
         loadPeriodTransactionsError: "We couldn't load period transactions",
+        loadPendingInstallmentsError: "We couldn't load pending installments",
         loadExternalSummariesError: "We couldn't load external summaries",
         loadBudgetPeriodError: "We couldn't load budget period",
         loadPeriodBudgetError: "We couldn't load period budget",
@@ -1728,6 +1779,7 @@ const dictionaries = {
       emptyState: "There are no transactions for this period and filters.",
       categoryUnavailable: "Category unavailable",
       realPrefix: "Real",
+      installmentBadge: "Installment {{current}}/{{total}}",
       today: "Today",
       yesterday: "Yesterday",
       exceptionalCategory: {
@@ -1744,6 +1796,10 @@ const dictionaries = {
         transactionDate: "Transaction date",
         optionalFields: "Optional fields",
         effectiveDate: "Effective date",
+        installmentsCount: "Installments",
+        installmentsHint: "Only available for credit card expense transactions.",
+        installmentsCountMin: "Minimum value is 1.",
+        installmentsCountMax: "Maximum value is 120.",
         noPaymentMethod: "No payment method",
         description: "Description",
         descriptionPlaceholder: "e.g. Weekly groceries",
@@ -1804,12 +1860,43 @@ const dictionaries = {
         transferDeleteError: "We couldn't delete the complete transfer",
         transferDeletedTitle: "Transfer deleted",
         transferDeletedMessage: "Both movements of the transfer were deleted.",
+        installmentCreatedTitle: "Installment purchase registered",
+        installmentCreatedMessage:
+          "Installments were distributed across the corresponding months.",
+        installmentRegisterError: "We couldn't register the installment purchase",
+        installmentLoadEditError: "We couldn't load the installment purchase for editing",
+        installmentUpdateError: "We couldn't update the installment purchase",
+        installmentUpdatedTitle: "Installment purchase updated",
+        installmentUpdatedMessage:
+          "Installment purchase changes were saved successfully.",
+        installmentDeleteError: "We couldn't delete the installment purchase",
+        installmentDeletedTitle: "Installment purchase deleted",
+        installmentDeletedMessage:
+          "All installments from this purchase were deleted.",
+        installmentEditBlockedTitle: "Editing is not available",
+        installmentEditBlockedMessage:
+          "Installment purchases cannot be edited from individual transactions.",
+        installmentCreateFromEditBlockedTitle: "Conversion not available",
+        installmentCreateFromEditBlockedMessage:
+          "For now, you can only create installments from a new transaction.",
+        invalidInstallmentTypeTitle: "Type incompatible with installments",
+        invalidInstallmentTypeMessage:
+          "Installments are only available for expense transactions.",
+        installmentsRequireAtLeastTwo:
+          "Installment purchases require at least 2 installments.",
+        invalidInstallmentPaymentMethodTitle: "Incompatible payment method",
+        invalidInstallmentPaymentMethodMessage:
+          "Select a credit card to register installments.",
+        installmentsRequireCreditCard:
+          "Installments can only be registered with a credit card.",
         samePaymentMethodError: "Source and destination accounts must be different.",
         invalidTransferCombinationError:
           "Invalid combination: a credit card cannot be used as the source account.",
       },
       confirmDeleteBody:
         "This action cannot be undone. The transaction will be removed from the current period.",
+      confirmDeleteInstallmentBody:
+        "This action cannot be undone. All installments linked to this purchase will be deleted.",
     },
     budget: {
       title: "Monthly budget",

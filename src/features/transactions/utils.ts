@@ -38,8 +38,24 @@ export function buildMonthRange(year: number, month: number) {
 }
 
 export function resolveOperationalDate(
-  row: Pick<TransactionRow, "effective_date" | "transaction_date">,
+  row: Pick<
+    TransactionRow,
+    | "effective_date"
+    | "transaction_date"
+    | "installment_purchase_id"
+    | "installment_number"
+    | "installment_count"
+  >,
 ) {
+  const isInstallment =
+    row.installment_purchase_id !== null &&
+    row.installment_number !== null &&
+    row.installment_count !== null;
+
+  if (isInstallment && row.installment_number === 1) {
+    return row.transaction_date;
+  }
+
   return row.effective_date ?? row.transaction_date;
 }
 
@@ -90,6 +106,7 @@ export function toFormDefaults(
       transactionDate: today,
       effectiveDate: "",
       paymentMethodId: "",
+      installmentsCount: 1,
       description: "",
       notes: "",
     };
@@ -102,6 +119,7 @@ export function toFormDefaults(
     transactionDate: row.transaction_date,
     effectiveDate: row.effective_date ?? "",
     paymentMethodId: row.payment_method_id ?? "",
+    installmentsCount: row.installment_count ?? 1,
     description: row.description ?? "",
     notes: row.notes ?? "",
   };

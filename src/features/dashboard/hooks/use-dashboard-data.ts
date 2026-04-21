@@ -29,6 +29,11 @@ type UseDashboardDataOptions = {
   t: TranslationFn;
 };
 
+type PendingInstallmentRow = Pick<
+  Database["public"]["Tables"]["transactions"]["Row"],
+  "payment_method_id" | "amount"
+>;
+
 export function useDashboardData({
   supabase,
   workspaceId,
@@ -43,6 +48,9 @@ export function useDashboardData({
   const [budgetItems, setBudgetItems] = useState<BudgetItemLiteRow[]>([]);
   const [transactionRows, setTransactionRows] = useState<TransactionLiteRow[]>([]);
   const [allTransactionsImpact, setAllTransactionsImpact] = useState<Map<string, number>>(new Map());
+  const [pendingInstallmentsByMethodId, setPendingInstallmentsByMethodId] = useState<
+    Map<string, number>
+  >(new Map());
   const [paymentMethodRows, setPaymentMethodRows] = useState<PaymentMethodBalanceRow[]>([]);
   const [linkedWorkspacePaymentMethodBalances, setLinkedWorkspacePaymentMethodBalances] = useState<
     LinkedWorkspacePaymentMethodBalanceRow[]
@@ -177,6 +185,14 @@ export function useDashboardData({
         .eq("workspace_id", workspaceId)
         .or(historicalFilter);
 
+      const pendingInstallmentsPromise = supabase
+        .from("transactions")
+        .select("payment_method_id, amount")
+        .eq("workspace_id", workspaceId)
+        .not("installment_purchase_id", "is", null)
+        .gte("effective_date", end)
+        .not("payment_method_id", "is", null);
+
       const linkedWorkspaceSummaryPromise = supabase.rpc(
         "list_linked_workspace_payment_method_balances",
         {
@@ -188,11 +204,13 @@ export function useDashboardData({
         periodResponse,
         transactionsResponse,
         historicalTransactionsResponse,
+        pendingInstallmentsResponse,
         linkedWorkspaceSummaryResponse,
       ] = await Promise.all([
         periodResponsePromise,
         transactionsResponsePromise,
         historicalTransactionsPromise,
+        pendingInstallmentsPromise,
         linkedWorkspaceSummaryPromise,
       ]);
 
@@ -237,6 +255,32 @@ export function useDashboardData({
         }
 
         setAllTransactionsImpact(impactMap);
+      }
+
+      if (pendingInstallmentsResponse.error) {
+        notifications.show({
+          color: "red",
+          title: t("dashboard.notifications.loadPendingInstallmentsError"),
+          message: pendingInstallmentsResponse.error.message,
+        });
+        setPendingInstallmentsByMethodId(new Map());
+      } else {
+        const pendingRows = (pendingInstallmentsResponse.data ?? []) as PendingInstallmentRow[];
+        const pendingMap = new Map<string, number>();
+
+        for (const row of pendingRows) {
+          if (!row.payment_method_id) {
+            continue;
+          }
+
+          const previousAmount = pendingMap.get(row.payment_method_id) ?? 0;
+          pendingMap.set(
+            row.payment_method_id,
+            roundMoney(previousAmount - parseAmountValue(row.amount)),
+          );
+        }
+
+        setPendingInstallmentsByMethodId(pendingMap);
       }
 
       if (linkedWorkspaceSummaryResponse.error) {
@@ -297,6 +341,7 @@ export function useDashboardData({
     budgetItems,
     transactionRows,
     allTransactionsImpact,
+    pendingInstallmentsByMethodId,
     paymentMethodRows,
     linkedWorkspacePaymentMethodBalances,
     startYear,

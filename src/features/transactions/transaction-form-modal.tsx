@@ -36,6 +36,7 @@ import classes from "./transaction-form-modal.module.css";
 
 type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
+type PaymentMethodRow = Database["public"]["Tables"]["payment_methods"]["Row"];
 type QuickPaymentMethodType = "cash" | "debit_card";
 type CategoryOption = { value: string; label: string };
 type CategoryOptionGroup = { group: string; items: CategoryOption[] };
@@ -45,6 +46,7 @@ type TransactionFormModalProps = {
   onClose: () => void;
   editingRow: TransactionRow | null;
   categories: CategoryRow[];
+  paymentMethods: PaymentMethodRow[];
   paymentMethodOptions: Array<{ value: string; label: string }>;
   transactionTypeSelectData: Array<{ value: string; label: string }>;
   isMobile: boolean | undefined;
@@ -61,6 +63,7 @@ export function TransactionFormModal({
   onClose,
   editingRow,
   categories,
+  paymentMethods,
   paymentMethodOptions,
   transactionTypeSelectData,
   isMobile,
@@ -78,6 +81,7 @@ export function TransactionFormModal({
     handleSubmit,
     control,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<TransactionFormInputValues, unknown, TransactionFormValues>({
     resolver: zodResolver(
@@ -91,6 +95,9 @@ export function TransactionFormModal({
         requiredTransactionDate: t("common.forms.transaction.requiredTransactionDate"),
         descriptionMaxLength: t("common.forms.transaction.descriptionMaxLength"),
         notesMaxLength: t("common.forms.transaction.notesMaxLength"),
+        invalidInstallmentsCount: t("common.validation.integerNumber"),
+        installmentsCountMin: t("transactions.form.installmentsCountMin"),
+        installmentsCountMax: t("transactions.form.installmentsCountMax"),
       }),
     ),
     defaultValues: initialValues,
@@ -101,6 +108,24 @@ export function TransactionFormModal({
   }, [initialValues, reset]);
 
   const selectedType = useWatch({ control, name: "type" });
+  const selectedPaymentMethodId = useWatch({ control, name: "paymentMethodId" });
+  const selectedInstallmentsCount = useWatch({ control, name: "installmentsCount" });
+
+  const paymentMethodById = useMemo(
+    () => new Map(paymentMethods.map((paymentMethod) => [paymentMethod.id, paymentMethod])),
+    [paymentMethods],
+  );
+
+  const selectedPaymentMethod = useMemo(() => {
+    if (typeof selectedPaymentMethodId !== "string" || selectedPaymentMethodId.trim() === "") {
+      return null;
+    }
+
+    return paymentMethodById.get(selectedPaymentMethodId) ?? null;
+  }, [paymentMethodById, selectedPaymentMethodId]);
+
+  const shouldShowInstallmentsField =
+    selectedType === "expense" && selectedPaymentMethod?.type === "credit_card";
 
   const categoryOptions = useMemo(() => {
     const currentCategoryId = editingRow?.category_id ?? null;
@@ -174,6 +199,22 @@ export function TransactionFormModal({
       );
     }
   }, [categoryOptions, control._formValues, reset, selectedCategoryId]);
+
+  useEffect(() => {
+    if (shouldShowInstallmentsField) {
+      return;
+    }
+
+    if (Number(selectedInstallmentsCount ?? 1) === 1) {
+      return;
+    }
+
+    setValue("installmentsCount", 1, {
+      shouldDirty: true,
+      shouldTouch: true,
+      shouldValidate: true,
+    });
+  }, [selectedInstallmentsCount, setValue, shouldShowInstallmentsField]);
 
   const selectedTypeColor = transactionTypeMantineColor[selectedType ?? "expense"];
   const typeSegmentVars = {
@@ -321,40 +362,52 @@ export function TransactionFormModal({
                 )}
               </Group>
 
-                {shouldShowQuickPaymentSetup ? (
-                  <Text size="xs" c="dimmed">
-                    {t("transactions.quickPayment.hint")}
-                  </Text>
-                ) : null}
+              {shouldShowQuickPaymentSetup ? (
+                <Text size="xs" c="dimmed">
+                  {t("transactions.quickPayment.hint")}
+                </Text>
+              ) : null}
 
+              {shouldShowInstallmentsField ? (
                 <TextInput
-                  label={t("transactions.form.description")}
-                  placeholder={t("transactions.form.descriptionPlaceholder")}
-                  error={errors.description?.message}
-                  {...register("description")}
+                  label={t("transactions.form.installmentsCount")}
+                  description={t("transactions.form.installmentsHint")}
+                  type="number"
+                  min={1}
+                  max={120}
+                  error={errors.installmentsCount?.message}
+                  {...register("installmentsCount")}
                 />
+              ) : null}
 
-                <Textarea
-                  label={t("transactions.form.notes")}
-                  placeholder={t("transactions.form.notesPlaceholder")}
-                  minRows={2}
-                  autosize
-                  error={errors.notes?.message}
-                  {...register("notes")}
-                />
-              </Stack>
-            </Paper>
+              <TextInput
+                label={t("transactions.form.description")}
+                placeholder={t("transactions.form.descriptionPlaceholder")}
+                error={errors.description?.message}
+                {...register("description")}
+              />
 
-            <Group justify="flex-end" mt="sm">
-              <Button type="button" variant="light" color="gray" onClick={onClose}>
-                {t("common.actions.cancel")}
-              </Button>
-              <Button type="submit" loading={isSubmitting}>
-                {editingRow ? t("common.actions.save") : t("common.actions.create")}
-              </Button>
-            </Group>
-          </Stack>
-        </form>
-      </Modal>
-    );
+              <Textarea
+                label={t("transactions.form.notes")}
+                placeholder={t("transactions.form.notesPlaceholder")}
+                minRows={2}
+                autosize
+                error={errors.notes?.message}
+                {...register("notes")}
+              />
+            </Stack>
+          </Paper>
+
+          <Group justify="flex-end" mt="sm">
+            <Button type="button" variant="light" color="gray" onClick={onClose}>
+              {t("common.actions.cancel")}
+            </Button>
+            <Button type="submit" loading={isSubmitting}>
+              {editingRow ? t("common.actions.save") : t("common.actions.create")}
+            </Button>
+          </Group>
+        </Stack>
+      </form>
+    </Modal>
+  );
 }

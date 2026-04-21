@@ -355,6 +355,51 @@ export interface Database {
         };
         Relationships: [];
       };
+      installment_purchases: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          payment_method_id: string;
+          category_id: string;
+          purchase_date: string;
+          effective_date: string | null;
+          first_installment_date: string;
+          total_amount: number;
+          installments_count: number;
+          description: string | null;
+          notes: string | null;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          payment_method_id: string;
+          category_id: string;
+          purchase_date: string;
+          effective_date?: string | null;
+          first_installment_date: string;
+          total_amount: number;
+          installments_count: number;
+          description?: string | null;
+          notes?: string | null;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          purchase_date?: string;
+          effective_date?: string | null;
+          first_installment_date?: string;
+          total_amount?: number;
+          installments_count?: number;
+          description?: string | null;
+          notes?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       budget_periods: {
         Row: {
           id: string;
@@ -416,6 +461,9 @@ export interface Database {
           type: TransactionType;
           transfer_group_id: string | null;
           direction: "in" | "out" | null;
+          installment_purchase_id: string | null;
+          installment_number: number | null;
+          installment_count: number | null;
           category_id: string;
           payment_method_id: string | null;
           amount: number;
@@ -434,6 +482,9 @@ export interface Database {
           type: TransactionType;
           transfer_group_id?: string | null;
           direction?: "in" | "out" | null;
+          installment_purchase_id?: string | null;
+          installment_number?: number | null;
+          installment_count?: number | null;
           category_id: string;
           payment_method_id?: string | null;
           amount: number;
@@ -450,6 +501,9 @@ export interface Database {
           type?: TransactionType;
           transfer_group_id?: string | null;
           direction?: "in" | "out" | null;
+          installment_purchase_id?: string | null;
+          installment_number?: number | null;
+          installment_count?: number | null;
           category_id?: string;
           payment_method_id?: string | null;
           amount?: number;
@@ -465,6 +519,45 @@ export interface Database {
       [_ in never]: never;
     };
     Functions: {
+      create_installment_purchase_transaction: {
+        Args: {
+          p_workspace_id: string;
+          p_payment_method_id: string;
+          p_category_id: string;
+          p_amount: number;
+          p_installments_count: number;
+          p_transaction_date: string;
+          p_effective_date?: string | null;
+          p_description?: string | null;
+          p_notes?: string | null;
+        };
+        Returns: {
+          installment_purchase_id: string;
+          generated_installments: number;
+          first_installment_period: string;
+          last_installment_period: string;
+        }[];
+      };
+      update_installment_purchase_transaction: {
+        Args: {
+          p_installment_purchase_id: string;
+          p_workspace_id: string;
+          p_payment_method_id: string;
+          p_category_id: string;
+          p_amount: number;
+          p_installments_count: number;
+          p_transaction_date: string;
+          p_effective_date?: string | null;
+          p_description?: string | null;
+          p_notes?: string | null;
+        };
+        Returns: {
+          installment_purchase_id: string;
+          generated_installments: number;
+          first_installment_period: string;
+          last_installment_period: string;
+        }[];
+      };
       create_transfer_transaction: {
         Args: {
           p_workspace_id: string;
