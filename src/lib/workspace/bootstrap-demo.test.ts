@@ -9,6 +9,8 @@ vi.mock("@/lib/workspace/demo", () => ({
 
 vi.mock("@/lib/workspace/demo-seed", () => ({
   buildDemoSeed: vi.fn(),
+  materializeDemoSeedBudget: vi.fn(),
+  materializeDemoSeedInstallmentPurchases: vi.fn(),
   materializeDemoSeedTransactions: vi.fn(),
 }));
 
@@ -16,7 +18,12 @@ import {
   createDemoPaymentMethods,
   resolveBalanceAdjustmentCategoryForWorkspace,
 } from "@/lib/workspace/demo";
-import { buildDemoSeed, materializeDemoSeedTransactions } from "@/lib/workspace/demo-seed";
+import {
+  buildDemoSeed,
+  materializeDemoSeedBudget,
+  materializeDemoSeedInstallmentPurchases,
+  materializeDemoSeedTransactions,
+} from "@/lib/workspace/demo-seed";
 import { createDemoWorkspaceForUser } from "@/lib/workspace/bootstrap";
 import type { Database } from "@/types/database";
 
@@ -53,6 +60,15 @@ function buildSupabaseMock(options?: {
   const transactionsInsert = vi.fn(async () => ({
     error: options?.transactionsInsertError ?? null,
   }));
+  const installmentPurchasesInsert = vi.fn(async () => ({
+    error: null,
+  }));
+  const budgetPeriodsInsert = vi.fn(async () => ({
+    error: null,
+  }));
+  const budgetItemsInsert = vi.fn(async () => ({
+    error: null,
+  }));
 
   const from = vi.fn((table: string) => {
     if (table === "profiles") {
@@ -73,6 +89,18 @@ function buildSupabaseMock(options?: {
 
     if (table === "transactions") {
       return { insert: transactionsInsert };
+    }
+
+    if (table === "installment_purchases") {
+      return { insert: installmentPurchasesInsert };
+    }
+
+    if (table === "budget_periods") {
+      return { insert: budgetPeriodsInsert };
+    }
+
+    if (table === "budget_items") {
+      return { insert: budgetItemsInsert };
     }
 
     return {};
@@ -121,6 +149,9 @@ function buildSupabaseMock(options?: {
     } as unknown as SupabaseClient<Database>,
     rpc,
     transactionsInsert,
+    installmentPurchasesInsert,
+    budgetPeriodsInsert,
+    budgetItemsInsert,
   };
 }
 
@@ -158,10 +189,25 @@ describe("createDemoWorkspaceForUser", () => {
       referenceDate: "2026-04-19",
       previousMonthAnchor: "2026-03-01",
       currentMonthAnchor: "2026-04-01",
+      installmentPurchases: [
+        {
+          key: "installment_purchase_cellphone_previous",
+          purchaseDate: "2026-03-22",
+          effectiveDate: null,
+          firstInstallmentDate: "2026-03-01",
+          categoryKey: "balance_adjustment",
+          paymentMethodKey: "credit",
+          totalAmount: 780000,
+          installmentsCount: 6,
+          description: "Celular",
+          notes: null,
+        },
+      ],
       transactions: [
         {
           key: "adjustment_debit_previous",
           transactionDate: "2026-03-01",
+          effectiveDate: null,
           type: "expense",
           categoryKey: "balance_adjustment",
           paymentMethodKey: "debit",
@@ -170,9 +216,29 @@ describe("createDemoWorkspaceForUser", () => {
           notes: null,
           transferGroupKey: null,
           direction: null,
+          installmentPurchaseKey: null,
+          installmentNumber: null,
+          installmentCount: null,
         },
       ],
     });
+
+    vi.mocked(materializeDemoSeedInstallmentPurchases).mockReturnValue([
+      {
+        id: "installment-purchase-1",
+        workspace_id: "workspace-demo",
+        payment_method_id: "payment-method-credit",
+        category_id: "category-balance",
+        purchase_date: "2026-03-22",
+        effective_date: null,
+        first_installment_date: "2026-03-01",
+        total_amount: 780000,
+        installments_count: 6,
+        description: "Celular",
+        notes: null,
+        created_by: "user-1",
+      },
+    ]);
 
     vi.mocked(materializeDemoSeedTransactions).mockReturnValue([
       {
@@ -182,6 +248,9 @@ describe("createDemoWorkspaceForUser", () => {
         type: "expense",
         transfer_group_id: null,
         direction: null,
+        installment_purchase_id: null,
+        installment_number: null,
+        installment_count: null,
         category_id: "category-balance",
         payment_method_id: "payment-method-debit",
         amount: 180000,
@@ -191,10 +260,44 @@ describe("createDemoWorkspaceForUser", () => {
         created_by: "user-1",
       },
     ]);
+    vi.mocked(materializeDemoSeedBudget).mockReturnValue({
+      periods: [
+        {
+          id: "budget-period-previous",
+          workspace_id: "workspace-demo",
+          year: 2026,
+          month: 3,
+          status: "draft",
+          created_by: "user-1",
+        },
+        {
+          id: "budget-period-current",
+          workspace_id: "workspace-demo",
+          year: 2026,
+          month: 4,
+          status: "draft",
+          created_by: "user-1",
+        },
+      ],
+      items: [
+        {
+          budget_period_id: "budget-period-previous",
+          category_id: "category-balance",
+          amount: 200000,
+        },
+      ],
+    });
   });
 
   it("creates a demo workspace end-to-end", async () => {
-    const { supabase, rpc, transactionsInsert } = buildSupabaseMock();
+    const {
+      supabase,
+      rpc,
+      transactionsInsert,
+      installmentPurchasesInsert,
+      budgetPeriodsInsert,
+      budgetItemsInsert,
+    } = buildSupabaseMock();
     const user = {
       id: "user-1",
       email: "owner@encaja.app",
@@ -210,6 +313,9 @@ describe("createDemoWorkspaceForUser", () => {
       p_workspace_name: "Caja Demo",
       p_is_demo: true,
     });
+    expect(budgetPeriodsInsert).toHaveBeenCalledOnce();
+    expect(budgetItemsInsert).toHaveBeenCalledOnce();
+    expect(installmentPurchasesInsert).toHaveBeenCalledOnce();
     expect(transactionsInsert).toHaveBeenCalledOnce();
     expect(workspace).toMatchObject({
       id: "workspace-demo",

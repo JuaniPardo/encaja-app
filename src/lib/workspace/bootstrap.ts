@@ -6,7 +6,12 @@ import {
   createDemoPaymentMethods,
   resolveBalanceAdjustmentCategoryForWorkspace,
 } from "@/lib/workspace/demo";
-import { buildDemoSeed, materializeDemoSeedTransactions } from "@/lib/workspace/demo-seed";
+import {
+  buildDemoSeed,
+  materializeDemoSeedBudget,
+  materializeDemoSeedInstallmentPurchases,
+  materializeDemoSeedTransactions,
+} from "@/lib/workspace/demo-seed";
 import type {
   Database,
   SubscriptionPlan,
@@ -312,7 +317,10 @@ export async function createDemoWorkspaceForUser({
 
     const seed = buildDemoSeed(new Date());
     const requiredSystemKeys = Array.from(
-      new Set(seed.transactions.map((transaction) => transaction.categoryKey)),
+      new Set([
+        ...seed.transactions.map((transaction) => transaction.categoryKey),
+        ...seed.installmentPurchases.map((purchase) => purchase.categoryKey),
+      ]),
     );
 
     const systemCategoriesResponse = await supabase
@@ -387,7 +395,7 @@ export async function createDemoWorkspaceForUser({
       }),
     );
 
-    const transactions = materializeDemoSeedTransactions({
+    const installmentPurchases = materializeDemoSeedInstallmentPurchases({
       workspaceId: createdWorkspace.id,
       userId: user.id,
       seed,
@@ -399,8 +407,51 @@ export async function createDemoWorkspaceForUser({
       },
     });
 
+    const transactions = materializeDemoSeedTransactions({
+      workspaceId: createdWorkspace.id,
+      userId: user.id,
+      seed,
+      categoryIdByKey,
+      paymentMethodIdByKey: {
+        debit: demoPaymentMethods.debit.id,
+        cash: demoPaymentMethods.cash.id,
+        credit: demoPaymentMethods.credit.id,
+      },
+    });
+    const budget = materializeDemoSeedBudget({
+      workspaceId: createdWorkspace.id,
+      userId: user.id,
+      seed,
+      categoryIdByKey,
+    });
+
     if (transactions.length === 0) {
       throw new Error("No pudimos generar transacciones demo.");
+    }
+
+    if (budget.periods.length > 0) {
+      const budgetPeriodsInsertResponse = await supabase
+        .from("budget_periods")
+        .insert(budget.periods);
+      if (budgetPeriodsInsertResponse.error) {
+        throw budgetPeriodsInsertResponse.error;
+      }
+    }
+
+    if (budget.items.length > 0) {
+      const budgetItemsInsertResponse = await supabase.from("budget_items").insert(budget.items);
+      if (budgetItemsInsertResponse.error) {
+        throw budgetItemsInsertResponse.error;
+      }
+    }
+
+    if (installmentPurchases.length > 0) {
+      const installmentPurchasesInsertResponse = await supabase
+        .from("installment_purchases")
+        .insert(installmentPurchases);
+      if (installmentPurchasesInsertResponse.error) {
+        throw installmentPurchasesInsertResponse.error;
+      }
     }
 
     const transactionsInsertResponse = await supabase.from("transactions").insert(transactions);
