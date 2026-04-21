@@ -153,6 +153,17 @@ const previousMonthTemplates: DemoSeedTemplateEvent[] = [
     description: "Compras en efectivo",
   },
   {
+    key: "transfer_cash_withdrawal_previous",
+    period: "previous_month",
+    baseDay: 4,
+    type: "transfer",
+    categoryKey: "cash_withdrawal",
+    fromPaymentMethodKey: "debit",
+    toPaymentMethodKey: "cash",
+    amount: 230_000,
+    description: "Extracción de efectivo",
+  },
+  {
     key: "expense_transport_previous",
     period: "previous_month",
     baseDay: 8,

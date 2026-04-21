@@ -69,16 +69,54 @@ describe("buildDemoSeed", () => {
     ).toBe("2026-03-31");
   });
 
-  it("creates exactly two linked transfer transactions", () => {
+  it("creates linked transfer pairs for card payment and cash withdrawal", () => {
     const seed = buildDemoSeed(new Date("2026-04-19T12:00:00Z"));
 
-    const transferRows = seed.transactions.filter(
-      (transaction) => transaction.transferGroupKey === "transfer_card_payment_current",
-    );
+    const transferRows = seed.transactions.filter((transaction) => transaction.transferGroupKey !== null);
+    const transferGroupKeys = Array.from(
+      new Set(
+        transferRows
+          .map((row) => row.transferGroupKey)
+          .filter((transferGroupKey): transferGroupKey is string => Boolean(transferGroupKey)),
+      ),
+    ).sort();
 
-    expect(transferRows).toHaveLength(2);
-    expect(transferRows.map((row) => row.direction).sort()).toEqual(["in", "out"]);
+    expect(transferRows).toHaveLength(4);
+    expect(transferGroupKeys).toEqual([
+      "transfer_card_payment_current",
+      "transfer_cash_withdrawal_previous",
+    ]);
+
+    for (const transferGroupKey of transferGroupKeys) {
+      const rowsByGroup = transferRows.filter((row) => row.transferGroupKey === transferGroupKey);
+      expect(rowsByGroup).toHaveLength(2);
+      expect(rowsByGroup.map((row) => row.direction).sort()).toEqual(["in", "out"]);
+    }
+
     expect(transferRows.every((row) => row.type === "transfer")).toBe(true);
+  });
+
+  it("keeps cash balance non-negative with debit withdrawal support", () => {
+    const seed = buildDemoSeed(new Date("2026-04-19T12:00:00Z"));
+    const signedCashBalance = seed.transactions
+      .filter((transaction) => transaction.paymentMethodKey === "cash")
+      .reduce((sum, transaction) => {
+        if (transaction.type === "income") {
+          return sum + transaction.amount;
+        }
+
+        if (transaction.type === "expense" || transaction.type === "saving") {
+          return sum - transaction.amount;
+        }
+
+        if (transaction.type === "transfer") {
+          return sum + (transaction.direction === "in" ? transaction.amount : -transaction.amount);
+        }
+
+        return sum;
+      }, 0);
+
+    expect(signedCashBalance).toBeGreaterThanOrEqual(0);
   });
 
   it("inserts initial balance adjustments on day 1 of previous month", () => {
@@ -173,8 +211,21 @@ describe("buildDemoSeed", () => {
     });
 
     const transferRows = rows.filter((row) => row.transfer_group_id !== null);
-    expect(transferRows).toHaveLength(2);
-    expect(transferRows[0]?.transfer_group_id).toBe(transferRows[1]?.transfer_group_id);
+    expect(transferRows).toHaveLength(4);
+    const transferRowsByGroup = new Map<string, typeof transferRows>();
+    for (const row of transferRows) {
+      const transferGroupId = row.transfer_group_id as string;
+      const existingRows = transferRowsByGroup.get(transferGroupId) ?? [];
+      transferRowsByGroup.set(transferGroupId, [...existingRows, row]);
+    }
+
+    expect(Array.from(transferRowsByGroup.values()).map((groupRows) => groupRows.length).sort()).toEqual([
+      2,
+      2,
+    ]);
+    for (const groupRows of transferRowsByGroup.values()) {
+      expect(groupRows.map((row) => row.direction).sort()).toEqual(["in", "out"]);
+    }
     expect(transferRows.every((row) => row.type === "transfer")).toBe(true);
 
     const purchaseIds = new Set(installmentPurchases.map((purchase) => purchase.id));
