@@ -4,6 +4,7 @@ import { Button, Paper, Group, Stack, Text } from "@mantine/core";
 
 import { useI18n } from "@/features/i18n/provider";
 import { transactionTypeColorCssVar } from "@/features/transactions/type-colors";
+import { resolveOperationalDate } from "@/features/transactions/utils";
 import type { Database, TransactionType } from "@/types/database";
 
 type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
@@ -122,13 +123,15 @@ export function TransactionsList({
                     row.installment_purchase_id !== null &&
                     row.installment_number !== null &&
                     row.installment_count !== null;
-                  const operationalDate = row.effective_date ?? row.transaction_date;
+                  const operationalDate = resolveOperationalDate(row);
+                  const shouldShowRealDateHint =
+                    row.effective_date !== null && row.transaction_date !== operationalDate;
 
                   const metaParts = [formatCompactDate(operationalDate)];
                   if (paymentMethod?.name) {
                     metaParts.push(paymentMethod.name);
                   }
-                  if (row.effective_date) {
+                  if (shouldShowRealDateHint) {
                     metaParts.push(
                       `${t("transactions.realPrefix")} ${formatCompactDate(row.transaction_date)}`,
                     );
