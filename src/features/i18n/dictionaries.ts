@@ -289,6 +289,80 @@ const dictionaries = {
         },
       },
     },
+    insightsV2: {
+      title: "Insights",
+      subtitle: "Señales financieras priorizadas por módulo para entender qué merece atención ahora.",
+      emptyState: "Todavía no hay insights disponibles para este workspace.",
+      moduleEmptyState: "Todavía no hay señales relevantes para este módulo.",
+      notifications: {
+        loadErrorTitle: "No pudimos cargar los insights",
+      },
+      severity: {
+        alert: "Alerta",
+        warning: "Atención",
+        info: "Info",
+        positive: "Positivo",
+      },
+      dashboard: {
+        slotTitle: "Insight principal",
+        viewAll: "Ver todos los insights",
+      },
+      modules: {
+        creditCard: {
+          title: "Tarjeta de crédito",
+          description:
+            "La tarjeta sirve, pero no es plata extra. Es un consumo de hoy que vas a pagar con ingresos de mañana. Mantener esa deuda controlada te da más margen y estabilidad mes a mes.",
+          insights: {
+            unpaid: {
+              title: "Todavía no pagaste tu tarjeta este mes",
+              message: "Revisá este vencimiento para evitar seguir acumulando deuda.",
+            },
+            partialPayment: {
+              title: "Hiciste un pago parcial de tu tarjeta",
+              message: "Todavía estás arrastrando saldo pendiente al próximo período.",
+            },
+            fullPayment: {
+              title: "Pagaste tu tarjeta completa este mes",
+              message: "Mantener la deuda en cero te deja más margen para el próximo período.",
+            },
+            highUsage: {
+              alertTitle: "Estás usando más de un ingreso mensual en la tarjeta",
+              alertMessage: "Tu consumo con tarjeta ya representa {{ratio}} de tus ingresos del mes.",
+              warningTitle: "La tarjeta está consumiendo gran parte de tus ingresos",
+              warningMessage: "Tu consumo con tarjeta ya representa {{ratio}} de tus ingresos del mes.",
+            },
+            highDebt: {
+              alertTitle: "Tu deuda de tarjeta equivale a más de un mes de ingresos",
+              alertMessage: "Tu deuda total de tarjeta ya llega a {{debtAmount}}.",
+              warningTitle: "Tu deuda de tarjeta representa una parte importante de tus ingresos",
+              warningMessage: "Tu deuda total de tarjeta ya llega a {{debtAmount}}.",
+            },
+            statementPressure: {
+              alertTitle: "El resumen actual de tarjeta está muy alto",
+              alertMessage: "Todavía tenés {{statementAmount}} pendientes para cerrar el mes.",
+              warningTitle: "El resumen actual de tarjeta presiona tu ingreso del mes",
+              warningMessage: "Todavía tenés {{statementAmount}} pendientes en tu resumen actual.",
+            },
+            nextCommitment: {
+              alertTitle: "Más de la mitad de tus ingresos del próximo mes ya están comprometidos",
+              alertMessage: "Tus cuotas activas del próximo mes ya suman {{amount}}.",
+              warningTitle: "Una parte importante del próximo mes ya está comprometida en cuotas",
+              warningMessage: "Tus cuotas activas del próximo mes ya suman {{amount}}.",
+              infoTitle: "Tenés cuotas activas para el próximo mes",
+              infoMessage: "Ya hay {{amount}} comprometidos en cuotas para el próximo mes.",
+            },
+            acceleration: {
+              title: "Aceleraste el gasto con tarjeta",
+              message: "Pasaste de {{previousAmount}} a {{currentAmount}} en gastos de tarjeta vs el mes anterior.",
+            },
+            stable: {
+              title: "Tu módulo de tarjeta está estable por ahora",
+              message: "No hay señales críticas en tarjeta de crédito en este momento.",
+            },
+          },
+        },
+      },
+    },
     start: {
       title: "Empezar",
       subtitle: "Guía rápida para tus primeros pasos en Encaja.",
@@ -1334,6 +1408,80 @@ const dictionaries = {
           item1: "• your main spending categories",
           item2: "• what increased or decreased vs previous month",
           item3: "• how your money evolves month by month",
+        },
+      },
+    },
+    insightsV2: {
+      title: "Insights",
+      subtitle: "Prioritized financial signals by module to understand what needs attention now.",
+      emptyState: "There are no insights available for this workspace yet.",
+      moduleEmptyState: "There are no relevant signals for this module yet.",
+      notifications: {
+        loadErrorTitle: "We couldn't load insights",
+      },
+      severity: {
+        alert: "Alert",
+        warning: "Warning",
+        info: "Info",
+        positive: "Positive",
+      },
+      dashboard: {
+        slotTitle: "Primary insight",
+        viewAll: "View all insights",
+      },
+      modules: {
+        creditCard: {
+          title: "Credit card",
+          description:
+            "A credit card is useful, but it's not extra money. It's spending today that you'll pay with tomorrow's income. Keeping that debt controlled gives you more margin and stability month by month.",
+          insights: {
+            unpaid: {
+              title: "You still haven't paid your card this month",
+              message: "Review this due date to avoid accumulating more debt.",
+            },
+            partialPayment: {
+              title: "You made a partial card payment",
+              message: "You are still carrying pending balance into the next period.",
+            },
+            fullPayment: {
+              title: "You paid your card in full this month",
+              message: "Keeping card debt at zero gives you more room for the next period.",
+            },
+            highUsage: {
+              alertTitle: "Your card spending is above one full monthly income",
+              alertMessage: "Card spending already represents {{ratio}} of your monthly income.",
+              warningTitle: "Card spending is taking a large share of your income",
+              warningMessage: "Card spending already represents {{ratio}} of your monthly income.",
+            },
+            highDebt: {
+              alertTitle: "Your card debt equals more than one month of income",
+              alertMessage: "Your total card debt is already {{debtAmount}}.",
+              warningTitle: "Your card debt is a significant share of your income",
+              warningMessage: "Your total card debt is already {{debtAmount}}.",
+            },
+            statementPressure: {
+              alertTitle: "Your current card statement is very high",
+              alertMessage: "You still have {{statementAmount}} pending in the current statement.",
+              warningTitle: "Your current card statement is putting pressure on this month",
+              warningMessage: "You still have {{statementAmount}} pending in your current statement.",
+            },
+            nextCommitment: {
+              alertTitle: "More than half of next month's income is already committed",
+              alertMessage: "Your active installments for next month already total {{amount}}.",
+              warningTitle: "A significant part of next month is already committed in installments",
+              warningMessage: "Your active installments for next month already total {{amount}}.",
+              infoTitle: "You have active installments for next month",
+              infoMessage: "{{amount}} are already committed in next month's installments.",
+            },
+            acceleration: {
+              title: "Card spending accelerated",
+              message: "You moved from {{previousAmount}} to {{currentAmount}} in card spending vs last month.",
+            },
+            stable: {
+              title: "Your credit card module is stable for now",
+              message: "There are no critical credit card signals at this time.",
+            },
+          },
         },
       },
     },
