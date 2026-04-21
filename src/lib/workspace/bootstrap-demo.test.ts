@@ -9,6 +9,7 @@ vi.mock("@/lib/workspace/demo", () => ({
 
 vi.mock("@/lib/workspace/demo-seed", () => ({
   buildDemoSeed: vi.fn(),
+  materializeDemoSeedBudget: vi.fn(),
   materializeDemoSeedInstallmentPurchases: vi.fn(),
   materializeDemoSeedTransactions: vi.fn(),
 }));
@@ -19,6 +20,7 @@ import {
 } from "@/lib/workspace/demo";
 import {
   buildDemoSeed,
+  materializeDemoSeedBudget,
   materializeDemoSeedInstallmentPurchases,
   materializeDemoSeedTransactions,
 } from "@/lib/workspace/demo-seed";
@@ -61,6 +63,12 @@ function buildSupabaseMock(options?: {
   const installmentPurchasesInsert = vi.fn(async () => ({
     error: null,
   }));
+  const budgetPeriodsInsert = vi.fn(async () => ({
+    error: null,
+  }));
+  const budgetItemsInsert = vi.fn(async () => ({
+    error: null,
+  }));
 
   const from = vi.fn((table: string) => {
     if (table === "profiles") {
@@ -85,6 +93,14 @@ function buildSupabaseMock(options?: {
 
     if (table === "installment_purchases") {
       return { insert: installmentPurchasesInsert };
+    }
+
+    if (table === "budget_periods") {
+      return { insert: budgetPeriodsInsert };
+    }
+
+    if (table === "budget_items") {
+      return { insert: budgetItemsInsert };
     }
 
     return {};
@@ -134,6 +150,8 @@ function buildSupabaseMock(options?: {
     rpc,
     transactionsInsert,
     installmentPurchasesInsert,
+    budgetPeriodsInsert,
+    budgetItemsInsert,
   };
 }
 
@@ -242,10 +260,44 @@ describe("createDemoWorkspaceForUser", () => {
         created_by: "user-1",
       },
     ]);
+    vi.mocked(materializeDemoSeedBudget).mockReturnValue({
+      periods: [
+        {
+          id: "budget-period-previous",
+          workspace_id: "workspace-demo",
+          year: 2026,
+          month: 3,
+          status: "draft",
+          created_by: "user-1",
+        },
+        {
+          id: "budget-period-current",
+          workspace_id: "workspace-demo",
+          year: 2026,
+          month: 4,
+          status: "draft",
+          created_by: "user-1",
+        },
+      ],
+      items: [
+        {
+          budget_period_id: "budget-period-previous",
+          category_id: "category-balance",
+          amount: 200000,
+        },
+      ],
+    });
   });
 
   it("creates a demo workspace end-to-end", async () => {
-    const { supabase, rpc, transactionsInsert, installmentPurchasesInsert } = buildSupabaseMock();
+    const {
+      supabase,
+      rpc,
+      transactionsInsert,
+      installmentPurchasesInsert,
+      budgetPeriodsInsert,
+      budgetItemsInsert,
+    } = buildSupabaseMock();
     const user = {
       id: "user-1",
       email: "owner@encaja.app",
@@ -261,6 +313,8 @@ describe("createDemoWorkspaceForUser", () => {
       p_workspace_name: "Caja Demo",
       p_is_demo: true,
     });
+    expect(budgetPeriodsInsert).toHaveBeenCalledOnce();
+    expect(budgetItemsInsert).toHaveBeenCalledOnce();
     expect(installmentPurchasesInsert).toHaveBeenCalledOnce();
     expect(transactionsInsert).toHaveBeenCalledOnce();
     expect(workspace).toMatchObject({
