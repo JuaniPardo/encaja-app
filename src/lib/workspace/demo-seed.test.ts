@@ -1,10 +1,39 @@
 import { describe, expect, it } from "vitest";
 
 import { type DemoPaymentMethodKey } from "@/lib/workspace/demo";
-import { buildDemoSeed, materializeDemoSeedTransactions } from "@/lib/workspace/demo-seed";
+import {
+  buildDemoSeed,
+  materializeDemoSeedInstallmentPurchases,
+  materializeDemoSeedTransactions,
+} from "@/lib/workspace/demo-seed";
 
 function getDayOfMonth(dateOnly: string) {
   return Number(dateOnly.slice(8, 10));
+}
+
+function buildMonthRange(year: number, month: number) {
+  const start = `${year}-${String(month).padStart(2, "0")}-01`;
+  const nextMonth = month === 12 ? 1 : month + 1;
+  const nextYear = month === 12 ? year + 1 : year;
+  const end = `${nextYear}-${String(nextMonth).padStart(2, "0")}-01`;
+
+  return { start, end };
+}
+
+function filterSeedRowsByMonth(
+  rows: Array<{ transactionDate: string; effectiveDate: string | null }>,
+  year: number,
+  month: number,
+) {
+  const { start, end } = buildMonthRange(year, month);
+
+  return rows.filter((row) => {
+    if (row.effectiveDate) {
+      return row.effectiveDate >= start && row.effectiveDate < end;
+    }
+
+    return row.transactionDate >= start && row.transactionDate < end;
+  });
 }
 
 describe("buildDemoSeed", () => {
@@ -65,6 +94,53 @@ describe("buildDemoSeed", () => {
     expect(adjustmentRows.every((transaction) => transaction.transactionDate === "2026-03-01")).toBe(true);
   });
 
+  it("adds installment purchases and keeps month visibility rules for installment rows", () => {
+    const seed = buildDemoSeed(new Date("2026-04-19T12:00:00Z"));
+
+    expect(seed.installmentPurchases.map((purchase) => purchase.key).sort()).toEqual([
+      "installment_purchase_cellphone_previous",
+      "installment_purchase_clothing_current",
+    ]);
+
+    const cellphoneInstallments = seed.transactions
+      .filter((row) => row.installmentPurchaseKey === "installment_purchase_cellphone_previous")
+      .sort((left, right) => Number(left.installmentNumber ?? 0) - Number(right.installmentNumber ?? 0));
+    expect(cellphoneInstallments).toHaveLength(6);
+    expect(cellphoneInstallments.map((row) => row.installmentNumber)).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(cellphoneInstallments[0]?.description).toBe("Celular - cuota 1 de 6");
+    expect(cellphoneInstallments[1]?.description).toBe("Celular - cuota 2 de 6");
+
+    const clothingInstallments = seed.transactions
+      .filter((row) => row.installmentPurchaseKey === "installment_purchase_clothing_current")
+      .sort((left, right) => Number(left.installmentNumber ?? 0) - Number(right.installmentNumber ?? 0));
+    expect(clothingInstallments).toHaveLength(6);
+    expect(clothingInstallments.map((row) => row.installmentNumber)).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(clothingInstallments[0]?.description).toBe("Ropa - cuota 1 de 6");
+
+    const visibleInstallmentsCurrentMonth = filterSeedRowsByMonth(
+      seed.transactions.filter((row) => row.installmentPurchaseKey !== null),
+      2026,
+      4,
+    );
+    const currentDescriptions = visibleInstallmentsCurrentMonth
+      .map((row) => row.description)
+      .filter((description): description is string => Boolean(description));
+    expect(currentDescriptions).toContain("Celular - cuota 2 de 6");
+    expect(currentDescriptions).toContain("Ropa - cuota 1 de 6");
+    expect(currentDescriptions).not.toContain("Ropa - cuota 2 de 6");
+
+    const visibleInstallmentsPreviousMonth = filterSeedRowsByMonth(
+      seed.transactions.filter((row) => row.installmentPurchaseKey !== null),
+      2026,
+      3,
+    );
+    const previousDescriptions = visibleInstallmentsPreviousMonth
+      .map((row) => row.description)
+      .filter((description): description is string => Boolean(description));
+    expect(previousDescriptions).toContain("Celular - cuota 1 de 6");
+    expect(previousDescriptions).not.toContain("Ropa - cuota 1 de 6");
+  });
+
   it("materializes transaction inserts with stable transfer_group_id", () => {
     const seed = buildDemoSeed(new Date("2026-04-19T12:00:00Z"));
 
@@ -88,10 +164,27 @@ describe("buildDemoSeed", () => {
       categoryIdByKey,
       paymentMethodIdByKey,
     });
+    const installmentPurchases = materializeDemoSeedInstallmentPurchases({
+      workspaceId: "workspace-1",
+      userId: "user-1",
+      seed,
+      categoryIdByKey,
+      paymentMethodIdByKey,
+    });
 
     const transferRows = rows.filter((row) => row.transfer_group_id !== null);
     expect(transferRows).toHaveLength(2);
     expect(transferRows[0]?.transfer_group_id).toBe(transferRows[1]?.transfer_group_id);
     expect(transferRows.every((row) => row.type === "transfer")).toBe(true);
+
+    const purchaseIds = new Set(installmentPurchases.map((purchase) => purchase.id));
+    const installmentRows = rows.filter((row) => row.installment_purchase_id !== null);
+    expect(installmentPurchases).toHaveLength(2);
+    expect(installmentRows).toHaveLength(12);
+    expect(
+      installmentRows.every(
+        (row) => row.installment_purchase_id !== null && purchaseIds.has(row.installment_purchase_id),
+      ),
+    ).toBe(true);
   });
 });
