@@ -16,6 +16,9 @@ export interface TransactionSchemaMessages {
   requiredTransactionDate: string;
   descriptionMaxLength: string;
   notesMaxLength: string;
+  invalidInstallmentsCount: string;
+  installmentsCountMin: string;
+  installmentsCountMax: string;
 }
 
 const defaultMessages: TransactionSchemaMessages = {
@@ -28,6 +31,9 @@ const defaultMessages: TransactionSchemaMessages = {
   requiredTransactionDate: "La fecha de transacción es obligatoria.",
   descriptionMaxLength: "La descripción no puede superar 180 caracteres.",
   notesMaxLength: "Las notas no pueden superar 1000 caracteres.",
+  invalidInstallmentsCount: "Ingresá una cantidad de cuotas válida.",
+  installmentsCountMin: "La cantidad de cuotas debe ser al menos 1.",
+  installmentsCountMax: "La cantidad de cuotas no puede superar 120.",
 };
 
 function optionalText(maxLength: number, message: string) {
@@ -83,6 +89,25 @@ export function createTransactionFormSchema(messages?: Partial<TransactionSchema
     z.string().uuid(resolvedMessages.invalidOption).nullable(),
   );
 
+  const installmentsCount = z.preprocess(
+    (value) => {
+      if (value === "" || value === null || value === undefined) {
+        return 1;
+      }
+
+      if (typeof value === "number") {
+        return value;
+      }
+
+      return Number(value);
+    },
+    z
+      .number()
+      .int(resolvedMessages.invalidInstallmentsCount)
+      .min(1, resolvedMessages.installmentsCountMin)
+      .max(120, resolvedMessages.installmentsCountMax),
+  );
+
   return z.object({
     type: z.enum(transactionTypeOptions),
     categoryId: z
@@ -96,6 +121,7 @@ export function createTransactionFormSchema(messages?: Partial<TransactionSchema
       .regex(datePattern, resolvedMessages.invalidDate),
     effectiveDate: optionalDate,
     paymentMethodId: optionalUuid,
+    installmentsCount,
     description: optionalText(180, resolvedMessages.descriptionMaxLength),
     notes: optionalText(1000, resolvedMessages.notesMaxLength),
   });

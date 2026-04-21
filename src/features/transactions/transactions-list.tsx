@@ -118,6 +118,10 @@ export function TransactionsList({
                   const paymentMethod = row.payment_method_id
                     ? paymentMethodById.get(row.payment_method_id)
                     : null;
+                  const isInstallment =
+                    row.installment_purchase_id !== null &&
+                    row.installment_number !== null &&
+                    row.installment_count !== null;
                   const operationalDate = row.effective_date ?? row.transaction_date;
 
                   const metaParts = [formatCompactDate(operationalDate)];
@@ -127,6 +131,14 @@ export function TransactionsList({
                   if (row.effective_date) {
                     metaParts.push(
                       `${t("transactions.realPrefix")} ${formatCompactDate(row.transaction_date)}`,
+                    );
+                  }
+                  if (isInstallment) {
+                    metaParts.push(
+                      t("transactions.installmentBadge", undefined, {
+                        current: Number(row.installment_number ?? 0),
+                        total: Number(row.installment_count ?? 0),
+                      }),
                     );
                   }
 
@@ -181,18 +193,20 @@ export function TransactionsList({
                           </Text>
 
                           <Group gap={1} wrap="nowrap">
-                            <Button
-                              size="xs"
-                              variant="subtle"
-                              color="gray"
-                              leftSection={<EditIcon size={11} />}
-                              onClick={() => onOpenEditModal(row)}
-                              aria-label={t("transactions.edit")}
-                              px={isMobile ? 6 : 8}
-                              styles={{ label: { fontSize: "0.67rem", fontWeight: 500 } }}
-                            >
-                              {isMobile ? null : t("transactions.edit")}
-                            </Button>
+                            {!isInstallment ? (
+                              <Button
+                                size="xs"
+                                variant="subtle"
+                                color="gray"
+                                leftSection={<EditIcon size={11} />}
+                                onClick={() => onOpenEditModal(row)}
+                                aria-label={t("transactions.edit")}
+                                px={isMobile ? 6 : 8}
+                                styles={{ label: { fontSize: "0.67rem", fontWeight: 500 } }}
+                              >
+                                {isMobile ? null : t("transactions.edit")}
+                              </Button>
+                            ) : null}
                             <Button
                               size="xs"
                               variant="subtle"

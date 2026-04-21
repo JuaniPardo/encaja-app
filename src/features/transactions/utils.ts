@@ -90,6 +90,7 @@ export function toFormDefaults(
       transactionDate: today,
       effectiveDate: "",
       paymentMethodId: "",
+      installmentsCount: 1,
       description: "",
       notes: "",
     };
@@ -102,6 +103,7 @@ export function toFormDefaults(
     transactionDate: row.transaction_date,
     effectiveDate: row.effective_date ?? "",
     paymentMethodId: row.payment_method_id ?? "",
+    installmentsCount: row.installment_count ?? 1,
     description: row.description ?? "",
     notes: row.notes ?? "",
   };
