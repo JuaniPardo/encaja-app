@@ -321,6 +321,11 @@ const dictionaries = {
               title: "Hiciste un pago parcial de tu tarjeta",
               message: "Todavía estás arrastrando saldo pendiente al próximo período.",
             },
+            rolledDebt: {
+              title: "Se roleó deuda de la tarjeta del mes pasado al mes actual",
+              message:
+                "El pago de este mes fue menor al consumo total del mes anterior, así que quedó saldo arrastrado.",
+            },
             fullPayment: {
               title: "Pagaste tu tarjeta completa este mes",
               message: "Mantener la deuda en cero te deja más margen para el próximo período.",
@@ -1442,6 +1447,11 @@ const dictionaries = {
             partialPayment: {
               title: "You made a partial card payment",
               message: "You are still carrying pending balance into the next period.",
+            },
+            rolledDebt: {
+              title: "Card debt rolled from last month into the current month",
+              message:
+                "This month's payment was lower than last month's total card spending, so balance was carried over.",
             },
             fullPayment: {
               title: "You paid your card in full this month",

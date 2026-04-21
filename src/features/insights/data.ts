@@ -98,21 +98,7 @@ export async function loadInsightsContext({
   }
 
   let historicalCreditTransactions: TransactionRow[] = [];
-  let openingCreditTransactions: TransactionRow[] = [];
   if (creditCards.length > 0) {
-    const openingCreditTransactionsResponse = await supabase
-      .from("transactions")
-      .select("amount, type, payment_method_id, direction, effective_date, transaction_date, installment_purchase_id")
-      .eq("workspace_id", workspaceId)
-      .in("payment_method_id", creditCards.map((row) => row.id))
-      .or(buildTransactionBeforePeriodFilter(currentPeriod.start));
-
-    if (openingCreditTransactionsResponse.error) {
-      throw openingCreditTransactionsResponse.error;
-    }
-
-    openingCreditTransactions = (openingCreditTransactionsResponse.data ?? []) as TransactionRow[];
-
     const historicalCreditTransactionsResponse = await supabase
       .from("transactions")
       .select("amount, type, payment_method_id, direction, effective_date, transaction_date, installment_purchase_id")
@@ -195,22 +181,8 @@ export async function loadInsightsContext({
   }
 
   const balanceByMethodId = new Map<string, number>();
-  const openingBalanceByMethodId = new Map<string, number>();
   for (const method of creditCards) {
     balanceByMethodId.set(method.id, parseAmountValue(method.current_balance));
-    openingBalanceByMethodId.set(method.id, parseAmountValue(method.current_balance));
-  }
-
-  for (const row of openingCreditTransactions) {
-    if (!row.payment_method_id) {
-      continue;
-    }
-    if (!openingBalanceByMethodId.has(row.payment_method_id)) {
-      continue;
-    }
-
-    const currentBalance = openingBalanceByMethodId.get(row.payment_method_id) ?? 0;
-    openingBalanceByMethodId.set(row.payment_method_id, roundMoney(currentBalance + resolvePaymentMethodImpact(row)));
   }
 
   for (const row of historicalCreditTransactions) {
@@ -232,13 +204,6 @@ export async function loadInsightsContext({
     }
   }
 
-  let creditCardOpeningDebt = 0;
-  for (const [, balance] of openingBalanceByMethodId.entries()) {
-    if (balance < 0) {
-      creditCardOpeningDebt += Math.abs(balance);
-    }
-  }
-
   const todayDate = referenceDate.getDate();
   const creditCardDueDatePassed = creditCards.some((row) => row.due_day !== null && todayDate > row.due_day);
 
@@ -253,7 +218,6 @@ export async function loadInsightsContext({
     creditCardExpenseCurrentMonth: roundMoney(creditCardExpenseCurrentMonth),
     creditCardExpensePreviousMonth: roundMoney(creditCardExpensePreviousMonth),
     creditCardPaymentsCurrentMonth: roundMoney(creditCardPaymentsCurrentMonth),
-    creditCardOpeningDebt: roundMoney(creditCardOpeningDebt),
     creditCardDebtTotal: roundMoney(creditCardDebtTotal),
     creditCardCurrentStatement: roundMoney(creditCardExpenseCurrentMonth),
     creditCardNextMonthInstallments: roundMoney(creditCardNextMonthInstallments),

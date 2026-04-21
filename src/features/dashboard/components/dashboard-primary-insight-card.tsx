@@ -61,12 +61,8 @@ export function DashboardPrimaryInsightCard({
           </Badge>
         </Group>
 
-        <Text fw={800} c="#1f2937">
+        <Text fw={800} c="#1f2937" size="sm" lineClamp={1}>
           {insight.title}
-        </Text>
-
-        <Text size="sm" c="#475467">
-          {insight.message}
         </Text>
 
         <Group justify="flex-start">

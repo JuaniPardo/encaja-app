@@ -59,16 +59,15 @@ export function generateCreditCardInsights({
   const monthlyCardExpense = context.creditCardExpenseCurrentMonth;
   const previousMonthCardExpense = context.creditCardExpensePreviousMonth;
   const monthlyCardPayments = context.creditCardPaymentsCurrentMonth;
-  const openingDebt = context.creditCardOpeningDebt;
   const totalDebt = context.creditCardDebtTotal;
   const currentStatement = context.creditCardCurrentStatement;
   const nextMonthInstallments = context.creditCardNextMonthInstallments;
 
   const hasIncome = totalIncome > tolerance;
   const isDueDatePassed = context.creditCardDueDatePassed;
-  const hasPreviousDebtDue = openingDebt > tolerance;
+  const hasPreviousStatementToPay = previousMonthCardExpense > tolerance;
 
-  if (isDueDatePassed && hasPreviousDebtDue) {
+  if (isDueDatePassed && hasPreviousStatementToPay) {
     if (monthlyCardPayments <= tolerance) {
       insights.push(
         createInsight({
@@ -80,22 +79,22 @@ export function generateCreditCardInsights({
           message: t("insightsV2.modules.creditCard.insights.unpaid.message"),
           data: {
             monthlyCardPayments,
-            openingDebt,
+            previousMonthCardExpense,
           },
         }),
       );
-    } else if (monthlyCardPayments + tolerance < openingDebt) {
+    } else if (monthlyCardPayments + tolerance < previousMonthCardExpense) {
       insights.push(
         createInsight({
-          id: "credit_card_partial_payment",
-          kind: "partial_payment",
+          id: "credit_card_rolled_debt",
+          kind: "rolled_debt",
           severity: "warning",
-          priority: 800,
-          title: t("insightsV2.modules.creditCard.insights.partialPayment.title"),
-          message: t("insightsV2.modules.creditCard.insights.partialPayment.message"),
+          priority: 810,
+          title: t("insightsV2.modules.creditCard.insights.rolledDebt.title"),
+          message: t("insightsV2.modules.creditCard.insights.rolledDebt.message"),
           data: {
             monthlyCardPayments,
-            openingDebt,
+            previousMonthCardExpense,
           },
         }),
       );

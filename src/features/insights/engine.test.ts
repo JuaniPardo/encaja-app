@@ -24,7 +24,6 @@ function buildBaseContext(overrides: Partial<InsightsContext> = {}): InsightsCon
     creditCardExpenseCurrentMonth: 400_000,
     creditCardExpensePreviousMonth: 300_000,
     creditCardPaymentsCurrentMonth: 400_000,
-    creditCardOpeningDebt: 350_000,
     creditCardDebtTotal: 200_000,
     creditCardCurrentStatement: 400_000,
     creditCardNextMonthInstallments: 100_000,
@@ -37,8 +36,8 @@ describe("buildInsightsResult", () => {
     const result = buildInsightsResult({
       context: buildBaseContext({
         creditCardExpenseCurrentMonth: 520_000,
+        creditCardExpensePreviousMonth: 520_000,
         creditCardPaymentsCurrentMonth: 0,
-        creditCardOpeningDebt: 520_000,
         creditCardCurrentStatement: 520_000,
       }),
       t,
@@ -53,24 +52,24 @@ describe("buildInsightsResult", () => {
     const result = buildInsightsResult({
       context: buildBaseContext({
         creditCardExpenseCurrentMonth: 500_000,
+        creditCardExpensePreviousMonth: 500_000,
         creditCardPaymentsCurrentMonth: 200_000,
-        creditCardOpeningDebt: 500_000,
         creditCardCurrentStatement: 500_000,
       }),
       t,
       currencyFormatter,
     });
 
-    const partialInsight = result.allInsights.find((insight) => insight.kind === "partial_payment");
-    expect(partialInsight?.severity).toBe("warning");
+    const rolledDebtInsight = result.allInsights.find((insight) => insight.kind === "rolled_debt");
+    expect(rolledDebtInsight?.severity).toBe("warning");
   });
 
   it("returns full payment positive insight when statement is fully paid", () => {
     const result = buildInsightsResult({
       context: buildBaseContext({
         creditCardExpenseCurrentMonth: 450_000,
+        creditCardExpensePreviousMonth: 430_000,
         creditCardPaymentsCurrentMonth: 450_000,
-        creditCardOpeningDebt: 430_000,
         creditCardCurrentStatement: 450_000,
       }),
       t,
@@ -87,7 +86,6 @@ describe("buildInsightsResult", () => {
         creditCardDueDatePassed: false,
         incomeCurrentMonth: 900_000,
         creditCardExpenseCurrentMonth: 950_000,
-        creditCardOpeningDebt: 0,
         creditCardDebtTotal: 1_050_000,
       }),
       t,

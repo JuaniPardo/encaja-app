@@ -47,7 +47,6 @@ export type InsightsContext = {
   creditCardExpenseCurrentMonth: number;
   creditCardExpensePreviousMonth: number;
   creditCardPaymentsCurrentMonth: number;
-  creditCardOpeningDebt: number;
   creditCardDebtTotal: number;
   creditCardCurrentStatement: number;
   creditCardNextMonthInstallments: number;
