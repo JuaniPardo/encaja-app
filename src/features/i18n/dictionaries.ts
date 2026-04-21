@@ -306,6 +306,14 @@ const dictionaries = {
       dashboard: {
         slotTitle: "Insight principal",
         viewAll: "Ver todos los insights",
+        open: "Abrir insights",
+        kindBadge: {
+          pendingDebt: "Deuda pendiente",
+          highDebt: "Deuda alta",
+          highUsage: "Uso alto",
+          controlled: "Controlado",
+          attention: "Atención",
+        },
       },
       modules: {
         creditCard: {
@@ -315,16 +323,15 @@ const dictionaries = {
           insights: {
             unpaid: {
               title: "Todavía no pagaste tu tarjeta este mes",
-              message: "Revisá este vencimiento para evitar seguir acumulando deuda.",
+              message: "Esto reduce el dinero disponible para este mes.",
             },
             partialPayment: {
               title: "Hiciste un pago parcial de tu tarjeta",
               message: "Todavía estás arrastrando saldo pendiente al próximo período.",
             },
             rolledDebt: {
-              title: "Se roleó deuda de la tarjeta del mes pasado al mes actual",
-              message:
-                "El pago de este mes fue menor al consumo total del mes anterior, así que quedó saldo arrastrado.",
+              title: "Arrastraste deuda de tu tarjeta al mes actual",
+              message: "Esto reduce el dinero disponible para este mes.",
             },
             fullPayment: {
               title: "Pagaste tu tarjeta completa este mes",
@@ -1433,6 +1440,14 @@ const dictionaries = {
       dashboard: {
         slotTitle: "Primary insight",
         viewAll: "View all insights",
+        open: "Open insights",
+        kindBadge: {
+          pendingDebt: "Pending debt",
+          highDebt: "High debt",
+          highUsage: "High usage",
+          controlled: "Controlled",
+          attention: "Attention",
+        },
       },
       modules: {
         creditCard: {
@@ -1442,16 +1457,15 @@ const dictionaries = {
           insights: {
             unpaid: {
               title: "You still haven't paid your card this month",
-              message: "Review this due date to avoid accumulating more debt.",
+              message: "This reduces the money available for this month.",
             },
             partialPayment: {
               title: "You made a partial card payment",
               message: "You are still carrying pending balance into the next period.",
             },
             rolledDebt: {
-              title: "Card debt rolled from last month into the current month",
-              message:
-                "This month's payment was lower than last month's total card spending, so balance was carried over.",
+              title: "You carried card debt into the current month",
+              message: "This reduces the money available for this month.",
             },
             fullPayment: {
               title: "You paid your card in full this month",
