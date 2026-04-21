@@ -1,3 +1,19 @@
+## [1.4.2] - 2026-04-21
+
+### Added
+- Added MVP26 credit card installments support with dedicated installment purchase model and automatic monthly distribution.
+- Added installment purchase editing flow with transactional backend update and full installments regeneration.
+- Added pending future commitments visibility in dashboard financial summary and payment-method breakdown.
+
+### Changed
+- Updated dashboard copy and hierarchy to clearly separate `Balance total`, `Este mes`, and `Compromisos futuros`.
+- Improved credit card method cards with explicit sections for `Deuda total`, `Este mes (resumen)`, and `A futuro (cuotas)`.
+- Adjusted transaction listing date behavior to show real operation date for installment 1 and monthly effective dates for subsequent installments.
+
+### Fixed
+- Added missing RLS update policy for `installment_purchases` required by installment editing RPC.
+- Fixed ambiguous SQL reference in installment update flow (`installment_purchase_id`) to prevent runtime failures.
+
 ## [1.4.1] - 2026-04-20
 
 ### Added

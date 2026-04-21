@@ -4,9 +4,9 @@ Aplicación web de presupuesto y control financiero personal/workspace-first, na
 
 ## Estado actual del producto
 
-- Fase funcional: **MVP25**
-- Último release registrado: **1.4.0** (fecha: **2026-04-19**)
-- Estado general: base operativa completa para uso real, con onboarding asistido por **Caja Demo** y foco en robustez de modelo de datos.
+- Fase funcional: **MVP26**
+- Último release registrado: **1.4.2** (fecha: **2026-04-21**)
+- Estado general: base operativa completa para uso real, con onboarding asistido por **Caja Demo**, soporte de compras en cuotas con tarjeta de crédito y foco en robustez de modelo de datos.
 
 ### Funcionalidad implementada hoy
 
@@ -16,6 +16,7 @@ Aplicación web de presupuesto y control financiero personal/workspace-first, na
 - Dashboard/resumen financiero por workspace.
 - Flujo de onboarding (`/start`) guiado por datos reales.
 - Transacciones con `income`, `expense`, `saving` y `transfer` entre medios de pago.
+- Compras en cuotas con tarjeta de crédito (distribución mensual, edición del plan y visualización de compromisos futuros).
 - Presupuesto mensual por categorías.
 - Insights del período.
 - Gestión de categorías (catálogo sistema + categorías custom por workspace).
@@ -70,7 +71,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 
 ### 3) Aplicar migraciones de base de datos
 
-Este repo incluye migraciones acumuladas en `supabase/migrations/` (hasta MVP25).
+Este repo incluye migraciones acumuladas en `supabase/migrations/` (hasta MVP26).
 
 Opciones:
 
