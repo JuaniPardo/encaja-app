@@ -26,8 +26,9 @@ type UseDashboardViewModelOptions = {
   budgetItems: BudgetItemLiteRow[];
   transactionRows: TransactionLiteRow[];
   allTransactionsImpact: Map<string, number>;
-  futureInstallmentsByMethodId: Map<string, number>;
   nextMonthCommitmentByMethodId: Map<string, number>;
+  previousMonthStatementByMethodId: Map<string, number>;
+  currentMonthPaymentsByMethodId: Map<string, number>;
   paymentMethodRows: PaymentMethodBalanceRow[];
   linkedWorkspacePaymentMethodBalances: LinkedWorkspacePaymentMethodBalanceRow[];
   currencyFormatter: Intl.NumberFormat;
@@ -51,8 +52,9 @@ export function useDashboardViewModel({
   budgetItems,
   transactionRows,
   allTransactionsImpact,
-  futureInstallmentsByMethodId,
   nextMonthCommitmentByMethodId,
+  previousMonthStatementByMethodId,
+  currentMonthPaymentsByMethodId,
   paymentMethodRows,
   linkedWorkspacePaymentMethodBalances,
   currencyFormatter,
@@ -67,8 +69,9 @@ export function useDashboardViewModel({
     budgetItems,
     transactionRows,
     allTransactionsImpact,
-    futureInstallmentsByMethodId,
     nextMonthCommitmentByMethodId,
+    previousMonthStatementByMethodId,
+    currentMonthPaymentsByMethodId,
     paymentMethodRows,
   });
 

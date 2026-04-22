@@ -26,8 +26,9 @@ type UseDashboardMetricsOptions = {
   budgetItems: BudgetItemLiteRow[];
   transactionRows: TransactionLiteRow[];
   allTransactionsImpact: Map<string, number>;
-  futureInstallmentsByMethodId: Map<string, number>;
   nextMonthCommitmentByMethodId: Map<string, number>;
+  previousMonthStatementByMethodId: Map<string, number>;
+  currentMonthPaymentsByMethodId: Map<string, number>;
   paymentMethodRows: PaymentMethodBalanceRow[];
 };
 
@@ -55,8 +56,9 @@ export function useDashboardMetrics({
   budgetItems,
   transactionRows,
   allTransactionsImpact,
-  futureInstallmentsByMethodId,
   nextMonthCommitmentByMethodId,
+  previousMonthStatementByMethodId,
+  currentMonthPaymentsByMethodId,
   paymentMethodRows,
 }: UseDashboardMetricsOptions): DashboardMetricsModel {
   const metrics = useMemo(() => {
@@ -206,7 +208,7 @@ export function useDashboardMetrics({
 
   const financialSummary = useMemo<FinancialSummary>(() => {
     const monthImpactByMethodId = new Map<string, number>();
-    const currentStatementByMethodId = new Map<string, number>();
+    const monthConsumptionByMethodId = new Map<string, number>();
 
     for (const row of transactionRows) {
       if (!row.payment_method_id) {
@@ -219,8 +221,8 @@ export function useDashboardMetrics({
       monthImpactByMethodId.set(row.payment_method_id, roundMoney(previousAmount + signedAmount));
 
       if (row.type === "expense") {
-        const previousStatementAmount = currentStatementByMethodId.get(row.payment_method_id) ?? 0;
-        currentStatementByMethodId.set(
+        const previousStatementAmount = monthConsumptionByMethodId.get(row.payment_method_id) ?? 0;
+        monthConsumptionByMethodId.set(
           row.payment_method_id,
           roundMoney(previousStatementAmount + parsedAmount),
         );
@@ -250,24 +252,24 @@ export function useDashboardMetrics({
     const creditCardRows = activeIncludedRows
       .filter((row) => row.type === "credit_card")
       .map((row) => {
-        const debtCurrent = roundMoney(Math.max(0, -row.currentBalance));
-        const monthConsumption = roundMoney(currentStatementByMethodId.get(row.id) ?? 0);
+        const previousMonthStatement = roundMoney(previousMonthStatementByMethodId.get(row.id) ?? 0);
+        const monthPayments = roundMoney(currentMonthPaymentsByMethodId.get(row.id) ?? 0);
+        const monthConsumption = roundMoney(monthConsumptionByMethodId.get(row.id) ?? 0);
         const nextMonthInstallments = roundMoney(nextMonthCommitmentByMethodId.get(row.id) ?? 0);
-        const installmentBalance = roundMoney(futureInstallmentsByMethodId.get(row.id) ?? 0);
 
         return {
           id: row.id,
           name: row.name,
           type: "credit_card" as const,
-          debtCurrent,
+          previousMonthStatement,
+          monthPayments,
           monthConsumption,
           nextMonthInstallments,
-          installmentBalance,
         };
       })
       .sort((a, b) => {
-        if (b.debtCurrent !== a.debtCurrent) {
-          return b.debtCurrent - a.debtCurrent;
+        if (b.monthConsumption !== a.monthConsumption) {
+          return b.monthConsumption - a.monthConsumption;
         }
         return localeCompareByName(a.name, b.name, locale);
       });
@@ -278,17 +280,17 @@ export function useDashboardMetrics({
     const availabilityTotalMonthImpact = roundMoney(
       availabilityRows.reduce((sum, row) => sum + row.monthImpact, 0),
     );
-    const creditCardDebtCurrentTotal = roundMoney(
-      creditCardRows.reduce((sum, row) => sum + row.debtCurrent, 0),
+    const creditCardPreviousMonthStatementTotal = roundMoney(
+      creditCardRows.reduce((sum, row) => sum + row.previousMonthStatement, 0),
+    );
+    const creditCardMonthPaymentsTotal = roundMoney(
+      creditCardRows.reduce((sum, row) => sum + row.monthPayments, 0),
     );
     const creditCardMonthConsumptionTotal = roundMoney(
       creditCardRows.reduce((sum, row) => sum + row.monthConsumption, 0),
     );
     const creditCardNextMonthInstallmentsTotal = roundMoney(
       creditCardRows.reduce((sum, row) => sum + row.nextMonthInstallments, 0),
-    );
-    const creditCardInstallmentBalanceTotal = roundMoney(
-      creditCardRows.reduce((sum, row) => sum + row.installmentBalance, 0),
     );
     const includedActiveCount = availabilityRows.length + creditCardRows.length;
     const excludedActiveCount = paymentMethodRows.filter((row) => row.is_active && !row.include_in_balance).length;
@@ -299,20 +301,21 @@ export function useDashboardMetrics({
       creditCardRows,
       availabilityTotalBalance,
       availabilityTotalMonthImpact,
-      creditCardDebtCurrentTotal,
+      creditCardPreviousMonthStatementTotal,
+      creditCardMonthPaymentsTotal,
       creditCardMonthConsumptionTotal,
       creditCardNextMonthInstallmentsTotal,
-      creditCardInstallmentBalanceTotal,
       includedActiveCount,
       excludedActiveCount,
       inactiveCount,
     };
   }, [
     allTransactionsImpact,
-    futureInstallmentsByMethodId,
+    currentMonthPaymentsByMethodId,
     locale,
     nextMonthCommitmentByMethodId,
     paymentMethodRows,
+    previousMonthStatementByMethodId,
     transactionRows,
   ]);
 

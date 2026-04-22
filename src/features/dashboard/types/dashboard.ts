@@ -83,10 +83,10 @@ export type FinancialCreditCardRow = {
   id: string;
   name: string;
   type: "credit_card";
-  debtCurrent: number;
+  previousMonthStatement: number;
+  monthPayments: number;
   monthConsumption: number;
   nextMonthInstallments: number;
-  installmentBalance: number;
 };
 
 export type FinancialSummary = {
@@ -94,10 +94,10 @@ export type FinancialSummary = {
   creditCardRows: FinancialCreditCardRow[];
   availabilityTotalBalance: number;
   availabilityTotalMonthImpact: number;
-  creditCardDebtCurrentTotal: number;
+  creditCardPreviousMonthStatementTotal: number;
+  creditCardMonthPaymentsTotal: number;
   creditCardMonthConsumptionTotal: number;
   creditCardNextMonthInstallmentsTotal: number;
-  creditCardInstallmentBalanceTotal: number;
   includedActiveCount: number;
   excludedActiveCount: number;
   inactiveCount: number;

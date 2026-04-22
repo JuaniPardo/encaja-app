@@ -36,44 +36,6 @@ export function DashboardFinancialMethodsCard({
     valueWeight: number;
   };
 
-  const summaryMetrics: CreditMetricRow[] = [
-    {
-      key: "month-consumption",
-      label: t("dashboard.statementCurrentLabel"),
-      value: formatSignedCurrency(-financialSummary.creditCardMonthConsumptionTotal, currencyFormatter),
-      labelColor: "#667085",
-      valueColor: "#475467",
-      valueWeight: 700,
-    },
-    {
-      key: "next-month-installments",
-      label: t("dashboard.nextMonthCommitmentLabel"),
-      value: formatSignedCurrency(-financialSummary.creditCardNextMonthInstallmentsTotal, currencyFormatter),
-      labelColor: "#b54708",
-      valueColor: "#b54708",
-      valueWeight: 700,
-    },
-    {
-      key: "current-debt",
-      label: t("dashboard.totalDebtLabel"),
-      value: formatSignedCurrency(-financialSummary.creditCardDebtCurrentTotal, currencyFormatter),
-      labelColor: "#667085",
-      valueColor: financialSummary.creditCardDebtCurrentTotal > 0.004 ? "#c92a2a" : "#475467",
-      valueWeight: 800,
-    },
-  ];
-
-  if (financialSummary.creditCardInstallmentBalanceTotal > 0.004) {
-    summaryMetrics.push({
-      key: "installment-balance",
-      label: t("dashboard.futureInstallmentsLabel"),
-      value: formatSignedCurrency(-financialSummary.creditCardInstallmentBalanceTotal, currencyFormatter),
-      labelColor: "#98a2b3",
-      valueColor: "#667085",
-      valueWeight: 700,
-    });
-  }
-
   const renderCreditMetrics = (rows: CreditMetricRow[]) => (
     <div
       style={{
@@ -188,25 +150,6 @@ export function DashboardFinancialMethodsCard({
             <Text size="xs" fw={700} c="#475467">
               {t("dashboard.creditCardsSectionTitle")}
             </Text>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: creditMetricsGridColumns,
-                gap: creditMetricsRowsGap,
-                alignItems: "stretch",
-              }}
-            >
-              <div aria-hidden="true" />
-              <div
-                style={{
-                  borderLeft: "1px solid #f1d0d0",
-                  paddingLeft: creditFinancialBlockPadding,
-                  minWidth: 0,
-                }}
-              >
-                {renderCreditMetrics(summaryMetrics)}
-              </div>
-            </div>
           </Stack>
 
           {financialSummary.creditCardRows.length === 0 ? (
@@ -266,37 +209,37 @@ export function DashboardFinancialMethodsCard({
                     >
                       {renderCreditMetrics([
                         {
+                          key: "previous-month-statement",
+                          label: t("dashboard.previousMonthStatementLabel"),
+                          value: formatSignedCurrency(-row.previousMonthStatement, currencyFormatter),
+                          labelColor: "#667085",
+                          valueColor: "#667085",
+                          valueWeight: 700,
+                        },
+                        {
+                          key: "month-payments",
+                          label: t("dashboard.monthPaymentsLabel"),
+                          value: formatSignedCurrency(row.monthPayments, currencyFormatter),
+                          labelColor: "#087f5b",
+                          valueColor: "#087f5b",
+                          valueWeight: 700,
+                        },
+                        {
                           key: "month-consumption",
                           label: t("dashboard.statementCurrentLabel"),
                           value: formatSignedCurrency(-row.monthConsumption, currencyFormatter),
                           labelColor: "#667085",
-                          valueColor: "#475467",
-                          valueWeight: 700,
+                          valueColor: "#1f2937",
+                          valueWeight: 800,
                         },
-                        {
+                        ...(row.nextMonthInstallments > 0.004
+                          ? [{
                           key: "next-month-installments",
                           label: t("dashboard.nextMonthCommitmentLabel"),
                           value: formatSignedCurrency(-row.nextMonthInstallments, currencyFormatter),
                           labelColor: "#b54708",
                           valueColor: "#b54708",
                           valueWeight: 700,
-                        },
-                        {
-                          key: "current-debt",
-                          label: t("dashboard.totalDebtLabel"),
-                          value: formatSignedCurrency(-row.debtCurrent, currencyFormatter),
-                          labelColor: "#667085",
-                          valueColor: "#c92a2a",
-                          valueWeight: 800,
-                        },
-                        ...(row.installmentBalance > 0.004
-                          ? [{
-                            key: "installment-balance",
-                            label: t("dashboard.futureInstallmentsLabel"),
-                            value: formatSignedCurrency(-row.installmentBalance, currencyFormatter),
-                            labelColor: "#98a2b3",
-                            valueColor: "#667085",
-                            valueWeight: 700,
                           }]
                           : []),
                       ])}
