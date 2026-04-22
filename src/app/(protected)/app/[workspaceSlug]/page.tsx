@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Grid, LoadingOverlay, Stack } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 
@@ -9,6 +9,7 @@ import { DashboardDistributionPanel } from "@/features/dashboard/components/dash
 import { DashboardFinancialMethodsCard } from "@/features/dashboard/components/dashboard-financial-methods-card";
 import { DashboardHeaderCard } from "@/features/dashboard/components/dashboard-header-card";
 import { DashboardOnboardingCtaCard } from "@/features/dashboard/components/dashboard-onboarding-cta-card";
+import { DashboardPrimaryInsightCard } from "@/features/dashboard/components/dashboard-primary-insight-card";
 import { DashboardPeriodKpis } from "@/features/dashboard/components/dashboard-period-kpis";
 import { DashboardTypeSummarySection } from "@/features/dashboard/components/dashboard-type-summary-section";
 import { LinkedWorkspaceSummaryCard } from "@/features/dashboard/components/linked-workspace-summary-card";
@@ -17,6 +18,7 @@ import { useDashboardViewModel } from "@/features/dashboard/hooks/use-dashboard-
 import { useDashboardResponsive } from "@/features/dashboard/lib/dashboard-responsive";
 import { buildMonthOptions } from "@/features/i18n/formatting";
 import { useI18n } from "@/features/i18n/provider";
+import { useInsightsV2 } from "@/features/insights/use-insights-v2";
 import { canManageWorkspaceSettings } from "@/features/workspace/permissions";
 import { buildWorkspaceHref } from "@/features/workspace/routing";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
@@ -39,13 +41,16 @@ export default function DashboardPage() {
     () => (demoWorkspace ? buildWorkspaceHref(demoWorkspace.slug) : null),
     [demoWorkspace],
   );
+  const insightsHref = useMemo(() => buildWorkspaceHref(workspace.slug, "/insights"), [workspace.slug]);
 
   const {
     categories,
     budgetItems,
     transactionRows,
     allTransactionsImpact,
-    pendingInstallmentsByMethodId,
+    nextMonthCommitmentByMethodId,
+    previousMonthStatementByMethodId,
+    currentMonthPaymentsByMethodId,
     paymentMethodRows,
     linkedWorkspacePaymentMethodBalances,
     startYear,
@@ -72,6 +77,30 @@ export default function DashboardPage() {
       maximumFractionDigits: showCents ? 2 : 0,
     });
   }, [currencyCode, intlLocale, showCents]);
+
+  const {
+    isLoading: isLoadingInsights,
+    errorMessage: insightsErrorMessage,
+    result: insightsResult,
+  } = useInsightsV2({
+    supabase,
+    workspaceId: workspace.id,
+    intlLocale,
+    t,
+    referenceDate: now,
+  });
+
+  useEffect(() => {
+    if (!insightsErrorMessage) {
+      return;
+    }
+
+    notifications.show({
+      color: "red",
+      title: t("insightsV2.notifications.loadErrorTitle"),
+      message: insightsErrorMessage,
+    });
+  }, [insightsErrorMessage, t]);
 
   const percentageFormatter = useMemo(() => {
     return new Intl.NumberFormat(intlLocale, {
@@ -126,7 +155,9 @@ export default function DashboardPage() {
     budgetItems,
     transactionRows,
     allTransactionsImpact,
-    pendingInstallmentsByMethodId,
+    nextMonthCommitmentByMethodId,
+    previousMonthStatementByMethodId,
+    currentMonthPaymentsByMethodId,
     paymentMethodRows,
     linkedWorkspacePaymentMethodBalances,
     currencyFormatter,
@@ -221,6 +252,13 @@ export default function DashboardPage() {
           onCreateDemoWorkspace={() => {
             void handleCreateDemoWorkspace();
           }}
+          t={t}
+        />
+      ) : !isLoadingInsights && insightsResult.primaryInsight ? (
+        <DashboardPrimaryInsightCard
+          insight={insightsResult.primaryInsight}
+          insightsHref={insightsHref}
+          isMobile={isMobile}
           t={t}
         />
       ) : null}
