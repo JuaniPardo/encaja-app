@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import { Group, Paper, Stack, Text, UnstyledButton } from "@mantine/core";
 
@@ -21,6 +22,81 @@ export function DashboardFinancialMethodsCard({
   paymentMethodDrilldownHref,
   t,
 }: DashboardFinancialMethodsCardProps) {
+  const creditMetricsGridColumns = "minmax(0, 1fr) minmax(0, 2fr)";
+  const creditMetricsRowsGap = isMobile ? 8 : 12;
+  const creditFinancialBlockPadding = isMobile ? 8 : 14;
+  const creditMetricsInnerGap = isMobile ? 8 : 12;
+
+  type CreditMetricRow = {
+    key: string;
+    label: string;
+    value: string;
+    labelColor: string;
+    valueColor: string;
+    valueWeight: number;
+  };
+
+  const summaryMetrics: CreditMetricRow[] = [
+    {
+      key: "month-consumption",
+      label: t("dashboard.statementCurrentLabel"),
+      value: formatSignedCurrency(-financialSummary.creditCardMonthConsumptionTotal, currencyFormatter),
+      labelColor: "#667085",
+      valueColor: "#475467",
+      valueWeight: 700,
+    },
+    {
+      key: "next-month-installments",
+      label: t("dashboard.nextMonthCommitmentLabel"),
+      value: formatSignedCurrency(-financialSummary.creditCardNextMonthInstallmentsTotal, currencyFormatter),
+      labelColor: "#b54708",
+      valueColor: "#b54708",
+      valueWeight: 700,
+    },
+    {
+      key: "current-debt",
+      label: t("dashboard.totalDebtLabel"),
+      value: formatSignedCurrency(-financialSummary.creditCardDebtCurrentTotal, currencyFormatter),
+      labelColor: "#667085",
+      valueColor: financialSummary.creditCardDebtCurrentTotal > 0.004 ? "#c92a2a" : "#475467",
+      valueWeight: 800,
+    },
+  ];
+
+  if (financialSummary.creditCardInstallmentBalanceTotal > 0.004) {
+    summaryMetrics.push({
+      key: "installment-balance",
+      label: t("dashboard.futureInstallmentsLabel"),
+      value: formatSignedCurrency(-financialSummary.creditCardInstallmentBalanceTotal, currencyFormatter),
+      labelColor: "#98a2b3",
+      valueColor: "#667085",
+      valueWeight: 700,
+    });
+  }
+
+  const renderCreditMetrics = (rows: CreditMetricRow[]) => (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: `minmax(0, 1fr) minmax(0, auto)`,
+        columnGap: creditMetricsInnerGap,
+        rowGap: 2,
+        alignItems: "center",
+      }}
+    >
+      {rows.map((metric) => (
+        <Fragment key={metric.key}>
+          <Text size="10px" fw={600} c={metric.labelColor}>
+            {metric.label}
+          </Text>
+          <Text size="10px" fw={metric.valueWeight} c={metric.valueColor} ta="right">
+            {metric.value}
+          </Text>
+        </Fragment>
+      ))}
+    </div>
+  );
+
   return (
     <Paper
       withBorder
@@ -112,41 +188,25 @@ export function DashboardFinancialMethodsCard({
             <Text size="xs" fw={700} c="#475467">
               {t("dashboard.creditCardsSectionTitle")}
             </Text>
-            <Group justify="space-between" align="flex-start" wrap="nowrap">
-              <Stack gap={2}>
-                <Text size="10px" fw={600} c="#667085">
-                  {t("dashboard.statementCurrentLabel")}
-                </Text>
-                <Text size="10px" fw={600} c="#b54708">
-                  {t("dashboard.nextMonthCommitmentLabel")}
-                </Text>
-                <Text size="10px" fw={600} c="#667085">
-                  {t("dashboard.totalDebtLabel")}
-                </Text>
-                {financialSummary.creditCardInstallmentBalanceTotal > 0.004 ? (
-                  <Text size="10px" fw={600} c="#98a2b3">
-                    {t("dashboard.futureInstallmentsLabel")}
-                  </Text>
-                ) : null}
-              </Stack>
-
-              <Stack gap={2} align="flex-end">
-                <Text size="xs" fw={700} c="#475467">
-                  {formatSignedCurrency(-financialSummary.creditCardMonthConsumptionTotal, currencyFormatter)}
-                </Text>
-                <Text size="xs" fw={700} c="#b54708">
-                  {formatSignedCurrency(-financialSummary.creditCardNextMonthInstallmentsTotal, currencyFormatter)}
-                </Text>
-                <Text size="xs" fw={800} c={financialSummary.creditCardDebtCurrentTotal > 0.004 ? "#c92a2a" : "#475467"}>
-                  {formatSignedCurrency(-financialSummary.creditCardDebtCurrentTotal, currencyFormatter)}
-                </Text>
-                {financialSummary.creditCardInstallmentBalanceTotal > 0.004 ? (
-                  <Text size="xs" fw={700} c="#667085">
-                    {formatSignedCurrency(-financialSummary.creditCardInstallmentBalanceTotal, currencyFormatter)}
-                  </Text>
-                ) : null}
-              </Stack>
-            </Group>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: creditMetricsGridColumns,
+                gap: creditMetricsRowsGap,
+                alignItems: "stretch",
+              }}
+            >
+              <div aria-hidden="true" />
+              <div
+                style={{
+                  borderLeft: "1px solid #f1d0d0",
+                  paddingLeft: creditFinancialBlockPadding,
+                  minWidth: 0,
+                }}
+              >
+                {renderCreditMetrics(summaryMetrics)}
+              </div>
+            </div>
           </Stack>
 
           {financialSummary.creditCardRows.length === 0 ? (
@@ -169,13 +229,19 @@ export function DashboardFinancialMethodsCard({
                     padding: isMobile ? "6px 8px" : "6px 10px",
                   }}
                 >
-                  <Group justify="space-between" align="stretch" wrap="nowrap" gap={isMobile ? 8 : 12}>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: creditMetricsGridColumns,
+                      gap: creditMetricsRowsGap,
+                      alignItems: "stretch",
+                    }}
+                  >
                     <Stack
                       gap={2}
                       justify="center"
                       style={{
                         minWidth: 0,
-                        flex: 1,
                         paddingLeft: isMobile ? 2 : 6,
                         paddingRight: isMobile ? 4 : 8,
                       }}
@@ -191,51 +257,51 @@ export function DashboardFinancialMethodsCard({
                       </Text>
                     </Stack>
 
-                    <Group
-                      align="center"
-                      wrap="nowrap"
-                      gap={isMobile ? 8 : 14}
+                    <div
                       style={{
                         borderLeft: "1px solid #f1d0d0",
-                        paddingLeft: isMobile ? 8 : 14,
-                        minWidth: isMobile ? 170 : 250,
+                        paddingLeft: creditFinancialBlockPadding,
+                        minWidth: 0,
                       }}
                     >
-                      <Stack gap={1}>
-                        <Text size="10px" fw={600} c="#667085">
-                          {t("dashboard.statementCurrentLabel")}
-                        </Text>
-                        <Text size="10px" fw={600} c="#b54708">
-                          {t("dashboard.nextMonthCommitmentLabel")}
-                        </Text>
-                        <Text size="10px" fw={600} c="#667085">
-                          {t("dashboard.totalDebtLabel")}
-                        </Text>
-                        {row.installmentBalance > 0.004 ? (
-                          <Text size="10px" fw={600} c="#98a2b3">
-                            {t("dashboard.futureInstallmentsLabel")}
-                          </Text>
-                        ) : null}
-                      </Stack>
-
-                      <Stack gap={1} align="flex-end" style={{ minWidth: 0, textAlign: "right" }}>
-                        <Text size="10px" fw={700} c="#475467">
-                          {formatSignedCurrency(-row.monthConsumption, currencyFormatter)}
-                        </Text>
-                        <Text size="10px" fw={700} c="#b54708">
-                          {formatSignedCurrency(-row.nextMonthInstallments, currencyFormatter)}
-                        </Text>
-                        <Text size="10px" fw={800} c="#c92a2a">
-                          {formatSignedCurrency(-row.debtCurrent, currencyFormatter)}
-                        </Text>
-                        {row.installmentBalance > 0.004 ? (
-                          <Text size="10px" fw={700} c="#667085">
-                            {formatSignedCurrency(-row.installmentBalance, currencyFormatter)}
-                          </Text>
-                        ) : null}
-                      </Stack>
-                    </Group>
-                  </Group>
+                      {renderCreditMetrics([
+                        {
+                          key: "month-consumption",
+                          label: t("dashboard.statementCurrentLabel"),
+                          value: formatSignedCurrency(-row.monthConsumption, currencyFormatter),
+                          labelColor: "#667085",
+                          valueColor: "#475467",
+                          valueWeight: 700,
+                        },
+                        {
+                          key: "next-month-installments",
+                          label: t("dashboard.nextMonthCommitmentLabel"),
+                          value: formatSignedCurrency(-row.nextMonthInstallments, currencyFormatter),
+                          labelColor: "#b54708",
+                          valueColor: "#b54708",
+                          valueWeight: 700,
+                        },
+                        {
+                          key: "current-debt",
+                          label: t("dashboard.totalDebtLabel"),
+                          value: formatSignedCurrency(-row.debtCurrent, currencyFormatter),
+                          labelColor: "#667085",
+                          valueColor: "#c92a2a",
+                          valueWeight: 800,
+                        },
+                        ...(row.installmentBalance > 0.004
+                          ? [{
+                            key: "installment-balance",
+                            label: t("dashboard.futureInstallmentsLabel"),
+                            value: formatSignedCurrency(-row.installmentBalance, currencyFormatter),
+                            labelColor: "#98a2b3",
+                            valueColor: "#667085",
+                            valueWeight: 700,
+                          }]
+                          : []),
+                      ])}
+                    </div>
+                  </div>
                 </UnstyledButton>
               ))}
             </Stack>
