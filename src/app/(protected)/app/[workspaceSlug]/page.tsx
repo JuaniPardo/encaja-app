@@ -322,7 +322,7 @@ export default function DashboardPage() {
               isMobile={isMobile}
               isTablet={isTablet}
               cardPadding={cardPadding}
-              distributionColumns={distributionColumns}
+              distributionColumns={1}
               donutData={donutData}
               donutSize={donutSize}
               donutThickness={donutThickness}
