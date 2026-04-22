@@ -250,27 +250,24 @@ export function useDashboardMetrics({
     const creditCardRows = activeIncludedRows
       .filter((row) => row.type === "credit_card")
       .map((row) => {
-        const outstandingBalance = Math.max(0, -row.currentBalance);
-        const totalInstallments = roundMoney(futureInstallmentsByMethodId.get(row.id) ?? 0);
-        const debtTotal = roundMoney(outstandingBalance + totalInstallments);
-        const statementCurrent = roundMoney(currentStatementByMethodId.get(row.id) ?? 0);
-        const nextMonthCommitment = roundMoney(
-          statementCurrent + (nextMonthCommitmentByMethodId.get(row.id) ?? 0),
-        );
+        const debtCurrent = roundMoney(Math.max(0, -row.currentBalance));
+        const monthConsumption = roundMoney(currentStatementByMethodId.get(row.id) ?? 0);
+        const nextMonthInstallments = roundMoney(nextMonthCommitmentByMethodId.get(row.id) ?? 0);
+        const installmentBalance = roundMoney(futureInstallmentsByMethodId.get(row.id) ?? 0);
 
         return {
           id: row.id,
           name: row.name,
           type: "credit_card" as const,
-          debtTotal,
-          statementCurrent,
-          nextMonthCommitment,
-          totalInstallments,
+          debtCurrent,
+          monthConsumption,
+          nextMonthInstallments,
+          installmentBalance,
         };
       })
       .sort((a, b) => {
-        if (b.debtTotal !== a.debtTotal) {
-          return b.debtTotal - a.debtTotal;
+        if (b.debtCurrent !== a.debtCurrent) {
+          return b.debtCurrent - a.debtCurrent;
         }
         return localeCompareByName(a.name, b.name, locale);
       });
@@ -281,15 +278,17 @@ export function useDashboardMetrics({
     const availabilityTotalMonthImpact = roundMoney(
       availabilityRows.reduce((sum, row) => sum + row.monthImpact, 0),
     );
-    const creditCardDebtTotal = roundMoney(creditCardRows.reduce((sum, row) => sum + row.debtTotal, 0));
-    const creditCardStatementTotal = roundMoney(
-      creditCardRows.reduce((sum, row) => sum + row.statementCurrent, 0),
+    const creditCardDebtCurrentTotal = roundMoney(
+      creditCardRows.reduce((sum, row) => sum + row.debtCurrent, 0),
     );
-    const creditCardNextMonthCommitmentTotal = roundMoney(
-      creditCardRows.reduce((sum, row) => sum + row.nextMonthCommitment, 0),
+    const creditCardMonthConsumptionTotal = roundMoney(
+      creditCardRows.reduce((sum, row) => sum + row.monthConsumption, 0),
     );
-    const creditCardTotalInstallments = roundMoney(
-      creditCardRows.reduce((sum, row) => sum + row.totalInstallments, 0),
+    const creditCardNextMonthInstallmentsTotal = roundMoney(
+      creditCardRows.reduce((sum, row) => sum + row.nextMonthInstallments, 0),
+    );
+    const creditCardInstallmentBalanceTotal = roundMoney(
+      creditCardRows.reduce((sum, row) => sum + row.installmentBalance, 0),
     );
     const includedActiveCount = availabilityRows.length + creditCardRows.length;
     const excludedActiveCount = paymentMethodRows.filter((row) => row.is_active && !row.include_in_balance).length;
@@ -300,10 +299,10 @@ export function useDashboardMetrics({
       creditCardRows,
       availabilityTotalBalance,
       availabilityTotalMonthImpact,
-      creditCardDebtTotal,
-      creditCardStatementTotal,
-      creditCardNextMonthCommitmentTotal,
-      creditCardTotalInstallments,
+      creditCardDebtCurrentTotal,
+      creditCardMonthConsumptionTotal,
+      creditCardNextMonthInstallmentsTotal,
+      creditCardInstallmentBalanceTotal,
       includedActiveCount,
       excludedActiveCount,
       inactiveCount,

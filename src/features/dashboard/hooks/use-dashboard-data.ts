@@ -204,18 +204,15 @@ export function useDashboardData({
         .gte("effective_date", end)
         .not("payment_method_id", "is", null);
 
-      const nextMonthCommitmentFilter = [
-        `and(effective_date.gte.${nextPeriod.start},effective_date.lt.${nextPeriod.end})`,
-        `and(effective_date.is.null,transaction_date.gte.${nextPeriod.start},transaction_date.lt.${nextPeriod.end})`,
-      ].join(",");
-
       const nextMonthCommitmentPromise = supabase
         .from("transactions")
         .select("payment_method_id, amount")
         .eq("workspace_id", workspaceId)
         .eq("type", "expense")
-        .not("payment_method_id", "is", null)
-        .or(nextMonthCommitmentFilter);
+        .not("installment_purchase_id", "is", null)
+        .gte("effective_date", nextPeriod.start)
+        .lt("effective_date", nextPeriod.end)
+        .not("payment_method_id", "is", null);
 
       const linkedWorkspaceSummaryPromise = supabase.rpc(
         "list_linked_workspace_payment_method_balances",

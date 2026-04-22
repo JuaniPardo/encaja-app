@@ -121,7 +121,9 @@ export async function loadInsightsContext({
       .eq("workspace_id", workspaceId)
       .in("payment_method_id", creditCards.map((row) => row.id))
       .eq("type", "expense")
-      .or(buildTransactionPeriodFilter(nextPeriod.start, nextPeriod.end));
+      .not("installment_purchase_id", "is", null)
+      .gte("effective_date", nextPeriod.start)
+      .lt("effective_date", nextPeriod.end);
 
     if (nextMonthCommitmentResponse.error) {
       throw nextMonthCommitmentResponse.error;
@@ -179,10 +181,6 @@ export async function loadInsightsContext({
     }
   }
 
-  // Next-month commitment includes what is already consumed in the current statement
-  // plus expenses that are already positioned in next period.
-  creditCardNextMonthCommitment = roundMoney(creditCardNextMonthCommitment + creditCardExpenseCurrentMonth);
-
   const balanceByMethodId = new Map<string, number>();
   for (const method of creditCards) {
     balanceByMethodId.set(method.id, parseAmountValue(method.current_balance));
@@ -219,6 +217,6 @@ export async function loadInsightsContext({
     creditCardPaymentsCurrentMonth: roundMoney(creditCardPaymentsCurrentMonth),
     creditCardDebtTotal: roundMoney(creditCardDebtTotal),
     creditCardCurrentStatement: roundMoney(creditCardExpenseCurrentMonth),
-    creditCardNextMonthCommitment: creditCardNextMonthCommitment,
+    creditCardNextMonthCommitment: roundMoney(creditCardNextMonthCommitment),
   };
 }
