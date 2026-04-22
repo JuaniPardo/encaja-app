@@ -26,6 +26,7 @@ export function DashboardFinancialMethodsCard({
   const creditMetricsRowsGap = isMobile ? 8 : 12;
   const creditFinancialBlockPadding = isMobile ? 8 : 14;
   const creditMetricsInnerGap = isMobile ? 8 : 12;
+  const creditMetricsRowGap = isMobile ? 8 : 10;
 
   type CreditMetricRow = {
     key: string;
@@ -42,16 +43,16 @@ export function DashboardFinancialMethodsCard({
         display: "grid",
         gridTemplateColumns: `minmax(0, 1fr) minmax(0, auto)`,
         columnGap: creditMetricsInnerGap,
-        rowGap: 2,
+        rowGap: creditMetricsRowGap,
         alignItems: "center",
       }}
     >
       {rows.map((metric) => (
         <Fragment key={metric.key}>
-          <Text size="10px" fw={600} c={metric.labelColor}>
+          <Text size={isMobile ? "11px" : "12px"} fw={600} c={metric.labelColor}>
             {metric.label}
           </Text>
-          <Text size="10px" fw={metric.valueWeight} c={metric.valueColor} ta="right">
+          <Text size={isMobile ? "11px" : "12px"} fw={metric.valueWeight} c={metric.valueColor} ta="right">
             {metric.value}
           </Text>
         </Fragment>
@@ -177,7 +178,7 @@ export function DashboardFinancialMethodsCard({
                       display: "grid",
                       gridTemplateColumns: creditMetricsGridColumns,
                       gap: creditMetricsRowsGap,
-                      alignItems: "stretch",
+                      alignItems: "center",
                     }}
                   >
                     <Stack
@@ -205,6 +206,9 @@ export function DashboardFinancialMethodsCard({
                         borderLeft: "1px solid #f1d0d0",
                         paddingLeft: creditFinancialBlockPadding,
                         minWidth: 0,
+                        height: "100%",
+                        display: "flex",
+                        alignItems: "center",
                       }}
                     >
                       {renderCreditMetrics([
@@ -228,8 +232,8 @@ export function DashboardFinancialMethodsCard({
                           key: "month-consumption",
                           label: t("dashboard.statementCurrentLabel"),
                           value: formatSignedCurrency(-row.monthConsumption, currencyFormatter),
-                          labelColor: "#667085",
-                          valueColor: "#1f2937",
+                          labelColor: "#c92a2a",
+                          valueColor: "#c92a2a",
                           valueWeight: 800,
                         },
                         ...(row.nextMonthInstallments > 0.004
