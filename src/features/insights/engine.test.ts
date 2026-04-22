@@ -19,26 +19,24 @@ function buildBaseContext(overrides: Partial<InsightsContext> = {}): InsightsCon
     previousPeriod: { start: "2026-03-01", end: "2026-04-01" },
     nextPeriod: { start: "2026-05-01", end: "2026-06-01" },
     creditCardCount: 1,
-    creditCardDueDatePassed: true,
     incomeCurrentMonth: 1_000_000,
     creditCardExpenseCurrentMonth: 400_000,
     creditCardExpensePreviousMonth: 300_000,
     creditCardPaymentsCurrentMonth: 400_000,
-    creditCardOpeningDebt: 350_000,
     creditCardDebtTotal: 200_000,
     creditCardCurrentStatement: 400_000,
-    creditCardNextMonthInstallments: 100_000,
+    creditCardNextMonthCommitment: 100_000,
     ...overrides,
   };
 }
 
 describe("buildInsightsResult", () => {
-  it("prioritizes unpaid card insight when due date passed and no payment exists", () => {
+  it("prioritizes unpaid card insight when no payment exists", () => {
     const result = buildInsightsResult({
       context: buildBaseContext({
         creditCardExpenseCurrentMonth: 520_000,
+        creditCardExpensePreviousMonth: 520_000,
         creditCardPaymentsCurrentMonth: 0,
-        creditCardOpeningDebt: 520_000,
         creditCardCurrentStatement: 520_000,
       }),
       t,
@@ -53,24 +51,87 @@ describe("buildInsightsResult", () => {
     const result = buildInsightsResult({
       context: buildBaseContext({
         creditCardExpenseCurrentMonth: 500_000,
+        creditCardExpensePreviousMonth: 500_000,
         creditCardPaymentsCurrentMonth: 200_000,
-        creditCardOpeningDebt: 500_000,
         creditCardCurrentStatement: 500_000,
       }),
       t,
       currencyFormatter,
     });
 
-    const partialInsight = result.allInsights.find((insight) => insight.kind === "partial_payment");
-    expect(partialInsight?.severity).toBe("warning");
+    const rolledDebtInsight = result.allInsights.find((insight) => insight.kind === "rolled_debt");
+    expect(rolledDebtInsight?.severity).toBe("warning");
+  });
+
+  it("detects rolled debt from payment vs previous month card spending", () => {
+    const result = buildInsightsResult({
+      context: buildBaseContext({
+        creditCardExpensePreviousMonth: 880_000,
+        creditCardPaymentsCurrentMonth: 800_000,
+      }),
+      t,
+      currencyFormatter,
+    });
+
+    const rolledDebtInsight = result.allInsights.find((insight) => insight.kind === "rolled_debt");
+    expect(rolledDebtInsight).toBeDefined();
+  });
+
+  it("prioritizes next month commitment insight when future commitment is high", () => {
+    const result = buildInsightsResult({
+      context: buildBaseContext({
+        incomeCurrentMonth: 1_000_000,
+        creditCardCurrentStatement: 180_000,
+        creditCardDebtTotal: 220_000,
+        creditCardNextMonthCommitment: 700_000,
+      }),
+      t,
+      currencyFormatter,
+    });
+
+    expect(result.primaryInsight?.kind).toBe("next_month_commitment");
+  });
+
+  it("does not flag next month commitment when debt is current-month only", () => {
+    const result = buildInsightsResult({
+      context: buildBaseContext({
+        creditCardCurrentStatement: 650_000,
+        creditCardNextMonthCommitment: 0,
+      }),
+      t,
+      currencyFormatter,
+    });
+
+    const nextMonthCommitmentInsight = result.allInsights.find(
+      (insight) => insight.kind === "next_month_commitment",
+    );
+    expect(nextMonthCommitmentInsight).toBeUndefined();
+  });
+
+  it("returns stable insight when card has no debt and no commitments", () => {
+    const result = buildInsightsResult({
+      context: buildBaseContext({
+        creditCardExpenseCurrentMonth: 0,
+        creditCardExpensePreviousMonth: 0,
+        creditCardPaymentsCurrentMonth: 0,
+        creditCardDebtTotal: 0,
+        creditCardCurrentStatement: 0,
+        creditCardNextMonthCommitment: 0,
+      }),
+      t,
+      currencyFormatter,
+    });
+
+    expect(result.primaryInsight?.kind).toBe("stable");
+    expect(result.primaryInsight?.severity).toBe("info");
   });
 
   it("returns full payment positive insight when statement is fully paid", () => {
     const result = buildInsightsResult({
       context: buildBaseContext({
         creditCardExpenseCurrentMonth: 450_000,
+        creditCardExpensePreviousMonth: 430_000,
         creditCardPaymentsCurrentMonth: 450_000,
-        creditCardOpeningDebt: 430_000,
         creditCardCurrentStatement: 450_000,
       }),
       t,
@@ -84,10 +145,8 @@ describe("buildInsightsResult", () => {
   it("prioritizes debt over high usage when both are present", () => {
     const result = buildInsightsResult({
       context: buildBaseContext({
-        creditCardDueDatePassed: false,
         incomeCurrentMonth: 900_000,
         creditCardExpenseCurrentMonth: 950_000,
-        creditCardOpeningDebt: 0,
         creditCardDebtTotal: 1_050_000,
       }),
       t,

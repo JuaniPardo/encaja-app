@@ -77,14 +77,28 @@ export type FinancialMethodRow = {
   type: PaymentMethodType;
   currentBalance: number;
   monthImpact: number;
-  pendingInstallments: number;
+};
+
+export type FinancialCreditCardRow = {
+  id: string;
+  name: string;
+  type: "credit_card";
+  debtTotal: number;
+  statementCurrent: number;
+  nextMonthCommitment: number;
+  totalInstallments: number;
 };
 
 export type FinancialSummary = {
-  activeIncludedRows: FinancialMethodRow[];
-  totalBalance: number;
-  totalMonthImpact: number;
-  totalPendingInstallments: number;
+  availabilityRows: FinancialMethodRow[];
+  creditCardRows: FinancialCreditCardRow[];
+  availabilityTotalBalance: number;
+  availabilityTotalMonthImpact: number;
+  creditCardDebtTotal: number;
+  creditCardStatementTotal: number;
+  creditCardNextMonthCommitmentTotal: number;
+  creditCardTotalInstallments: number;
+  includedActiveCount: number;
   excludedActiveCount: number;
   inactiveCount: number;
 };

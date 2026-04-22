@@ -42,13 +42,11 @@ export type InsightsContext = {
   previousPeriod: InsightPeriodRange;
   nextPeriod: InsightPeriodRange;
   creditCardCount: number;
-  creditCardDueDatePassed: boolean;
   incomeCurrentMonth: number;
   creditCardExpenseCurrentMonth: number;
   creditCardExpensePreviousMonth: number;
   creditCardPaymentsCurrentMonth: number;
-  creditCardOpeningDebt: number;
   creditCardDebtTotal: number;
   creditCardCurrentStatement: number;
-  creditCardNextMonthInstallments: number;
+  creditCardNextMonthCommitment: number;
 };

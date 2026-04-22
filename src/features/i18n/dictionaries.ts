@@ -114,14 +114,21 @@ const dictionaries = {
     dashboard: {
       financialDashboard: "Tablero financiero",
       financialMethods: "Medios financieros",
+      availabilitySectionTitle: "Disponibilidad",
+      availabilitySectionHint: "Lo que tengo",
+      noAvailabilityMethods: "No hay medios líquidos activos en balance.",
+      creditCardsSectionTitle: "Tarjetas de crédito",
+      noCreditCardsInBalance: "No hay tarjetas de crédito activas en balance.",
       totalBalance: "Balance total",
       monthImpact: "Este mes",
       monthlyMovementLabel: "este mes",
       pendingInstallments: "Compromisos futuros",
       pendingInstallmentsShort: "pendiente",
       totalDebtLabel: "Deuda total",
-      monthImpactSummaryLabel: "Este mes (resumen)",
-      futureInstallmentsLabel: "A futuro (cuotas)",
+      monthImpactSummaryLabel: "A pagar este mes",
+      statementCurrentLabel: "A pagar este mes",
+      nextMonthCommitmentLabel: "Compromiso próximo mes",
+      futureInstallmentsLabel: "Total en cuotas",
       futureCommitmentsExclusionHint: "No se incluyen en la deuda total.",
       activeInBalance: "{{count}} activos en balance",
       positivesCount: "{{count}} positivos",
@@ -186,6 +193,7 @@ const dictionaries = {
         loadOnboardingSignalsError: "No pudimos cargar el estado inicial del dashboard",
         loadPeriodTransactionsError: "No pudimos cargar transacciones del período",
         loadPendingInstallmentsError: "No pudimos cargar cuotas pendientes",
+        loadNextMonthCommitmentError: "No pudimos cargar compromisos del próximo mes",
         loadExternalSummariesError: "No pudimos cargar resúmenes externos",
         loadBudgetPeriodError: "No pudimos cargar el período presupuestario",
         loadPeriodBudgetError: "No pudimos cargar presupuesto del período",
@@ -306,6 +314,15 @@ const dictionaries = {
       dashboard: {
         slotTitle: "Insight principal",
         viewAll: "Ver todos los insights",
+        open: "Abrir insights",
+        kindBadge: {
+          pendingDebt: "Deuda pendiente",
+          highDebt: "Deuda alta",
+          highUsage: "Uso alto",
+          futureCommitment: "Compromiso futuro",
+          controlled: "Controlado",
+          attention: "Atención",
+        },
       },
       modules: {
         creditCard: {
@@ -315,11 +332,15 @@ const dictionaries = {
           insights: {
             unpaid: {
               title: "Todavía no pagaste tu tarjeta este mes",
-              message: "Revisá este vencimiento para evitar seguir acumulando deuda.",
+              message: "Esto reduce el dinero disponible para este mes.",
             },
             partialPayment: {
               title: "Hiciste un pago parcial de tu tarjeta",
               message: "Todavía estás arrastrando saldo pendiente al próximo período.",
+            },
+            rolledDebt: {
+              title: "Arrastraste deuda de tu tarjeta al mes actual",
+              message: "Esto reduce el dinero disponible para este mes.",
             },
             fullPayment: {
               title: "Pagaste tu tarjeta completa este mes",
@@ -340,16 +361,16 @@ const dictionaries = {
             statementPressure: {
               alertTitle: "El resumen actual de tarjeta está muy alto",
               alertMessage: "Todavía tenés {{statementAmount}} pendientes para cerrar el mes.",
-              warningTitle: "El resumen actual de tarjeta presiona tu ingreso del mes",
+              warningTitle: "El resumen actual de tarjeta sigue alto",
               warningMessage: "Todavía tenés {{statementAmount}} pendientes en tu resumen actual.",
             },
             nextCommitment: {
-              alertTitle: "Más de la mitad de tus ingresos del próximo mes ya están comprometidos",
-              alertMessage: "Tus cuotas activas del próximo mes ya suman {{amount}}.",
-              warningTitle: "Una parte importante del próximo mes ya está comprometida en cuotas",
-              warningMessage: "Tus cuotas activas del próximo mes ya suman {{amount}}.",
-              infoTitle: "Tenés cuotas activas para el próximo mes",
-              infoMessage: "Ya hay {{amount}} comprometidos en cuotas para el próximo mes.",
+              alertTitle: "Ya comprometiste una parte importante de tus ingresos del próximo mes en la tarjeta",
+              alertMessage: "Ese pago representa una parte significativa de tu ingreso mensual ({{amount}}).",
+              warningTitle: "Ya comprometiste una parte importante de tus ingresos del próximo mes en la tarjeta",
+              warningMessage: "Ese pago representa una parte significativa de tu ingreso mensual ({{amount}}).",
+              infoTitle: "Ya comprometiste parte de tus ingresos del próximo mes en la tarjeta",
+              infoMessage: "Ese pago ya ocupa una parte de tu ingreso mensual ({{amount}}).",
             },
             acceleration: {
               title: "Aceleraste el gasto con tarjeta",
@@ -1234,14 +1255,21 @@ const dictionaries = {
     dashboard: {
       financialDashboard: "Financial dashboard",
       financialMethods: "Financial methods",
+      availabilitySectionTitle: "Availability",
+      availabilitySectionHint: "What I have",
+      noAvailabilityMethods: "There are no active liquid methods in balance.",
+      creditCardsSectionTitle: "Credit cards",
+      noCreditCardsInBalance: "There are no active credit cards in balance.",
       totalBalance: "Total balance",
       monthImpact: "This month",
       monthlyMovementLabel: "this month",
       pendingInstallments: "Future commitments",
       pendingInstallmentsShort: "pending",
       totalDebtLabel: "Total debt",
-      monthImpactSummaryLabel: "This month (summary)",
-      futureInstallmentsLabel: "Future (installments)",
+      monthImpactSummaryLabel: "Due this month",
+      statementCurrentLabel: "Due this month",
+      nextMonthCommitmentLabel: "Next month commitment",
+      futureInstallmentsLabel: "Installments total",
       futureCommitmentsExclusionHint: "Not included in total debt.",
       activeInBalance: "{{count}} active in balance",
       positivesCount: "{{count}} positive",
@@ -1306,6 +1334,7 @@ const dictionaries = {
         loadOnboardingSignalsError: "We couldn't load dashboard setup status",
         loadPeriodTransactionsError: "We couldn't load period transactions",
         loadPendingInstallmentsError: "We couldn't load pending installments",
+        loadNextMonthCommitmentError: "We couldn't load next-month commitments",
         loadExternalSummariesError: "We couldn't load external summaries",
         loadBudgetPeriodError: "We couldn't load budget period",
         loadPeriodBudgetError: "We couldn't load period budget",
@@ -1428,6 +1457,15 @@ const dictionaries = {
       dashboard: {
         slotTitle: "Primary insight",
         viewAll: "View all insights",
+        open: "Open insights",
+        kindBadge: {
+          pendingDebt: "Pending debt",
+          highDebt: "High debt",
+          highUsage: "High usage",
+          futureCommitment: "Future commitment",
+          controlled: "Controlled",
+          attention: "Attention",
+        },
       },
       modules: {
         creditCard: {
@@ -1437,11 +1475,15 @@ const dictionaries = {
           insights: {
             unpaid: {
               title: "You still haven't paid your card this month",
-              message: "Review this due date to avoid accumulating more debt.",
+              message: "This reduces the money available for this month.",
             },
             partialPayment: {
               title: "You made a partial card payment",
               message: "You are still carrying pending balance into the next period.",
+            },
+            rolledDebt: {
+              title: "You carried card debt into the current month",
+              message: "This reduces the money available for this month.",
             },
             fullPayment: {
               title: "You paid your card in full this month",
@@ -1462,16 +1504,16 @@ const dictionaries = {
             statementPressure: {
               alertTitle: "Your current card statement is very high",
               alertMessage: "You still have {{statementAmount}} pending in the current statement.",
-              warningTitle: "Your current card statement is putting pressure on this month",
+              warningTitle: "Your current card statement is still high",
               warningMessage: "You still have {{statementAmount}} pending in your current statement.",
             },
             nextCommitment: {
-              alertTitle: "More than half of next month's income is already committed",
-              alertMessage: "Your active installments for next month already total {{amount}}.",
-              warningTitle: "A significant part of next month is already committed in installments",
-              warningMessage: "Your active installments for next month already total {{amount}}.",
-              infoTitle: "You have active installments for next month",
-              infoMessage: "{{amount}} are already committed in next month's installments.",
+              alertTitle: "You already committed an important part of next month's income to your card",
+              alertMessage: "That payment represents a significant part of your monthly income ({{amount}}).",
+              warningTitle: "You already committed an important part of next month's income to your card",
+              warningMessage: "That payment represents a significant part of your monthly income ({{amount}}).",
+              infoTitle: "You already committed part of next month's income to your card",
+              infoMessage: "That payment already takes a share of your monthly income ({{amount}}).",
             },
             acceleration: {
               title: "Card spending accelerated",
