@@ -95,7 +95,8 @@ describe("buildInsightsResult", () => {
   it("does not flag next month commitment when debt is current-month only", () => {
     const result = buildInsightsResult({
       context: buildBaseContext({
-        creditCardCurrentStatement: 650_000,
+        creditCardDebtTotal: 650_000,
+        creditCardCurrentStatement: 0,
         creditCardNextMonthCommitment: 0,
       }),
       t,
@@ -106,6 +107,20 @@ describe("buildInsightsResult", () => {
       (insight) => insight.kind === "next_month_commitment",
     );
     expect(nextMonthCommitmentInsight).toBeUndefined();
+  });
+
+  it("shows next month commitment insight even when income reference is unavailable", () => {
+    const result = buildInsightsResult({
+      context: buildBaseContext({
+        incomeCurrentMonth: 0,
+        creditCardCurrentStatement: 0,
+        creditCardNextMonthCommitment: 1_300_000,
+      }),
+      t,
+      currencyFormatter,
+    });
+
+    expect(result.primaryInsight?.kind).toBe("next_month_commitment");
   });
 
   it("returns stable insight when card has no debt and no commitments", () => {

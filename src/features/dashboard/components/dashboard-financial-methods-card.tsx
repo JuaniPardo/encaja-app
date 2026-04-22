@@ -112,28 +112,41 @@ export function DashboardFinancialMethodsCard({
             <Text size="xs" fw={700} c="#475467">
               {t("dashboard.creditCardsSectionTitle")}
             </Text>
-            <Text fw={800} c={financialSummary.creditCardDebtTotal > 0.004 ? "#c92a2a" : "#475467"}>
-              {t("dashboard.totalDebtLabel")}:
-              {" "}
-              {formatSignedCurrency(-financialSummary.creditCardDebtTotal, currencyFormatter)}
-            </Text>
-            <Text size="xs" fw={700} c="#475467">
-              {t("dashboard.statementCurrentLabel")}:
-              {" "}
-              {formatSignedCurrency(-financialSummary.creditCardStatementTotal, currencyFormatter)}
-            </Text>
-            <Text size="xs" fw={700} c="#b54708">
-              {t("dashboard.nextMonthCommitmentLabel")}:
-              {" "}
-              {formatSignedCurrency(-financialSummary.creditCardNextMonthCommitmentTotal, currencyFormatter)}
-            </Text>
-            {financialSummary.creditCardTotalInstallments > 0.004 ? (
-              <Text size="10px" fw={700} c="#667085">
-                {t("dashboard.futureInstallmentsLabel")}:
-                {" "}
-                {formatSignedCurrency(-financialSummary.creditCardTotalInstallments, currencyFormatter)}
-              </Text>
-            ) : null}
+            <Group justify="space-between" align="flex-start" wrap="nowrap">
+              <Stack gap={2}>
+                <Text size="10px" fw={600} c="#667085">
+                  {t("dashboard.totalDebtLabel")}
+                </Text>
+                <Text size="10px" fw={600} c="#667085">
+                  {t("dashboard.statementCurrentLabel")}
+                </Text>
+                <Text size="10px" fw={600} c="#b54708">
+                  {t("dashboard.nextMonthCommitmentLabel")}
+                </Text>
+                {financialSummary.creditCardTotalInstallments > 0.004 ? (
+                  <Text size="10px" fw={600} c="#98a2b3">
+                    {t("dashboard.futureInstallmentsLabel")}
+                  </Text>
+                ) : null}
+              </Stack>
+
+              <Stack gap={2} align="flex-end">
+                <Text fw={800} c={financialSummary.creditCardDebtTotal > 0.004 ? "#c92a2a" : "#475467"}>
+                  {formatSignedCurrency(-financialSummary.creditCardDebtTotal, currencyFormatter)}
+                </Text>
+                <Text size="xs" fw={700} c="#475467">
+                  {formatSignedCurrency(-financialSummary.creditCardStatementTotal, currencyFormatter)}
+                </Text>
+                <Text size="xs" fw={700} c="#b54708">
+                  {formatSignedCurrency(-financialSummary.creditCardNextMonthCommitmentTotal, currencyFormatter)}
+                </Text>
+                {financialSummary.creditCardTotalInstallments > 0.004 ? (
+                  <Text size="xs" fw={700} c="#667085">
+                    {formatSignedCurrency(-financialSummary.creditCardTotalInstallments, currencyFormatter)}
+                  </Text>
+                ) : null}
+              </Stack>
+            </Group>
           </Stack>
 
           {financialSummary.creditCardRows.length === 0 ? (
@@ -156,7 +169,7 @@ export function DashboardFinancialMethodsCard({
                     padding: isMobile ? "6px 8px" : "6px 10px",
                   }}
                 >
-                  <Group justify="space-between" align="center" wrap="nowrap">
+                  <Stack gap={4}>
                     <Stack gap={0} style={{ minWidth: 0 }}>
                       <Text size="sm" fw={700} c="#1f2937" truncate>
                         {row.name}
@@ -165,37 +178,43 @@ export function DashboardFinancialMethodsCard({
                         {paymentMethodTypeLabels[row.type]} · {t("dashboard.viewMovements")}
                       </Text>
                     </Stack>
-                    <Stack gap={1} style={{ minWidth: 0, textAlign: "right" }}>
-                      <Text size="10px" fw={600} c="#667085">
-                        {t("dashboard.totalDebtLabel")}
-                      </Text>
-                      <Text size="sm" fw={800} c="#c92a2a">
-                        {formatSignedCurrency(-row.debtTotal, currencyFormatter)}
-                      </Text>
-                      <Text size="10px" fw={600} c="#667085">
-                        {t("dashboard.statementCurrentLabel")}
-                      </Text>
-                      <Text size="10px" fw={700} c="#475467">
-                        {formatSignedCurrency(-row.statementCurrent, currencyFormatter)}
-                      </Text>
-                      <Text size="10px" fw={600} c="#b54708">
-                        {t("dashboard.nextMonthCommitmentLabel")}
-                      </Text>
-                      <Text size="10px" fw={700} c="#b54708">
-                        {formatSignedCurrency(-row.nextMonthCommitment, currencyFormatter)}
-                      </Text>
-                      {row.totalInstallments > 0.004 ? (
-                        <>
+
+                    <Group justify="space-between" align="flex-start" wrap="nowrap">
+                      <Stack gap={1}>
+                        <Text size="10px" fw={600} c="#667085">
+                          {t("dashboard.totalDebtLabel")}
+                        </Text>
+                        <Text size="10px" fw={600} c="#667085">
+                          {t("dashboard.statementCurrentLabel")}
+                        </Text>
+                        <Text size="10px" fw={600} c="#b54708">
+                          {t("dashboard.nextMonthCommitmentLabel")}
+                        </Text>
+                        {row.totalInstallments > 0.004 ? (
                           <Text size="10px" fw={600} c="#98a2b3">
                             {t("dashboard.futureInstallmentsLabel")}
                           </Text>
+                        ) : null}
+                      </Stack>
+
+                      <Stack gap={1} align="flex-end" style={{ minWidth: 0, textAlign: "right" }}>
+                        <Text size="sm" fw={800} c="#c92a2a">
+                          {formatSignedCurrency(-row.debtTotal, currencyFormatter)}
+                        </Text>
+                        <Text size="10px" fw={700} c="#475467">
+                          {formatSignedCurrency(-row.statementCurrent, currencyFormatter)}
+                        </Text>
+                        <Text size="10px" fw={700} c="#b54708">
+                          {formatSignedCurrency(-row.nextMonthCommitment, currencyFormatter)}
+                        </Text>
+                        {row.totalInstallments > 0.004 ? (
                           <Text size="10px" fw={700} c="#667085">
                             {formatSignedCurrency(-row.totalInstallments, currencyFormatter)}
                           </Text>
-                        </>
-                      ) : null}
-                    </Stack>
-                  </Group>
+                        ) : null}
+                      </Stack>
+                    </Group>
+                  </Stack>
                 </UnstyledButton>
               ))}
             </Stack>

@@ -179,6 +179,10 @@ export async function loadInsightsContext({
     }
   }
 
+  // Next-month commitment includes what is already consumed in the current statement
+  // plus expenses that are already positioned in next period.
+  creditCardNextMonthCommitment = roundMoney(creditCardNextMonthCommitment + creditCardExpenseCurrentMonth);
+
   const balanceByMethodId = new Map<string, number>();
   for (const method of creditCards) {
     balanceByMethodId.set(method.id, parseAmountValue(method.current_balance));
@@ -215,6 +219,6 @@ export async function loadInsightsContext({
     creditCardPaymentsCurrentMonth: roundMoney(creditCardPaymentsCurrentMonth),
     creditCardDebtTotal: roundMoney(creditCardDebtTotal),
     creditCardCurrentStatement: roundMoney(creditCardExpenseCurrentMonth),
-    creditCardNextMonthCommitment: roundMoney(creditCardNextMonthCommitment),
+    creditCardNextMonthCommitment: creditCardNextMonthCommitment,
   };
 }

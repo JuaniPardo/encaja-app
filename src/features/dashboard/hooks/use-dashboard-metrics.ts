@@ -254,7 +254,9 @@ export function useDashboardMetrics({
         const totalInstallments = roundMoney(futureInstallmentsByMethodId.get(row.id) ?? 0);
         const debtTotal = roundMoney(outstandingBalance + totalInstallments);
         const statementCurrent = roundMoney(currentStatementByMethodId.get(row.id) ?? 0);
-        const nextMonthCommitment = roundMoney(nextMonthCommitmentByMethodId.get(row.id) ?? 0);
+        const nextMonthCommitment = roundMoney(
+          statementCurrent + (nextMonthCommitmentByMethodId.get(row.id) ?? 0),
+        );
 
         return {
           id: row.id,

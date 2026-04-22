@@ -328,7 +328,7 @@ const dictionaries = {
         creditCard: {
           title: "Tarjeta de crédito",
           description:
-            "La tarjeta sirve, pero no es plata extra. Es un consumo de hoy que vas a pagar con ingresos de mañana. Mantener esa deuda controlada te da más margen y estabilidad mes a mes.",
+            "La tarjeta sirve, pero no es plata extra. Es un consumo de hoy que vas a pagar con ingresos de mañana. Mantener esa deuda bajo control te da más margen y estabilidad mes a mes.",
           insights: {
             unpaid: {
               title: "Todavía no pagaste tu tarjeta este mes",
@@ -365,12 +365,12 @@ const dictionaries = {
               warningMessage: "Todavía tenés {{statementAmount}} pendientes en tu resumen actual.",
             },
             nextCommitment: {
-              alertTitle: "Ya comprometiste una parte importante de tus ingresos del próximo mes en la tarjeta",
-              alertMessage: "Ese pago representa una parte significativa de tu ingreso mensual ({{amount}}).",
-              warningTitle: "Ya comprometiste una parte importante de tus ingresos del próximo mes en la tarjeta",
-              warningMessage: "Ese pago representa una parte significativa de tu ingreso mensual ({{amount}}).",
-              infoTitle: "Ya comprometiste parte de tus ingresos del próximo mes en la tarjeta",
-              infoMessage: "Ese pago ya ocupa una parte de tu ingreso mensual ({{amount}}).",
+              alertTitle: "Ya tenés {{amount}} comprometidos en la tarjeta para el mes que viene",
+              alertMessage: "Ese monto va a reducir el margen disponible de tus próximos ingresos.",
+              warningTitle: "Ya tenés {{amount}} comprometidos en la tarjeta para el mes que viene",
+              warningMessage: "Ese monto va a reducir el margen disponible de tus próximos ingresos.",
+              infoTitle: "Ya tenés {{amount}} comprometidos en la tarjeta para el próximo mes",
+              infoMessage: "Ese monto va a reducir el margen disponible de tus próximos ingresos.",
             },
             acceleration: {
               title: "Aceleraste el gasto con tarjeta",
@@ -1471,7 +1471,7 @@ const dictionaries = {
         creditCard: {
           title: "Credit card",
           description:
-            "A credit card is useful, but it's not extra money. It's spending today that you'll pay with tomorrow's income. Keeping that debt controlled gives you more margin and stability month by month.",
+            "A credit card is useful, but it's not extra money. It's spending today that you'll pay with tomorrow's income. Keeping that debt under control gives you more margin and stability month by month.",
           insights: {
             unpaid: {
               title: "You still haven't paid your card this month",
@@ -1508,12 +1508,12 @@ const dictionaries = {
               warningMessage: "You still have {{statementAmount}} pending in your current statement.",
             },
             nextCommitment: {
-              alertTitle: "You already committed an important part of next month's income to your card",
-              alertMessage: "That payment represents a significant part of your monthly income ({{amount}}).",
-              warningTitle: "You already committed an important part of next month's income to your card",
-              warningMessage: "That payment represents a significant part of your monthly income ({{amount}}).",
-              infoTitle: "You already committed part of next month's income to your card",
-              infoMessage: "That payment already takes a share of your monthly income ({{amount}}).",
+              alertTitle: "You already have {{amount}} committed on your card for next month",
+              alertMessage: "That amount will reduce the margin available from your upcoming income.",
+              warningTitle: "You already have {{amount}} committed on your card for next month",
+              warningMessage: "That amount will reduce the margin available from your upcoming income.",
+              infoTitle: "You already have {{amount}} committed on your card for the next month",
+              infoMessage: "That amount will reduce the margin available from your upcoming income.",
             },
             acceleration: {
               title: "Card spending accelerated",
