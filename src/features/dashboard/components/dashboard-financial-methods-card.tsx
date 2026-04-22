@@ -84,19 +84,8 @@ export function DashboardFinancialMethodsCard({
 
         <Stack gap={6}>
           <Stack gap={2}>
-            <Text size="xs" fw={700} c="#475467">
-              {t("dashboard.availabilitySectionTitle")}
-            </Text>
-            <Text size="10px" c="#98a2b3">
-              {t("dashboard.availabilitySectionHint")}
-            </Text>
             <Text fw={800} c={financialSummary.availabilityTotalBalance >= 0 ? "#087f5b" : "#c92a2a"}>
               {t("dashboard.totalBalance")}: {currencyFormatter.format(financialSummary.availabilityTotalBalance)}
-            </Text>
-            <Text size="xs" fw={700} c="#475467">
-              {t("dashboard.monthImpact")}:
-              {" "}
-              {formatSignedCurrency(financialSummary.availabilityTotalMonthImpact, currencyFormatter)}
             </Text>
           </Stack>
 
@@ -132,11 +121,6 @@ export function DashboardFinancialMethodsCard({
                     <Stack gap={0} style={{ minWidth: 0, textAlign: "right" }}>
                       <Text size="sm" fw={800} c={row.currentBalance >= 0 ? "#087f5b" : "#c92a2a"}>
                         {currencyFormatter.format(row.currentBalance)}
-                      </Text>
-                      <Text size="10px" fw={700} c={row.monthImpact >= 0 ? "#087f5b" : "#c92a2a"}>
-                        {t("dashboard.monthlyMovementLabel")}:
-                        {" "}
-                        {formatSignedCurrency(row.monthImpact, currencyFormatter)}
                       </Text>
                     </Stack>
                   </Group>

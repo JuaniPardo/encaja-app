@@ -200,11 +200,36 @@ export function useDashboardMetrics({
   }, [metrics.groupedRows, t]);
 
   const summaryRows = useMemo(() => {
+    const zeroTolerance = 0.005;
+
+    const getRowRank = (row: CategorySummaryRow) => {
+      if (row.executionPercent === null) {
+        return 2;
+      }
+
+      if (Math.abs(row.realAmount) < zeroTolerance) {
+        return 1;
+      }
+
+      return 0;
+    };
+
     return dashboardVisibleTypes.map((type) => ({
       type,
-      rows: metrics.groupedRows[type],
+      rows: [...metrics.groupedRows[type]].sort((a, b) => {
+        const rankDiff = getRowRank(a) - getRowRank(b);
+        if (rankDiff !== 0) {
+          return rankDiff;
+        }
+
+        if (b.realAmount !== a.realAmount) {
+          return b.realAmount - a.realAmount;
+        }
+
+        return localeCompareByName(a.categoryName, b.categoryName, locale);
+      }),
     }));
-  }, [metrics.groupedRows]);
+  }, [locale, metrics.groupedRows]);
 
   const financialSummary = useMemo<FinancialSummary>(() => {
     const monthImpactByMethodId = new Map<string, number>();

@@ -6,6 +6,7 @@ import type { DashboardTypeLabels, DonutDataByType, TranslationFn } from "@/feat
 
 type DashboardDistributionPanelProps = {
   isMobile: boolean;
+  isTablet: boolean;
   cardPadding: "xs" | "sm";
   distributionColumns: number;
   donutData: DonutDataByType;
@@ -18,6 +19,7 @@ type DashboardDistributionPanelProps = {
 
 export function DashboardDistributionPanel({
   isMobile,
+  isTablet,
   cardPadding,
   distributionColumns,
   donutData,
@@ -38,13 +40,14 @@ export function DashboardDistributionPanel({
     >
       <Stack gap={isMobile ? 6 : "xs"}>
         <Text size="xs" fw={800} c="#344054">
-          {t("dashboard.realDistributionByType")}
+          {t("dashboard.monthMovementsTitle")}
         </Text>
 
-        <SimpleGrid cols={distributionColumns} spacing={isMobile ? 6 : "xs"}>
+        <SimpleGrid cols={distributionColumns} spacing={isMobile ? 6 : 8}>
           {dashboardVisibleTypes.map((type) => {
             const donut = donutData[type];
             const hasData = donut.slices.length > 0;
+            const stackVisuals = isMobile || isTablet;
 
             return (
               <Paper
@@ -54,14 +57,14 @@ export function DashboardDistributionPanel({
                 style={{
                   border: "1px solid #e4e7ec",
                   backgroundColor: "#fbfcff",
-                  minHeight: hasData ? (isMobile ? 96 : 86) : isMobile ? 76 : 64,
+                  minHeight: hasData ? donutSize + (isMobile ? 22 : 30) : isMobile ? 76 : 96,
                 }}
               >
                 <Box
                   style={{
                     display: "grid",
-                    gridTemplateColumns: isMobile ? "1fr" : "120px minmax(0, 1fr)",
-                    gap: isMobile ? 8 : 10,
+                    gridTemplateColumns: stackVisuals ? "1fr" : `${donutSize}px minmax(0, 1fr)`,
+                    gap: stackVisuals ? 8 : 6,
                     alignItems: "center",
                   }}
                 >
@@ -73,7 +76,7 @@ export function DashboardDistributionPanel({
                     }}
                   >
                     <RingProgress
-                      size={isMobile ? donutSize : 86}
+                      size={donutSize}
                       thickness={donutThickness}
                       roundCaps
                       sections={
@@ -92,7 +95,15 @@ export function DashboardDistributionPanel({
                     />
                   </Box>
 
-                  <Stack gap={4} style={{ minWidth: 0 }}>
+                  <Stack
+                    gap={3}
+                    style={{
+                      minWidth: 0,
+                      maxWidth: stackVisuals ? "100%" : 220,
+                      marginInline: stackVisuals ? "auto" : 0,
+                      width: "100%",
+                    }}
+                  >
                     <Text size="xs" fw={700} c={typeTheme[type].main}>
                       {typeLabels[type]}
                     </Text>

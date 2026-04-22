@@ -1,3 +1,15 @@
+## [1.5.2] - 2026-04-22
+
+### Changed
+- Reorganized dashboard hierarchy to improve scan order: `Tablero financiero` header first, primary insight second, and operational content after.
+- Redesigned desktop dashboard into a two-column layout (`1.8fr / 1fr`) with category tables on the main column and visual/summary blocks on the side column.
+- Simplified dashboard copy by removing redundant period and workspace-context text from header/summary areas.
+- Refined `Movimientos del mes` responsiveness and sizing across breakpoints, including stacked chart sections in desktop side-column context.
+- Simplified financial-methods presentation by keeping focus on current balances and removing non-actionable labels.
+
+### Fixed
+- Fixed insights ordering so critical severities are always prioritized (`alert > warning > info > positive`) before module-level priority ties.
+
 ## [1.5.1] - 2026-04-22
 
 ### Added
