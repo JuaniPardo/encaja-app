@@ -38,10 +38,13 @@ export function DashboardDistributionPanel({
     >
       <Stack gap={isMobile ? 6 : "xs"}>
         <Text size="xs" fw={800} c="#344054">
+          {t("dashboard.monthMovementsTitle")}
+        </Text>
+        <Text size="11px" c="#667085">
           {t("dashboard.realDistributionByType")}
         </Text>
 
-        <SimpleGrid cols={distributionColumns} spacing={isMobile ? 6 : "xs"}>
+        <SimpleGrid cols={distributionColumns} spacing={isMobile ? 6 : 8}>
           {dashboardVisibleTypes.map((type) => {
             const donut = donutData[type];
             const hasData = donut.slices.length > 0;
@@ -54,14 +57,14 @@ export function DashboardDistributionPanel({
                 style={{
                   border: "1px solid #e4e7ec",
                   backgroundColor: "#fbfcff",
-                  minHeight: hasData ? (isMobile ? 96 : 86) : isMobile ? 76 : 64,
+                  minHeight: hasData ? donutSize + (isMobile ? 22 : 30) : isMobile ? 76 : 96,
                 }}
               >
                 <Box
                   style={{
                     display: "grid",
-                    gridTemplateColumns: isMobile ? "1fr" : "120px minmax(0, 1fr)",
-                    gap: isMobile ? 8 : 10,
+                    gridTemplateColumns: isMobile ? "1fr" : `${donutSize}px minmax(0, 1fr)`,
+                    gap: isMobile ? 8 : 6,
                     alignItems: "center",
                   }}
                 >
@@ -73,7 +76,7 @@ export function DashboardDistributionPanel({
                     }}
                   >
                     <RingProgress
-                      size={isMobile ? donutSize : 86}
+                      size={donutSize}
                       thickness={donutThickness}
                       roundCaps
                       sections={
@@ -92,7 +95,7 @@ export function DashboardDistributionPanel({
                     />
                   </Box>
 
-                  <Stack gap={4} style={{ minWidth: 0 }}>
+                  <Stack gap={3} style={{ minWidth: 0 }}>
                     <Text size="xs" fw={700} c={typeTheme[type].main}>
                       {typeLabels[type]}
                     </Text>
