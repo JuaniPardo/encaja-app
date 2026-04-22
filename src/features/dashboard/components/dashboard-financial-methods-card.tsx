@@ -137,7 +137,7 @@ export function DashboardFinancialMethodsCard({
                 <Text size="xs" fw={700} c="#b54708">
                   {formatSignedCurrency(-financialSummary.creditCardNextMonthInstallmentsTotal, currencyFormatter)}
                 </Text>
-                <Text fw={800} c={financialSummary.creditCardDebtCurrentTotal > 0.004 ? "#c92a2a" : "#475467"}>
+                <Text size="xs" fw={800} c={financialSummary.creditCardDebtCurrentTotal > 0.004 ? "#c92a2a" : "#475467"}>
                   {formatSignedCurrency(-financialSummary.creditCardDebtCurrentTotal, currencyFormatter)}
                 </Text>
                 {financialSummary.creditCardInstallmentBalanceTotal > 0.004 ? (
@@ -225,7 +225,7 @@ export function DashboardFinancialMethodsCard({
                         <Text size="10px" fw={700} c="#b54708">
                           {formatSignedCurrency(-row.nextMonthInstallments, currencyFormatter)}
                         </Text>
-                        <Text size="sm" fw={800} c="#c92a2a">
+                        <Text size="10px" fw={800} c="#c92a2a">
                           {formatSignedCurrency(-row.debtCurrent, currencyFormatter)}
                         </Text>
                         {row.installmentBalance > 0.004 ? (
