@@ -1,3 +1,25 @@
+<p align="center">
+  <img src="./public/logo-EnCaja.svg" alt="Encaja Logo" width="120"/>
+</p>
+
+<h1 align="center">Encaja</h1>
+
+<p align="center">
+  Control financiero personal, simple, preciso y sin distorsiones.
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/version-1.5.2-blue" />
+  <img src="https://img.shields.io/badge/status-MVP27-success" />
+  <img src="https://img.shields.io/badge/license-MIT-lightgrey" />
+</p>
+
+<p align="center">
+  <a href="https://encaja-app.vercel.app/" target="_blank">
+    <img src="https://img.shields.io/badge/Probar%20Encaja-Live%20Demo-0A66C2?style=for-the-badge" alt="Probar Encaja"/>
+  </a>
+</p>
+
 # Encaja App
 
 Aplicación web de presupuesto y control financiero personal/workspace-first, nacida desde una lógica de Excel y evolucionada a producto web mantenible.
@@ -26,17 +48,43 @@ Aplicación web de presupuesto y control financiero personal/workspace-first, na
 - Base i18n (`es`/`en`).
 - Flujo de creación de **workspace demo** con datos realistas para acelerar onboarding.
 
-## Qué hace Encaja
+## 🚀 Qué hace Encaja
 
 Encaja combina en un mismo flujo:
 
-1. Planificación (`budget` por período/categoría)
-2. Ejecución (registro de movimientos reales)
-3. Análisis (resumen + insights + lectura de desvíos)
+- 📊 Planificación de presupuesto mensual por categoría
+- 💸 Registro de movimientos reales (income, expense, saving, transfer)
+- 📈 Análisis de desvíos con insights automáticos
+- 🧠 Lectura clara del estado financiero por workspace
+- 🏦 Gestión de múltiples "cajas" (workspaces)
+- 💳 Control de tarjetas de crédito y compras en cuotas sin distorsión
 
-Además, mantiene una arquitectura `workspace-first` para crecer desde uso personal hacia colaboración/multiusuario.
+---
 
-## Stack
+## 📸 Producto
+
+### Dashboard
+![Dashboard](./docs/assets/dashboard.png)
+
+### Budget
+![Budget](./docs/assets/budget.png)
+
+### Transactions
+![Transactions](./docs/assets/transaction.png)
+
+### Transfers
+![Transfers](./docs/assets/transfer.png)
+
+### Insights
+![Insights](./docs/assets/insights.png)
+
+## 🛠️ Stack
+
+![Next.js](https://img.shields.io/badge/Next.js-16-black)
+![React](https://img.shields.io/badge/React-19-blue)
+![TypeScript](https://img.shields.io/badge/TypeScript-blue)
+![Supabase](https://img.shields.io/badge/Supabase-green)
+![Mantine](https://img.shields.io/badge/Mantine-blue)
 
 - Next.js `16.2.3` (App Router)
 - React `19.2.4`
@@ -115,12 +163,12 @@ Nota para entorno Codex: puede requerir `PATH="/usr/local/bin:/opt/homebrew/bin:
 - Workflow de desarrollo y releases: `docs/dev-workflow.md`
 - Historial funcional por MVP: `docs/mvps/`
 
-## Roadmap (tentativo)
+## 🧭 Roadmap
 
-1. Seguir reduciendo acoplamiento en páginas grandes (`transactions`, `insights`, `budget`).
-2. Profundizar insights aprovechando la normalización semántica de categorías y datos demo (MVP25).
-3. Mejoras incrementales de colaboración/workspaces vinculados.
-4. Continuar hardening de permisos, RLS y calidad de datos para releases estables.
+- 🧠 Insights más inteligentes basados en categorías semánticas
+- 🤝 Mejoras en colaboración entre workspaces
+- 🔒 Hardening de permisos y políticas RLS
+- 📱 Optimización de experiencia mobile
 
 ## Autoría
 
