@@ -29,12 +29,17 @@ type UseDashboardDataOptions = {
   t: TranslationFn;
 };
 
-type FutureInstallmentRow = Pick<
+type NextMonthCommitmentRow = Pick<
   Database["public"]["Tables"]["transactions"]["Row"],
   "payment_method_id" | "amount"
 >;
 
-type NextMonthCommitmentRow = Pick<
+type PreviousMonthStatementRow = Pick<
+  Database["public"]["Tables"]["transactions"]["Row"],
+  "payment_method_id" | "amount"
+>;
+
+type CurrentMonthPaymentRow = Pick<
   Database["public"]["Tables"]["transactions"]["Row"],
   "payment_method_id" | "amount"
 >;
@@ -53,12 +58,15 @@ export function useDashboardData({
   const [budgetItems, setBudgetItems] = useState<BudgetItemLiteRow[]>([]);
   const [transactionRows, setTransactionRows] = useState<TransactionLiteRow[]>([]);
   const [allTransactionsImpact, setAllTransactionsImpact] = useState<Map<string, number>>(new Map());
-  const [futureInstallmentsByMethodId, setFutureInstallmentsByMethodId] = useState<
-    Map<string, number>
-  >(new Map());
   const [nextMonthCommitmentByMethodId, setNextMonthCommitmentByMethodId] = useState<Map<string, number>>(
     new Map(),
   );
+  const [previousMonthStatementByMethodId, setPreviousMonthStatementByMethodId] = useState<
+    Map<string, number>
+  >(new Map());
+  const [currentMonthPaymentsByMethodId, setCurrentMonthPaymentsByMethodId] = useState<
+    Map<string, number>
+  >(new Map());
   const [paymentMethodRows, setPaymentMethodRows] = useState<PaymentMethodBalanceRow[]>([]);
   const [linkedWorkspacePaymentMethodBalances, setLinkedWorkspacePaymentMethodBalances] = useState<
     LinkedWorkspacePaymentMethodBalanceRow[]
@@ -160,6 +168,8 @@ export function useDashboardData({
 
     const run = async () => {
       const { start, end } = buildMonthRange(selectedYear, selectedMonth);
+      const previousPeriodDate = new Date(selectedYear, selectedMonth - 2, 1, 12, 0, 0, 0);
+      const previousPeriod = buildMonthRange(previousPeriodDate.getFullYear(), previousPeriodDate.getMonth() + 1);
       const nextPeriodDate = new Date(selectedYear, selectedMonth, 1, 12, 0, 0, 0);
       const nextPeriod = buildMonthRange(nextPeriodDate.getFullYear(), nextPeriodDate.getMonth() + 1);
 
@@ -195,27 +205,37 @@ export function useDashboardData({
         .eq("workspace_id", workspaceId)
         .or(historicalFilter);
 
-      const futureInstallmentsPromise = supabase
-        .from("transactions")
-        .select("payment_method_id, amount")
-        .eq("workspace_id", workspaceId)
-        .eq("type", "expense")
-        .not("installment_purchase_id", "is", null)
-        .gte("effective_date", end)
-        .not("payment_method_id", "is", null);
-
-      const nextMonthCommitmentFilter = [
-        `and(effective_date.gte.${nextPeriod.start},effective_date.lt.${nextPeriod.end})`,
-        `and(effective_date.is.null,transaction_date.gte.${nextPeriod.start},transaction_date.lt.${nextPeriod.end})`,
-      ].join(",");
-
       const nextMonthCommitmentPromise = supabase
         .from("transactions")
         .select("payment_method_id, amount")
         .eq("workspace_id", workspaceId)
         .eq("type", "expense")
+        .not("installment_purchase_id", "is", null)
+        .gte("effective_date", nextPeriod.start)
+        .lt("effective_date", nextPeriod.end)
+        .not("payment_method_id", "is", null);
+
+      const previousMonthStatementFilter = [
+        `and(effective_date.gte.${previousPeriod.start},effective_date.lt.${previousPeriod.end})`,
+        `and(effective_date.is.null,transaction_date.gte.${previousPeriod.start},transaction_date.lt.${previousPeriod.end})`,
+      ].join(",");
+
+      const previousMonthStatementPromise = supabase
+        .from("transactions")
+        .select("payment_method_id, amount")
+        .eq("workspace_id", workspaceId)
+        .eq("type", "expense")
         .not("payment_method_id", "is", null)
-        .or(nextMonthCommitmentFilter);
+        .or(previousMonthStatementFilter);
+
+      const currentMonthPaymentsPromise = supabase
+        .from("transactions")
+        .select("payment_method_id, amount")
+        .eq("workspace_id", workspaceId)
+        .eq("type", "transfer")
+        .eq("direction", "in")
+        .not("payment_method_id", "is", null)
+        .or(transactionFilter);
 
       const linkedWorkspaceSummaryPromise = supabase.rpc(
         "list_linked_workspace_payment_method_balances",
@@ -228,15 +248,17 @@ export function useDashboardData({
         periodResponse,
         transactionsResponse,
         historicalTransactionsResponse,
-        futureInstallmentsResponse,
         nextMonthCommitmentResponse,
+        previousMonthStatementResponse,
+        currentMonthPaymentsResponse,
         linkedWorkspaceSummaryResponse,
       ] = await Promise.all([
         periodResponsePromise,
         transactionsResponsePromise,
         historicalTransactionsPromise,
-        futureInstallmentsPromise,
         nextMonthCommitmentPromise,
+        previousMonthStatementPromise,
+        currentMonthPaymentsPromise,
         linkedWorkspaceSummaryPromise,
       ]);
 
@@ -283,32 +305,6 @@ export function useDashboardData({
         setAllTransactionsImpact(impactMap);
       }
 
-      if (futureInstallmentsResponse.error) {
-        notifications.show({
-          color: "red",
-          title: t("dashboard.notifications.loadPendingInstallmentsError"),
-          message: futureInstallmentsResponse.error.message,
-        });
-        setFutureInstallmentsByMethodId(new Map());
-      } else {
-        const futureRows = (futureInstallmentsResponse.data ?? []) as FutureInstallmentRow[];
-        const futureMap = new Map<string, number>();
-
-        for (const row of futureRows) {
-          if (!row.payment_method_id) {
-            continue;
-          }
-
-          const previousAmount = futureMap.get(row.payment_method_id) ?? 0;
-          futureMap.set(
-            row.payment_method_id,
-            roundMoney(previousAmount + parseAmountValue(row.amount)),
-          );
-        }
-
-        setFutureInstallmentsByMethodId(futureMap);
-      }
-
       if (nextMonthCommitmentResponse.error) {
         notifications.show({
           color: "red",
@@ -333,6 +329,58 @@ export function useDashboardData({
         }
 
         setNextMonthCommitmentByMethodId(nextCommitmentMap);
+      }
+
+      if (previousMonthStatementResponse.error) {
+        notifications.show({
+          color: "red",
+          title: t("dashboard.notifications.loadPreviousMonthStatementError"),
+          message: previousMonthStatementResponse.error.message,
+        });
+        setPreviousMonthStatementByMethodId(new Map());
+      } else {
+        const previousMonthStatementRows = (previousMonthStatementResponse.data ?? []) as PreviousMonthStatementRow[];
+        const previousMonthStatementMap = new Map<string, number>();
+
+        for (const row of previousMonthStatementRows) {
+          if (!row.payment_method_id) {
+            continue;
+          }
+
+          const previousAmount = previousMonthStatementMap.get(row.payment_method_id) ?? 0;
+          previousMonthStatementMap.set(
+            row.payment_method_id,
+            roundMoney(previousAmount + parseAmountValue(row.amount)),
+          );
+        }
+
+        setPreviousMonthStatementByMethodId(previousMonthStatementMap);
+      }
+
+      if (currentMonthPaymentsResponse.error) {
+        notifications.show({
+          color: "red",
+          title: t("dashboard.notifications.loadCurrentMonthPaymentsError"),
+          message: currentMonthPaymentsResponse.error.message,
+        });
+        setCurrentMonthPaymentsByMethodId(new Map());
+      } else {
+        const currentMonthPaymentRows = (currentMonthPaymentsResponse.data ?? []) as CurrentMonthPaymentRow[];
+        const currentMonthPaymentMap = new Map<string, number>();
+
+        for (const row of currentMonthPaymentRows) {
+          if (!row.payment_method_id) {
+            continue;
+          }
+
+          const previousAmount = currentMonthPaymentMap.get(row.payment_method_id) ?? 0;
+          currentMonthPaymentMap.set(
+            row.payment_method_id,
+            roundMoney(previousAmount + parseAmountValue(row.amount)),
+          );
+        }
+
+        setCurrentMonthPaymentsByMethodId(currentMonthPaymentMap);
       }
 
       if (linkedWorkspaceSummaryResponse.error) {
@@ -393,8 +441,9 @@ export function useDashboardData({
     budgetItems,
     transactionRows,
     allTransactionsImpact,
-    futureInstallmentsByMethodId,
     nextMonthCommitmentByMethodId,
+    previousMonthStatementByMethodId,
+    currentMonthPaymentsByMethodId,
     paymentMethodRows,
     linkedWorkspacePaymentMethodBalances,
     startYear,

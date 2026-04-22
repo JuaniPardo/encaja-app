@@ -93,14 +93,9 @@ export default function InsightsPage() {
             }}
           >
             <Stack gap="sm">
-              <Stack gap={2}>
-                <Text fw={800} size="lg" c="#1f2937">
-                  {moduleResult.metadata.title}
-                </Text>
-                <Text size="sm" c="#667085">
-                  {moduleResult.metadata.description}
-                </Text>
-              </Stack>
+              <Text fw={800} size="lg" c="#1f2937">
+                {moduleResult.metadata.title}
+              </Text>
 
               {moduleResult.insights.length === 0 ? (
                 <Text size="sm" c="#667085">
@@ -136,6 +131,10 @@ export default function InsightsPage() {
                   ))}
                 </Stack>
               )}
+
+              <Text size="sm" c="#667085">
+                {moduleResult.metadata.description}
+              </Text>
             </Stack>
           </Paper>
         ))

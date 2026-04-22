@@ -121,7 +121,9 @@ export async function loadInsightsContext({
       .eq("workspace_id", workspaceId)
       .in("payment_method_id", creditCards.map((row) => row.id))
       .eq("type", "expense")
-      .or(buildTransactionPeriodFilter(nextPeriod.start, nextPeriod.end));
+      .not("installment_purchase_id", "is", null)
+      .gte("effective_date", nextPeriod.start)
+      .lt("effective_date", nextPeriod.end);
 
     if (nextMonthCommitmentResponse.error) {
       throw nextMonthCommitmentResponse.error;
