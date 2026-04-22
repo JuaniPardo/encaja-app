@@ -1,3 +1,19 @@
+## [1.5.1] - 2026-04-22
+
+### Added
+- Added MVP27 **Insights v2 — Credit Card** module with dedicated signals for rolled debt, high monthly card consumption, high total debt, and next-month commitment pressure.
+- Added dashboard credit-card temporal breakdown per card with clear monthly narrative: `Resumen del mes anterior`, `Pagos del mes`, `Consumos del mes`, and optional `Cuotas del próximo mes`.
+
+### Changed
+- Updated primary dashboard insight style to one-line + CTA and improved copy semantics for clearer, user-facing language.
+- Refined financial methods layout to separate liquidity from credit cards and unify credit-card card structure across breakpoints.
+- Reworked credit-card visual hierarchy (colors, typography, spacing, and alignment) to improve scanability and consistent comparative reading.
+
+### Fixed
+- Fixed rolled-debt detection so card payments in current month are correctly compared against previous-month card consumption.
+- Removed `due_day`/due-date dependency from credit-card insight business logic to avoid reference-date coupling.
+- Ensured current-month card payments are not counted as current-month consumption in credit-card summary logic.
+
 ## [1.5.0] - 2026-04-21
 
 ### Added
