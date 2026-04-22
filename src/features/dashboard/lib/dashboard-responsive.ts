@@ -34,14 +34,14 @@ export function useDashboardResponsive(): DashboardResponsiveState {
   const isTablet = useMediaQuery("(min-width: 48em) and (max-width: 74.99em)");
 
   const kpiColumns = isMobile ? (isNarrowMobile ? 1 : 2) : 2;
-  const distributionColumns = isMobile ? 1 : isTablet ? 1 : 3;
+  const distributionColumns = isMobile ? 1 : isTablet ? 2 : 3;
   const isDesktop = !isMobile && !isTablet;
   const cardPadding = isMobile ? "xs" : "sm";
   const tableHorizontalSpacing = isMobile ? "xs" : "sm";
   const tableVerticalSpacing = isMobile ? 5 : 6;
   const executionBarWidth = isMobile ? "100%" : isTablet ? 88 : 96;
-  const donutSize = isMobile ? 76 : isTablet ? 84 : 96;
-  const donutThickness = isMobile ? 9 : 11;
+  const donutSize = isMobile ? 76 : isTablet ? 108 : 120;
+  const donutThickness = isMobile ? 9 : isTablet ? 12 : 14;
   const compactSummaryDonutSize = isNarrowMobile ? 80 : 96;
   const compactSummaryDonutThickness = isNarrowMobile ? 10 : 12;
 

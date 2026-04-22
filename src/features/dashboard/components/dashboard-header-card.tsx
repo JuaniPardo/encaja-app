@@ -6,7 +6,6 @@ import type { TranslationFn } from "@/features/dashboard/types/dashboard";
 type DashboardHeaderCardProps = {
   isMobile: boolean;
   selectedPeriodLabel: string;
-  workspaceName: string;
   workspaceSlug: string;
   currencyCode: string;
   monthOptions: Array<{ value: string; label: string }>;
@@ -21,7 +20,6 @@ type DashboardHeaderCardProps = {
 export function DashboardHeaderCard({
   isMobile,
   selectedPeriodLabel,
-  workspaceName,
   workspaceSlug,
   currencyCode,
   monthOptions,
@@ -43,18 +41,14 @@ export function DashboardHeaderCard({
     >
       <Group justify="space-between" align={isMobile ? "flex-start" : "end"} wrap="wrap" gap="xs">
         <Stack gap={1}>
-          <Title order={2} component="h1" size="h3" c="#1f2937">
-            {t("dashboard.financialDashboard")}
-          </Title>
-          <Text fw={700} size="md" c="#344054">
-            {selectedPeriodLabel}
-          </Text>
-          <Text size="xs" c="#667085">
-            {t("dashboard.workspaceCurrency", undefined, {
-              workspaceName,
-              currencyCode,
-            })}
-          </Text>
+          <Group gap={6} align="baseline">
+            <Title order={2} component="h1" size="h3" c="#1f2937">
+              {t("dashboard.financialDashboard")}
+            </Title>
+            <Text size="sm" fw={600} c="#667085">
+              - {currencyCode}
+            </Text>
+          </Group>
         </Stack>
         <Group gap={6} align="center" wrap="wrap">
           <Button

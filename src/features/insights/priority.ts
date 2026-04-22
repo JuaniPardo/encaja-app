@@ -12,13 +12,13 @@ export function resolveInsightSeverityWeight(severity: InsightSeverity) {
 }
 
 export function compareInsightsByPriority(left: Insight, right: Insight) {
-  if (right.priority !== left.priority) {
-    return right.priority - left.priority;
-  }
-
   const severityDiff = resolveInsightSeverityWeight(right.severity) - resolveInsightSeverityWeight(left.severity);
   if (severityDiff !== 0) {
     return severityDiff;
+  }
+
+  if (right.priority !== left.priority) {
+    return right.priority - left.priority;
   }
 
   return left.id.localeCompare(right.id);
