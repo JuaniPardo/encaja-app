@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { LoadingOverlay, Stack } from "@mantine/core";
+import { Box, LoadingOverlay, Stack } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 
 import { DashboardCompactSummaryStrip } from "@/features/dashboard/components/dashboard-compact-summary-strip";
@@ -168,6 +168,7 @@ export default function DashboardPage() {
     isMobile,
     isNarrowMobile,
     isTablet,
+    isDesktop,
     distributionColumns,
     cardPadding,
     tableHorizontalSpacing,
@@ -239,6 +240,20 @@ export default function DashboardPage() {
     <Stack gap={isMobile ? "xs" : "sm"} pos="relative">
       <LoadingOverlay visible={isBootstrapping || isLoadingSummary} />
 
+      <DashboardHeaderCard
+        isMobile={isMobile}
+        selectedPeriodLabel={selectedPeriodLabel}
+        workspaceSlug={workspace.slug}
+        currencyCode={currencyCode}
+        monthOptions={monthOptions}
+        yearOptions={yearOptions}
+        selectedMonth={selectedMonth}
+        selectedYear={selectedYear}
+        onSelectMonth={handleSelectMonth}
+        onSelectYear={handleSelectYear}
+        t={t}
+      />
+
       {shouldShowOnboardingCta ? (
         <DashboardOnboardingCtaCard
           onboardingHref={onboardingHref}
@@ -260,21 +275,6 @@ export default function DashboardPage() {
         />
       ) : null}
 
-      <DashboardHeaderCard
-        isMobile={isMobile}
-        selectedPeriodLabel={selectedPeriodLabel}
-        workspaceName={workspace.name}
-        workspaceSlug={workspace.slug}
-        currencyCode={currencyCode}
-        monthOptions={monthOptions}
-        yearOptions={yearOptions}
-        selectedMonth={selectedMonth}
-        selectedYear={selectedYear}
-        onSelectMonth={handleSelectMonth}
-        onSelectYear={handleSelectYear}
-        t={t}
-      />
-
       {isMobile ? (
         <DashboardCompactSummaryStrip
           isNarrowMobile={isNarrowMobile}
@@ -286,60 +286,126 @@ export default function DashboardPage() {
         />
       ) : null}
 
-      {!isMobile ? (
-        <DashboardDistributionPanel
-          isMobile={isMobile}
-          isTablet={isTablet}
-          cardPadding={cardPadding}
-          distributionColumns={distributionColumns}
-          donutData={donutData}
-          donutSize={donutSize}
-          donutThickness={donutThickness}
-          compactCurrencyFormatter={compactCurrencyFormatter}
-          typeLabels={typeLabels}
-          t={t}
-        />
-      ) : null}
+      {isDesktop ? (
+        <Box
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.8fr 1fr",
+            gap: 24,
+            alignItems: "start",
+          }}
+        >
+          <Stack gap="sm">
+            {summaryRows.map(({ type, rows }) => (
+              <DashboardTypeSummarySection
+                key={type}
+                type={type}
+                rows={rows}
+                totals={metrics.totalsByType[type]}
+                typeLabel={typeLabels[type]}
+                isMobile={isMobile}
+                tableHorizontalSpacing={tableHorizontalSpacing}
+                tableVerticalSpacing={tableVerticalSpacing}
+                tableColumnWidths={tableColumnWidths}
+                executionBarWidth={executionBarWidth}
+                compactFormatter={compactFormatter}
+                currencyFormatter={currencyFormatter}
+                percentageFormatter={percentageFormatter}
+                categoryDrilldownHref={categoryDrilldownHref}
+                t={t}
+              />
+            ))}
+          </Stack>
 
-      <DashboardFinancialMethodsCard
-        isMobile={isMobile}
-        financialSummary={financialSummary}
-        currencyFormatter={currencyFormatter}
-        paymentMethodTypeLabels={paymentMethodTypeLabels}
-        paymentMethodDrilldownHref={paymentMethodDrilldownHref}
-        t={t}
-      />
+          <Stack gap="sm">
+            <DashboardDistributionPanel
+              isMobile={isMobile}
+              isTablet={isTablet}
+              cardPadding={cardPadding}
+              distributionColumns={distributionColumns}
+              donutData={donutData}
+              donutSize={donutSize}
+              donutThickness={donutThickness}
+              compactCurrencyFormatter={compactCurrencyFormatter}
+              typeLabels={typeLabels}
+              t={t}
+            />
+            <DashboardFinancialMethodsCard
+              isMobile={isMobile}
+              financialSummary={financialSummary}
+              currencyFormatter={currencyFormatter}
+              paymentMethodTypeLabels={paymentMethodTypeLabels}
+              paymentMethodDrilldownHref={paymentMethodDrilldownHref}
+              t={t}
+            />
+            {shouldShowLinkedWorkspaceSummary ? (
+              <LinkedWorkspaceSummaryCard
+                isMobile={isMobile}
+                linkedWorkspaceBalanceGroups={linkedWorkspaceBalanceGroups}
+                linkedWorkspaceCurrencyFormatters={linkedWorkspaceCurrencyFormatters}
+                t={t}
+              />
+            ) : null}
+          </Stack>
+        </Box>
+      ) : (
+        <>
+          {!isMobile ? (
+            <DashboardDistributionPanel
+              isMobile={isMobile}
+              isTablet={isTablet}
+              cardPadding={cardPadding}
+              distributionColumns={distributionColumns}
+              donutData={donutData}
+              donutSize={donutSize}
+              donutThickness={donutThickness}
+              compactCurrencyFormatter={compactCurrencyFormatter}
+              typeLabels={typeLabels}
+              t={t}
+            />
+          ) : null}
 
-      {shouldShowLinkedWorkspaceSummary ? (
-        <LinkedWorkspaceSummaryCard
-          isMobile={isMobile}
-          linkedWorkspaceBalanceGroups={linkedWorkspaceBalanceGroups}
-          linkedWorkspaceCurrencyFormatters={linkedWorkspaceCurrencyFormatters}
-          t={t}
-        />
-      ) : null}
-
-      <Stack gap={isMobile ? "xs" : "sm"}>
-        {summaryRows.map(({ type, rows }) => (
-          <DashboardTypeSummarySection
-            key={type}
-            type={type}
-            rows={rows}
-            totals={metrics.totalsByType[type]}
-            typeLabel={typeLabels[type]}
+          <DashboardFinancialMethodsCard
             isMobile={isMobile}
-            tableHorizontalSpacing={tableHorizontalSpacing}
-            tableVerticalSpacing={tableVerticalSpacing}
-            tableColumnWidths={tableColumnWidths}
-            executionBarWidth={executionBarWidth}
-            compactFormatter={compactFormatter}
+            financialSummary={financialSummary}
             currencyFormatter={currencyFormatter}
-            percentageFormatter={percentageFormatter}
-            categoryDrilldownHref={categoryDrilldownHref}
+            paymentMethodTypeLabels={paymentMethodTypeLabels}
+            paymentMethodDrilldownHref={paymentMethodDrilldownHref}
             t={t}
           />
-        ))}
-      </Stack>
+
+          {shouldShowLinkedWorkspaceSummary ? (
+            <LinkedWorkspaceSummaryCard
+              isMobile={isMobile}
+              linkedWorkspaceBalanceGroups={linkedWorkspaceBalanceGroups}
+              linkedWorkspaceCurrencyFormatters={linkedWorkspaceCurrencyFormatters}
+              t={t}
+            />
+          ) : null}
+
+          <Stack gap={isMobile ? "xs" : "sm"}>
+            {summaryRows.map(({ type, rows }) => (
+              <DashboardTypeSummarySection
+                key={type}
+                type={type}
+                rows={rows}
+                totals={metrics.totalsByType[type]}
+                typeLabel={typeLabels[type]}
+                isMobile={isMobile}
+                tableHorizontalSpacing={tableHorizontalSpacing}
+                tableVerticalSpacing={tableVerticalSpacing}
+                tableColumnWidths={tableColumnWidths}
+                executionBarWidth={executionBarWidth}
+                compactFormatter={compactFormatter}
+                currencyFormatter={currencyFormatter}
+                percentageFormatter={percentageFormatter}
+                categoryDrilldownHref={categoryDrilldownHref}
+                t={t}
+              />
+            ))}
+          </Stack>
+        </>
+      )}
 
     </Stack>
   );
