@@ -10,7 +10,6 @@ import { DashboardFinancialMethodsCard } from "@/features/dashboard/components/d
 import { DashboardHeaderCard } from "@/features/dashboard/components/dashboard-header-card";
 import { DashboardOnboardingCtaCard } from "@/features/dashboard/components/dashboard-onboarding-cta-card";
 import { DashboardPrimaryInsightCard } from "@/features/dashboard/components/dashboard-primary-insight-card";
-import { DashboardPeriodKpis } from "@/features/dashboard/components/dashboard-period-kpis";
 import { DashboardTypeSummarySection } from "@/features/dashboard/components/dashboard-type-summary-section";
 import { LinkedWorkspaceSummaryCard } from "@/features/dashboard/components/linked-workspace-summary-card";
 import { useDashboardData } from "@/features/dashboard/hooks/use-dashboard-data";
@@ -130,7 +129,6 @@ export default function DashboardPage() {
     paymentMethodTypeLabels,
     yearOptions,
     metrics,
-    savingsVsIncome,
     donutData,
     summaryRows,
     financialSummary,
@@ -170,8 +168,6 @@ export default function DashboardPage() {
     isMobile,
     isNarrowMobile,
     isTablet,
-    isDesktop,
-    kpiColumns,
     distributionColumns,
     cardPadding,
     tableHorizontalSpacing,
@@ -289,21 +285,6 @@ export default function DashboardPage() {
           typeLabels={typeLabels}
         />
       ) : null}
-
-      <DashboardPeriodKpis
-        isDesktop={isDesktop}
-        isMobile={isMobile}
-        kpiColumns={kpiColumns}
-        balanceBudget={metrics.balanceBudget}
-        balanceReal={metrics.balanceReal}
-        balanceDelta={metrics.balanceDelta}
-        savingReal={metrics.totalsByType.saving.real}
-        savingBudget={metrics.totalsByType.saving.budget}
-        savingsVsIncome={savingsVsIncome}
-        currencyFormatter={currencyFormatter}
-        percentageFormatter={percentageFormatter}
-        t={t}
-      />
 
       {!isMobile ? (
         <DashboardDistributionPanel

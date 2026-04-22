@@ -84,12 +84,6 @@ export function DashboardFinancialMethodsCard({
 
         <Stack gap={6}>
           <Stack gap={2}>
-            <Text size="xs" fw={700} c="#475467">
-              {t("dashboard.availabilitySectionTitle")}
-            </Text>
-            <Text size="10px" c="#98a2b3">
-              {t("dashboard.availabilitySectionHint")}
-            </Text>
             <Text fw={800} c={financialSummary.availabilityTotalBalance >= 0 ? "#087f5b" : "#c92a2a"}>
               {t("dashboard.totalBalance")}: {currencyFormatter.format(financialSummary.availabilityTotalBalance)}
             </Text>
