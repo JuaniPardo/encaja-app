@@ -113,22 +113,21 @@ export async function loadInsightsContext({
     historicalCreditTransactions = (historicalCreditTransactionsResponse.data ?? []) as TransactionRow[];
   }
 
-  let nextMonthInstallmentTransactions: TransactionRow[] = [];
+  let nextMonthCommitmentTransactions: TransactionRow[] = [];
   if (creditCards.length > 0) {
-    const nextMonthInstallmentsResponse = await supabase
+    const nextMonthCommitmentResponse = await supabase
       .from("transactions")
       .select("amount, type, payment_method_id, direction, effective_date, transaction_date, installment_purchase_id")
       .eq("workspace_id", workspaceId)
       .in("payment_method_id", creditCards.map((row) => row.id))
-      .not("installment_purchase_id", "is", null)
-      .gte("effective_date", nextPeriod.start)
-      .lt("effective_date", nextPeriod.end);
+      .eq("type", "expense")
+      .or(buildTransactionPeriodFilter(nextPeriod.start, nextPeriod.end));
 
-    if (nextMonthInstallmentsResponse.error) {
-      throw nextMonthInstallmentsResponse.error;
+    if (nextMonthCommitmentResponse.error) {
+      throw nextMonthCommitmentResponse.error;
     }
 
-    nextMonthInstallmentTransactions = (nextMonthInstallmentsResponse.data ?? []) as TransactionRow[];
+    nextMonthCommitmentTransactions = (nextMonthCommitmentResponse.data ?? []) as TransactionRow[];
   }
 
   const currentTransactions = (currentTransactionsResponse.data ?? []) as TransactionRow[];
@@ -169,14 +168,14 @@ export async function loadInsightsContext({
     }
   }
 
-  let creditCardNextMonthInstallments = 0;
-  for (const row of nextMonthInstallmentTransactions) {
+  let creditCardNextMonthCommitment = 0;
+  for (const row of nextMonthCommitmentTransactions) {
     if (
       row.type === "expense" &&
       row.payment_method_id !== null &&
       creditCardIds.has(row.payment_method_id)
     ) {
-      creditCardNextMonthInstallments += parseAmountValue(row.amount);
+      creditCardNextMonthCommitment += parseAmountValue(row.amount);
     }
   }
 
@@ -216,6 +215,6 @@ export async function loadInsightsContext({
     creditCardPaymentsCurrentMonth: roundMoney(creditCardPaymentsCurrentMonth),
     creditCardDebtTotal: roundMoney(creditCardDebtTotal),
     creditCardCurrentStatement: roundMoney(creditCardExpenseCurrentMonth),
-    creditCardNextMonthInstallments: roundMoney(creditCardNextMonthInstallments),
+    creditCardNextMonthCommitment: roundMoney(creditCardNextMonthCommitment),
   };
 }

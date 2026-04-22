@@ -63,6 +63,9 @@ function resolveInsightKindLabel(insight: Insight, t: TranslationFn) {
   if (insight.kind === "high_usage") {
     return t("insightsV2.dashboard.kindBadge.highUsage");
   }
+  if (insight.kind === "next_month_commitment") {
+    return t("insightsV2.dashboard.kindBadge.futureCommitment");
+  }
   if (insight.kind === "full_payment" || insight.kind === "stable") {
     return t("insightsV2.dashboard.kindBadge.controlled");
   }

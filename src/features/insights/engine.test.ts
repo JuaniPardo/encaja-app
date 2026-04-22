@@ -25,13 +25,13 @@ function buildBaseContext(overrides: Partial<InsightsContext> = {}): InsightsCon
     creditCardPaymentsCurrentMonth: 400_000,
     creditCardDebtTotal: 200_000,
     creditCardCurrentStatement: 400_000,
-    creditCardNextMonthInstallments: 100_000,
+    creditCardNextMonthCommitment: 100_000,
     ...overrides,
   };
 }
 
 describe("buildInsightsResult", () => {
-  it("prioritizes unpaid card insight when due date passed and no payment exists", () => {
+  it("prioritizes unpaid card insight when no payment exists", () => {
     const result = buildInsightsResult({
       context: buildBaseContext({
         creditCardExpenseCurrentMonth: 520_000,
@@ -75,6 +75,55 @@ describe("buildInsightsResult", () => {
 
     const rolledDebtInsight = result.allInsights.find((insight) => insight.kind === "rolled_debt");
     expect(rolledDebtInsight).toBeDefined();
+  });
+
+  it("prioritizes next month commitment insight when future commitment is high", () => {
+    const result = buildInsightsResult({
+      context: buildBaseContext({
+        incomeCurrentMonth: 1_000_000,
+        creditCardCurrentStatement: 180_000,
+        creditCardDebtTotal: 220_000,
+        creditCardNextMonthCommitment: 700_000,
+      }),
+      t,
+      currencyFormatter,
+    });
+
+    expect(result.primaryInsight?.kind).toBe("next_month_commitment");
+  });
+
+  it("does not flag next month commitment when debt is current-month only", () => {
+    const result = buildInsightsResult({
+      context: buildBaseContext({
+        creditCardCurrentStatement: 650_000,
+        creditCardNextMonthCommitment: 0,
+      }),
+      t,
+      currencyFormatter,
+    });
+
+    const nextMonthCommitmentInsight = result.allInsights.find(
+      (insight) => insight.kind === "next_month_commitment",
+    );
+    expect(nextMonthCommitmentInsight).toBeUndefined();
+  });
+
+  it("returns stable insight when card has no debt and no commitments", () => {
+    const result = buildInsightsResult({
+      context: buildBaseContext({
+        creditCardExpenseCurrentMonth: 0,
+        creditCardExpensePreviousMonth: 0,
+        creditCardPaymentsCurrentMonth: 0,
+        creditCardDebtTotal: 0,
+        creditCardCurrentStatement: 0,
+        creditCardNextMonthCommitment: 0,
+      }),
+      t,
+      currencyFormatter,
+    });
+
+    expect(result.primaryInsight?.kind).toBe("stable");
+    expect(result.primaryInsight?.severity).toBe("info");
   });
 
   it("returns full payment positive insight when statement is fully paid", () => {

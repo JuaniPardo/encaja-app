@@ -48,5 +48,5 @@ export type InsightsContext = {
   creditCardPaymentsCurrentMonth: number;
   creditCardDebtTotal: number;
   creditCardCurrentStatement: number;
-  creditCardNextMonthInstallments: number;
+  creditCardNextMonthCommitment: number;
 };

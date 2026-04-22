@@ -29,7 +29,12 @@ type UseDashboardDataOptions = {
   t: TranslationFn;
 };
 
-type PendingInstallmentRow = Pick<
+type FutureInstallmentRow = Pick<
+  Database["public"]["Tables"]["transactions"]["Row"],
+  "payment_method_id" | "amount"
+>;
+
+type NextMonthCommitmentRow = Pick<
   Database["public"]["Tables"]["transactions"]["Row"],
   "payment_method_id" | "amount"
 >;
@@ -48,9 +53,12 @@ export function useDashboardData({
   const [budgetItems, setBudgetItems] = useState<BudgetItemLiteRow[]>([]);
   const [transactionRows, setTransactionRows] = useState<TransactionLiteRow[]>([]);
   const [allTransactionsImpact, setAllTransactionsImpact] = useState<Map<string, number>>(new Map());
-  const [pendingInstallmentsByMethodId, setPendingInstallmentsByMethodId] = useState<
+  const [futureInstallmentsByMethodId, setFutureInstallmentsByMethodId] = useState<
     Map<string, number>
   >(new Map());
+  const [nextMonthCommitmentByMethodId, setNextMonthCommitmentByMethodId] = useState<Map<string, number>>(
+    new Map(),
+  );
   const [paymentMethodRows, setPaymentMethodRows] = useState<PaymentMethodBalanceRow[]>([]);
   const [linkedWorkspacePaymentMethodBalances, setLinkedWorkspacePaymentMethodBalances] = useState<
     LinkedWorkspacePaymentMethodBalanceRow[]
@@ -152,6 +160,8 @@ export function useDashboardData({
 
     const run = async () => {
       const { start, end } = buildMonthRange(selectedYear, selectedMonth);
+      const nextPeriodDate = new Date(selectedYear, selectedMonth, 1, 12, 0, 0, 0);
+      const nextPeriod = buildMonthRange(nextPeriodDate.getFullYear(), nextPeriodDate.getMonth() + 1);
 
       const periodResponsePromise = supabase
         .from("budget_periods")
@@ -185,13 +195,27 @@ export function useDashboardData({
         .eq("workspace_id", workspaceId)
         .or(historicalFilter);
 
-      const pendingInstallmentsPromise = supabase
+      const futureInstallmentsPromise = supabase
         .from("transactions")
         .select("payment_method_id, amount")
         .eq("workspace_id", workspaceId)
+        .eq("type", "expense")
         .not("installment_purchase_id", "is", null)
         .gte("effective_date", end)
         .not("payment_method_id", "is", null);
+
+      const nextMonthCommitmentFilter = [
+        `and(effective_date.gte.${nextPeriod.start},effective_date.lt.${nextPeriod.end})`,
+        `and(effective_date.is.null,transaction_date.gte.${nextPeriod.start},transaction_date.lt.${nextPeriod.end})`,
+      ].join(",");
+
+      const nextMonthCommitmentPromise = supabase
+        .from("transactions")
+        .select("payment_method_id, amount")
+        .eq("workspace_id", workspaceId)
+        .eq("type", "expense")
+        .not("payment_method_id", "is", null)
+        .or(nextMonthCommitmentFilter);
 
       const linkedWorkspaceSummaryPromise = supabase.rpc(
         "list_linked_workspace_payment_method_balances",
@@ -204,13 +228,15 @@ export function useDashboardData({
         periodResponse,
         transactionsResponse,
         historicalTransactionsResponse,
-        pendingInstallmentsResponse,
+        futureInstallmentsResponse,
+        nextMonthCommitmentResponse,
         linkedWorkspaceSummaryResponse,
       ] = await Promise.all([
         periodResponsePromise,
         transactionsResponsePromise,
         historicalTransactionsPromise,
-        pendingInstallmentsPromise,
+        futureInstallmentsPromise,
+        nextMonthCommitmentPromise,
         linkedWorkspaceSummaryPromise,
       ]);
 
@@ -257,30 +283,56 @@ export function useDashboardData({
         setAllTransactionsImpact(impactMap);
       }
 
-      if (pendingInstallmentsResponse.error) {
+      if (futureInstallmentsResponse.error) {
         notifications.show({
           color: "red",
           title: t("dashboard.notifications.loadPendingInstallmentsError"),
-          message: pendingInstallmentsResponse.error.message,
+          message: futureInstallmentsResponse.error.message,
         });
-        setPendingInstallmentsByMethodId(new Map());
+        setFutureInstallmentsByMethodId(new Map());
       } else {
-        const pendingRows = (pendingInstallmentsResponse.data ?? []) as PendingInstallmentRow[];
-        const pendingMap = new Map<string, number>();
+        const futureRows = (futureInstallmentsResponse.data ?? []) as FutureInstallmentRow[];
+        const futureMap = new Map<string, number>();
 
-        for (const row of pendingRows) {
+        for (const row of futureRows) {
           if (!row.payment_method_id) {
             continue;
           }
 
-          const previousAmount = pendingMap.get(row.payment_method_id) ?? 0;
-          pendingMap.set(
+          const previousAmount = futureMap.get(row.payment_method_id) ?? 0;
+          futureMap.set(
             row.payment_method_id,
-            roundMoney(previousAmount - parseAmountValue(row.amount)),
+            roundMoney(previousAmount + parseAmountValue(row.amount)),
           );
         }
 
-        setPendingInstallmentsByMethodId(pendingMap);
+        setFutureInstallmentsByMethodId(futureMap);
+      }
+
+      if (nextMonthCommitmentResponse.error) {
+        notifications.show({
+          color: "red",
+          title: t("dashboard.notifications.loadNextMonthCommitmentError"),
+          message: nextMonthCommitmentResponse.error.message,
+        });
+        setNextMonthCommitmentByMethodId(new Map());
+      } else {
+        const nextCommitmentRows = (nextMonthCommitmentResponse.data ?? []) as NextMonthCommitmentRow[];
+        const nextCommitmentMap = new Map<string, number>();
+
+        for (const row of nextCommitmentRows) {
+          if (!row.payment_method_id) {
+            continue;
+          }
+
+          const previousAmount = nextCommitmentMap.get(row.payment_method_id) ?? 0;
+          nextCommitmentMap.set(
+            row.payment_method_id,
+            roundMoney(previousAmount + parseAmountValue(row.amount)),
+          );
+        }
+
+        setNextMonthCommitmentByMethodId(nextCommitmentMap);
       }
 
       if (linkedWorkspaceSummaryResponse.error) {
@@ -341,7 +393,8 @@ export function useDashboardData({
     budgetItems,
     transactionRows,
     allTransactionsImpact,
-    pendingInstallmentsByMethodId,
+    futureInstallmentsByMethodId,
+    nextMonthCommitmentByMethodId,
     paymentMethodRows,
     linkedWorkspacePaymentMethodBalances,
     startYear,

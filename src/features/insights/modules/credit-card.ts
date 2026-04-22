@@ -60,8 +60,8 @@ export function generateCreditCardInsights({
   const previousMonthCardExpense = context.creditCardExpensePreviousMonth;
   const monthlyCardPayments = context.creditCardPaymentsCurrentMonth;
   const totalDebt = context.creditCardDebtTotal;
-  const currentStatement = context.creditCardCurrentStatement;
-  const nextMonthInstallments = context.creditCardNextMonthInstallments;
+  const statementCurrent = context.creditCardCurrentStatement;
+  const nextMonthCommitment = context.creditCardNextMonthCommitment;
 
   const hasIncome = totalIncome > tolerance;
   const hasPreviousStatementToPay = previousMonthCardExpense > tolerance;
@@ -185,17 +185,17 @@ export function generateCreditCardInsights({
       );
     }
 
-    const currentStatementVsIncome = currentStatement / totalIncome;
+    const currentStatementVsIncome = statementCurrent / totalIncome;
     if (currentStatementVsIncome >= 0.5) {
       insights.push(
         createInsight({
           id: "credit_card_statement_alert",
           kind: "high_statement",
           severity: "alert",
-          priority: 780,
+          priority: 710,
           title: t("insightsV2.modules.creditCard.insights.statementPressure.alertTitle"),
           message: t("insightsV2.modules.creditCard.insights.statementPressure.alertMessage", undefined, {
-            statementAmount: currencyFormatter.format(currentStatement),
+            statementAmount: currencyFormatter.format(statementCurrent),
           }),
           data: {
             currentStatementVsIncome,
@@ -208,10 +208,10 @@ export function generateCreditCardInsights({
           id: "credit_card_statement_warning",
           kind: "high_statement",
           severity: "warning",
-          priority: 760,
+          priority: 690,
           title: t("insightsV2.modules.creditCard.insights.statementPressure.warningTitle"),
           message: t("insightsV2.modules.creditCard.insights.statementPressure.warningMessage", undefined, {
-            statementAmount: currencyFormatter.format(currentStatement),
+            statementAmount: currencyFormatter.format(statementCurrent),
           }),
           data: {
             currentStatementVsIncome,
@@ -220,52 +220,61 @@ export function generateCreditCardInsights({
       );
     }
 
-    const nextMonthInstallmentsVsIncome = nextMonthInstallments / totalIncome;
-    if (nextMonthInstallmentsVsIncome >= 0.5) {
+    const nextMonthCommitmentVsIncome = nextMonthCommitment / totalIncome;
+    if (nextMonthCommitmentVsIncome >= 0.5) {
       insights.push(
         createInsight({
           id: "credit_card_next_commitment_alert",
           kind: "next_month_commitment",
           severity: "alert",
-          priority: 740,
+          priority: 920,
           title: t("insightsV2.modules.creditCard.insights.nextCommitment.alertTitle"),
           message: t("insightsV2.modules.creditCard.insights.nextCommitment.alertMessage", undefined, {
-            amount: currencyFormatter.format(nextMonthInstallments),
+            amount: currencyFormatter.format(nextMonthCommitment),
           }),
           data: {
-            nextMonthInstallmentsVsIncome,
+            nextMonthCommitmentVsIncome,
+            statementCurrent,
+            nextMonthCommitment,
+            incomeReference: totalIncome,
           },
         }),
       );
-    } else if (nextMonthInstallmentsVsIncome >= 0.35) {
+    } else if (nextMonthCommitmentVsIncome >= 0.35) {
       insights.push(
         createInsight({
           id: "credit_card_next_commitment_warning",
           kind: "next_month_commitment",
           severity: "warning",
-          priority: 720,
+          priority: 890,
           title: t("insightsV2.modules.creditCard.insights.nextCommitment.warningTitle"),
           message: t("insightsV2.modules.creditCard.insights.nextCommitment.warningMessage", undefined, {
-            amount: currencyFormatter.format(nextMonthInstallments),
+            amount: currencyFormatter.format(nextMonthCommitment),
           }),
           data: {
-            nextMonthInstallmentsVsIncome,
+            nextMonthCommitmentVsIncome,
+            statementCurrent,
+            nextMonthCommitment,
+            incomeReference: totalIncome,
           },
         }),
       );
-    } else if (nextMonthInstallmentsVsIncome >= 0.2) {
+    } else if (nextMonthCommitmentVsIncome >= 0.2) {
       insights.push(
         createInsight({
           id: "credit_card_next_commitment_info",
           kind: "next_month_commitment",
           severity: "info",
-          priority: 700,
+          priority: 760,
           title: t("insightsV2.modules.creditCard.insights.nextCommitment.infoTitle"),
           message: t("insightsV2.modules.creditCard.insights.nextCommitment.infoMessage", undefined, {
-            amount: currencyFormatter.format(nextMonthInstallments),
+            amount: currencyFormatter.format(nextMonthCommitment),
           }),
           data: {
-            nextMonthInstallmentsVsIncome,
+            nextMonthCommitmentVsIncome,
+            statementCurrent,
+            nextMonthCommitment,
+            incomeReference: totalIncome,
           },
         }),
       );
