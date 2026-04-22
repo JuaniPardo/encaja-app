@@ -34,7 +34,7 @@ export function useDashboardResponsive(): DashboardResponsiveState {
   const isTablet = useMediaQuery("(min-width: 48em) and (max-width: 74.99em)");
 
   const kpiColumns = isMobile ? (isNarrowMobile ? 1 : 2) : 2;
-  const distributionColumns = isMobile ? 1 : 3;
+  const distributionColumns = isMobile ? 1 : isTablet ? 2 : 3;
   const isDesktop = !isMobile && !isTablet;
   const cardPadding = isMobile ? "xs" : "sm";
   const tableHorizontalSpacing = isMobile ? "xs" : "sm";

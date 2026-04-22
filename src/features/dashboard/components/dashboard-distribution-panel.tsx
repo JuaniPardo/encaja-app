@@ -6,6 +6,7 @@ import type { DashboardTypeLabels, DonutDataByType, TranslationFn } from "@/feat
 
 type DashboardDistributionPanelProps = {
   isMobile: boolean;
+  isTablet: boolean;
   cardPadding: "xs" | "sm";
   distributionColumns: number;
   donutData: DonutDataByType;
@@ -18,6 +19,7 @@ type DashboardDistributionPanelProps = {
 
 export function DashboardDistributionPanel({
   isMobile,
+  isTablet,
   cardPadding,
   distributionColumns,
   donutData,
@@ -40,14 +42,12 @@ export function DashboardDistributionPanel({
         <Text size="xs" fw={800} c="#344054">
           {t("dashboard.monthMovementsTitle")}
         </Text>
-        <Text size="11px" c="#667085">
-          {t("dashboard.realDistributionByType")}
-        </Text>
 
         <SimpleGrid cols={distributionColumns} spacing={isMobile ? 6 : 8}>
           {dashboardVisibleTypes.map((type) => {
             const donut = donutData[type];
             const hasData = donut.slices.length > 0;
+            const stackVisuals = isMobile || isTablet;
 
             return (
               <Paper
@@ -63,8 +63,8 @@ export function DashboardDistributionPanel({
                 <Box
                   style={{
                     display: "grid",
-                    gridTemplateColumns: isMobile ? "1fr" : `${donutSize}px minmax(0, 1fr)`,
-                    gap: isMobile ? 8 : 6,
+                    gridTemplateColumns: stackVisuals ? "1fr" : `${donutSize}px minmax(0, 1fr)`,
+                    gap: stackVisuals ? 8 : 6,
                     alignItems: "center",
                   }}
                 >
@@ -95,7 +95,15 @@ export function DashboardDistributionPanel({
                     />
                   </Box>
 
-                  <Stack gap={3} style={{ minWidth: 0 }}>
+                  <Stack
+                    gap={3}
+                    style={{
+                      minWidth: 0,
+                      maxWidth: stackVisuals ? "100%" : 220,
+                      marginInline: stackVisuals ? "auto" : 0,
+                      width: "100%",
+                    }}
+                  >
                     <Text size="xs" fw={700} c={typeTheme[type].main}>
                       {typeLabels[type]}
                     </Text>

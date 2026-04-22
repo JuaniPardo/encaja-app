@@ -169,6 +169,7 @@ export default function DashboardPage() {
   const {
     isMobile,
     isNarrowMobile,
+    isTablet,
     isDesktop,
     kpiColumns,
     distributionColumns,
@@ -307,6 +308,7 @@ export default function DashboardPage() {
       {!isMobile ? (
         <DashboardDistributionPanel
           isMobile={isMobile}
+          isTablet={isTablet}
           cardPadding={cardPadding}
           distributionColumns={distributionColumns}
           donutData={donutData}
