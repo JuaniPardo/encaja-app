@@ -1,3 +1,21 @@
+## [1.6.0] - 2026-04-23
+
+### Added
+- Added projection and behavior engine to classify fixed/variable flows and estimate end-of-month totals from governed dates.
+- Added financial state and insight engine with severity-prioritized primary insight selection for dashboard.
+- Added compact `Cuotas y deuda` summary block to improve immediate understanding of card commitments.
+
+### Changed
+- Implemented MVP28 dashboard redesign with explicit visual hierarchy: priorities, state/insight, monthly flow, top categories, summarized budget, and degraded detail blocks.
+- Updated dashboard layout to prioritize critical financial signals first and move secondary detail into collapsible sections.
+- Refined `Flujo del mes` presentation with lightweight area-style visuals, monotone curve behavior, and softer axis/grid treatment.
+- Updated budget-vs-expense block to a concise summary format with over-deviation categories in one scan line.
+
+### Fixed
+- Corrected credit-card pressure/commitment indicators by recalculating previous statement and rolled balance from card balance + governed flows.
+- Corrected future pressure computation to include rolled carryover in financial-state assessment.
+- Replaced technical rolled-debt label with user-facing wording (`Saldo pendiente o a favor`).
+
 ## [1.5.2] - 2026-04-22
 
 ### Changed
