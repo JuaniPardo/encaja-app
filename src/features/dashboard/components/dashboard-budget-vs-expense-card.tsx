@@ -1,4 +1,4 @@
-import { Box, Group, Paper, Stack, Text } from "@mantine/core";
+import { Group, Paper, Stack, Text } from "@mantine/core";
 
 import { formatSignedCurrency } from "@/features/dashboard/lib/dashboard-math";
 import type { CategorySummaryRow, TranslationFn } from "@/features/dashboard/types/dashboard";
@@ -25,12 +25,21 @@ export function DashboardBudgetVsExpenseCard({
   t,
 }: DashboardBudgetVsExpenseCardProps) {
   const executionPercent = Math.abs(expenseBudget) < 0.005 ? null : (expenseReal / expenseBudget) * 100;
-  const progressPercent = executionPercent === null ? 0 : Math.max(0, Math.min(executionPercent, 160));
 
   const overBudgetRows = [...expenseRows]
     .filter((row) => row.deviation > 0.005)
     .sort((left, right) => right.deviation - left.deviation)
     .slice(0, 2);
+
+  const overBudgetSummary =
+    overBudgetRows.length === 0
+      ? t("dashboard.overBudgetCategoriesNoData")
+      : overBudgetRows
+          .map(
+            (row) =>
+              `${row.categoryName} ${formatSignedCurrency(row.deviation, compactFormatter)}`,
+          )
+          .join(" · ");
 
   return (
     <Paper
@@ -43,69 +52,29 @@ export function DashboardBudgetVsExpenseCard({
       }}
     >
       <Stack gap={7}>
-        <Text size="xs" fw={800} c="#344054">
-          {t("dashboard.budgetVsExpenseTitle")}
-        </Text>
-
-        <Group justify="space-between" align="center" wrap="wrap" gap={6}>
-          <Text size="xs" c="#667085">
-            {t("dashboard.realBudgetFull", undefined, {
-              real: compactFormatter.format(expenseReal),
-              budget: compactFormatter.format(expenseBudget),
-            })}
+        <Group justify="space-between" align="center" gap={8}>
+          <Text size="xs" fw={800} c="#344054">
+            {t("dashboard.budgetVsExpenseTitle")}
           </Text>
-          <Text size="xs" fw={700} c={expenseDeviation <= 0 ? "#087f5b" : "#c92a2a"}>
-            {formatSignedCurrency(expenseDeviation, compactFormatter)}
+          <Text size="11px" fw={700} c="#667085">
+            {t("dashboard.collapsed")}
           </Text>
         </Group>
 
-        <Box
-          style={{
-            width: "100%",
-            height: 8,
-            borderRadius: 999,
-            backgroundColor: "#edf2f7",
-            overflow: "hidden",
-          }}
-        >
-          <Box
-            style={{
-              width: `${Math.max(6, (progressPercent / 160) * 100)}%`,
-              height: "100%",
-              borderRadius: 999,
-              background:
-                executionPercent !== null && executionPercent > 100
-                  ? "linear-gradient(90deg, #f03e3e 0%, #e03131 100%)"
-                  : "linear-gradient(90deg, #099268 0%, #0ca678 100%)",
-            }}
-          />
-        </Box>
-
-        <Text size="xs" fw={700} c="#475467">
-          {t("dashboard.budgetExecutionLabel")}: {executionPercent === null ? "N/A" : `${percentageFormatter.format(executionPercent)}%`}
+        <Text size="xs" c="#475467">
+          {t("dashboard.budgetSummaryLine", undefined, {
+            real: compactFormatter.format(expenseReal),
+            budget: compactFormatter.format(expenseBudget),
+            execution: executionPercent === null ? "N/A" : `${percentageFormatter.format(executionPercent)}%`,
+            deviation: formatSignedCurrency(expenseDeviation, compactFormatter),
+          })}
         </Text>
 
-        <Stack gap={6}>
-          <Text size="11px" fw={700} c="#667085">
-            {t("dashboard.overBudgetCategoriesTitle")}
-          </Text>
-          {overBudgetRows.length === 0 ? (
-            <Text size="xs" c="#98a2b3">
-              {t("dashboard.overBudgetCategoriesNoData")}
-            </Text>
-          ) : (
-            overBudgetRows.map((row) => (
-              <Group key={row.categoryId} justify="space-between" align="center" wrap="nowrap" gap={8}>
-                <Text size="xs" c="#344054" lineClamp={1}>
-                  {row.categoryName}
-                </Text>
-                <Text size="xs" fw={700} c="#c92a2a" style={{ whiteSpace: "nowrap" }}>
-                  {formatSignedCurrency(row.deviation, compactFormatter)}
-                </Text>
-              </Group>
-            ))
-          )}
-        </Stack>
+        <Text size="11px" c="#667085" lineClamp={2}>
+          {t("dashboard.overBudgetSummaryLine", undefined, {
+            categories: overBudgetSummary,
+          })}
+        </Text>
       </Stack>
     </Paper>
   );

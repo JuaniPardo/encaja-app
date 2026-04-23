@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Box, LoadingOverlay, Paper, Stack, Text } from "@mantine/core";
+import { Box, Collapse, Group, LoadingOverlay, Paper, Stack, Text, UnstyledButton } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 
 import { DashboardBudgetVsExpenseCard } from "@/features/dashboard/components/dashboard-budget-vs-expense-card";
+import { DashboardCreditCommitmentsSummaryCard } from "@/features/dashboard/components/dashboard-credit-commitments-summary-card";
 import { DashboardFinancialStateCard } from "@/features/dashboard/components/dashboard-financial-state-card";
 import { DashboardFinancialMethodsCard } from "@/features/dashboard/components/dashboard-financial-methods-card";
 import { DashboardHeaderCard } from "@/features/dashboard/components/dashboard-header-card";
@@ -32,6 +33,8 @@ export default function DashboardPage() {
   const monthOptions = useMemo(() => buildMonthOptions(intlLocale), [intlLocale]);
   const canCreateDemoWorkspace = canManageWorkspaceSettings(workspace.role);
   const [isCreatingDemoWorkspace, setIsCreatingDemoWorkspace] = useState(false);
+  const [isExpenseDetailOpen, setIsExpenseDetailOpen] = useState(false);
+  const [isFinancialMethodsOpen, setIsFinancialMethodsOpen] = useState(false);
 
   const now = useMemo(() => new Date(), []);
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
@@ -45,6 +48,10 @@ export default function DashboardPage() {
     [demoWorkspace],
   );
   const insightsHref = useMemo(() => buildWorkspaceHref(workspace.slug, "/insights"), [workspace.slug]);
+  const paymentMethodsHref = useMemo(
+    () => buildWorkspaceHref(workspace.slug, "/payment-methods"),
+    [workspace.slug],
+  );
 
   const {
     categories,
@@ -400,22 +407,6 @@ export default function DashboardPage() {
             alignItems: "start",
           }}
         >
-          <DashboardTypeSummarySection
-            type="expense"
-            rows={expenseRows}
-            totals={metrics.totalsByType.expense}
-            typeLabel={typeLabels.expense}
-            isMobile={isMobile}
-            tableHorizontalSpacing={tableHorizontalSpacing}
-            tableVerticalSpacing={tableVerticalSpacing}
-            tableColumnWidths={tableColumnWidths}
-            executionBarWidth={executionBarWidth}
-            compactFormatter={compactFormatter}
-            currencyFormatter={currencyFormatter}
-            percentageFormatter={percentageFormatter}
-            categoryDrilldownHref={categoryDrilldownHref}
-            t={t}
-          />
           <DashboardRecentTransactionsCard
             isMobile={isMobile}
             locale={locale}
@@ -424,11 +415,18 @@ export default function DashboardPage() {
             compactCurrencyFormatter={compactCurrencyFormatter}
             categoryDrilldownHref={categoryDrilldownHref}
             typeLabels={typeLabels}
+            t={t}
+          />
+          <DashboardCreditCommitmentsSummaryCard
+            isMobile={isMobile}
+            financialSummary={financialSummary}
+            compactCurrencyFormatter={compactCurrencyFormatter}
+            detailHref={paymentMethodsHref}
             t={t}
           />
         </Box>
       ) : (
-        <>
+        <Stack gap={sectionGap}>
           <DashboardRecentTransactionsCard
             isMobile={isMobile}
             locale={locale}
@@ -439,53 +437,42 @@ export default function DashboardPage() {
             typeLabels={typeLabels}
             t={t}
           />
-          <DashboardTypeSummarySection
-            type="expense"
-            rows={expenseRows}
-            totals={metrics.totalsByType.expense}
-            typeLabel={typeLabels.expense}
+          <DashboardCreditCommitmentsSummaryCard
             isMobile={isMobile}
-            tableHorizontalSpacing={tableHorizontalSpacing}
-            tableVerticalSpacing={tableVerticalSpacing}
-            tableColumnWidths={tableColumnWidths}
-            executionBarWidth={executionBarWidth}
-            compactFormatter={compactFormatter}
-            currencyFormatter={currencyFormatter}
-            percentageFormatter={percentageFormatter}
-            categoryDrilldownHref={categoryDrilldownHref}
+            financialSummary={financialSummary}
+            compactCurrencyFormatter={compactCurrencyFormatter}
+            detailHref={paymentMethodsHref}
             t={t}
           />
-        </>
+        </Stack>
       )}
 
-      <DashboardFinancialMethodsCard
-        isMobile={isMobile}
-        financialSummary={financialSummary}
-        currencyFormatter={currencyFormatter}
-        paymentMethodTypeLabels={paymentMethodTypeLabels}
-        paymentMethodDrilldownHref={paymentMethodDrilldownHref}
-        t={t}
-      />
-
-      {shouldShowLinkedWorkspaceSummary ? (
-        <LinkedWorkspaceSummaryCard
-          isMobile={isMobile}
-          linkedWorkspaceBalanceGroups={linkedWorkspaceBalanceGroups}
-          linkedWorkspaceCurrencyFormatters={linkedWorkspaceCurrencyFormatters}
-          t={t}
-        />
-      ) : null}
-
-      <Stack gap={sectionGap}>
-        {summaryRows
-          .filter((row) => row.type !== "expense")
-          .map(({ type, rows }) => (
+      <Paper
+        withBorder
+        radius="sm"
+        p={isMobile ? "xs" : "sm"}
+        style={{
+          borderColor: "#e5e9f0",
+          backgroundColor: "#ffffff",
+        }}
+      >
+        <Stack gap={isMobile ? "xs" : "sm"}>
+          <Group justify="space-between" align="center">
+            <Text size="xs" fw={800} c="#344054">
+              {t("dashboard.expenseDetailSectionTitle")}
+            </Text>
+            <UnstyledButton onClick={() => setIsExpenseDetailOpen((open) => !open)}>
+              <Text size="11px" fw={700} c="#3b5bdb">
+                {isExpenseDetailOpen ? t("dashboard.hideDetail") : t("dashboard.showDetail")}
+              </Text>
+            </UnstyledButton>
+          </Group>
+          <Collapse expanded={isExpenseDetailOpen}>
             <DashboardTypeSummarySection
-              key={type}
-              type={type}
-              rows={rows}
-              totals={metrics.totalsByType[type]}
-              typeLabel={typeLabels[type]}
+              type="expense"
+              rows={expenseRows}
+              totals={metrics.totalsByType.expense}
+              typeLabel={typeLabels.expense}
               isMobile={isMobile}
               tableHorizontalSpacing={tableHorizontalSpacing}
               tableVerticalSpacing={tableVerticalSpacing}
@@ -497,8 +484,52 @@ export default function DashboardPage() {
               categoryDrilldownHref={categoryDrilldownHref}
               t={t}
             />
-          ))}
-      </Stack>
+          </Collapse>
+        </Stack>
+      </Paper>
+
+      <Paper
+        withBorder
+        radius="sm"
+        p={isMobile ? "xs" : "sm"}
+        style={{
+          borderColor: "#e5e9f0",
+          backgroundColor: "#ffffff",
+        }}
+      >
+        <Stack gap={isMobile ? "xs" : "sm"}>
+          <Group justify="space-between" align="center">
+            <Text size="xs" fw={800} c="#344054">
+              {t("dashboard.optionalFinancialMethodsSectionTitle")}
+            </Text>
+            <UnstyledButton onClick={() => setIsFinancialMethodsOpen((open) => !open)}>
+              <Text size="11px" fw={700} c="#3b5bdb">
+                {isFinancialMethodsOpen ? t("dashboard.hideDetail") : t("dashboard.showDetail")}
+              </Text>
+            </UnstyledButton>
+          </Group>
+          <Collapse expanded={isFinancialMethodsOpen}>
+            <DashboardFinancialMethodsCard
+              isMobile={isMobile}
+              financialSummary={financialSummary}
+              currencyFormatter={currencyFormatter}
+              paymentMethodTypeLabels={paymentMethodTypeLabels}
+              paymentMethodDrilldownHref={paymentMethodDrilldownHref}
+              t={t}
+            />
+          </Collapse>
+        </Stack>
+      </Paper>
+
+      {shouldShowLinkedWorkspaceSummary ? (
+        <LinkedWorkspaceSummaryCard
+          isMobile={isMobile}
+          linkedWorkspaceBalanceGroups={linkedWorkspaceBalanceGroups}
+          linkedWorkspaceCurrencyFormatters={linkedWorkspaceCurrencyFormatters}
+          t={t}
+        />
+      ) : null}
+
     </Stack>
   );
 }
