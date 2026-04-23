@@ -32,7 +32,7 @@ export function DashboardTopExpenseCategoriesCard({
       radius="sm"
       p={isMobile ? "xs" : "sm"}
       style={{
-        borderColor: "#d6dde7",
+        borderColor: "#e5e9f0",
         backgroundColor: "#ffffff",
       }}
     >
@@ -58,9 +58,9 @@ export function DashboardTopExpenseCategoriesCard({
                   style={{
                     display: "block",
                     borderRadius: 8,
-                    border: "1px solid #e6eaf0",
-                    backgroundColor: "#fbfcff",
-                    padding: isMobile ? "8px" : "9px 10px",
+                    border: "1px solid #f0f3f7",
+                    backgroundColor: "#fdfdff",
+                    padding: isMobile ? "7px 8px" : "8px 10px",
                   }}
                 >
                   <Stack gap={5}>

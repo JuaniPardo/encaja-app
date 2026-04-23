@@ -30,19 +30,19 @@ export function DashboardBudgetVsExpenseCard({
   const overBudgetRows = [...expenseRows]
     .filter((row) => row.deviation > 0.005)
     .sort((left, right) => right.deviation - left.deviation)
-    .slice(0, 3);
+    .slice(0, 2);
 
   return (
     <Paper
       withBorder
       radius="sm"
-      p={isMobile ? "xs" : "sm"}
+      p={isMobile ? "8px" : "10px"}
       style={{
-        borderColor: "#d6dde7",
+        borderColor: "#e5e9f0",
         backgroundColor: "#ffffff",
       }}
     >
-      <Stack gap={isMobile ? "xs" : "sm"}>
+      <Stack gap={7}>
         <Text size="xs" fw={800} c="#344054">
           {t("dashboard.budgetVsExpenseTitle")}
         </Text>
@@ -62,7 +62,7 @@ export function DashboardBudgetVsExpenseCard({
         <Box
           style={{
             width: "100%",
-            height: 10,
+            height: 8,
             borderRadius: 999,
             backgroundColor: "#edf2f7",
             overflow: "hidden",
@@ -86,7 +86,7 @@ export function DashboardBudgetVsExpenseCard({
         </Text>
 
         <Stack gap={6}>
-          <Text size="xs" fw={700} c="#475467">
+          <Text size="11px" fw={700} c="#667085">
             {t("dashboard.overBudgetCategoriesTitle")}
           </Text>
           {overBudgetRows.length === 0 ? (

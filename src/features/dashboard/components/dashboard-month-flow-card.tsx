@@ -108,7 +108,7 @@ export function DashboardMonthFlowCard({
       radius="sm"
       p={isMobile ? "xs" : "sm"}
       style={{
-        borderColor: "#d6dde7",
+        borderColor: "#e5e9f0",
         backgroundColor: "#ffffff",
       }}
     >
@@ -121,15 +121,15 @@ export function DashboardMonthFlowCard({
           <Stack gap={8}>
             <Box
               style={{
-                borderRadius: 10,
-                border: "1px solid #e4e7ec",
-                background: "linear-gradient(180deg, #f9fbff 0%, #ffffff 100%)",
+                borderRadius: 9,
+                border: "1px solid #ecf0f4",
+                background: "linear-gradient(180deg, #fcfdff 0%, #ffffff 100%)",
                 padding: isMobile ? 8 : 10,
               }}
             >
               <svg width="100%" viewBox="0 0 100 50" preserveAspectRatio="none" style={{ display: "block" }}>
-                <path d={flow.incomePath} fill="none" stroke="#0ca678" strokeWidth={2.4} strokeLinecap="round" />
-                <path d={flow.expensePath} fill="none" stroke="#d6336c" strokeWidth={2.4} strokeLinecap="round" />
+                <path d={flow.incomePath} fill="none" stroke="#2f9e88" strokeWidth={1.8} strokeLinecap="round" />
+                <path d={flow.expensePath} fill="none" stroke="#b56a87" strokeWidth={1.8} strokeLinecap="round" />
               </svg>
             </Box>
 

@@ -52,6 +52,10 @@ function resolveLevelLabel(level: FinancialState["level"], t: TranslationFn) {
   return t(`insightsV2.financialState.levels.${level}.title`);
 }
 
+function resolveQuickMessage(level: FinancialState["level"], t: TranslationFn) {
+  return t(`dashboard.financialStateQuickMessage.${level}`);
+}
+
 export function DashboardFinancialStateCard({
   isMobile,
   financialState,
@@ -64,13 +68,13 @@ export function DashboardFinancialStateCard({
     <Paper
       withBorder
       radius="sm"
-      p={isMobile ? "xs" : "sm"}
+      p={isMobile ? "sm" : "md"}
       style={{
         borderColor: tone.borderColor,
         backgroundColor: tone.backgroundColor,
       }}
     >
-      <Stack gap={isMobile ? 8 : 10}>
+      <Stack gap={isMobile ? 7 : 9}>
         <Group justify="space-between" align="center" wrap="wrap" gap={6}>
           <Text size="xs" fw={800} c="#344054">
             {t("dashboard.financialStateTitle")}
@@ -80,15 +84,15 @@ export function DashboardFinancialStateCard({
           </Badge>
         </Group>
 
-        <Text size={isMobile ? "sm" : "md"} fw={700} c="#1f2937" lh={1.3}>
-          {financialState.message}
+        <Text size={isMobile ? "md" : "lg"} fw={800} c="#1f2937" lh={1.2}>
+          {resolveQuickMessage(financialState.level, t)}
         </Text>
 
         <Group justify="space-between" align="center" wrap="wrap" gap={6}>
-          <Text size="xs" c="#667085">
+          <Text size="11px" c="#667085">
             {t("dashboard.financialStatePressureLabel")}
           </Text>
-          <Text size="xs" fw={700} c="#344054">
+          <Text size="11px" fw={700} c="#344054">
             {currencyFormatter.format(financialState.data.futurePressureAmount)}
           </Text>
         </Group>

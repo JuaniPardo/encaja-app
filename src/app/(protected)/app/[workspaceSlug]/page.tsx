@@ -5,7 +5,6 @@ import { Box, LoadingOverlay, Paper, Stack, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 
 import { DashboardBudgetVsExpenseCard } from "@/features/dashboard/components/dashboard-budget-vs-expense-card";
-import { DashboardCreditCommitmentsCard } from "@/features/dashboard/components/dashboard-credit-commitments-card";
 import { DashboardFinancialStateCard } from "@/features/dashboard/components/dashboard-financial-state-card";
 import { DashboardFinancialMethodsCard } from "@/features/dashboard/components/dashboard-financial-methods-card";
 import { DashboardHeaderCard } from "@/features/dashboard/components/dashboard-header-card";
@@ -240,6 +239,7 @@ export default function DashboardPage() {
   }, [summaryRows]);
 
   const expenseRows = summaryRowsByType.get("expense") ?? [];
+  const sectionGap = isMobile ? "xs" : "sm";
 
   const primaryInsightBlock = shouldShowOnboardingCta ? (
     <DashboardOnboardingCtaCard
@@ -277,7 +277,7 @@ export default function DashboardPage() {
   );
 
   return (
-    <Stack gap={isMobile ? "xs" : "sm"} pos="relative">
+    <Stack gap={sectionGap} pos="relative">
       <LoadingOverlay visible={isBootstrapping || isLoadingSummary} />
 
       <DashboardHeaderCard
@@ -294,42 +294,33 @@ export default function DashboardPage() {
         t={t}
       />
 
+      <DashboardPriorityOverviewCard
+        isMobile={isMobile}
+        financialSummary={financialSummary}
+        currencyFormatter={currencyFormatter}
+        t={t}
+      />
+
       {isDesktop ? (
         <Box
           style={{
             display: "grid",
-            gridTemplateColumns: "1.6fr 1fr",
-            gap: 24,
+            gridTemplateColumns: "1.35fr 1fr",
+            gap: 16,
             alignItems: "start",
           }}
         >
-          <Stack gap="sm">
-            <DashboardPriorityOverviewCard
-              isMobile={isMobile}
-              financialSummary={financialSummary}
-              currencyFormatter={currencyFormatter}
-              t={t}
-            />
-            <DashboardFinancialStateCard
-              isMobile={isMobile}
-              financialState={insightsResult.financialState}
-              currencyFormatter={currencyFormatter}
-              t={t}
-            />
-          </Stack>
-
-          <Stack gap="sm">
-            {primaryInsightBlock}
-          </Stack>
-        </Box>
-      ) : (
-        <>
-          <DashboardPriorityOverviewCard
+          <DashboardFinancialStateCard
             isMobile={isMobile}
-            financialSummary={financialSummary}
+            financialState={insightsResult.financialState}
             currencyFormatter={currencyFormatter}
             t={t}
           />
+
+          {primaryInsightBlock}
+        </Box>
+      ) : (
+        <>
           <DashboardFinancialStateCard
             isMobile={isMobile}
             financialState={insightsResult.financialState}
@@ -345,11 +336,11 @@ export default function DashboardPage() {
           style={{
             display: "grid",
             gridTemplateColumns: "1.6fr 1fr",
-            gap: 24,
+            gap: 16,
             alignItems: "start",
           }}
         >
-          <Stack gap="sm">
+          <Stack gap={sectionGap}>
             <DashboardMonthFlowCard
               isMobile={isMobile}
               selectedYear={selectedYear}
@@ -358,34 +349,8 @@ export default function DashboardPage() {
               compactCurrencyFormatter={compactCurrencyFormatter}
               t={t}
             />
-            <DashboardBudgetVsExpenseCard
-              isMobile={isMobile}
-              expenseBudget={metrics.totalsByType.expense.budget}
-              expenseReal={metrics.totalsByType.expense.real}
-              expenseDeviation={metrics.totalsByType.expense.deviation}
-              expenseRows={expenseRows}
-              compactFormatter={compactFormatter}
-              percentageFormatter={percentageFormatter}
-              t={t}
-            />
-            <DashboardTypeSummarySection
-              type="expense"
-              rows={expenseRows}
-              totals={metrics.totalsByType.expense}
-              typeLabel={typeLabels.expense}
-              isMobile={isMobile}
-              tableHorizontalSpacing={tableHorizontalSpacing}
-              tableVerticalSpacing={tableVerticalSpacing}
-              tableColumnWidths={tableColumnWidths}
-              executionBarWidth={executionBarWidth}
-              compactFormatter={compactFormatter}
-              currencyFormatter={currencyFormatter}
-              percentageFormatter={percentageFormatter}
-              categoryDrilldownHref={categoryDrilldownHref}
-              t={t}
-            />
           </Stack>
-          <Stack gap="sm">
+          <Stack gap={sectionGap}>
             <DashboardTopExpenseCategoriesCard
               isMobile={isMobile}
               rows={expenseRows}
@@ -393,26 +358,10 @@ export default function DashboardPage() {
               categoryDrilldownHref={categoryDrilldownHref}
               t={t}
             />
-            <DashboardCreditCommitmentsCard
-              isMobile={isMobile}
-              financialSummary={financialSummary}
-              currencyFormatter={currencyFormatter}
-              t={t}
-            />
-            <DashboardRecentTransactionsCard
-              isMobile={isMobile}
-              locale={locale}
-              categories={categories}
-              transactionRows={transactionRows}
-              compactCurrencyFormatter={compactCurrencyFormatter}
-              categoryDrilldownHref={categoryDrilldownHref}
-              typeLabels={typeLabels}
-              t={t}
-            />
           </Stack>
         </Box>
       ) : (
-        <Stack gap="xs">
+        <Stack gap={sectionGap}>
           <DashboardMonthFlowCard
             isMobile={isMobile}
             selectedYear={selectedYear}
@@ -428,20 +377,43 @@ export default function DashboardPage() {
             categoryDrilldownHref={categoryDrilldownHref}
             t={t}
           />
-          <DashboardBudgetVsExpenseCard
+        </Stack>
+      )}
+
+      <DashboardBudgetVsExpenseCard
+        isMobile={isMobile}
+        expenseBudget={metrics.totalsByType.expense.budget}
+        expenseReal={metrics.totalsByType.expense.real}
+        expenseDeviation={metrics.totalsByType.expense.deviation}
+        expenseRows={expenseRows}
+        compactFormatter={compactFormatter}
+        percentageFormatter={percentageFormatter}
+        t={t}
+      />
+
+      {isDesktop ? (
+        <Box
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.6fr 1fr",
+            gap: 16,
+            alignItems: "start",
+          }}
+        >
+          <DashboardTypeSummarySection
+            type="expense"
+            rows={expenseRows}
+            totals={metrics.totalsByType.expense}
+            typeLabel={typeLabels.expense}
             isMobile={isMobile}
-            expenseBudget={metrics.totalsByType.expense.budget}
-            expenseReal={metrics.totalsByType.expense.real}
-            expenseDeviation={metrics.totalsByType.expense.deviation}
-            expenseRows={expenseRows}
+            tableHorizontalSpacing={tableHorizontalSpacing}
+            tableVerticalSpacing={tableVerticalSpacing}
+            tableColumnWidths={tableColumnWidths}
+            executionBarWidth={executionBarWidth}
             compactFormatter={compactFormatter}
-            percentageFormatter={percentageFormatter}
-            t={t}
-          />
-          <DashboardCreditCommitmentsCard
-            isMobile={isMobile}
-            financialSummary={financialSummary}
             currencyFormatter={currencyFormatter}
+            percentageFormatter={percentageFormatter}
+            categoryDrilldownHref={categoryDrilldownHref}
             t={t}
           />
           <DashboardRecentTransactionsCard
@@ -454,7 +426,36 @@ export default function DashboardPage() {
             typeLabels={typeLabels}
             t={t}
           />
-        </Stack>
+        </Box>
+      ) : (
+        <>
+          <DashboardRecentTransactionsCard
+            isMobile={isMobile}
+            locale={locale}
+            categories={categories}
+            transactionRows={transactionRows}
+            compactCurrencyFormatter={compactCurrencyFormatter}
+            categoryDrilldownHref={categoryDrilldownHref}
+            typeLabels={typeLabels}
+            t={t}
+          />
+          <DashboardTypeSummarySection
+            type="expense"
+            rows={expenseRows}
+            totals={metrics.totalsByType.expense}
+            typeLabel={typeLabels.expense}
+            isMobile={isMobile}
+            tableHorizontalSpacing={tableHorizontalSpacing}
+            tableVerticalSpacing={tableVerticalSpacing}
+            tableColumnWidths={tableColumnWidths}
+            executionBarWidth={executionBarWidth}
+            compactFormatter={compactFormatter}
+            currencyFormatter={currencyFormatter}
+            percentageFormatter={percentageFormatter}
+            categoryDrilldownHref={categoryDrilldownHref}
+            t={t}
+          />
+        </>
       )}
 
       <DashboardFinancialMethodsCard
@@ -475,7 +476,7 @@ export default function DashboardPage() {
         />
       ) : null}
 
-      <Stack gap={isMobile ? "xs" : "sm"}>
+      <Stack gap={sectionGap}>
         {summaryRows
           .filter((row) => row.type !== "expense")
           .map(({ type, rows }) => (
@@ -498,25 +499,6 @@ export default function DashboardPage() {
             />
           ))}
       </Stack>
-
-      {!isDesktop ? (
-        <DashboardTypeSummarySection
-          type="expense"
-          rows={expenseRows}
-          totals={metrics.totalsByType.expense}
-          typeLabel={typeLabels.expense}
-          isMobile={isMobile}
-          tableHorizontalSpacing={tableHorizontalSpacing}
-          tableVerticalSpacing={tableVerticalSpacing}
-          tableColumnWidths={tableColumnWidths}
-          executionBarWidth={executionBarWidth}
-          compactFormatter={compactFormatter}
-          currencyFormatter={currencyFormatter}
-          percentageFormatter={percentageFormatter}
-          categoryDrilldownHref={categoryDrilldownHref}
-          t={t}
-        />
-      ) : null}
     </Stack>
   );
 }

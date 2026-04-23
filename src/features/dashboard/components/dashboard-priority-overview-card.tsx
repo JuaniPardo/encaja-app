@@ -21,26 +21,31 @@ function PriorityMetricCard({
   title,
   value,
   helper,
+  detailRows = [],
   tone,
   isMobile,
 }: {
   title: string;
   value: string;
   helper: string;
+  detailRows?: Array<{
+    label: string;
+    value: string;
+    color?: string;
+  }>;
   tone: MetricTone;
   isMobile: boolean;
 }) {
   return (
     <Paper
-      withBorder
+      withBorder={false}
       radius="md"
       p={isMobile ? "sm" : "md"}
       style={{
-        borderColor: tone.borderColor,
         backgroundColor: tone.backgroundColor,
       }}
     >
-      <Stack gap={4}>
+      <Stack gap={5}>
         <Text size="xs" fw={700} c={tone.titleColor}>
           {title}
         </Text>
@@ -50,6 +55,20 @@ function PriorityMetricCard({
         <Text size="xs" c="#667085">
           {helper}
         </Text>
+        {detailRows.length > 0 ? (
+          <Stack gap={4} pt={2}>
+            {detailRows.map((row) => (
+              <Group key={row.label} justify="space-between" align="center" wrap="nowrap" gap={8}>
+                <Text size="11px" c="#667085" lineClamp={1}>
+                  {row.label}
+                </Text>
+                <Text size="11px" fw={700} c={row.color ?? "#344054"} style={{ whiteSpace: "nowrap" }}>
+                  {row.value}
+                </Text>
+              </Group>
+            ))}
+          </Stack>
+        ) : null}
       </Stack>
     </Paper>
   );
@@ -64,6 +83,7 @@ export function DashboardPriorityOverviewCard({
   const availableAmount = financialSummary.availabilityTotalBalance;
   const cardSpendingAmount = financialSummary.creditCardMonthConsumptionTotal;
   const nextCommitmentAmount = financialSummary.creditCardNextMonthInstallmentsTotal;
+  const rolledDebtAmount = financialSummary.creditCardRolledDebtTotal;
 
   return (
     <Paper
@@ -71,7 +91,7 @@ export function DashboardPriorityOverviewCard({
       radius="sm"
       p={isMobile ? "xs" : "sm"}
       style={{
-        borderColor: "#d6dde7",
+        borderColor: "#e5e9f0",
         backgroundColor: "#ffffff",
       }}
     >
@@ -100,7 +120,7 @@ export function DashboardPriorityOverviewCard({
               titleColor: "#087f5b",
               valueColor: availableAmount >= 0 ? "#087f5b" : "#c92a2a",
               borderColor: "#b6e3c9",
-              backgroundColor: "#f2fff7",
+              backgroundColor: "#f7fcf9",
             }}
             isMobile={isMobile}
           />
@@ -109,24 +129,27 @@ export function DashboardPriorityOverviewCard({
             title={t("dashboard.cardSpendingMonth")}
             value={currencyFormatter.format(cardSpendingAmount)}
             helper={t("dashboard.cardSpendingMonthHelper")}
+            detailRows={[
+              {
+                label: t("dashboard.nextMonthCommitmentLabel"),
+                value: formatSignedCurrency(-nextCommitmentAmount, currencyFormatter),
+                color: "#b54708",
+              },
+              {
+                label: t("dashboard.creditRolledDebtLabel"),
+                value: formatSignedCurrency(-rolledDebtAmount, currencyFormatter),
+                color: rolledDebtAmount > 0 ? "#c92a2a" : "#087f5b",
+              },
+            ]}
             tone={{
               titleColor: "#b42318",
               valueColor: cardSpendingAmount > 0 ? "#b42318" : "#344054",
               borderColor: "#f1c0bd",
-              backgroundColor: "#fff7f6",
+              backgroundColor: "#fff9f8",
             }}
             isMobile={isMobile}
           />
         </Box>
-
-        <Group justify="space-between" align="center" wrap="wrap" gap={6}>
-          <Text size="xs" fw={700} c="#475467">
-            {t("dashboard.nextMonthCommitmentLabel")}
-          </Text>
-          <Text size="xs" fw={700} c="#b54708">
-            {formatSignedCurrency(-nextCommitmentAmount, currencyFormatter)}
-          </Text>
-        </Group>
       </Stack>
     </Paper>
   );
