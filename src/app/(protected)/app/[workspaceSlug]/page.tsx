@@ -1,15 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Box, LoadingOverlay, Stack } from "@mantine/core";
+import { Box, LoadingOverlay, Paper, Stack, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 
-import { DashboardCompactSummaryStrip } from "@/features/dashboard/components/dashboard-compact-summary-strip";
-import { DashboardDistributionPanel } from "@/features/dashboard/components/dashboard-distribution-panel";
+import { DashboardBudgetVsExpenseCard } from "@/features/dashboard/components/dashboard-budget-vs-expense-card";
+import { DashboardCreditCommitmentsCard } from "@/features/dashboard/components/dashboard-credit-commitments-card";
+import { DashboardFinancialStateCard } from "@/features/dashboard/components/dashboard-financial-state-card";
 import { DashboardFinancialMethodsCard } from "@/features/dashboard/components/dashboard-financial-methods-card";
 import { DashboardHeaderCard } from "@/features/dashboard/components/dashboard-header-card";
+import { DashboardMonthFlowCard } from "@/features/dashboard/components/dashboard-month-flow-card";
 import { DashboardOnboardingCtaCard } from "@/features/dashboard/components/dashboard-onboarding-cta-card";
+import { DashboardPriorityOverviewCard } from "@/features/dashboard/components/dashboard-priority-overview-card";
 import { DashboardPrimaryInsightCard } from "@/features/dashboard/components/dashboard-primary-insight-card";
+import { DashboardRecentTransactionsCard } from "@/features/dashboard/components/dashboard-recent-transactions-card";
+import { DashboardTopExpenseCategoriesCard } from "@/features/dashboard/components/dashboard-top-expense-categories-card";
 import { DashboardTypeSummarySection } from "@/features/dashboard/components/dashboard-type-summary-section";
 import { LinkedWorkspaceSummaryCard } from "@/features/dashboard/components/linked-workspace-summary-card";
 import { useDashboardData } from "@/features/dashboard/hooks/use-dashboard-data";
@@ -130,7 +135,6 @@ export default function DashboardPage() {
     paymentMethodTypeLabels,
     yearOptions,
     metrics,
-    donutData,
     summaryRows,
     financialSummary,
     linkedWorkspaceBalanceGroups,
@@ -169,18 +173,10 @@ export default function DashboardPage() {
 
   const {
     isMobile,
-    isNarrowMobile,
-    isTablet,
     isDesktop,
-    distributionColumns,
-    cardPadding,
     tableHorizontalSpacing,
     tableVerticalSpacing,
     executionBarWidth,
-    donutSize,
-    donutThickness,
-    compactSummaryDonutSize,
-    compactSummaryDonutThickness,
     tableColumnWidths,
   } = useDashboardResponsive();
 
@@ -239,6 +235,47 @@ export default function DashboardPage() {
     }
   }, [canCreateDemoWorkspace, createDemoWorkspace, demoWorkspace, switchWorkspace, t]);
 
+  const summaryRowsByType = useMemo(() => {
+    return new Map(summaryRows.map((row) => [row.type, row.rows]));
+  }, [summaryRows]);
+
+  const expenseRows = summaryRowsByType.get("expense") ?? [];
+
+  const primaryInsightBlock = shouldShowOnboardingCta ? (
+    <DashboardOnboardingCtaCard
+      onboardingHref={onboardingHref}
+      demoWorkspaceHref={demoWorkspaceHref}
+      hasDemoWorkspace={demoWorkspace !== null}
+      canCreateDemoWorkspace={canCreateDemoWorkspace}
+      isCreatingDemoWorkspace={isCreatingDemoWorkspace}
+      onCreateDemoWorkspace={() => {
+        void handleCreateDemoWorkspace();
+      }}
+      t={t}
+    />
+  ) : !isLoadingInsights && insightsResult.primaryInsight ? (
+    <DashboardPrimaryInsightCard
+      insight={insightsResult.primaryInsight}
+      insightsHref={insightsHref}
+      isMobile={isMobile}
+      t={t}
+    />
+  ) : (
+    <Paper
+      withBorder
+      radius="sm"
+      p={isMobile ? "xs" : "sm"}
+      style={{
+        borderColor: "#d6dde7",
+        backgroundColor: "#ffffff",
+      }}
+    >
+      <Text size="xs" c="#667085">
+        {t("insightsV2.emptyState")}
+      </Text>
+    </Paper>
+  );
+
   return (
     <Stack gap={isMobile ? "xs" : "sm"} pos="relative">
       <LoadingOverlay visible={isBootstrapping || isLoadingSummary} />
@@ -257,159 +294,229 @@ export default function DashboardPage() {
         t={t}
       />
 
-      {shouldShowOnboardingCta ? (
-        <DashboardOnboardingCtaCard
-          onboardingHref={onboardingHref}
-          demoWorkspaceHref={demoWorkspaceHref}
-          hasDemoWorkspace={demoWorkspace !== null}
-          canCreateDemoWorkspace={canCreateDemoWorkspace}
-          isCreatingDemoWorkspace={isCreatingDemoWorkspace}
-          onCreateDemoWorkspace={() => {
-            void handleCreateDemoWorkspace();
-          }}
-          t={t}
-        />
-      ) : !isLoadingInsights && insightsResult.primaryInsight ? (
-        <DashboardPrimaryInsightCard
-          insight={insightsResult.primaryInsight}
-          insightsHref={insightsHref}
-          isMobile={isMobile}
-          t={t}
-        />
-      ) : null}
-
-      {isMobile ? (
-        <DashboardCompactSummaryStrip
-          isNarrowMobile={isNarrowMobile}
-          compactSummaryDonutSize={compactSummaryDonutSize}
-          compactSummaryDonutThickness={compactSummaryDonutThickness}
-          compactCurrencyFormatter={compactCurrencyFormatter}
-          totalsByType={metrics.totalsByType}
-          typeLabels={typeLabels}
-        />
-      ) : null}
-
       {isDesktop ? (
         <Box
           style={{
             display: "grid",
-            gridTemplateColumns: "1.8fr 1fr",
+            gridTemplateColumns: "1.6fr 1fr",
             gap: 24,
             alignItems: "start",
           }}
         >
           <Stack gap="sm">
-            {summaryRows.map(({ type, rows }) => (
-              <DashboardTypeSummarySection
-                key={type}
-                type={type}
-                rows={rows}
-                totals={metrics.totalsByType[type]}
-                typeLabel={typeLabels[type]}
-                isMobile={isMobile}
-                tableHorizontalSpacing={tableHorizontalSpacing}
-                tableVerticalSpacing={tableVerticalSpacing}
-                tableColumnWidths={tableColumnWidths}
-                executionBarWidth={executionBarWidth}
-                compactFormatter={compactFormatter}
-                currencyFormatter={currencyFormatter}
-                percentageFormatter={percentageFormatter}
-                categoryDrilldownHref={categoryDrilldownHref}
-                t={t}
-              />
-            ))}
-          </Stack>
-
-          <Stack gap="sm">
-            <DashboardDistributionPanel
-              isMobile={isMobile}
-              isTablet={isTablet}
-              cardPadding={cardPadding}
-              distributionColumns={1}
-              donutData={donutData}
-              donutSize={donutSize}
-              donutThickness={donutThickness}
-              compactCurrencyFormatter={compactCurrencyFormatter}
-              typeLabels={typeLabels}
-              t={t}
-            />
-            <DashboardFinancialMethodsCard
+            <DashboardPriorityOverviewCard
               isMobile={isMobile}
               financialSummary={financialSummary}
               currencyFormatter={currencyFormatter}
-              paymentMethodTypeLabels={paymentMethodTypeLabels}
-              paymentMethodDrilldownHref={paymentMethodDrilldownHref}
               t={t}
             />
-            {shouldShowLinkedWorkspaceSummary ? (
-              <LinkedWorkspaceSummaryCard
-                isMobile={isMobile}
-                linkedWorkspaceBalanceGroups={linkedWorkspaceBalanceGroups}
-                linkedWorkspaceCurrencyFormatters={linkedWorkspaceCurrencyFormatters}
-                t={t}
-              />
-            ) : null}
+            <DashboardFinancialStateCard
+              isMobile={isMobile}
+              financialState={insightsResult.financialState}
+              currencyFormatter={currencyFormatter}
+              t={t}
+            />
+          </Stack>
+
+          <Stack gap="sm">
+            {primaryInsightBlock}
           </Stack>
         </Box>
       ) : (
         <>
-          {!isMobile ? (
-            <DashboardDistributionPanel
-              isMobile={isMobile}
-              isTablet={isTablet}
-              cardPadding={cardPadding}
-              distributionColumns={distributionColumns}
-              donutData={donutData}
-              donutSize={donutSize}
-              donutThickness={donutThickness}
-              compactCurrencyFormatter={compactCurrencyFormatter}
-              typeLabels={typeLabels}
-              t={t}
-            />
-          ) : null}
-
-          <DashboardFinancialMethodsCard
+          <DashboardPriorityOverviewCard
             isMobile={isMobile}
             financialSummary={financialSummary}
             currencyFormatter={currencyFormatter}
-            paymentMethodTypeLabels={paymentMethodTypeLabels}
-            paymentMethodDrilldownHref={paymentMethodDrilldownHref}
             t={t}
           />
-
-          {shouldShowLinkedWorkspaceSummary ? (
-            <LinkedWorkspaceSummaryCard
-              isMobile={isMobile}
-              linkedWorkspaceBalanceGroups={linkedWorkspaceBalanceGroups}
-              linkedWorkspaceCurrencyFormatters={linkedWorkspaceCurrencyFormatters}
-              t={t}
-            />
-          ) : null}
-
-          <Stack gap={isMobile ? "xs" : "sm"}>
-            {summaryRows.map(({ type, rows }) => (
-              <DashboardTypeSummarySection
-                key={type}
-                type={type}
-                rows={rows}
-                totals={metrics.totalsByType[type]}
-                typeLabel={typeLabels[type]}
-                isMobile={isMobile}
-                tableHorizontalSpacing={tableHorizontalSpacing}
-                tableVerticalSpacing={tableVerticalSpacing}
-                tableColumnWidths={tableColumnWidths}
-                executionBarWidth={executionBarWidth}
-                compactFormatter={compactFormatter}
-                currencyFormatter={currencyFormatter}
-                percentageFormatter={percentageFormatter}
-                categoryDrilldownHref={categoryDrilldownHref}
-                t={t}
-              />
-            ))}
-          </Stack>
+          <DashboardFinancialStateCard
+            isMobile={isMobile}
+            financialState={insightsResult.financialState}
+            currencyFormatter={currencyFormatter}
+            t={t}
+          />
+          {primaryInsightBlock}
         </>
       )}
 
+      {isDesktop ? (
+        <Box
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.6fr 1fr",
+            gap: 24,
+            alignItems: "start",
+          }}
+        >
+          <Stack gap="sm">
+            <DashboardMonthFlowCard
+              isMobile={isMobile}
+              selectedYear={selectedYear}
+              selectedMonth={selectedMonth}
+              transactionRows={transactionRows}
+              compactCurrencyFormatter={compactCurrencyFormatter}
+              t={t}
+            />
+            <DashboardBudgetVsExpenseCard
+              isMobile={isMobile}
+              expenseBudget={metrics.totalsByType.expense.budget}
+              expenseReal={metrics.totalsByType.expense.real}
+              expenseDeviation={metrics.totalsByType.expense.deviation}
+              expenseRows={expenseRows}
+              compactFormatter={compactFormatter}
+              percentageFormatter={percentageFormatter}
+              t={t}
+            />
+            <DashboardTypeSummarySection
+              type="expense"
+              rows={expenseRows}
+              totals={metrics.totalsByType.expense}
+              typeLabel={typeLabels.expense}
+              isMobile={isMobile}
+              tableHorizontalSpacing={tableHorizontalSpacing}
+              tableVerticalSpacing={tableVerticalSpacing}
+              tableColumnWidths={tableColumnWidths}
+              executionBarWidth={executionBarWidth}
+              compactFormatter={compactFormatter}
+              currencyFormatter={currencyFormatter}
+              percentageFormatter={percentageFormatter}
+              categoryDrilldownHref={categoryDrilldownHref}
+              t={t}
+            />
+          </Stack>
+          <Stack gap="sm">
+            <DashboardTopExpenseCategoriesCard
+              isMobile={isMobile}
+              rows={expenseRows}
+              compactCurrencyFormatter={compactCurrencyFormatter}
+              categoryDrilldownHref={categoryDrilldownHref}
+              t={t}
+            />
+            <DashboardCreditCommitmentsCard
+              isMobile={isMobile}
+              financialSummary={financialSummary}
+              currencyFormatter={currencyFormatter}
+              t={t}
+            />
+            <DashboardRecentTransactionsCard
+              isMobile={isMobile}
+              locale={locale}
+              categories={categories}
+              transactionRows={transactionRows}
+              compactCurrencyFormatter={compactCurrencyFormatter}
+              categoryDrilldownHref={categoryDrilldownHref}
+              typeLabels={typeLabels}
+              t={t}
+            />
+          </Stack>
+        </Box>
+      ) : (
+        <Stack gap="xs">
+          <DashboardMonthFlowCard
+            isMobile={isMobile}
+            selectedYear={selectedYear}
+            selectedMonth={selectedMonth}
+            transactionRows={transactionRows}
+            compactCurrencyFormatter={compactCurrencyFormatter}
+            t={t}
+          />
+          <DashboardTopExpenseCategoriesCard
+            isMobile={isMobile}
+            rows={expenseRows}
+            compactCurrencyFormatter={compactCurrencyFormatter}
+            categoryDrilldownHref={categoryDrilldownHref}
+            t={t}
+          />
+          <DashboardBudgetVsExpenseCard
+            isMobile={isMobile}
+            expenseBudget={metrics.totalsByType.expense.budget}
+            expenseReal={metrics.totalsByType.expense.real}
+            expenseDeviation={metrics.totalsByType.expense.deviation}
+            expenseRows={expenseRows}
+            compactFormatter={compactFormatter}
+            percentageFormatter={percentageFormatter}
+            t={t}
+          />
+          <DashboardCreditCommitmentsCard
+            isMobile={isMobile}
+            financialSummary={financialSummary}
+            currencyFormatter={currencyFormatter}
+            t={t}
+          />
+          <DashboardRecentTransactionsCard
+            isMobile={isMobile}
+            locale={locale}
+            categories={categories}
+            transactionRows={transactionRows}
+            compactCurrencyFormatter={compactCurrencyFormatter}
+            categoryDrilldownHref={categoryDrilldownHref}
+            typeLabels={typeLabels}
+            t={t}
+          />
+        </Stack>
+      )}
+
+      <DashboardFinancialMethodsCard
+        isMobile={isMobile}
+        financialSummary={financialSummary}
+        currencyFormatter={currencyFormatter}
+        paymentMethodTypeLabels={paymentMethodTypeLabels}
+        paymentMethodDrilldownHref={paymentMethodDrilldownHref}
+        t={t}
+      />
+
+      {shouldShowLinkedWorkspaceSummary ? (
+        <LinkedWorkspaceSummaryCard
+          isMobile={isMobile}
+          linkedWorkspaceBalanceGroups={linkedWorkspaceBalanceGroups}
+          linkedWorkspaceCurrencyFormatters={linkedWorkspaceCurrencyFormatters}
+          t={t}
+        />
+      ) : null}
+
+      <Stack gap={isMobile ? "xs" : "sm"}>
+        {summaryRows
+          .filter((row) => row.type !== "expense")
+          .map(({ type, rows }) => (
+            <DashboardTypeSummarySection
+              key={type}
+              type={type}
+              rows={rows}
+              totals={metrics.totalsByType[type]}
+              typeLabel={typeLabels[type]}
+              isMobile={isMobile}
+              tableHorizontalSpacing={tableHorizontalSpacing}
+              tableVerticalSpacing={tableVerticalSpacing}
+              tableColumnWidths={tableColumnWidths}
+              executionBarWidth={executionBarWidth}
+              compactFormatter={compactFormatter}
+              currencyFormatter={currencyFormatter}
+              percentageFormatter={percentageFormatter}
+              categoryDrilldownHref={categoryDrilldownHref}
+              t={t}
+            />
+          ))}
+      </Stack>
+
+      {!isDesktop ? (
+        <DashboardTypeSummarySection
+          type="expense"
+          rows={expenseRows}
+          totals={metrics.totalsByType.expense}
+          typeLabel={typeLabels.expense}
+          isMobile={isMobile}
+          tableHorizontalSpacing={tableHorizontalSpacing}
+          tableVerticalSpacing={tableVerticalSpacing}
+          tableColumnWidths={tableColumnWidths}
+          executionBarWidth={executionBarWidth}
+          compactFormatter={compactFormatter}
+          currencyFormatter={currencyFormatter}
+          percentageFormatter={percentageFormatter}
+          categoryDrilldownHref={categoryDrilldownHref}
+          t={t}
+        />
+      ) : null}
     </Stack>
   );
 }
