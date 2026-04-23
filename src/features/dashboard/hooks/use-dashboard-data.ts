@@ -5,6 +5,11 @@ import { notifications } from "@mantine/notifications";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { buildMonthRange, parseAmountValue, roundMoney, sortCategories } from "@/features/dashboard/lib/dashboard-math";
+import {
+  buildGovernedDateBeforeFilter,
+  buildGovernedDateRangeFilter,
+  dashboardAdjustmentSystemKeys,
+} from "@/features/dashboard/lib/dashboard-domain-rules";
 import type {
   BudgetItemLiteRow,
   BudgetPeriodIdRow,
@@ -31,18 +36,20 @@ type UseDashboardDataOptions = {
 
 type NextMonthCommitmentRow = Pick<
   Database["public"]["Tables"]["transactions"]["Row"],
-  "payment_method_id" | "amount"
+  "payment_method_id" | "amount" | "category_id"
 >;
 
 type PreviousMonthStatementRow = Pick<
   Database["public"]["Tables"]["transactions"]["Row"],
-  "payment_method_id" | "amount"
+  "payment_method_id" | "amount" | "category_id"
 >;
 
 type CurrentMonthPaymentRow = Pick<
   Database["public"]["Tables"]["transactions"]["Row"],
   "payment_method_id" | "amount"
 >;
+
+type SystemCategoryKeyRow = Pick<Database["public"]["Tables"]["system_categories"]["Row"], "id" | "key">;
 
 export function useDashboardData({
   supabase,
@@ -75,18 +82,29 @@ export function useDashboardData({
   const [currencyCode, setCurrencyCode] = useState("ARS");
   const [showCents, setShowCents] = useState(false);
   const [hasAnyTransactions, setHasAnyTransactions] = useState(false);
+  const [excludedDashboardCategoryIds, setExcludedDashboardCategoryIds] = useState<string[]>([]);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isLoadingSummary, setIsLoadingSummary] = useState(true);
 
   useEffect(() => {
     const run = async () => {
-      const [categoriesResponse, paymentMethodsResponse, settingsResponse, anyTransactionsResponse] =
+      const [
+        categoriesResponse,
+        adjustmentSystemCategoriesResponse,
+        paymentMethodsResponse,
+        settingsResponse,
+        anyTransactionsResponse,
+      ] =
         await Promise.all([
           supabase
             .from("categories")
             .select("*")
             .eq("workspace_id", workspaceId)
             .order("created_at", { ascending: true }),
+          supabase
+            .from("system_categories")
+            .select("id, key")
+            .in("key", [...dashboardAdjustmentSystemKeys]),
           supabase
             .from("payment_methods")
             .select("id, name, type, is_active, include_in_balance, current_balance")
@@ -111,9 +129,35 @@ export function useDashboardData({
           message: categoriesResponse.error.message,
         });
         setCategories([]);
+        setExcludedDashboardCategoryIds([]);
       } else {
         const sortedCategories = [...categoriesResponse.data].sort((a, b) => sortCategories(a, b, locale));
         setCategories(sortedCategories);
+
+        if (adjustmentSystemCategoriesResponse.error) {
+          notifications.show({
+            color: "red",
+            title: t("dashboard.notifications.loadCategoriesError"),
+            message: adjustmentSystemCategoriesResponse.error.message,
+          });
+          setExcludedDashboardCategoryIds([]);
+        } else {
+          const adjustmentSystemCategoryRows =
+            (adjustmentSystemCategoriesResponse.data ?? []) as SystemCategoryKeyRow[];
+          const adjustmentSystemCategoryIds = new Set(
+            adjustmentSystemCategoryRows.map((systemCategory) => systemCategory.id),
+          );
+
+          const nextExcludedCategoryIds = sortedCategories
+            .filter(
+              (category): category is CategoryRow & { system_category_id: string } =>
+                category.system_category_id !== null &&
+                adjustmentSystemCategoryIds.has(category.system_category_id),
+            )
+            .map((category) => category.id);
+
+          setExcludedDashboardCategoryIds(nextExcludedCategoryIds);
+        }
       }
 
       if (settingsResponse.error) {
@@ -172,6 +216,7 @@ export function useDashboardData({
       const previousPeriod = buildMonthRange(previousPeriodDate.getFullYear(), previousPeriodDate.getMonth() + 1);
       const nextPeriodDate = new Date(selectedYear, selectedMonth, 1, 12, 0, 0, 0);
       const nextPeriod = buildMonthRange(nextPeriodDate.getFullYear(), nextPeriodDate.getMonth() + 1);
+      const excludedCategoryIdSet = new Set(excludedDashboardCategoryIds);
 
       const periodResponsePromise = supabase
         .from("budget_periods")
@@ -181,23 +226,17 @@ export function useDashboardData({
         .eq("month", selectedMonth)
         .maybeSingle();
 
-      const transactionFilter = [
-        `and(effective_date.gte.${start},effective_date.lt.${end})`,
-        `and(effective_date.is.null,transaction_date.gte.${start},transaction_date.lt.${end})`,
-      ].join(",");
+      const transactionFilter = buildGovernedDateRangeFilter(start, end);
 
       const transactionsResponsePromise = excludeTransfers(
         supabase
           .from("transactions")
-          .select("category_id, amount, transaction_date, effective_date, type, payment_method_id")
+          .select("category_id, amount, transaction_date, effective_date, type, payment_method_id, direction")
           .eq("workspace_id", workspaceId)
           .or(transactionFilter),
       );
 
-      const historicalFilter = [
-        `effective_date.lt.${end}`,
-        `and(effective_date.is.null,transaction_date.lt.${end})`,
-      ].join(",");
+      const historicalFilter = buildGovernedDateBeforeFilter(end);
 
       const historicalTransactionsPromise = supabase
         .from("transactions")
@@ -205,24 +244,25 @@ export function useDashboardData({
         .eq("workspace_id", workspaceId)
         .or(historicalFilter);
 
+      const nextMonthCommitmentFilter = buildGovernedDateRangeFilter(nextPeriod.start, nextPeriod.end);
+
       const nextMonthCommitmentPromise = supabase
         .from("transactions")
-        .select("payment_method_id, amount")
+        .select("payment_method_id, amount, category_id")
         .eq("workspace_id", workspaceId)
         .eq("type", "expense")
         .not("installment_purchase_id", "is", null)
-        .gte("effective_date", nextPeriod.start)
-        .lt("effective_date", nextPeriod.end)
+        .or(nextMonthCommitmentFilter)
         .not("payment_method_id", "is", null);
 
-      const previousMonthStatementFilter = [
-        `and(effective_date.gte.${previousPeriod.start},effective_date.lt.${previousPeriod.end})`,
-        `and(effective_date.is.null,transaction_date.gte.${previousPeriod.start},transaction_date.lt.${previousPeriod.end})`,
-      ].join(",");
+      const previousMonthStatementFilter = buildGovernedDateRangeFilter(
+        previousPeriod.start,
+        previousPeriod.end,
+      );
 
       const previousMonthStatementPromise = supabase
         .from("transactions")
-        .select("payment_method_id, amount")
+        .select("payment_method_id, amount, category_id")
         .eq("workspace_id", workspaceId)
         .eq("type", "expense")
         .not("payment_method_id", "is", null)
@@ -270,7 +310,10 @@ export function useDashboardData({
         });
         setTransactionRows([]);
       } else {
-        setTransactionRows((transactionsResponse.data ?? []) as TransactionLiteRow[]);
+        const periodRows = ((transactionsResponse.data ?? []) as TransactionLiteRow[]).filter(
+          (row) => !excludedCategoryIdSet.has(row.category_id),
+        );
+        setTransactionRows(periodRows);
       }
 
       if (historicalTransactionsResponse.error) {
@@ -320,6 +363,9 @@ export function useDashboardData({
           if (!row.payment_method_id) {
             continue;
           }
+          if (excludedCategoryIdSet.has(row.category_id)) {
+            continue;
+          }
 
           const previousAmount = nextCommitmentMap.get(row.payment_method_id) ?? 0;
           nextCommitmentMap.set(
@@ -344,6 +390,9 @@ export function useDashboardData({
 
         for (const row of previousMonthStatementRows) {
           if (!row.payment_method_id) {
+            continue;
+          }
+          if (excludedCategoryIdSet.has(row.category_id)) {
             continue;
           }
 
@@ -434,7 +483,7 @@ export function useDashboardData({
     };
 
     void run();
-  }, [isBootstrapping, selectedMonth, selectedYear, supabase, t, workspaceId]);
+  }, [excludedDashboardCategoryIds, isBootstrapping, selectedMonth, selectedYear, supabase, t, workspaceId]);
 
   return {
     categories,

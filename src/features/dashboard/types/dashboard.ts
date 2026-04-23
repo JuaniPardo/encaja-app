@@ -86,6 +86,7 @@ export type FinancialCreditCardRow = {
   previousMonthStatement: number;
   monthPayments: number;
   monthConsumption: number;
+  rolledDebt: number;
   nextMonthInstallments: number;
 };
 
@@ -97,6 +98,7 @@ export type FinancialSummary = {
   creditCardPreviousMonthStatementTotal: number;
   creditCardMonthPaymentsTotal: number;
   creditCardMonthConsumptionTotal: number;
+  creditCardRolledDebtTotal: number;
   creditCardNextMonthInstallmentsTotal: number;
   includedActiveCount: number;
   excludedActiveCount: number;
