@@ -62,11 +62,6 @@ function buildAreaPath(linePath: string, points: Point[], baseline: number) {
   return `${linePath} L${last.x.toFixed(2)},${baseline.toFixed(2)} L${first.x.toFixed(2)},${baseline.toFixed(2)} Z`;
 }
 
-function buildTickLabel(daysInMonth: number, dayIndex: number) {
-  const safeDay = Math.min(Math.max(dayIndex + 1, 1), daysInMonth);
-  return `${safeDay}`;
-}
-
 export function DashboardMonthFlowCard({
   isMobile,
   selectedYear,
@@ -116,42 +111,50 @@ export function DashboardMonthFlowCard({
 
     const maxValue = Math.max(1, ...cumulativeIncome, ...cumulativeExpense);
 
+    const chartLeft = 8;
+    const chartRight = 100;
     const chartTop = 5;
     const chartBottom = 47;
     const chartHeight = chartBottom - chartTop;
+    const chartWidth = chartRight - chartLeft;
 
     const incomePoints = cumulativeIncome.map((value, index) => ({
-      x: (index / Math.max(daysInMonth - 1, 1)) * 100,
+      x: chartLeft + (index / Math.max(daysInMonth - 1, 1)) * chartWidth,
       y: chartBottom - (value / maxValue) * chartHeight,
     }));
 
     const expensePoints = cumulativeExpense.map((value, index) => ({
-      x: (index / Math.max(daysInMonth - 1, 1)) * 100,
+      x: chartLeft + (index / Math.max(daysInMonth - 1, 1)) * chartWidth,
       y: chartBottom - (value / maxValue) * chartHeight,
     }));
 
     const incomeLinePath = buildSmoothLinePath(incomePoints);
     const expenseLinePath = buildSmoothLinePath(expensePoints);
-    const axisLabels = [0, Math.round(daysInMonth * 0.33) - 1, Math.round(daysInMonth * 0.66) - 1, daysInMonth - 1]
-      .map((dayIndex) => Math.max(0, Math.min(dayIndex, daysInMonth - 1)))
-      .filter((dayIndex, index, all) => all.indexOf(dayIndex) === index)
-      .map((dayIndex) => ({
-        label: buildTickLabel(daysInMonth, dayIndex),
-        xPercent: (dayIndex / Math.max(daysInMonth - 1, 1)) * 100,
-      }));
+    const yAxisTicks = [1, 0.66, 0.33, 0].map((ratio) => ({
+      y: chartBottom - ratio * chartHeight,
+      label: compactCurrencyFormatter.format(maxValue * ratio),
+    }));
+    const horizontalGridLines = [0.25, 0.5, 0.75].map(
+      (ratio) => chartBottom - ratio * chartHeight,
+    );
 
     return {
       incomeTotal: incomeRunning,
       expenseTotal: expenseRunning,
       balance: incomeRunning - expenseRunning,
       hasData: incomeRunning > 0 || expenseRunning > 0,
+      chartLeft,
+      chartRight,
+      chartTop,
+      chartBottom,
       incomePath: incomeLinePath,
       expensePath: expenseLinePath,
       incomeAreaPath: buildAreaPath(incomeLinePath, incomePoints, chartBottom),
       expenseAreaPath: buildAreaPath(expenseLinePath, expensePoints, chartBottom),
-      axisLabels,
+      yAxisTicks,
+      horizontalGridLines,
     };
-  }, [selectedMonth, selectedYear, transactionRows]);
+  }, [compactCurrencyFormatter, selectedMonth, selectedYear, transactionRows]);
 
   return (
     <Paper
@@ -191,55 +194,45 @@ export function DashboardMonthFlowCard({
                     </linearGradient>
                   </defs>
 
-                  {[14, 26, 38].map((y) => (
+                  {flow.horizontalGridLines.map((y) => (
                     <line
                       key={`h-${y}`}
-                      x1={0}
+                      x1={flow.chartLeft}
                       y1={y}
-                      x2={100}
+                      x2={flow.chartRight}
                       y2={y}
-                      stroke="#d6dee8"
-                      strokeWidth={0.55}
+                      stroke="#d9e1eb"
+                      strokeWidth={0.48}
                       strokeDasharray="3 3"
                     />
                   ))}
-                  {[0, 33.3, 66.6, 100].map((x) => (
-                    <line
-                      key={`v-${x}`}
-                      x1={x}
-                      y1={4}
-                      x2={x}
-                      y2={47}
-                      stroke="#dbe2ec"
-                      strokeWidth={0.5}
-                      strokeDasharray="3 3"
-                    />
+                  <line
+                    x1={flow.chartLeft}
+                    y1={flow.chartTop}
+                    x2={flow.chartLeft}
+                    y2={flow.chartBottom}
+                    stroke="#c9d4e1"
+                    strokeWidth={0.42}
+                  />
+
+                  {flow.yAxisTicks.map((tick) => (
+                    <text
+                      key={`y-tick-${tick.y}`}
+                      x={flow.chartLeft - 0.9}
+                      y={tick.y + 0.6}
+                      textAnchor="end"
+                      fontSize="2.5"
+                      fill="#98a2b3"
+                    >
+                      {tick.label}
+                    </text>
                   ))}
 
                   <path d={flow.incomeAreaPath} fill="url(#month-flow-income-gradient)" />
                   <path d={flow.expenseAreaPath} fill="url(#month-flow-expense-gradient)" />
-                  <path d={flow.incomePath} fill="none" stroke="#3f8f7f" strokeWidth={1.65} strokeLinecap="round" />
-                  <path d={flow.expensePath} fill="none" stroke="#4c6bd7" strokeWidth={1.65} strokeLinecap="round" />
+                  <path d={flow.incomePath} fill="none" stroke="#3f8f7f" strokeWidth={1.22} strokeLinecap="round" />
+                  <path d={flow.expensePath} fill="none" stroke="#4c6bd7" strokeWidth={1.22} strokeLinecap="round" />
                 </svg>
-
-                <Box
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: `repeat(${flow.axisLabels.length}, minmax(0, 1fr))`,
-                    gap: 4,
-                  }}
-                >
-                  {flow.axisLabels.map((item) => (
-                    <Text
-                      key={`axis-${item.xPercent}`}
-                      size="10px"
-                      c="#98a2b3"
-                      ta="center"
-                    >
-                      {item.label}
-                    </Text>
-                  ))}
-                </Box>
               </Stack>
             </Box>
 
