@@ -23,7 +23,7 @@ function resolveGovernedDate(row: TransactionLiteRow) {
   return new Date(`${sourceDate}T12:00:00`);
 }
 
-function buildSmoothLinePath(points: Point[]) {
+function buildMonotoneLinePath(points: Point[]) {
   if (points.length === 0) {
     return "";
   }
@@ -32,21 +32,53 @@ function buildSmoothLinePath(points: Point[]) {
     return `M${points[0].x.toFixed(2)},${points[0].y.toFixed(2)}`;
   }
 
-  const smoothing = 0.18;
-  let path = `M${points[0].x.toFixed(2)},${points[0].y.toFixed(2)}`;
-
-  for (let index = 1; index < points.length; index += 1) {
-    const prev = points[index - 1];
+  const segmentCount = points.length - 1;
+  const segmentSlopes = new Array<number>(segmentCount);
+  for (let index = 0; index < segmentCount; index += 1) {
     const current = points[index];
-    const prevPrev = points[index - 2] ?? prev;
-    const next = points[index + 1] ?? current;
+    const next = points[index + 1];
+    const dx = next.x - current.x;
+    segmentSlopes[index] = dx === 0 ? 0 : (next.y - current.y) / dx;
+  }
 
-    const cp1x = prev.x + (current.x - prevPrev.x) * smoothing;
-    const cp1y = prev.y + (current.y - prevPrev.y) * smoothing;
-    const cp2x = current.x - (next.x - prev.x) * smoothing;
-    const cp2y = current.y - (next.y - prev.y) * smoothing;
+  const tangents = new Array<number>(points.length);
+  tangents[0] = segmentSlopes[0];
+  tangents[points.length - 1] = segmentSlopes[segmentSlopes.length - 1];
 
-    path += ` C${cp1x.toFixed(2)},${cp1y.toFixed(2)} ${cp2x.toFixed(2)},${cp2y.toFixed(2)} ${current.x.toFixed(2)},${current.y.toFixed(2)}`;
+  for (let index = 1; index < points.length - 1; index += 1) {
+    tangents[index] = (segmentSlopes[index - 1] + segmentSlopes[index]) / 2;
+  }
+
+  for (let index = 0; index < segmentCount; index += 1) {
+    const slope = segmentSlopes[index];
+    if (Math.abs(slope) < 1e-9) {
+      tangents[index] = 0;
+      tangents[index + 1] = 0;
+      continue;
+    }
+
+    const ratioA = tangents[index] / slope;
+    const ratioB = tangents[index + 1] / slope;
+    const hypot = Math.hypot(ratioA, ratioB);
+    if (hypot > 3) {
+      const scale = 3 / hypot;
+      tangents[index] = scale * ratioA * slope;
+      tangents[index + 1] = scale * ratioB * slope;
+    }
+  }
+
+  let path = `M${points[0].x.toFixed(2)},${points[0].y.toFixed(2)}`;
+  for (let index = 0; index < segmentCount; index += 1) {
+    const current = points[index];
+    const next = points[index + 1];
+    const dx = next.x - current.x;
+
+    const cp1x = current.x + dx / 3;
+    const cp1y = current.y + (tangents[index] * dx) / 3;
+    const cp2x = next.x - dx / 3;
+    const cp2y = next.y - (tangents[index + 1] * dx) / 3;
+
+    path += ` C${cp1x.toFixed(2)},${cp1y.toFixed(2)} ${cp2x.toFixed(2)},${cp2y.toFixed(2)} ${next.x.toFixed(2)},${next.y.toFixed(2)}`;
   }
 
   return path;
@@ -130,8 +162,8 @@ export function DashboardMonthFlowCard({
       y: chartBottom - (value / maxValue) * chartHeight,
     }));
 
-    const incomeLinePath = buildSmoothLinePath(incomePoints);
-    const expenseLinePath = buildSmoothLinePath(expensePoints);
+    const incomeLinePath = buildMonotoneLinePath(incomePoints);
+    const expenseLinePath = buildMonotoneLinePath(expensePoints);
     const yAxisTicks = [1, 0.66, 0.33, 0].map((ratio) => ({
       y: chartBottom - ratio * chartHeight,
       label: compactCurrencyFormatter.format(maxValue * ratio),
