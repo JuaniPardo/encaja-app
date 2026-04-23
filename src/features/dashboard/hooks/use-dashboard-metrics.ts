@@ -2,7 +2,10 @@
 
 import { useMemo } from "react";
 
-import { buildFinancialSummary } from "@/features/dashboard/lib/dashboard-domain-rules";
+import {
+  buildFinancialSummary,
+  buildProjectionBehaviorSummary,
+} from "@/features/dashboard/lib/dashboard-domain-rules";
 import { parseAmountValue, roundMoney, sortCategories } from "@/features/dashboard/lib/dashboard-math";
 import { dashboardVisibleTypes, typeTheme } from "@/features/dashboard/lib/dashboard-theme";
 import type {
@@ -13,6 +16,7 @@ import type {
   DonutDataByType,
   FinancialSummary,
   PaymentMethodBalanceRow,
+  ProjectionBehaviorSummary,
   TotalsByType,
   TransactionLiteRow,
   TranslationFn,
@@ -23,7 +27,11 @@ import type { TransactionType } from "@/types/database";
 type UseDashboardMetricsOptions = {
   locale: DashboardLocale;
   t: TranslationFn;
+  selectedYear: number;
+  selectedMonth: number;
+  referenceDate: Date;
   categories: CategoryRow[];
+  systemCategoryKeyById: Map<string, string>;
   budgetItems: BudgetItemLiteRow[];
   transactionRows: TransactionLiteRow[];
   allTransactionsImpact: Map<string, number>;
@@ -47,13 +55,18 @@ export type DashboardMetricsModel = {
     type: TransactionType;
     rows: CategorySummaryRow[];
   }>;
+  projectionBehaviorSummary: ProjectionBehaviorSummary;
   financialSummary: FinancialSummary;
 };
 
 export function useDashboardMetrics({
   locale,
   t,
+  selectedYear,
+  selectedMonth,
+  referenceDate,
   categories,
+  systemCategoryKeyById,
   budgetItems,
   transactionRows,
   allTransactionsImpact,
@@ -252,11 +265,32 @@ export function useDashboardMetrics({
     transactionRows,
   ]);
 
+  const projectionBehaviorSummary = useMemo<ProjectionBehaviorSummary>(() => {
+    return buildProjectionBehaviorSummary({
+      categories,
+      transactionRows,
+      budgetItems,
+      systemCategoryKeyById,
+      selectedYear,
+      selectedMonth,
+      referenceDate,
+    });
+  }, [
+    budgetItems,
+    categories,
+    referenceDate,
+    selectedMonth,
+    selectedYear,
+    systemCategoryKeyById,
+    transactionRows,
+  ]);
+
   return {
     metrics,
     savingsVsIncome,
     donutData,
     summaryRows,
+    projectionBehaviorSummary,
     financialSummary,
   };
 }

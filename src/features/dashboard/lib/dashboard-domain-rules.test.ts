@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { buildFinancialSummary, buildGovernedDateBeforeFilter, buildGovernedDateRangeFilter } from "./dashboard-domain-rules";
+import {
+  buildFinancialSummary,
+  buildGovernedDateBeforeFilter,
+  buildGovernedDateRangeFilter,
+  buildProjectionBehaviorSummary,
+  resolveCategoryBehavior,
+} from "./dashboard-domain-rules";
 
 describe("dashboard-domain-rules", () => {
   it("builds governed date filters with effective date fallback", () => {
@@ -102,5 +108,207 @@ describe("dashboard-domain-rules", () => {
 
     expect(summary.creditCardRows[0]?.rolledDebt).toBe(-50);
     expect(summary.creditCardRolledDebtTotal).toBe(-50);
+  });
+
+  it("resolves behavior for income and expense categories", () => {
+    const systemCategoryKeyById = new Map([
+      ["sys-income-salary", "income_salary"],
+      ["sys-income-extra", "income_extra"],
+    ]);
+
+    expect(
+      resolveCategoryBehavior({
+        category: {
+          id: "cat-income-salary",
+          type: "income",
+          source: "system",
+          system_category_id: "sys-income-salary",
+          expense_behavior: null,
+        },
+        systemCategoryKeyById,
+      }),
+    ).toBe("fixed");
+
+    expect(
+      resolveCategoryBehavior({
+        category: {
+          id: "cat-income-extra",
+          type: "income",
+          source: "system",
+          system_category_id: "sys-income-extra",
+          expense_behavior: null,
+        },
+        systemCategoryKeyById,
+      }),
+    ).toBe("variable");
+
+    expect(
+      resolveCategoryBehavior({
+        category: {
+          id: "cat-income-custom",
+          type: "income",
+          source: "custom",
+          system_category_id: null,
+          expense_behavior: null,
+        },
+        systemCategoryKeyById,
+      }),
+    ).toBe("variable");
+
+    expect(
+      resolveCategoryBehavior({
+        category: {
+          id: "cat-expense-fixed",
+          type: "expense",
+          source: "custom",
+          system_category_id: null,
+          expense_behavior: "fixed",
+        },
+        systemCategoryKeyById,
+      }),
+    ).toBe("fixed");
+  });
+
+  it("projects only variable components and preserves fixed components", () => {
+    const summary = buildProjectionBehaviorSummary({
+      categories: [
+        {
+          id: "cat-income-salary",
+          type: "income",
+          source: "system",
+          system_category_id: "sys-income-salary",
+          expense_behavior: null,
+        },
+        {
+          id: "cat-income-extra",
+          type: "income",
+          source: "system",
+          system_category_id: "sys-income-extra",
+          expense_behavior: null,
+        },
+        {
+          id: "cat-income-custom",
+          type: "income",
+          source: "custom",
+          system_category_id: null,
+          expense_behavior: null,
+        },
+        {
+          id: "cat-expense-rent",
+          type: "expense",
+          source: "system",
+          system_category_id: "sys-expense-rent",
+          expense_behavior: "fixed",
+        },
+        {
+          id: "cat-expense-groceries",
+          type: "expense",
+          source: "system",
+          system_category_id: "sys-expense-groceries",
+          expense_behavior: "variable",
+        },
+      ],
+      transactionRows: [
+        {
+          category_id: "cat-income-salary",
+          amount: 3000,
+          type: "income",
+        },
+        {
+          category_id: "cat-income-extra",
+          amount: 200,
+          type: "income",
+        },
+        {
+          category_id: "cat-income-custom",
+          amount: 100,
+          type: "income",
+        },
+        {
+          category_id: "cat-expense-rent",
+          amount: 900,
+          type: "expense",
+        },
+        {
+          category_id: "cat-expense-groceries",
+          amount: 300,
+          type: "expense",
+        },
+      ],
+      budgetItems: [
+        { category_id: "cat-income-salary", amount: 3000 },
+        { category_id: "cat-income-extra", amount: 500 },
+        { category_id: "cat-expense-rent", amount: 900 },
+        { category_id: "cat-expense-groceries", amount: 600 },
+      ],
+      systemCategoryKeyById: new Map([
+        ["sys-income-salary", "income_salary"],
+        ["sys-income-extra", "income_extra"],
+      ]),
+      selectedYear: 2026,
+      selectedMonth: 4,
+      referenceDate: new Date(2026, 3, 10, 12, 0, 0, 0),
+    });
+
+    expect(summary.daysInMonth).toBe(30);
+    expect(summary.elapsedDays).toBe(10);
+    expect(summary.remainingDays).toBe(20);
+
+    expect(summary.income.fixedReal).toBe(3000);
+    expect(summary.income.variableReal).toBe(300);
+    expect(summary.income.variableProjected).toBe(900);
+    expect(summary.income.projectedTotal).toBe(3900);
+    expect(summary.income.variableDailyPace).toBe(30);
+
+    expect(summary.expense.fixedReal).toBe(900);
+    expect(summary.expense.variableReal).toBe(300);
+    expect(summary.expense.variableProjected).toBe(900);
+    expect(summary.expense.projectedTotal).toBe(1800);
+    expect(summary.expense.variableDailyPace).toBe(30);
+    expect(summary.projectedBalance).toBe(2100);
+  });
+
+  it("does not inflate projection for a closed month", () => {
+    const summary = buildProjectionBehaviorSummary({
+      categories: [
+        {
+          id: "cat-income-extra",
+          type: "income",
+          source: "system",
+          system_category_id: "sys-income-extra",
+          expense_behavior: null,
+        },
+        {
+          id: "cat-expense-groceries",
+          type: "expense",
+          source: "system",
+          system_category_id: "sys-expense-groceries",
+          expense_behavior: "variable",
+        },
+      ],
+      transactionRows: [
+        {
+          category_id: "cat-income-extra",
+          amount: 800,
+          type: "income",
+        },
+        {
+          category_id: "cat-expense-groceries",
+          amount: 620,
+          type: "expense",
+        },
+      ],
+      budgetItems: [],
+      systemCategoryKeyById: new Map([["sys-income-extra", "income_extra"]]),
+      selectedYear: 2026,
+      selectedMonth: 3,
+      referenceDate: new Date(2026, 3, 15, 12, 0, 0, 0),
+    });
+
+    expect(summary.daysInMonth).toBe(31);
+    expect(summary.elapsedDays).toBe(31);
+    expect(summary.remainingDays).toBe(0);
+    expect(summary.income.variableProjected).toBe(800);
+    expect(summary.expense.variableProjected).toBe(620);
   });
 });
