@@ -23,14 +23,48 @@ function resolveGovernedDate(row: TransactionLiteRow) {
   return new Date(`${sourceDate}T12:00:00`);
 }
 
-function buildLinePath(points: Point[]) {
+function buildSmoothLinePath(points: Point[]) {
   if (points.length === 0) {
     return "";
   }
 
-  return points
-    .map((point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(2)},${point.y.toFixed(2)}`)
-    .join(" ");
+  if (points.length === 1) {
+    return `M${points[0].x.toFixed(2)},${points[0].y.toFixed(2)}`;
+  }
+
+  const smoothing = 0.18;
+  let path = `M${points[0].x.toFixed(2)},${points[0].y.toFixed(2)}`;
+
+  for (let index = 1; index < points.length; index += 1) {
+    const prev = points[index - 1];
+    const current = points[index];
+    const prevPrev = points[index - 2] ?? prev;
+    const next = points[index + 1] ?? current;
+
+    const cp1x = prev.x + (current.x - prevPrev.x) * smoothing;
+    const cp1y = prev.y + (current.y - prevPrev.y) * smoothing;
+    const cp2x = current.x - (next.x - prev.x) * smoothing;
+    const cp2y = current.y - (next.y - prev.y) * smoothing;
+
+    path += ` C${cp1x.toFixed(2)},${cp1y.toFixed(2)} ${cp2x.toFixed(2)},${cp2y.toFixed(2)} ${current.x.toFixed(2)},${current.y.toFixed(2)}`;
+  }
+
+  return path;
+}
+
+function buildAreaPath(linePath: string, points: Point[], baseline: number) {
+  if (!linePath || points.length === 0) {
+    return "";
+  }
+
+  const first = points[0];
+  const last = points[points.length - 1];
+  return `${linePath} L${last.x.toFixed(2)},${baseline.toFixed(2)} L${first.x.toFixed(2)},${baseline.toFixed(2)} Z`;
+}
+
+function buildTickLabel(daysInMonth: number, dayIndex: number) {
+  const safeDay = Math.min(Math.max(dayIndex + 1, 1), daysInMonth);
+  return `${safeDay}`;
 }
 
 export function DashboardMonthFlowCard({
@@ -82,23 +116,40 @@ export function DashboardMonthFlowCard({
 
     const maxValue = Math.max(1, ...cumulativeIncome, ...cumulativeExpense);
 
+    const chartTop = 5;
+    const chartBottom = 47;
+    const chartHeight = chartBottom - chartTop;
+
     const incomePoints = cumulativeIncome.map((value, index) => ({
       x: (index / Math.max(daysInMonth - 1, 1)) * 100,
-      y: 48 - (value / maxValue) * 44,
+      y: chartBottom - (value / maxValue) * chartHeight,
     }));
 
     const expensePoints = cumulativeExpense.map((value, index) => ({
       x: (index / Math.max(daysInMonth - 1, 1)) * 100,
-      y: 48 - (value / maxValue) * 44,
+      y: chartBottom - (value / maxValue) * chartHeight,
     }));
+
+    const incomeLinePath = buildSmoothLinePath(incomePoints);
+    const expenseLinePath = buildSmoothLinePath(expensePoints);
+    const axisLabels = [0, Math.round(daysInMonth * 0.33) - 1, Math.round(daysInMonth * 0.66) - 1, daysInMonth - 1]
+      .map((dayIndex) => Math.max(0, Math.min(dayIndex, daysInMonth - 1)))
+      .filter((dayIndex, index, all) => all.indexOf(dayIndex) === index)
+      .map((dayIndex) => ({
+        label: buildTickLabel(daysInMonth, dayIndex),
+        xPercent: (dayIndex / Math.max(daysInMonth - 1, 1)) * 100,
+      }));
 
     return {
       incomeTotal: incomeRunning,
       expenseTotal: expenseRunning,
       balance: incomeRunning - expenseRunning,
       hasData: incomeRunning > 0 || expenseRunning > 0,
-      incomePath: buildLinePath(incomePoints),
-      expensePath: buildLinePath(expensePoints),
+      incomePath: incomeLinePath,
+      expensePath: expenseLinePath,
+      incomeAreaPath: buildAreaPath(incomeLinePath, incomePoints, chartBottom),
+      expenseAreaPath: buildAreaPath(expenseLinePath, expensePoints, chartBottom),
+      axisLabels,
     };
   }, [selectedMonth, selectedYear, transactionRows]);
 
@@ -123,14 +174,73 @@ export function DashboardMonthFlowCard({
               style={{
                 borderRadius: 9,
                 border: "1px solid #ecf0f4",
-                background: "linear-gradient(180deg, #fcfdff 0%, #ffffff 100%)",
+                background: "linear-gradient(180deg, #fbfcfe 0%, #ffffff 100%)",
                 padding: isMobile ? 8 : 10,
               }}
             >
-              <svg width="100%" viewBox="0 0 100 50" preserveAspectRatio="none" style={{ display: "block" }}>
-                <path d={flow.incomePath} fill="none" stroke="#2f9e88" strokeWidth={1.8} strokeLinecap="round" />
-                <path d={flow.expensePath} fill="none" stroke="#b56a87" strokeWidth={1.8} strokeLinecap="round" />
-              </svg>
+              <Stack gap={6}>
+                <svg width="100%" viewBox="0 0 100 50" preserveAspectRatio="none" style={{ display: "block" }}>
+                  <defs>
+                    <linearGradient id="month-flow-income-gradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3f8f7f" stopOpacity={0.26} />
+                      <stop offset="100%" stopColor="#3f8f7f" stopOpacity={0.04} />
+                    </linearGradient>
+                    <linearGradient id="month-flow-expense-gradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#4c6bd7" stopOpacity={0.2} />
+                      <stop offset="100%" stopColor="#4c6bd7" stopOpacity={0.03} />
+                    </linearGradient>
+                  </defs>
+
+                  {[14, 26, 38].map((y) => (
+                    <line
+                      key={`h-${y}`}
+                      x1={0}
+                      y1={y}
+                      x2={100}
+                      y2={y}
+                      stroke="#d6dee8"
+                      strokeWidth={0.55}
+                      strokeDasharray="3 3"
+                    />
+                  ))}
+                  {[0, 33.3, 66.6, 100].map((x) => (
+                    <line
+                      key={`v-${x}`}
+                      x1={x}
+                      y1={4}
+                      x2={x}
+                      y2={47}
+                      stroke="#dbe2ec"
+                      strokeWidth={0.5}
+                      strokeDasharray="3 3"
+                    />
+                  ))}
+
+                  <path d={flow.incomeAreaPath} fill="url(#month-flow-income-gradient)" />
+                  <path d={flow.expenseAreaPath} fill="url(#month-flow-expense-gradient)" />
+                  <path d={flow.incomePath} fill="none" stroke="#3f8f7f" strokeWidth={1.65} strokeLinecap="round" />
+                  <path d={flow.expensePath} fill="none" stroke="#4c6bd7" strokeWidth={1.65} strokeLinecap="round" />
+                </svg>
+
+                <Box
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: `repeat(${flow.axisLabels.length}, minmax(0, 1fr))`,
+                    gap: 4,
+                  }}
+                >
+                  {flow.axisLabels.map((item) => (
+                    <Text
+                      key={`axis-${item.xPercent}`}
+                      size="10px"
+                      c="#98a2b3"
+                      ta="center"
+                    >
+                      {item.label}
+                    </Text>
+                  ))}
+                </Box>
+              </Stack>
             </Box>
 
             <Group grow>
