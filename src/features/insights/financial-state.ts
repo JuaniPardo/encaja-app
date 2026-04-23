@@ -100,7 +100,12 @@ export function resolveFinancialState({
 }: ResolveFinancialStateOptions): FinancialState {
   const availableCurrent = roundMoney(context.availableCurrent);
   const futurePressureAmount = roundMoney(
-    context.creditCardExpenseCurrentMonth + context.creditCardNextMonthCommitment,
+    Math.max(
+      0,
+      context.creditCardExpenseCurrentMonth +
+        context.creditCardNextMonthCommitment +
+        context.creditCardRolledDebtCurrent,
+    ),
   );
   const incomeReference = resolveIncomeReference(context);
   const futurePressureVsIncome =
