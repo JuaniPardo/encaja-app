@@ -70,6 +70,8 @@ export function DashboardMonthFlowCard({
   compactCurrencyFormatter,
   t,
 }: DashboardMonthFlowCardProps) {
+  const areaChartDefaultStrokeWidth = 2;
+
   const flow = useMemo(() => {
     const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
     const dailyIncome = new Array<number>(daysInMonth).fill(0);
@@ -230,8 +232,22 @@ export function DashboardMonthFlowCard({
 
                   <path d={flow.incomeAreaPath} fill="url(#month-flow-income-gradient)" />
                   <path d={flow.expenseAreaPath} fill="url(#month-flow-expense-gradient)" />
-                  <path d={flow.incomePath} fill="none" stroke="#3f8f7f" strokeWidth={1.22} strokeLinecap="round" />
-                  <path d={flow.expensePath} fill="none" stroke="#4c6bd7" strokeWidth={1.22} strokeLinecap="round" />
+                  <path
+                    d={flow.incomePath}
+                    fill="none"
+                    stroke="#3f8f7f"
+                    strokeWidth={areaChartDefaultStrokeWidth}
+                    strokeLinecap="round"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                  <path
+                    d={flow.expensePath}
+                    fill="none"
+                    stroke="#4c6bd7"
+                    strokeWidth={areaChartDefaultStrokeWidth}
+                    strokeLinecap="round"
+                    vectorEffect="non-scaling-stroke"
+                  />
                 </svg>
               </Stack>
             </Box>
