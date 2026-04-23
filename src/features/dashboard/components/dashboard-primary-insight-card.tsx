@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Badge, Group, Paper, Stack, Text, UnstyledButton } from "@mantine/core";
 
 import type { Insight } from "@/features/insights/types";
-import type { TranslationFn } from "@/features/insights/modules/credit-card";
+import type { TranslationFn } from "@/features/insights/intl";
 
 type DashboardPrimaryInsightCardProps = {
   insight: Insight;
@@ -27,28 +27,28 @@ function resolveSeverityColor(severity: Insight["severity"]) {
 function resolveCardTone(severity: Insight["severity"]) {
   if (severity === "alert") {
     return {
-      borderColor: "#f3b1b1",
-      backgroundColor: "#fff5f5",
-      badgeVariant: "filled" as const,
+      borderColor: "#f0d2d0",
+      backgroundColor: "#fffafa",
+      badgeVariant: "light" as const,
     };
   }
   if (severity === "warning") {
     return {
-      borderColor: "#f4d9a0",
-      backgroundColor: "#fffaf0",
+      borderColor: "#eee3c5",
+      backgroundColor: "#fffdf6",
       badgeVariant: "light" as const,
     };
   }
   if (severity === "positive") {
     return {
-      borderColor: "#b2e2c1",
-      backgroundColor: "#f4fff8",
+      borderColor: "#cde6d6",
+      backgroundColor: "#f9fffb",
       badgeVariant: "light" as const,
     };
   }
   return {
-    borderColor: "#cfe0ff",
-    backgroundColor: "#f5f9ff",
+    borderColor: "#dae4f6",
+    backgroundColor: "#f8fbff",
     badgeVariant: "light" as const,
   };
 }
@@ -65,6 +65,18 @@ function resolveInsightKindLabel(insight: Insight, t: TranslationFn) {
   }
   if (insight.kind === "next_month_commitment") {
     return t("insightsV2.dashboard.kindBadge.futureCommitment");
+  }
+  if (insight.kind === "excess_spending") {
+    return t("insightsV2.dashboard.kindBadge.expensePressure");
+  }
+  if (insight.kind === "category_imbalance") {
+    return t("insightsV2.dashboard.kindBadge.categoryImbalance");
+  }
+  if (insight.kind === "low_saving") {
+    return t("insightsV2.dashboard.kindBadge.lowSaving");
+  }
+  if (insight.kind === "low_activity") {
+    return t("insightsV2.dashboard.kindBadge.lowActivity");
   }
   if (insight.kind === "full_payment" || insight.kind === "stable") {
     return t("insightsV2.dashboard.kindBadge.controlled");
@@ -90,25 +102,25 @@ export function DashboardPrimaryInsightCard({
       <Paper
         withBorder
         radius="sm"
-        p={isMobile ? "xs" : "sm"}
+        p={isMobile ? "8px" : "10px"}
         bg={tone.backgroundColor}
         style={{ borderColor: tone.borderColor }}
       >
-        <Stack gap={isMobile ? 4 : 6}>
+        <Stack gap={4}>
           <Group justify="space-between" align="center">
-            <Text size="xs" fw={700} c="#475467">
+            <Text size="11px" fw={700} c="#667085">
               {t("insightsV2.dashboard.slotTitle")}
             </Text>
-            <Badge color={resolveSeverityColor(insight.severity)} variant={tone.badgeVariant}>
+            <Badge color={resolveSeverityColor(insight.severity)} variant={tone.badgeVariant} size="xs">
               {resolveInsightKindLabel(insight, t)}
             </Badge>
           </Group>
 
-          <Text fw={800} c="#1f2937" size="sm" lineClamp={1}>
+          <Text fw={700} c="#1f2937" size="sm" lineClamp={1}>
             {insight.title}
           </Text>
 
-          <Text size="xs" c="#475467" lineClamp={1}>
+          <Text size="11px" c="#667085" lineClamp={1}>
             {insight.message}
           </Text>
         </Stack>

@@ -18,14 +18,40 @@ function buildBaseContext(overrides: Partial<InsightsContext> = {}): InsightsCon
     currentPeriod: { start: "2026-04-01", end: "2026-05-01" },
     previousPeriod: { start: "2026-03-01", end: "2026-04-01" },
     nextPeriod: { start: "2026-05-01", end: "2026-06-01" },
+    availableCurrent: 850_000,
     creditCardCount: 1,
     incomeCurrentMonth: 1_000_000,
+    expenseCurrentMonth: 520_000,
+    savingCurrentMonth: 120_000,
     creditCardExpenseCurrentMonth: 400_000,
     creditCardExpensePreviousMonth: 300_000,
     creditCardPaymentsCurrentMonth: 400_000,
+    creditCardPreviousMonthStatement: 300_000,
+    creditCardRolledDebtCurrent: -100_000,
     creditCardDebtTotal: 200_000,
     creditCardCurrentStatement: 400_000,
     creditCardNextMonthCommitment: 100_000,
+    projectedIncomeTotal: 1_100_000,
+    projectedExpenseTotal: 820_000,
+    projectedExpenseVariable: 420_000,
+    projectedBalance: 280_000,
+    elapsedDaysCurrentMonth: 21,
+    daysInCurrentMonth: 30,
+    relevantTransactionCountCurrentMonth: 14,
+    expenseByCategoryCurrentMonth: [
+      {
+        categoryId: "cat-home",
+        categoryName: "Hogar",
+        amount: 260_000,
+        behavior: "fixed",
+      },
+      {
+        categoryId: "cat-food",
+        categoryName: "Comida",
+        amount: 260_000,
+        behavior: "variable",
+      },
+    ],
     ...overrides,
   };
 }
@@ -113,6 +139,7 @@ describe("buildInsightsResult", () => {
     const result = buildInsightsResult({
       context: buildBaseContext({
         incomeCurrentMonth: 0,
+        projectedIncomeTotal: 0,
         creditCardCurrentStatement: 0,
         creditCardNextMonthCommitment: 1_300_000,
       }),
@@ -161,6 +188,7 @@ describe("buildInsightsResult", () => {
     const result = buildInsightsResult({
       context: buildBaseContext({
         incomeCurrentMonth: 900_000,
+        projectedIncomeTotal: 900_000,
         creditCardExpenseCurrentMonth: 950_000,
         creditCardDebtTotal: 1_050_000,
       }),
@@ -171,6 +199,70 @@ describe("buildInsightsResult", () => {
     expect(result.primaryInsight?.kind).toBe("high_debt");
   });
 
+  it("adds excess spending insight and prioritizes it when no stronger card alert exists", () => {
+    const result = buildInsightsResult({
+      context: buildBaseContext({
+        creditCardCount: 0,
+        creditCardExpenseCurrentMonth: 0,
+        creditCardExpensePreviousMonth: 0,
+        creditCardPaymentsCurrentMonth: 0,
+        creditCardDebtTotal: 0,
+        creditCardCurrentStatement: 0,
+        creditCardNextMonthCommitment: 0,
+        projectedIncomeTotal: 850_000,
+        projectedExpenseTotal: 980_000,
+      }),
+      t,
+      currencyFormatter,
+    });
+
+    expect(result.primaryInsight?.kind).toBe("excess_spending");
+    expect(result.primaryInsight?.severity).toBe("alert");
+  });
+
+  it("adds category imbalance insight when one category dominates current expense", () => {
+    const result = buildInsightsResult({
+      context: buildBaseContext({
+        expenseCurrentMonth: 600_000,
+        expenseByCategoryCurrentMonth: [
+          {
+            categoryId: "cat-rent",
+            categoryName: "Alquiler",
+            amount: 500_000,
+            behavior: "fixed",
+          },
+          {
+            categoryId: "cat-food",
+            categoryName: "Comida",
+            amount: 100_000,
+            behavior: "variable",
+          },
+        ],
+      }),
+      t,
+      currencyFormatter,
+    });
+
+    const imbalanceInsight = result.allInsights.find((insight) => insight.kind === "category_imbalance");
+    expect(imbalanceInsight).toBeDefined();
+    expect(imbalanceInsight?.severity).toBe("alert");
+  });
+
+  it("computes critical financial state when future pressure exceeds current capacity", () => {
+    const result = buildInsightsResult({
+      context: buildBaseContext({
+        availableCurrent: 300_000,
+        creditCardExpenseCurrentMonth: 550_000,
+        creditCardNextMonthCommitment: 420_000,
+        projectedBalance: -120_000,
+      }),
+      t,
+      currencyFormatter,
+    });
+
+    expect(result.financialState.level).toBe("critical");
+  });
+
   it("includes module metadata and keeps insights grouped by module", () => {
     const result = buildInsightsResult({
       context: buildBaseContext(),
@@ -178,9 +270,12 @@ describe("buildInsightsResult", () => {
       currencyFormatter,
     });
 
-    expect(result.modules).toHaveLength(1);
+    expect(result.modules).toHaveLength(5);
     expect(result.modules[0]?.module).toBe("credit_card");
     expect(result.modules[0]?.metadata.title).toBe("insightsV2.modules.creditCard.title");
-    expect(result.modules[0]?.insights.length).toBeGreaterThan(0);
+    expect(result.modules[1]?.module).toBe("spending");
+    expect(result.modules[2]?.module).toBe("behavior");
+    expect(result.modules[3]?.module).toBe("cashflow");
+    expect(result.modules[4]?.module).toBe("activity");
   });
 });

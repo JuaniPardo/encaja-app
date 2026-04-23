@@ -1,17 +1,35 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import {
+  buildProjectionBehaviorSummary,
+  dashboardAdjustmentSystemKeys,
+} from "@/features/dashboard/lib/dashboard-domain-rules";
 import { buildMonthRange, parseAmountValue, roundMoney } from "@/features/dashboard/lib/dashboard-math";
 import type { InsightsContext } from "@/features/insights/types";
 import type { Database } from "@/types/database";
 
 type PaymentMethodRow = Pick<
   Database["public"]["Tables"]["payment_methods"]["Row"],
-  "id" | "type" | "current_balance"
+  "id" | "type" | "current_balance" | "is_active" | "include_in_balance"
 >;
+
+type CategoryRow = Pick<
+  Database["public"]["Tables"]["categories"]["Row"],
+  "id" | "name" | "type" | "source" | "system_category_id" | "expense_behavior"
+>;
+
+type SystemCategoryKeyRow = Pick<Database["public"]["Tables"]["system_categories"]["Row"], "id" | "key">;
 
 type TransactionRow = Pick<
   Database["public"]["Tables"]["transactions"]["Row"],
-  "amount" | "type" | "payment_method_id" | "direction" | "effective_date" | "transaction_date" | "installment_purchase_id"
+  | "amount"
+  | "type"
+  | "payment_method_id"
+  | "direction"
+  | "effective_date"
+  | "transaction_date"
+  | "installment_purchase_id"
+  | "category_id"
 >;
 
 type LoadInsightsContextOptions = {
@@ -39,9 +57,11 @@ function resolvePaymentMethodImpact(row: TransactionRow) {
   if (row.type === "income") {
     return amount;
   }
+
   if (row.type === "expense" || row.type === "saving") {
     return -amount;
   }
+
   if (row.type === "transfer") {
     return row.direction === "in" ? amount : -amount;
   }
@@ -63,9 +83,51 @@ export async function loadInsightsContext({
   const previousPeriod = buildMonthRange(previousDate.getFullYear(), previousDate.getMonth() + 1);
   const nextPeriod = buildMonthRange(nextDate.getFullYear(), nextDate.getMonth() + 1);
 
+  const categoriesResponse = await supabase
+    .from("categories")
+    .select("id, name, type, source, system_category_id, expense_behavior")
+    .eq("workspace_id", workspaceId);
+
+  if (categoriesResponse.error) {
+    throw categoriesResponse.error;
+  }
+
+  const categories = (categoriesResponse.data ?? []) as CategoryRow[];
+  const categoryById = new Map(categories.map((category) => [category.id, category]));
+
+  const systemCategoriesResponse = await supabase
+    .from("system_categories")
+    .select("id, key");
+
+  if (systemCategoriesResponse.error) {
+    throw systemCategoriesResponse.error;
+  }
+
+  const systemCategoryRows = (systemCategoriesResponse.data ?? []) as SystemCategoryKeyRow[];
+  const systemCategoryKeyById = new Map(systemCategoryRows.map((row) => [row.id, row.key]));
+
+  const adjustmentSystemCategoryIds = new Set(
+    systemCategoryRows
+      .filter((systemCategory) =>
+        dashboardAdjustmentSystemKeys.includes(
+          systemCategory.key as (typeof dashboardAdjustmentSystemKeys)[number],
+        ),
+      )
+      .map((systemCategory) => systemCategory.id),
+  );
+
+  const excludedDashboardCategoryIds = new Set(
+    categories
+      .filter(
+        (category): category is CategoryRow & { system_category_id: string } =>
+          category.system_category_id !== null && adjustmentSystemCategoryIds.has(category.system_category_id),
+      )
+      .map((category) => category.id),
+  );
+
   const paymentMethodsResponse = await supabase
     .from("payment_methods")
-    .select("id, type, current_balance")
+    .select("id, type, current_balance, is_active, include_in_balance")
     .eq("workspace_id", workspaceId)
     .eq("is_active", true);
 
@@ -74,12 +136,14 @@ export async function loadInsightsContext({
   }
 
   const paymentMethods = (paymentMethodsResponse.data ?? []) as PaymentMethodRow[];
-  const creditCards = paymentMethods.filter((row) => row.type === "credit_card");
-  const creditCardIds = new Set(creditCards.map((row) => row.id));
+  const activeCreditCards = paymentMethods.filter((row) => row.type === "credit_card");
+  const creditCardIds = new Set(activeCreditCards.map((row) => row.id));
 
   const currentTransactionsResponse = await supabase
     .from("transactions")
-    .select("amount, type, payment_method_id, direction, effective_date, transaction_date, installment_purchase_id")
+    .select(
+      "amount, type, payment_method_id, direction, effective_date, transaction_date, installment_purchase_id, category_id",
+    )
     .eq("workspace_id", workspaceId)
     .or(buildTransactionPeriodFilter(currentPeriod.start, currentPeriod.end));
 
@@ -87,43 +151,30 @@ export async function loadInsightsContext({
     throw currentTransactionsResponse.error;
   }
 
-  const previousTransactionsResponse = await supabase
+  const historicalTransactionsResponse = await supabase
     .from("transactions")
-    .select("amount, type, payment_method_id, direction, effective_date, transaction_date, installment_purchase_id")
+    .select(
+      "amount, type, payment_method_id, direction, effective_date, transaction_date, installment_purchase_id, category_id",
+    )
     .eq("workspace_id", workspaceId)
-    .or(buildTransactionPeriodFilter(previousPeriod.start, previousPeriod.end));
+    .or(buildTransactionBeforePeriodFilter(currentPeriod.end));
 
-  if (previousTransactionsResponse.error) {
-    throw previousTransactionsResponse.error;
-  }
-
-  let historicalCreditTransactions: TransactionRow[] = [];
-  if (creditCards.length > 0) {
-    const historicalCreditTransactionsResponse = await supabase
-      .from("transactions")
-      .select("amount, type, payment_method_id, direction, effective_date, transaction_date, installment_purchase_id")
-      .eq("workspace_id", workspaceId)
-      .in("payment_method_id", creditCards.map((row) => row.id))
-      .or(buildTransactionBeforePeriodFilter(currentPeriod.end));
-
-    if (historicalCreditTransactionsResponse.error) {
-      throw historicalCreditTransactionsResponse.error;
-    }
-
-    historicalCreditTransactions = (historicalCreditTransactionsResponse.data ?? []) as TransactionRow[];
+  if (historicalTransactionsResponse.error) {
+    throw historicalTransactionsResponse.error;
   }
 
   let nextMonthCommitmentTransactions: TransactionRow[] = [];
-  if (creditCards.length > 0) {
+  if (activeCreditCards.length > 0) {
     const nextMonthCommitmentResponse = await supabase
       .from("transactions")
-      .select("amount, type, payment_method_id, direction, effective_date, transaction_date, installment_purchase_id")
+      .select(
+        "amount, type, payment_method_id, direction, effective_date, transaction_date, installment_purchase_id, category_id",
+      )
       .eq("workspace_id", workspaceId)
-      .in("payment_method_id", creditCards.map((row) => row.id))
+      .in("payment_method_id", activeCreditCards.map((row) => row.id))
       .eq("type", "expense")
       .not("installment_purchase_id", "is", null)
-      .gte("effective_date", nextPeriod.start)
-      .lt("effective_date", nextPeriod.end);
+      .or(buildTransactionPeriodFilter(nextPeriod.start, nextPeriod.end));
 
     if (nextMonthCommitmentResponse.error) {
       throw nextMonthCommitmentResponse.error;
@@ -133,40 +184,71 @@ export async function loadInsightsContext({
   }
 
   const currentTransactions = (currentTransactionsResponse.data ?? []) as TransactionRow[];
-  const previousTransactions = (previousTransactionsResponse.data ?? []) as TransactionRow[];
+  const historicalTransactions = (historicalTransactionsResponse.data ?? []) as TransactionRow[];
 
   let incomeCurrentMonth = 0;
+  let expenseCurrentMonth = 0;
+  let savingCurrentMonth = 0;
   let creditCardExpenseCurrentMonth = 0;
   let creditCardPaymentsCurrentMonth = 0;
+  let relevantTransactionCountCurrentMonth = 0;
+  const creditCardConsumptionByMethodId = new Map<string, number>();
+  const creditCardPaymentsByMethodId = new Map<string, number>();
+
+  const expenseByCategoryMap = new Map<string, number>();
 
   for (const row of currentTransactions) {
     const amount = parseAmountValue(row.amount);
+    const isExcludedCategory = excludedDashboardCategoryIds.has(row.category_id);
+
     if (row.type === "income") {
-      incomeCurrentMonth += amount;
+      if (!isExcludedCategory) {
+        incomeCurrentMonth = roundMoney(incomeCurrentMonth + amount);
+        relevantTransactionCountCurrentMonth += 1;
+      }
       continue;
     }
 
-    if (!row.payment_method_id || !creditCardIds.has(row.payment_method_id)) {
+    if (row.type === "saving") {
+      if (!isExcludedCategory) {
+        savingCurrentMonth = roundMoney(savingCurrentMonth + amount);
+        relevantTransactionCountCurrentMonth += 1;
+      }
       continue;
     }
 
     if (row.type === "expense") {
-      creditCardExpenseCurrentMonth += amount;
+      if (!isExcludedCategory) {
+        expenseCurrentMonth = roundMoney(expenseCurrentMonth + amount);
+        relevantTransactionCountCurrentMonth += 1;
+
+        const previousAmount = expenseByCategoryMap.get(row.category_id) ?? 0;
+        expenseByCategoryMap.set(row.category_id, roundMoney(previousAmount + amount));
+      }
+
+      if (row.payment_method_id && creditCardIds.has(row.payment_method_id) && !isExcludedCategory) {
+        creditCardExpenseCurrentMonth = roundMoney(creditCardExpenseCurrentMonth + amount);
+        const previousConsumption = creditCardConsumptionByMethodId.get(row.payment_method_id) ?? 0;
+        creditCardConsumptionByMethodId.set(
+          row.payment_method_id,
+          roundMoney(previousConsumption + amount),
+        );
+      }
+      continue;
     }
 
-    if (row.type === "transfer" && row.direction === "in") {
-      creditCardPaymentsCurrentMonth += amount;
-    }
-  }
-
-  let creditCardExpensePreviousMonth = 0;
-  for (const row of previousTransactions) {
     if (
-      row.type === "expense" &&
+      row.type === "transfer" &&
+      row.direction === "in" &&
       row.payment_method_id !== null &&
       creditCardIds.has(row.payment_method_id)
     ) {
-      creditCardExpensePreviousMonth += parseAmountValue(row.amount);
+      creditCardPaymentsCurrentMonth = roundMoney(creditCardPaymentsCurrentMonth + amount);
+      const previousPayments = creditCardPaymentsByMethodId.get(row.payment_method_id) ?? 0;
+      creditCardPaymentsByMethodId.set(
+        row.payment_method_id,
+        roundMoney(previousPayments + amount),
+      );
     }
   }
 
@@ -175,48 +257,117 @@ export async function loadInsightsContext({
     if (
       row.type === "expense" &&
       row.payment_method_id !== null &&
-      creditCardIds.has(row.payment_method_id)
+      creditCardIds.has(row.payment_method_id) &&
+      !excludedDashboardCategoryIds.has(row.category_id)
     ) {
-      creditCardNextMonthCommitment += parseAmountValue(row.amount);
+      creditCardNextMonthCommitment = roundMoney(creditCardNextMonthCommitment + parseAmountValue(row.amount));
     }
   }
 
-  const balanceByMethodId = new Map<string, number>();
-  for (const method of creditCards) {
-    balanceByMethodId.set(method.id, parseAmountValue(method.current_balance));
-  }
-
-  for (const row of historicalCreditTransactions) {
+  const historicalImpactByMethodId = new Map<string, number>();
+  for (const row of historicalTransactions) {
     if (!row.payment_method_id) {
       continue;
     }
-    if (!balanceByMethodId.has(row.payment_method_id)) {
+
+    const previousImpact = historicalImpactByMethodId.get(row.payment_method_id) ?? 0;
+    historicalImpactByMethodId.set(
+      row.payment_method_id,
+      roundMoney(previousImpact + resolvePaymentMethodImpact(row)),
+    );
+  }
+
+  let availableCurrent = 0;
+  for (const method of paymentMethods) {
+    if (!method.is_active || !method.include_in_balance || method.type === "credit_card") {
       continue;
     }
 
-    const currentBalance = balanceByMethodId.get(row.payment_method_id) ?? 0;
-    balanceByMethodId.set(row.payment_method_id, roundMoney(currentBalance + resolvePaymentMethodImpact(row)));
+    const methodBalance = roundMoney(
+      parseAmountValue(method.current_balance) + (historicalImpactByMethodId.get(method.id) ?? 0),
+    );
+    availableCurrent = roundMoney(availableCurrent + methodBalance);
   }
 
   let creditCardDebtTotal = 0;
-  for (const [, balance] of balanceByMethodId.entries()) {
-    if (balance < 0) {
-      creditCardDebtTotal += Math.abs(balance);
+  let creditCardPreviousMonthStatement = 0;
+  let creditCardRolledDebtCurrent = 0;
+  for (const method of activeCreditCards) {
+    const methodBalance = roundMoney(
+      parseAmountValue(method.current_balance) + (historicalImpactByMethodId.get(method.id) ?? 0),
+    );
+    const monthConsumption = roundMoney(creditCardConsumptionByMethodId.get(method.id) ?? 0);
+    const monthPayments = roundMoney(creditCardPaymentsByMethodId.get(method.id) ?? 0);
+    const previousStatement = roundMoney(
+      Math.max(0, -methodBalance + monthPayments - monthConsumption),
+    );
+    const rolledDebt = roundMoney(previousStatement - monthPayments);
+
+    creditCardPreviousMonthStatement = roundMoney(creditCardPreviousMonthStatement + previousStatement);
+    creditCardRolledDebtCurrent = roundMoney(creditCardRolledDebtCurrent + rolledDebt);
+
+    if (methodBalance < 0) {
+      creditCardDebtTotal = roundMoney(creditCardDebtTotal + Math.abs(methodBalance));
     }
   }
+
+  const projectionSummary = buildProjectionBehaviorSummary({
+    categories,
+    transactionRows: currentTransactions
+      .filter(
+        (row) =>
+          (row.type === "income" || row.type === "expense") &&
+          !excludedDashboardCategoryIds.has(row.category_id),
+      )
+      .map((row) => ({
+        category_id: row.category_id,
+        amount: row.amount,
+        type: row.type,
+      })),
+    budgetItems: [],
+    systemCategoryKeyById,
+    selectedYear: currentYear,
+    selectedMonth: currentMonth,
+    referenceDate,
+  });
+
+  const expenseByCategoryCurrentMonth = Array.from(expenseByCategoryMap.entries())
+    .map(([categoryId, amount]) => {
+      const category = categoryById.get(categoryId);
+      return {
+        categoryId,
+        categoryName: category?.name ?? "Sin categoría",
+        amount: roundMoney(amount),
+        behavior: category?.type === "expense" ? (category.expense_behavior === "fixed" ? "fixed" : "variable") : null,
+      } as const;
+    })
+    .sort((left, right) => right.amount - left.amount);
 
   return {
     referenceDate,
     currentPeriod,
     previousPeriod,
     nextPeriod,
-    creditCardCount: creditCards.length,
+    availableCurrent: roundMoney(availableCurrent),
+    creditCardCount: activeCreditCards.length,
     incomeCurrentMonth: roundMoney(incomeCurrentMonth),
+    expenseCurrentMonth: roundMoney(expenseCurrentMonth),
+    savingCurrentMonth: roundMoney(savingCurrentMonth),
     creditCardExpenseCurrentMonth: roundMoney(creditCardExpenseCurrentMonth),
-    creditCardExpensePreviousMonth: roundMoney(creditCardExpensePreviousMonth),
+    creditCardExpensePreviousMonth: roundMoney(creditCardPreviousMonthStatement),
     creditCardPaymentsCurrentMonth: roundMoney(creditCardPaymentsCurrentMonth),
+    creditCardPreviousMonthStatement: roundMoney(creditCardPreviousMonthStatement),
+    creditCardRolledDebtCurrent: roundMoney(creditCardRolledDebtCurrent),
     creditCardDebtTotal: roundMoney(creditCardDebtTotal),
     creditCardCurrentStatement: roundMoney(creditCardExpenseCurrentMonth),
     creditCardNextMonthCommitment: roundMoney(creditCardNextMonthCommitment),
+    projectedIncomeTotal: roundMoney(projectionSummary.income.projectedTotal),
+    projectedExpenseTotal: roundMoney(projectionSummary.expense.projectedTotal),
+    projectedExpenseVariable: roundMoney(projectionSummary.expense.variableProjected),
+    projectedBalance: roundMoney(projectionSummary.projectedBalance),
+    elapsedDaysCurrentMonth: projectionSummary.elapsedDays,
+    daysInCurrentMonth: projectionSummary.daysInMonth,
+    relevantTransactionCountCurrentMonth,
+    expenseByCategoryCurrentMonth,
   };
 }

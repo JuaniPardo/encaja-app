@@ -86,6 +86,7 @@ export type FinancialCreditCardRow = {
   previousMonthStatement: number;
   monthPayments: number;
   monthConsumption: number;
+  rolledDebt: number;
   nextMonthInstallments: number;
 };
 
@@ -97,10 +98,32 @@ export type FinancialSummary = {
   creditCardPreviousMonthStatementTotal: number;
   creditCardMonthPaymentsTotal: number;
   creditCardMonthConsumptionTotal: number;
+  creditCardRolledDebtTotal: number;
   creditCardNextMonthInstallmentsTotal: number;
   includedActiveCount: number;
   excludedActiveCount: number;
   inactiveCount: number;
+};
+
+export type ProjectionBehaviorValue = "fixed" | "variable";
+
+export type ProjectionTypeBreakdown = {
+  fixedReal: number;
+  variableReal: number;
+  fixedBudget: number;
+  variableBudget: number;
+  variableDailyPace: number;
+  variableProjected: number;
+  projectedTotal: number;
+};
+
+export type ProjectionBehaviorSummary = {
+  daysInMonth: number;
+  elapsedDays: number;
+  remainingDays: number;
+  income: ProjectionTypeBreakdown;
+  expense: ProjectionTypeBreakdown;
+  projectedBalance: number;
 };
 
 export type LinkedWorkspaceBalanceGroup = {

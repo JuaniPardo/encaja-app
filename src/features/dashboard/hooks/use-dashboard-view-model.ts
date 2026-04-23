@@ -20,9 +20,11 @@ type UseDashboardViewModelOptions = {
   workspaceSlug: string;
   selectedYear: number;
   selectedMonth: number;
+  referenceDate: Date;
   monthOptions: Array<{ value: string; label: string }>;
   startYear: number;
   categories: CategoryRow[];
+  systemCategoryKeyById: Map<string, string>;
   budgetItems: BudgetItemLiteRow[];
   transactionRows: TransactionLiteRow[];
   allTransactionsImpact: Map<string, number>;
@@ -46,9 +48,11 @@ export function useDashboardViewModel({
   workspaceSlug,
   selectedYear,
   selectedMonth,
+  referenceDate,
   monthOptions,
   startYear,
   categories,
+  systemCategoryKeyById,
   budgetItems,
   transactionRows,
   allTransactionsImpact,
@@ -65,7 +69,11 @@ export function useDashboardViewModel({
   const metricsModel = useDashboardMetrics({
     locale,
     t,
+    selectedYear,
+    selectedMonth,
+    referenceDate,
     categories,
+    systemCategoryKeyById,
     budgetItems,
     transactionRows,
     allTransactionsImpact,

@@ -119,7 +119,12 @@ const dictionaries = {
       noAvailabilityMethods: "No hay medios líquidos activos en balance.",
       creditCardsSectionTitle: "Tarjetas de crédito",
       noCreditCardsInBalance: "No hay tarjetas de crédito activas en balance.",
+      priorityBlockTitle: "Prioridades del mes",
+      availableNow: "Disponible actual",
       totalBalance: "Balance total",
+      totalBalanceDescription: "Dinero líquido real para usar hoy.",
+      cardSpendingMonth: "Gasto con tarjeta del mes",
+      cardSpendingMonthHelper: "Consumo ya comprometido para los próximos ingresos.",
       monthImpact: "Este mes",
       monthlyMovementLabel: "este mes",
       pendingInstallments: "Compromisos futuros",
@@ -166,6 +171,14 @@ const dictionaries = {
       expenseLabel: "Gastos",
       savingLabel: "Ahorro",
       balanceLabel: "Balance",
+      financialStateTitle: "Estado financiero",
+      financialStatePressureLabel: "Presión futura",
+      financialStateQuickMessage: {
+        healthy: "Tenés margen para el próximo mes",
+        stable: "Tu próximo mes está bajo control",
+        attention: "Estás comprometiendo el próximo mes",
+        critical: "El próximo mes ya quedó muy comprometido",
+      },
       category: "Categoría",
       real: "Real",
       executionAbbrev: "% Compl.",
@@ -173,6 +186,26 @@ const dictionaries = {
       noCategoriesForType: "Sin categorías con datos para este tipo.",
       inactive: "inactiva",
       totalUpper: "TOTAL",
+      monthFlowTitle: "Flujo del mes",
+      monthFlowNoData: "Todavía no hay movimientos suficientes para mostrar evolución del mes.",
+      topExpenseCategoriesTitle: "Top categorías de gasto",
+      topExpenseCategoriesNoData: "Todavía no hay gastos para destacar categorías.",
+      budgetVsExpenseTitle: "Presupuesto vs gasto",
+      budgetExecutionLabel: "Ejecución del gasto",
+      budgetSummaryLine: "Real: {{real}} · Presup: {{budget}} · Ejecución: {{execution}} · Desvío: {{deviation}}",
+      overBudgetSummaryLine: "Categorías con mayor desvío: {{categories}}",
+      overBudgetCategoriesTitle: "Categorías con mayor desvío",
+      overBudgetCategoriesNoData: "Por ahora no hay categorías excedidas.",
+      creditCommitmentsTitle: "Cuotas y deuda",
+      creditRolledDebtLabel: "Saldo pendiente o a favor",
+      collapsed: "▼",
+      viewDetail: "Ver detalle",
+      expenseDetailSectionTitle: "Gastos por categoría (detalle)",
+      optionalFinancialMethodsSectionTitle: "Medios financieros (opcional)",
+      showDetail: "Mostrar detalle",
+      hideDetail: "Ocultar detalle",
+      recentTransactionsTitle: "Últimas transacciones",
+      recentTransactionsNoData: "Todavía no hay transacciones recientes para mostrar.",
       monthMovementsTitle: "Movimientos del mes",
       realDistributionByType: "Distribución real por tipo",
       noRealDataInPeriod: "Sin datos reales en el período.",
@@ -325,8 +358,44 @@ const dictionaries = {
           highDebt: "Deuda alta",
           highUsage: "Uso alto",
           futureCommitment: "Compromiso futuro",
+          expensePressure: "Presión de gasto",
+          categoryImbalance: "Desbalance",
+          lowSaving: "Ahorro bajo",
+          lowActivity: "Baja actividad",
           controlled: "Controlado",
           attention: "Atención",
+        },
+      },
+      financialState: {
+        levels: {
+          healthy: {
+            title: "Saludable",
+            message:
+              "Tu presión futura es {{pressureRatio}} de tus ingresos proyectados y mantenés {{availableAmount}} disponibles.",
+            messageNoIncome:
+              "Tu presión futura es {{futurePressureAmount}} y hoy contás con {{availableAmount}} disponibles.",
+          },
+          stable: {
+            title: "Estable",
+            message:
+              "Tu presión futura llega a {{pressureRatio}} de tus ingresos proyectados, con {{availableAmount}} como margen actual.",
+            messageNoIncome:
+              "Tu presión futura llega a {{futurePressureAmount}} y hoy tu margen disponible es {{availableAmount}}.",
+          },
+          attention: {
+            title: "Atento",
+            message:
+              "Tu presión futura ya representa {{pressureRatio}} de tus ingresos proyectados y conviene seguirla de cerca.",
+            messageNoIncome:
+              "Ya acumulaste {{futurePressureAmount}} de presión futura y hoy el disponible es {{availableAmount}}.",
+          },
+          critical: {
+            title: "Crítico",
+            message:
+              "Tu presión futura ya está en {{pressureRatio}} de tus ingresos proyectados y puede comprometer el próximo mes.",
+            messageNoIncome:
+              "La presión futura de {{futurePressureAmount}} supera el margen disponible actual ({{availableAmount}}).",
+          },
         },
       },
       modules: {
@@ -384,6 +453,61 @@ const dictionaries = {
             stable: {
               title: "Tu módulo de tarjeta está estable por ahora",
               message: "No hay señales críticas en tarjeta de crédito en este momento.",
+            },
+          },
+        },
+        spending: {
+          title: "Ritmo de gasto",
+          description:
+            "Este módulo compara el ritmo proyectado de gasto contra tus ingresos proyectados para detectar presión antes del cierre.",
+          insights: {
+            excessSpending: {
+              alertTitle: "Tu gasto proyectado supera tus ingresos del mes",
+              alertMessage: "Con el ritmo actual, el gasto podría cerrar en {{ratio}} de tus ingresos proyectados.",
+              warningTitle: "Tu gasto proyectado ya está muy cerca de tus ingresos",
+              warningMessage: "Con el ritmo actual, el gasto podría cerrar en {{ratio}} de tus ingresos proyectados.",
+              noIncomeTitle: "Tu gasto proyectado es alto frente al disponible actual",
+              noIncomeMessage:
+                "Hoy proyectás {{projectedExpense}} de gasto mientras el disponible actual es {{availableAmount}}.",
+            },
+          },
+        },
+        behavior: {
+          title: "Desbalance por categoría",
+          description:
+            "Detecta cuando una sola categoría concentra demasiado peso y empieza a dominar el mes.",
+          insights: {
+            categoryImbalance: {
+              alertTitle: "{{categoryName}} está concentrando gran parte de tu gasto",
+              alertMessage: "Esta categoría ya representa {{ratio}} del gasto del mes.",
+              warningTitle: "{{categoryName}} está tomando más peso del habitual",
+              warningMessage: "Esta categoría ya representa {{ratio}} del gasto del mes.",
+            },
+          },
+        },
+        cashflow: {
+          title: "Flujo y ahorro",
+          description:
+            "Observa cuánto de tus ingresos del mes se está transformando en ahorro real.",
+          insights: {
+            lowSaving: {
+              warningTitle: "Este mes casi no estás generando ahorro",
+              warningMessage: "El ahorro del mes está en {{ratio}} de tus ingresos registrados.",
+              infoTitle: "Tu ahorro viene más bajo que lo esperado",
+              infoMessage: "El ahorro del mes está en {{ratio}} de tus ingresos registrados.",
+            },
+          },
+        },
+        activity: {
+          title: "Actividad del mes",
+          description:
+            "Cuando hay poca actividad registrada, la lectura del mes pierde precisión y conviene confirmarla.",
+          insights: {
+            lowActivity: {
+              warningTitle: "Hay muy poca actividad registrada para esta altura del mes",
+              warningMessage: "Ya pasaron {{days}} días y todavía no hay movimientos registrados.",
+              infoTitle: "Todavía hay poca actividad cargada este mes",
+              infoMessage: "Por ahora solo registraste {{count}} movimientos relevantes en el mes.",
             },
           },
         },
@@ -1265,7 +1389,12 @@ const dictionaries = {
       noAvailabilityMethods: "There are no active liquid methods in balance.",
       creditCardsSectionTitle: "Credit cards",
       noCreditCardsInBalance: "There are no active credit cards in balance.",
+      priorityBlockTitle: "Monthly priorities",
+      availableNow: "Current availability",
       totalBalance: "Total balance",
+      totalBalanceDescription: "Real liquid money available to use today.",
+      cardSpendingMonth: "Card spending this month",
+      cardSpendingMonthHelper: "Spending already committed against upcoming income.",
       monthImpact: "This month",
       monthlyMovementLabel: "this month",
       pendingInstallments: "Future commitments",
@@ -1312,6 +1441,14 @@ const dictionaries = {
       expenseLabel: "Expense",
       savingLabel: "Savings",
       balanceLabel: "Balance",
+      financialStateTitle: "Financial state",
+      financialStatePressureLabel: "Future pressure",
+      financialStateQuickMessage: {
+        healthy: "You have room for next month",
+        stable: "Your next month is under control",
+        attention: "You are committing next month",
+        critical: "Next month is already highly committed",
+      },
       category: "Category",
       real: "Actual",
       executionAbbrev: "% Exec.",
@@ -1319,6 +1456,26 @@ const dictionaries = {
       noCategoriesForType: "No categories with data for this type.",
       inactive: "inactive",
       totalUpper: "TOTAL",
+      monthFlowTitle: "Monthly flow",
+      monthFlowNoData: "There are not enough movements yet to show month evolution.",
+      topExpenseCategoriesTitle: "Top spending categories",
+      topExpenseCategoriesNoData: "There is no spending yet to highlight categories.",
+      budgetVsExpenseTitle: "Budget vs spending",
+      budgetExecutionLabel: "Spending execution",
+      budgetSummaryLine: "Actual: {{real}} · Budget: {{budget}} · Execution: {{execution}} · Deviation: {{deviation}}",
+      overBudgetSummaryLine: "Categories with highest deviation: {{categories}}",
+      overBudgetCategoriesTitle: "Categories with highest deviation",
+      overBudgetCategoriesNoData: "There are no over-budget categories for now.",
+      creditCommitmentsTitle: "Installments and debt",
+      creditRolledDebtLabel: "Pending or credit balance",
+      collapsed: "▼",
+      viewDetail: "View detail",
+      expenseDetailSectionTitle: "Spending by category (detail)",
+      optionalFinancialMethodsSectionTitle: "Financial methods (optional)",
+      showDetail: "Show detail",
+      hideDetail: "Hide detail",
+      recentTransactionsTitle: "Recent transactions",
+      recentTransactionsNoData: "There are no recent transactions to show yet.",
       monthMovementsTitle: "Month movements",
       realDistributionByType: "Actual distribution by type",
       noRealDataInPeriod: "No actual data in this period.",
@@ -1473,8 +1630,44 @@ const dictionaries = {
           highDebt: "High debt",
           highUsage: "High usage",
           futureCommitment: "Future commitment",
+          expensePressure: "Expense pressure",
+          categoryImbalance: "Imbalance",
+          lowSaving: "Low saving",
+          lowActivity: "Low activity",
           controlled: "Controlled",
           attention: "Attention",
+        },
+      },
+      financialState: {
+        levels: {
+          healthy: {
+            title: "Healthy",
+            message:
+              "Your future pressure is {{pressureRatio}} of projected income and you still have {{availableAmount}} available.",
+            messageNoIncome:
+              "Your future pressure is {{futurePressureAmount}} and you currently have {{availableAmount}} available.",
+          },
+          stable: {
+            title: "Stable",
+            message:
+              "Your future pressure is already {{pressureRatio}} of projected income, with {{availableAmount}} as current margin.",
+            messageNoIncome:
+              "Your future pressure reaches {{futurePressureAmount}} and your current available margin is {{availableAmount}}.",
+          },
+          attention: {
+            title: "Attention",
+            message:
+              "Your future pressure already represents {{pressureRatio}} of projected income and is worth following closely.",
+            messageNoIncome:
+              "You already accumulated {{futurePressureAmount}} in future pressure while current availability is {{availableAmount}}.",
+          },
+          critical: {
+            title: "Critical",
+            message:
+              "Your future pressure is already {{pressureRatio}} of projected income and may compromise next month.",
+            messageNoIncome:
+              "Future pressure of {{futurePressureAmount}} is above your current available margin ({{availableAmount}}).",
+          },
         },
       },
       modules: {
@@ -1532,6 +1725,61 @@ const dictionaries = {
             stable: {
               title: "Your credit card module is stable for now",
               message: "There are no critical credit card signals at this time.",
+            },
+          },
+        },
+        spending: {
+          title: "Spending pace",
+          description:
+            "This module compares projected spending pace against projected income to detect pressure before month close.",
+          insights: {
+            excessSpending: {
+              alertTitle: "Projected spending is above this month's projected income",
+              alertMessage: "At the current pace, spending could close at {{ratio}} of projected income.",
+              warningTitle: "Projected spending is getting very close to projected income",
+              warningMessage: "At the current pace, spending could close at {{ratio}} of projected income.",
+              noIncomeTitle: "Projected spending is high versus current availability",
+              noIncomeMessage:
+                "Right now projected spending is {{projectedExpense}} while current availability is {{availableAmount}}.",
+            },
+          },
+        },
+        behavior: {
+          title: "Category imbalance",
+          description:
+            "Detects when one category is concentrating too much weight and starts dominating the month.",
+          insights: {
+            categoryImbalance: {
+              alertTitle: "{{categoryName}} is concentrating a large share of your spending",
+              alertMessage: "This category already represents {{ratio}} of this month's spending.",
+              warningTitle: "{{categoryName}} is taking more weight than usual",
+              warningMessage: "This category already represents {{ratio}} of this month's spending.",
+            },
+          },
+        },
+        cashflow: {
+          title: "Cashflow and saving",
+          description:
+            "Tracks how much of this month's income is being converted into real savings.",
+          insights: {
+            lowSaving: {
+              warningTitle: "This month is generating almost no savings",
+              warningMessage: "Monthly savings are currently {{ratio}} of recorded income.",
+              infoTitle: "Savings are running below expected this month",
+              infoMessage: "Monthly savings are currently {{ratio}} of recorded income.",
+            },
+          },
+        },
+        activity: {
+          title: "Monthly activity",
+          description:
+            "When activity is low, month interpretation loses precision and it's useful to validate the picture.",
+          insights: {
+            lowActivity: {
+              warningTitle: "There is very little activity recorded for this point in the month",
+              warningMessage: "{{days}} days have already passed and there are still no recorded movements.",
+              infoTitle: "There is still low activity recorded this month",
+              infoMessage: "So far you only recorded {{count}} relevant movements in the month.",
             },
           },
         },

@@ -1,11 +1,5 @@
-import { roundMoney } from "@/features/dashboard/lib/dashboard-math";
+import { formatPercentValue, type TranslationFn } from "@/features/insights/intl";
 import type { Insight, InsightModuleMetadata, InsightsContext } from "@/features/insights/types";
-
-export type TranslationFn = (
-  key: string,
-  fallback?: string,
-  values?: Record<string, string | number>,
-) => string;
 
 type CreditCardModuleOptions = {
   context: InsightsContext;
@@ -14,10 +8,6 @@ type CreditCardModuleOptions = {
 };
 
 export const creditCardModuleMetadataKey = "credit_card" as const;
-
-function formatPercentValue(value: number, formatter: Intl.NumberFormat) {
-  return `${formatter.format(roundMoney(value * 100))}%`;
-}
 
 function createInsight(options: Omit<Insight, "module">): Insight {
   return {
