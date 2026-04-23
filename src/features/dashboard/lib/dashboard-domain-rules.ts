@@ -290,9 +290,16 @@ export function buildFinancialSummary({
   const creditCardRows = activeIncludedRows
     .filter((row) => row.type === "credit_card")
     .map((row) => {
-      const previousMonthStatement = roundMoney(previousMonthStatementByMethodId.get(row.id) ?? 0);
       const monthPayments = roundMoney(currentMonthPaymentsByMethodId.get(row.id) ?? 0);
       const monthConsumption = roundMoney(monthConsumptionByMethodId.get(row.id) ?? 0);
+      const previousMonthStatementFromMap = roundMoney(previousMonthStatementByMethodId.get(row.id) ?? 0);
+      const canInferStatement = Math.abs(row.currentBalance) > 0.005 || monthConsumption > 0.005;
+      const inferredPreviousMonthStatement = canInferStatement
+        ? roundMoney(Math.max(0, -row.currentBalance + monthPayments - monthConsumption))
+        : previousMonthStatementFromMap;
+      const previousMonthStatement = roundMoney(
+        Math.max(previousMonthStatementFromMap, inferredPreviousMonthStatement),
+      );
       const rolledDebt = roundMoney(previousMonthStatement - monthPayments);
       const nextMonthInstallments = roundMoney(nextMonthCommitmentByMethodId.get(row.id) ?? 0);
 

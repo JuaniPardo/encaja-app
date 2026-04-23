@@ -66,7 +66,7 @@ export function DashboardFinancialMethodsCard({
       radius="sm"
       p={isMobile ? "xs" : "sm"}
       bg="#ffffff"
-      style={{ borderColor: "#d6dde7" }}
+      style={{ borderColor: "#e5e9f0" }}
     >
       <Stack gap={isMobile ? "xs" : "sm"}>
         <Group justify="space-between" align="flex-start" wrap="wrap" gap={6}>
@@ -104,8 +104,8 @@ export function DashboardFinancialMethodsCard({
                   style={{
                     display: "block",
                     borderRadius: 8,
-                    border: "1px solid #e4e7ec",
-                    backgroundColor: "#f8fafc",
+                    border: "1px solid #edf1f5",
+                    backgroundColor: "#fcfdff",
                     padding: isMobile ? "6px 8px" : "6px 10px",
                   }}
                 >
@@ -152,8 +152,8 @@ export function DashboardFinancialMethodsCard({
                   style={{
                     display: "block",
                     borderRadius: 8,
-                    border: "1px solid #f1d0d0",
-                    backgroundColor: "#fff8f8",
+                    border: "1px solid #f4dfe0",
+                    backgroundColor: "#fffdfd",
                     padding: isMobile ? "6px 8px" : "6px 10px",
                   }}
                 >

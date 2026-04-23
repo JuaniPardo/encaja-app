@@ -56,7 +56,7 @@ export function DashboardTypeSummarySection({
     <Paper
       radius="sm"
       style={{
-        border: "1px solid #d6dde7",
+        border: "1px solid #e5e9f0",
         backgroundColor: "#ffffff",
       }}
     >
@@ -64,8 +64,8 @@ export function DashboardTypeSummarySection({
         px={isMobile ? "xs" : "sm"}
         py={6}
         style={{
-          backgroundColor: "#f8fafc",
-          borderBottom: "1px solid #d6dde7",
+          backgroundColor: "#fbfcfe",
+          borderBottom: "1px solid #e8ecf2",
         }}
       >
         <Group justify="space-between" wrap={isMobile ? "wrap" : "nowrap"} gap={6}>
@@ -197,8 +197,8 @@ export function DashboardTypeSummarySection({
 
           <Table.Tr
             style={{
-              backgroundColor: "#f3f7ff",
-              borderTop: "1px solid #d0d9e7",
+              backgroundColor: "#f7faff",
+              borderTop: "1px solid #e4e9f2",
             }}
           >
             <Table.Td>

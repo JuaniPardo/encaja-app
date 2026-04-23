@@ -151,18 +151,6 @@ export async function loadInsightsContext({
     throw currentTransactionsResponse.error;
   }
 
-  const previousTransactionsResponse = await supabase
-    .from("transactions")
-    .select(
-      "amount, type, payment_method_id, direction, effective_date, transaction_date, installment_purchase_id, category_id",
-    )
-    .eq("workspace_id", workspaceId)
-    .or(buildTransactionPeriodFilter(previousPeriod.start, previousPeriod.end));
-
-  if (previousTransactionsResponse.error) {
-    throw previousTransactionsResponse.error;
-  }
-
   const historicalTransactionsResponse = await supabase
     .from("transactions")
     .select(
@@ -196,7 +184,6 @@ export async function loadInsightsContext({
   }
 
   const currentTransactions = (currentTransactionsResponse.data ?? []) as TransactionRow[];
-  const previousTransactions = (previousTransactionsResponse.data ?? []) as TransactionRow[];
   const historicalTransactions = (historicalTransactionsResponse.data ?? []) as TransactionRow[];
 
   let incomeCurrentMonth = 0;
@@ -205,6 +192,8 @@ export async function loadInsightsContext({
   let creditCardExpenseCurrentMonth = 0;
   let creditCardPaymentsCurrentMonth = 0;
   let relevantTransactionCountCurrentMonth = 0;
+  const creditCardConsumptionByMethodId = new Map<string, number>();
+  const creditCardPaymentsByMethodId = new Map<string, number>();
 
   const expenseByCategoryMap = new Map<string, number>();
 
@@ -239,6 +228,11 @@ export async function loadInsightsContext({
 
       if (row.payment_method_id && creditCardIds.has(row.payment_method_id) && !isExcludedCategory) {
         creditCardExpenseCurrentMonth = roundMoney(creditCardExpenseCurrentMonth + amount);
+        const previousConsumption = creditCardConsumptionByMethodId.get(row.payment_method_id) ?? 0;
+        creditCardConsumptionByMethodId.set(
+          row.payment_method_id,
+          roundMoney(previousConsumption + amount),
+        );
       }
       continue;
     }
@@ -250,18 +244,11 @@ export async function loadInsightsContext({
       creditCardIds.has(row.payment_method_id)
     ) {
       creditCardPaymentsCurrentMonth = roundMoney(creditCardPaymentsCurrentMonth + amount);
-    }
-  }
-
-  let creditCardExpensePreviousMonth = 0;
-  for (const row of previousTransactions) {
-    if (
-      row.type === "expense" &&
-      row.payment_method_id !== null &&
-      creditCardIds.has(row.payment_method_id) &&
-      !excludedDashboardCategoryIds.has(row.category_id)
-    ) {
-      creditCardExpensePreviousMonth = roundMoney(creditCardExpensePreviousMonth + parseAmountValue(row.amount));
+      const previousPayments = creditCardPaymentsByMethodId.get(row.payment_method_id) ?? 0;
+      creditCardPaymentsByMethodId.set(
+        row.payment_method_id,
+        roundMoney(previousPayments + amount),
+      );
     }
   }
 
@@ -303,10 +290,22 @@ export async function loadInsightsContext({
   }
 
   let creditCardDebtTotal = 0;
+  let creditCardPreviousMonthStatement = 0;
+  let creditCardRolledDebtCurrent = 0;
   for (const method of activeCreditCards) {
     const methodBalance = roundMoney(
       parseAmountValue(method.current_balance) + (historicalImpactByMethodId.get(method.id) ?? 0),
     );
+    const monthConsumption = roundMoney(creditCardConsumptionByMethodId.get(method.id) ?? 0);
+    const monthPayments = roundMoney(creditCardPaymentsByMethodId.get(method.id) ?? 0);
+    const previousStatement = roundMoney(
+      Math.max(0, -methodBalance + monthPayments - monthConsumption),
+    );
+    const rolledDebt = roundMoney(previousStatement - monthPayments);
+
+    creditCardPreviousMonthStatement = roundMoney(creditCardPreviousMonthStatement + previousStatement);
+    creditCardRolledDebtCurrent = roundMoney(creditCardRolledDebtCurrent + rolledDebt);
+
     if (methodBalance < 0) {
       creditCardDebtTotal = roundMoney(creditCardDebtTotal + Math.abs(methodBalance));
     }
@@ -355,8 +354,10 @@ export async function loadInsightsContext({
     expenseCurrentMonth: roundMoney(expenseCurrentMonth),
     savingCurrentMonth: roundMoney(savingCurrentMonth),
     creditCardExpenseCurrentMonth: roundMoney(creditCardExpenseCurrentMonth),
-    creditCardExpensePreviousMonth: roundMoney(creditCardExpensePreviousMonth),
+    creditCardExpensePreviousMonth: roundMoney(creditCardPreviousMonthStatement),
     creditCardPaymentsCurrentMonth: roundMoney(creditCardPaymentsCurrentMonth),
+    creditCardPreviousMonthStatement: roundMoney(creditCardPreviousMonthStatement),
+    creditCardRolledDebtCurrent: roundMoney(creditCardRolledDebtCurrent),
     creditCardDebtTotal: roundMoney(creditCardDebtTotal),
     creditCardCurrentStatement: roundMoney(creditCardExpenseCurrentMonth),
     creditCardNextMonthCommitment: roundMoney(creditCardNextMonthCommitment),

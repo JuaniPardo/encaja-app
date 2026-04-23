@@ -26,6 +26,8 @@ function buildBaseContext(overrides: Partial<InsightsContext> = {}): InsightsCon
     creditCardExpenseCurrentMonth: 250_000,
     creditCardExpensePreviousMonth: 240_000,
     creditCardPaymentsCurrentMonth: 250_000,
+    creditCardPreviousMonthStatement: 240_000,
+    creditCardRolledDebtCurrent: -10_000,
     creditCardDebtTotal: 80_000,
     creditCardCurrentStatement: 250_000,
     creditCardNextMonthCommitment: 80_000,
