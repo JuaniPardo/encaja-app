@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Badge, Group, Paper, Stack, Text, UnstyledButton } from "@mantine/core";
 
 import type { Insight } from "@/features/insights/types";
-import type { TranslationFn } from "@/features/insights/modules/credit-card";
+import type { TranslationFn } from "@/features/insights/intl";
 
 type DashboardPrimaryInsightCardProps = {
   insight: Insight;
@@ -65,6 +65,18 @@ function resolveInsightKindLabel(insight: Insight, t: TranslationFn) {
   }
   if (insight.kind === "next_month_commitment") {
     return t("insightsV2.dashboard.kindBadge.futureCommitment");
+  }
+  if (insight.kind === "excess_spending") {
+    return t("insightsV2.dashboard.kindBadge.expensePressure");
+  }
+  if (insight.kind === "category_imbalance") {
+    return t("insightsV2.dashboard.kindBadge.categoryImbalance");
+  }
+  if (insight.kind === "low_saving") {
+    return t("insightsV2.dashboard.kindBadge.lowSaving");
+  }
+  if (insight.kind === "low_activity") {
+    return t("insightsV2.dashboard.kindBadge.lowActivity");
   }
   if (insight.kind === "full_payment" || insight.kind === "stable") {
     return t("insightsV2.dashboard.kindBadge.controlled");

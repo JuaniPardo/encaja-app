@@ -6,7 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildSafeCurrencyFormatter } from "@/features/dashboard/lib/dashboard-math";
 import { buildInsightsResult } from "@/features/insights/engine";
 import { loadInsightsContext } from "@/features/insights/data";
-import type { TranslationFn } from "@/features/insights/modules/credit-card";
+import type { TranslationFn } from "@/features/insights/intl";
 import type { InsightsResult } from "@/features/insights/types";
 import type { Database } from "@/types/database";
 
@@ -54,11 +54,34 @@ export function useInsightsV2({
     currency_code: "ARS",
     show_cents: false,
   });
-  const [result, setResult] = useState<InsightsResult>({
-    allInsights: [],
-    primaryInsight: null,
-    modules: [],
-  });
+  const emptyResult: InsightsResult = useMemo(
+    () => ({
+      financialState: {
+        level: "stable",
+        title: t("insightsV2.financialState.levels.stable.title"),
+        message: t("insightsV2.financialState.levels.stable.messageNoIncome", undefined, {
+          availableAmount: fallbackFormatter.format(0),
+          futurePressureAmount: fallbackFormatter.format(0),
+          projectedVariableExpense: fallbackFormatter.format(0),
+          projectedBalance: fallbackFormatter.format(0),
+          pressureRatio: "-",
+        }),
+        pressureScore: 0,
+        data: {
+          availableCurrent: 0,
+          futurePressureAmount: 0,
+          futurePressureVsIncome: null,
+          projectedExpenseVariable: 0,
+          projectedBalance: 0,
+        },
+      },
+      allInsights: [],
+      primaryInsight: null,
+      modules: [],
+    }),
+    [fallbackFormatter, t],
+  );
+  const [result, setResult] = useState<InsightsResult>(emptyResult);
 
   const currencyFormatter = useMemo(
     () =>
@@ -70,6 +93,20 @@ export function useInsightsV2({
       ),
     [fallbackFormatter, intlLocale, settings.currency_code, settings.show_cents],
   );
+
+  useEffect(() => {
+    setResult((currentResult) => {
+      if (
+        currentResult.modules.length > 0 ||
+        currentResult.primaryInsight !== null ||
+        currentResult.allInsights.length > 0
+      ) {
+        return currentResult;
+      }
+
+      return emptyResult;
+    });
+  }, [emptyResult]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -123,11 +160,7 @@ export function useInsightsV2({
           return;
         }
 
-        setResult({
-          allInsights: [],
-          primaryInsight: null,
-          modules: [],
-        });
+        setResult(emptyResult);
         setErrorMessage(error instanceof Error ? error.message : "Unknown insights error");
       } finally {
         if (!isCancelled) {
@@ -141,7 +174,7 @@ export function useInsightsV2({
     return () => {
       isCancelled = true;
     };
-  }, [effectiveReferenceDate, fallbackFormatter, intlLocale, supabase, t, workspaceId]);
+  }, [effectiveReferenceDate, emptyResult, fallbackFormatter, intlLocale, supabase, t, workspaceId]);
 
   return {
     isLoading,
