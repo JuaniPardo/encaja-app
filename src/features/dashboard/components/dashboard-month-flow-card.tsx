@@ -236,7 +236,7 @@ export function DashboardMonthFlowCard({
                       x2={flow.chartRight}
                       y2={y}
                       stroke="#d9e1eb"
-                      strokeWidth={0.48}
+                      strokeWidth={1}
                       strokeDasharray="3 3"
                     />
                   ))}
@@ -246,7 +246,7 @@ export function DashboardMonthFlowCard({
                     x2={flow.chartLeft}
                     y2={flow.chartBottom}
                     stroke="#c9d4e1"
-                    strokeWidth={0.42}
+                    strokeWidth={1}
                   />
 
                   {flow.yAxisTicks.map((tick) => (
@@ -255,7 +255,7 @@ export function DashboardMonthFlowCard({
                       x={flow.chartLeft - 0.9}
                       y={tick.y + 0.6}
                       textAnchor="end"
-                      fontSize="2.5"
+                      fontSize="2"
                       fill="#98a2b3"
                     >
                       {tick.label}
