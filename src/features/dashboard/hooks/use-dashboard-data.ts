@@ -83,6 +83,7 @@ export function useDashboardData({
   const [showCents, setShowCents] = useState(false);
   const [hasAnyTransactions, setHasAnyTransactions] = useState(false);
   const [excludedDashboardCategoryIds, setExcludedDashboardCategoryIds] = useState<string[]>([]);
+  const [systemCategoryKeyById, setSystemCategoryKeyById] = useState<Map<string, string>>(new Map());
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isLoadingSummary, setIsLoadingSummary] = useState(true);
 
@@ -90,7 +91,7 @@ export function useDashboardData({
     const run = async () => {
       const [
         categoriesResponse,
-        adjustmentSystemCategoriesResponse,
+        systemCategoriesResponse,
         paymentMethodsResponse,
         settingsResponse,
         anyTransactionsResponse,
@@ -104,7 +105,7 @@ export function useDashboardData({
           supabase
             .from("system_categories")
             .select("id, key")
-            .in("key", [...dashboardAdjustmentSystemKeys]),
+            .order("created_at", { ascending: true }),
           supabase
             .from("payment_methods")
             .select("id, name, type, is_active, include_in_balance, current_balance")
@@ -130,22 +131,34 @@ export function useDashboardData({
         });
         setCategories([]);
         setExcludedDashboardCategoryIds([]);
+        setSystemCategoryKeyById(new Map());
       } else {
         const sortedCategories = [...categoriesResponse.data].sort((a, b) => sortCategories(a, b, locale));
         setCategories(sortedCategories);
 
-        if (adjustmentSystemCategoriesResponse.error) {
+        if (systemCategoriesResponse.error) {
           notifications.show({
             color: "red",
             title: t("dashboard.notifications.loadCategoriesError"),
-            message: adjustmentSystemCategoriesResponse.error.message,
+            message: systemCategoriesResponse.error.message,
           });
           setExcludedDashboardCategoryIds([]);
+          setSystemCategoryKeyById(new Map());
         } else {
-          const adjustmentSystemCategoryRows =
-            (adjustmentSystemCategoriesResponse.data ?? []) as SystemCategoryKeyRow[];
+          const systemCategoryRows = (systemCategoriesResponse.data ?? []) as SystemCategoryKeyRow[];
+          const nextSystemCategoryKeyById = new Map(
+            systemCategoryRows.map((systemCategory) => [systemCategory.id, systemCategory.key]),
+          );
+          setSystemCategoryKeyById(nextSystemCategoryKeyById);
+
           const adjustmentSystemCategoryIds = new Set(
-            adjustmentSystemCategoryRows.map((systemCategory) => systemCategory.id),
+            systemCategoryRows
+              .filter((systemCategory) =>
+                dashboardAdjustmentSystemKeys.includes(
+                  systemCategory.key as (typeof dashboardAdjustmentSystemKeys)[number],
+                ),
+              )
+              .map((systemCategory) => systemCategory.id),
           );
 
           const nextExcludedCategoryIds = sortedCategories
@@ -495,6 +508,7 @@ export function useDashboardData({
     currentMonthPaymentsByMethodId,
     paymentMethodRows,
     linkedWorkspacePaymentMethodBalances,
+    systemCategoryKeyById,
     startYear,
     currencyCode,
     showCents,
