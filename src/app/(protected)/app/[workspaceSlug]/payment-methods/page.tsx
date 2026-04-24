@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Alert,
@@ -28,7 +29,6 @@ import {
   PaymentMethodCard,
   type PaymentMethodCardData,
 } from "@/features/payment-methods/components/payment-method-card";
-import { PaymentMethodFormModal } from "@/features/payment-methods/components/payment-method-form-modal";
 import { localeCompareByName, mapPaymentMethodTypeLabel } from "@/features/i18n/formatting";
 import { useI18n } from "@/features/i18n/provider";
 import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
@@ -47,6 +47,12 @@ type WorkspaceSettingsLiteRow = Pick<
 >;
 
 type StatusFilter = "all" | "active" | "inactive";
+
+const PaymentMethodFormModal = dynamic(() =>
+  import("@/features/payment-methods/components/payment-method-form-modal").then(
+    (mod) => mod.PaymentMethodFormModal,
+  ),
+);
 
 function normalizeBalanceByType(type: PaymentMethodType, value: number) {
   if (Math.abs(value) < 0.005) {
@@ -168,7 +174,7 @@ export default function PaymentMethodsPage() {
 
     const paymentMethodsResponse = await supabase
       .from("payment_methods")
-      .select("*")
+      .select("id, name, type, current_balance, include_in_balance, closing_day, due_day, is_active")
       .eq("workspace_id", workspace.id)
       .order("created_at", { ascending: true });
 
@@ -237,7 +243,7 @@ export default function PaymentMethodsPage() {
       setMovementCountByMethodId(movementCountCounter);
     }
 
-    setRows(paymentMethodsResponse.data);
+    setRows((paymentMethodsResponse.data ?? []) as PaymentMethodRow[]);
   }, [getSignedMovementAmount, supabase, t, workspace.id]);
 
   const showPermissionDenied = useCallback(() => {
@@ -576,20 +582,22 @@ export default function PaymentMethodsPage() {
         )}
       </Paper>
 
-      <PaymentMethodFormModal
-        opened={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        isEditing={editingRow !== null}
-        isMobile={isMobile}
-        canManageStructure={canManageStructure}
-        isSubmitting={isSubmitting}
-        selectedType={selectedType}
-        paymentTypeSelectData={paymentTypeSelectData}
-        register={register}
-        errors={errors}
-        onSubmit={onSubmit}
-        t={t}
-      />
+      {isModalOpen ? (
+        <PaymentMethodFormModal
+          opened={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          isEditing={editingRow !== null}
+          isMobile={isMobile}
+          canManageStructure={canManageStructure}
+          isSubmitting={isSubmitting}
+          selectedType={selectedType}
+          paymentTypeSelectData={paymentTypeSelectData}
+          register={register}
+          errors={errors}
+          onSubmit={onSubmit}
+          t={t}
+        />
+      ) : null}
     </Stack>
   );
 }

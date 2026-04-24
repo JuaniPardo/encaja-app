@@ -35,6 +35,7 @@ import {
   type WorkspaceSummary,
 } from "@/lib/workspace/bootstrap";
 import type { Database } from "@/types/database";
+import type { InitialWorkspaceContext } from "@/lib/workspace/server-context";
 
 interface WorkspaceContextValue {
   supabase: SupabaseClient<Database>;
@@ -78,7 +79,13 @@ function rememberLastWorkspaceSlug(workspaceSlug: string) {
   window.localStorage.setItem(LAST_WORKSPACE_SLUG_STORAGE_KEY, workspaceSlug);
 }
 
-export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
+export function WorkspaceProvider({
+  children,
+  initialContext,
+}: {
+  children: React.ReactNode;
+  initialContext?: InitialWorkspaceContext;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const routeWorkspaceSlug = getWorkspaceSlugFromPathname(pathname ?? "");
@@ -87,12 +94,13 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const requestCounterRef = useRef(0);
   const pathnameRef = useRef(pathname ?? "/app");
+  const didUseInitialContextRef = useRef(Boolean(initialContext));
   const [state, setState] = useState<WorkspaceState>({
-    isInitializing: true,
+    isInitializing: !initialContext,
     errorMessage: null,
-    user: null,
-    workspaces: [],
-    workspace: null,
+    user: initialContext?.user ?? null,
+    workspaces: initialContext?.workspaces ?? [],
+    workspace: initialContext?.workspace ?? null,
   });
 
   useEffect(() => {
@@ -409,9 +417,23 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
-    void loadSessionAndWorkspaces();
+    if (initialContext?.locale && initialContext.locale !== locale) {
+      setLocale(initialContext.locale, { persist: false });
+    }
+  }, [initialContext?.locale, locale, setLocale]);
 
-    const authListener = supabase.auth.onAuthStateChange((_event, session) => {
+  useEffect(() => {
+    if (!didUseInitialContextRef.current) {
+      void loadSessionAndWorkspaces();
+    } else {
+      didUseInitialContextRef.current = false;
+    }
+
+    const authListener = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "INITIAL_SESSION" && state.user) {
+        return;
+      }
+
       if (!session?.user) {
         setState({
           isInitializing: false,
@@ -430,7 +452,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     return () => {
       authListener.data.subscription.unsubscribe();
     };
-  }, [loadSessionAndWorkspaces, router, supabase.auth]);
+  }, [loadSessionAndWorkspaces, router, state.user, supabase.auth]);
 
   useEffect(() => {
     if (state.isInitializing || !state.user || state.workspaces.length === 0) {

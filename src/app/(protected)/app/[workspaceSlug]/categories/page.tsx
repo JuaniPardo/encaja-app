@@ -260,17 +260,16 @@ export default function CategoriesPage() {
   const loadRows = useCallback(async () => {
     setIsLoading(true);
 
-    const [categoriesResponse, usageResponse] = await Promise.all([
-      supabase
-        .from("categories")
-        .select("*")
-        .eq("workspace_id", workspace.id)
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("transactions")
-        .select("category_id")
-        .eq("workspace_id", workspace.id),
-    ]);
+    const categoriesResponse = await supabase
+      .from("categories")
+      .select("id, name, type, source, is_active, is_exceptional, sort_order, expense_behavior")
+      .eq("workspace_id", workspace.id)
+      .order("created_at", { ascending: true });
+
+    const usageResponse = await supabase
+      .from("transactions")
+      .select("category_id")
+      .eq("workspace_id", workspace.id);
     setIsLoading(false);
 
     if (categoriesResponse.error) {
@@ -284,7 +283,9 @@ export default function CategoriesPage() {
       return;
     }
 
-    const sorted = [...categoriesResponse.data].sort((a, b) => sortCategories(a, b, locale));
+    const sorted = ([...(categoriesResponse.data ?? [])] as CategoryRow[]).sort((a, b) =>
+      sortCategories(a, b, locale),
+    );
     const usageCounter: Record<string, number> = {};
 
     if (usageResponse.error) {

@@ -1,12 +1,11 @@
 "use client";
 
 import { Alert, LoadingOverlay, Stack, Text, Title } from "@mantine/core";
+import dynamic from "next/dynamic";
 
 import { useI18n } from "@/features/i18n/provider";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 
-import { CreateWorkspaceModal } from "./components/create-workspace-modal";
-import { DeleteWorkspaceModal } from "./components/delete-workspace-modal";
 import { WorkspaceDangerZoneSection } from "./components/workspace-danger-zone-section";
 import { WorkspaceGeneralSettingsSection } from "./components/workspace-general-settings-section";
 import { WorkspaceLinksSection } from "./components/workspace-links-section";
@@ -15,6 +14,14 @@ import { useSettingsGeneral } from "./hooks/use-settings-general";
 import { useSettingsLifecycle } from "./hooks/use-settings-lifecycle";
 import { useSettingsLinks } from "./hooks/use-settings-links";
 import { useSettingsMembers } from "./hooks/use-settings-members";
+
+const CreateWorkspaceModal = dynamic(() =>
+  import("./components/create-workspace-modal").then((mod) => mod.CreateWorkspaceModal),
+);
+
+const DeleteWorkspaceModal = dynamic(() =>
+  import("./components/delete-workspace-modal").then((mod) => mod.DeleteWorkspaceModal),
+);
 
 export default function SettingsPage() {
   const { t } = useI18n();
@@ -31,30 +38,34 @@ export default function SettingsPage() {
     <Stack gap="lg" pos="relative">
       <LoadingOverlay visible={general.isLoading} />
 
-      <CreateWorkspaceModal
-        opened={general.isCreateWorkspaceOpen}
-        onClose={general.closeCreateWorkspace}
-        onSubmit={general.onSubmitCreateWorkspace}
-        onCreateDemoWorkspace={() => {
-          void general.onCreateDemoWorkspace();
-        }}
-        nameInputProps={general.registerCreateWorkspace("name")}
-        nameError={general.createWorkspaceErrors.name?.message}
-        isSubmitting={general.isCreatingWorkspace}
-        isCreatingDemoWorkspace={general.isCreatingDemoWorkspace}
-      />
+      {general.isCreateWorkspaceOpen ? (
+        <CreateWorkspaceModal
+          opened={general.isCreateWorkspaceOpen}
+          onClose={general.closeCreateWorkspace}
+          onSubmit={general.onSubmitCreateWorkspace}
+          onCreateDemoWorkspace={() => {
+            void general.onCreateDemoWorkspace();
+          }}
+          nameInputProps={general.registerCreateWorkspace("name")}
+          nameError={general.createWorkspaceErrors.name?.message}
+          isSubmitting={general.isCreatingWorkspace}
+          isCreatingDemoWorkspace={general.isCreatingDemoWorkspace}
+        />
+      ) : null}
 
-      <DeleteWorkspaceModal
-        opened={lifecycle.isDeleteWorkspaceOpen}
-        onClose={lifecycle.closeDeleteWorkspace}
-        workspaceName={workspace.name}
-        confirmation={lifecycle.deleteWorkspaceConfirmation}
-        onConfirmationChange={lifecycle.setDeleteWorkspaceConfirmation}
-        isDeleting={lifecycle.isDeletingWorkspace}
-        onConfirmDelete={() => {
-          void lifecycle.onDeleteWorkspace();
-        }}
-      />
+      {lifecycle.isDeleteWorkspaceOpen ? (
+        <DeleteWorkspaceModal
+          opened={lifecycle.isDeleteWorkspaceOpen}
+          onClose={lifecycle.closeDeleteWorkspace}
+          workspaceName={workspace.name}
+          confirmation={lifecycle.deleteWorkspaceConfirmation}
+          onConfirmationChange={lifecycle.setDeleteWorkspaceConfirmation}
+          isDeleting={lifecycle.isDeletingWorkspace}
+          onConfirmDelete={() => {
+            void lifecycle.onDeleteWorkspace();
+          }}
+        />
+      ) : null}
 
       <Stack gap={2}>
         <Title order={2} component="h1">

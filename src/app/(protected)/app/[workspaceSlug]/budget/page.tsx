@@ -48,7 +48,10 @@ import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { Database, TransactionType } from "@/types/database";
 
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
-type WorkspaceSettingsRow = Database["public"]["Tables"]["workspace_settings"]["Row"];
+type WorkspaceSettingsRow = Pick<
+  Database["public"]["Tables"]["workspace_settings"]["Row"],
+  "start_year" | "currency_code" | "show_cents"
+>;
 type BudgetPeriodIdRow = Pick<Database["public"]["Tables"]["budget_periods"]["Row"], "id">;
 type BudgetItemLiteRow = Pick<
   Database["public"]["Tables"]["budget_items"]["Row"],
@@ -228,19 +231,18 @@ export default function BudgetPage() {
   const loadBaseData = useCallback(async () => {
     setIsBootstrapping(true);
 
-    const [categoriesResponse, settingsResponse] = await Promise.all([
-      supabase
-        .from("categories")
-        .select("*")
-        .eq("workspace_id", workspace.id)
-        .eq("is_active", true)
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("workspace_settings")
-        .select("*")
-        .eq("workspace_id", workspace.id)
-        .maybeSingle(),
-    ]);
+    const categoriesResponse = await supabase
+      .from("categories")
+      .select("id, name, type, is_active, sort_order")
+      .eq("workspace_id", workspace.id)
+      .eq("is_active", true)
+      .order("created_at", { ascending: true });
+
+    const settingsResponse = await supabase
+      .from("workspace_settings")
+      .select("start_year, currency_code, show_cents")
+      .eq("workspace_id", workspace.id)
+      .maybeSingle();
 
     if (categoriesResponse.error) {
       notifications.show({
