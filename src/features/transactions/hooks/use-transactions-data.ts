@@ -616,6 +616,7 @@ export function useTransactionsData() {
 
   return {
     rows,
+    filteredRows,
     categories,
     paymentMethods,
     setPaymentMethods,
@@ -652,6 +653,7 @@ export function useTransactionsData() {
     categoryFilterOptions,
     paymentMethodFilterOptions,
     quickPaymentMethodSelectData,
+    formatDate,
     formatCompactDate,
     groupedRows,
     filteredRowsCount,
