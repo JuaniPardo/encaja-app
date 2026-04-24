@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  Accordion,
   Alert,
   Badge,
   Button,
@@ -14,35 +14,31 @@ import {
   SimpleGrid,
   Stack,
   Text,
-  TextInput,
   Title,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { Controller, useForm, useWatch } from "react-hook-form";
+import { FormProvider, useForm, useWatch } from "react-hook-form";
 
+import { CategoryBudgetRow } from "@/features/budget/components/category-budget-row";
+import { BudgetGlobalSummary } from "@/features/budget/components/budget-global-summary";
+import { BudgetSummaryPanel } from "@/features/budget/components/budget-summary-panel";
+import { parseBudgetAmount } from "@/features/budget/amount-format";
 import {
-  formatBudgetAmount,
-  parseBudgetAmount,
-  sanitizeBudgetTypingValue,
-} from "@/features/budget/amount-format";
+  createBudgetFormSchema,
+  type BudgetFormInputValues,
+  type BudgetFormValues,
+} from "@/features/budget/schema";
+import { buildMonthRange } from "@/features/dashboard/lib/dashboard-math";
 import {
   buildMonthOptions,
   localeCompareByName,
   mapTransactionTypeLabel,
   monthLabelFromOptions,
 } from "@/features/i18n/formatting";
-import {
-  createBudgetFormSchema,
-  type BudgetFormInputValues,
-  type BudgetFormValues,
-} from "@/features/budget/schema";
 import { useI18n } from "@/features/i18n/provider";
 import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
-import {
-  transactionTypeColorShade,
-  transactionTypeMantineColor,
-} from "@/features/transactions/type-colors";
+import { transactionTypeMantineColor } from "@/features/transactions/type-colors";
 import { canManageBudgetStructure } from "@/features/workspace/permissions";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { Database, TransactionType } from "@/types/database";
@@ -56,6 +52,10 @@ type BudgetPeriodIdRow = Pick<Database["public"]["Tables"]["budget_periods"]["Ro
 type BudgetItemLiteRow = Pick<
   Database["public"]["Tables"]["budget_items"]["Row"],
   "category_id" | "amount"
+>;
+type TransactionSpentLiteRow = Pick<
+  Database["public"]["Tables"]["transactions"]["Row"],
+  "category_id" | "amount" | "type"
 >;
 
 type CategorizedItem = {
@@ -114,14 +114,9 @@ export default function BudgetPage() {
   const [isPeriodLoading, setIsPeriodLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
+  const [spentByCategory, setSpentByCategory] = useState<Record<string, number>>({});
 
-  const {
-    register,
-    handleSubmit,
-    control,
-    reset,
-    formState: { errors, isDirty },
-  } = useForm<BudgetFormInputValues, unknown, BudgetFormValues>({
+  const methods = useForm<BudgetFormInputValues, unknown, BudgetFormValues>({
     resolver: zodResolver(
       createBudgetFormSchema({
         invalidAmount: t("common.validation.invalidAmount"),
@@ -133,6 +128,13 @@ export default function BudgetPage() {
       items: [],
     },
   });
+
+  const {
+    handleSubmit,
+    control,
+    reset,
+    formState: { isDirty },
+  } = methods;
 
   const watchedItems = useWatch({
     control,
@@ -210,7 +212,8 @@ export default function BudgetPage() {
     : roundedBalance > 0
       ? "remaining"
       : "overassigned";
-  const formattedBalanceAbsolute = currencyFormatter.format(Math.abs(roundedBalance));
+  const statusTone = balanceStatus === "balanced" ? "cyan" : balanceStatus === "remaining" ? "yellow" : "pink";
+  const statusLabel = t(`budget.balanceStatus.${balanceStatus}`);
 
   const yearOptions = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -227,6 +230,12 @@ export default function BudgetPage() {
 
     return options;
   }, [selectedYear, startYear]);
+
+  const selectedPeriodLabel = `${monthLabelFromOptions(
+    selectedMonth,
+    monthOptions,
+    t("common.messages.month"),
+  )} ${selectedYear}`;
 
   const loadBaseData = useCallback(async () => {
     setIsBootstrapping(true);
@@ -322,39 +331,64 @@ export default function BudgetPage() {
           amount: null,
         })),
       });
-      setIsPeriodLoading(false);
-      return;
-    }
+    } else {
+      const itemsResponse = await supabase
+        .from("budget_items")
+        .select("category_id, amount")
+        .eq("budget_period_id", periodRow.id);
 
-    const itemsResponse = await supabase
-      .from("budget_items")
-      .select("category_id, amount")
-      .eq("budget_period_id", periodRow.id);
+      if (itemsResponse.error) {
+        setIsPeriodLoading(false);
+        notifications.show({
+          color: "red",
+          title: t("budget.notifications.loadBudgetError"),
+          message: itemsResponse.error.message,
+        });
+        return;
+      }
 
-    if (itemsResponse.error) {
-      setIsPeriodLoading(false);
-      notifications.show({
-        color: "red",
-        title: t("budget.notifications.loadBudgetError"),
-        message: itemsResponse.error.message,
+      const periodItems = (itemsResponse.data ?? []) as BudgetItemLiteRow[];
+      const amountByCategoryId = new Map(
+        periodItems.map((item) => [item.category_id, parseBudgetAmount(item.amount)]),
+      );
+
+      reset({
+        items: categories.map((category) => ({
+          categoryId: category.id,
+          amount: amountByCategoryId.get(category.id) ?? null,
+        })),
       });
-      return;
+
+      setPeriodId(periodRow.id);
+      setPeriodHasItems(periodItems.length > 0);
     }
 
-    const periodItems = (itemsResponse.data ?? []) as BudgetItemLiteRow[];
-    const amountByCategoryId = new Map(
-      periodItems.map((item) => [item.category_id, parseBudgetAmount(item.amount)]),
-    );
+    const { start, end } = buildMonthRange(selectedYear, selectedMonth);
+    const periodFilter = [
+      `and(effective_date.gte.${start},effective_date.lt.${end})`,
+      `and(effective_date.is.null,transaction_date.gte.${start},transaction_date.lt.${end})`,
+    ].join(",");
 
-    reset({
-      items: categories.map((category) => ({
-        categoryId: category.id,
-        amount: amountByCategoryId.get(category.id) ?? null,
-      })),
-    });
+    const transactionsResponse = await supabase
+      .from("transactions")
+      .select("category_id, amount, type")
+      .eq("workspace_id", workspace.id)
+      .neq("type", "transfer")
+      .or(periodFilter);
 
-    setPeriodId(periodRow.id);
-    setPeriodHasItems(periodItems.length > 0);
+    if (!transactionsResponse.error) {
+      const spent: Record<string, number> = {};
+      ((transactionsResponse.data ?? []) as TransactionSpentLiteRow[]).forEach((transaction) => {
+        if (transaction.category_id) {
+          spent[transaction.category_id] =
+            (spent[transaction.category_id] ?? 0) + Number(transaction.amount);
+        }
+      });
+      setSpentByCategory(spent);
+    } else {
+      setSpentByCategory({});
+    }
+
     setIsPeriodLoading(false);
   }, [categories, reset, selectedMonth, selectedYear, supabase, t, workspace.id]);
 
@@ -479,11 +513,7 @@ export default function BudgetPage() {
         color: "cyan",
         title: t("budget.notifications.savedTitle"),
         message: t("budget.notifications.savedMessage", undefined, {
-          monthYear: `${monthLabelFromOptions(
-            selectedMonth,
-            monthOptions,
-            t("common.messages.month"),
-          )} ${selectedYear}`,
+          monthYear: selectedPeriodLabel,
         }),
       });
 
@@ -562,9 +592,7 @@ export default function BudgetPage() {
 
       const activeCategoryIds = new Set(categories.map((category) => category.id));
       const previousItems = (previousItemsResponse.data ?? []) as BudgetItemLiteRow[];
-      const copyRowsSource = previousItems.filter((item) =>
-        activeCategoryIds.has(item.category_id),
-      );
+      const copyRowsSource = previousItems.filter((item) => activeCategoryIds.has(item.category_id));
 
       if (copyRowsSource.length === 0) {
         notifications.show({
@@ -640,11 +668,33 @@ export default function BudgetPage() {
 
   const canCopyFromPrevious =
     canManageStructure && categories.length > 0 && !isPeriodLoading && !isSaving && !periodHasItems;
-  const selectedPeriodLabel = `${selectedYear} · ${monthLabelFromOptions(
-    selectedMonth,
-    monthOptions,
-    t("common.messages.month"),
-  )}`;
+
+  const topSpentCategory = useMemo(() => {
+    const expenseCandidates = groupedCategories.expense
+      .map(({ category, index }) => {
+        const budgeted = parseBudgetAmount(watchedItems?.[index]?.amount) ?? 0;
+        const spent = spentByCategory[category.id] ?? 0;
+
+        if (spent <= 0) {
+          return null;
+        }
+
+        return {
+          name: category.name,
+          spent,
+          percent: budgeted > 0 ? Math.round((spent / budgeted) * 100) : 100,
+        };
+      })
+      .filter((row): row is NonNullable<typeof row> => row !== null)
+      .sort((left, right) => right.spent - left.spent);
+
+    return expenseCandidates[0] ?? null;
+  }, [groupedCategories.expense, spentByCategory, watchedItems]);
+
+  const accordionDefaultValue = isMobile
+    ? ["expense"]
+    : (["income", "expense", "saving"] as string[]);
+
   const categoryDrilldownHref = useCallback(
     (type: TransactionType, categoryId: string) =>
       buildTransactionsDrilldownHref({
@@ -658,396 +708,245 @@ export default function BudgetPage() {
   );
 
   return (
-    <Stack gap="sm" pos="relative">
-      <LoadingOverlay visible={isBootstrapping || isPeriodLoading} />
+    <FormProvider {...methods}>
+      <Stack gap="sm" pos="relative" style={isMobile ? { paddingBottom: "6.5rem" } : undefined}>
+        <LoadingOverlay visible={isBootstrapping || isPeriodLoading} />
 
-      <Stack gap={0}>
-        <Title order={2} component="h1">{t("budget.title")}</Title>
-        <Text size="xs" c="dimmed">
-          {t("budget.subtitle")}
-        </Text>
-      </Stack>
+        <BudgetGlobalSummary
+          totals={totals}
+          currencyFormatter={currencyFormatter}
+          compact={Boolean(isMobile)}
+        />
 
-      {!canManageStructure ? (
-        <Alert color="yellow" variant="light" py={8}>
-          {t("budget.readOnlyMessage", undefined, { role: roleLabel })}
-        </Alert>
-      ) : null}
-
-      <Paper withBorder radius="md" p="sm">
-        <Stack gap="xs">
-          <Group justify="space-between" align="center" wrap="nowrap">
-            <Text size="xs" c="dimmed" fw={600}>
-              {t("budget.editingPeriod")}
+        <Group justify="space-between" align="flex-end" wrap="wrap" gap="xs">
+          <Stack gap={2}>
+            <Title order={2} component="h1">
+              {t("budget.title")}
+            </Title>
+            <Text size="sm" c="dimmed">
+              {t("budget.subtitle")}
             </Text>
-            <Badge variant="light" color="blue" size="sm">
-              {selectedPeriodLabel}
-            </Badge>
-          </Group>
+          </Stack>
 
-          <SimpleGrid cols={isMobile ? 2 : 3} spacing="xs">
-            <NativeSelect
-              label={t("budget.year")}
-              data={yearOptions}
-              value={String(selectedYear)}
-              onChange={(event) => setSelectedYear(Number(event.currentTarget.value))}
-              size="xs"
-            />
-            <NativeSelect
-              label={t("budget.month")}
-              data={monthOptions}
-              value={String(selectedMonth)}
-              onChange={(event) => setSelectedMonth(Number(event.currentTarget.value))}
-              size="xs"
-            />
+          <Badge variant="light" color="cyan" size="lg">
+            {selectedPeriodLabel}
+          </Badge>
+        </Group>
 
-            <Button
-              variant="subtle"
-              color="gray"
-              size="xs"
-              onClick={() => void copyFromPreviousMonth()}
-              loading={isCopying}
-              disabled={!canCopyFromPrevious}
-              mt={isMobile ? 0 : "auto"}
-            >
-              {t("budget.copyPreviousMonth")}
-            </Button>
-          </SimpleGrid>
+        {!canManageStructure ? (
+          <Alert color="yellow" variant="light">
+            {t("budget.readOnlyMessage", undefined, { role: roleLabel })}
+          </Alert>
+        ) : null}
 
-          <Text size="xs" c="dimmed">
-            {periodHasItems
-              ? t("budget.copyDisabledWithExistingData")
-              : t("budget.copyHint")}
-          </Text>
-        </Stack>
-      </Paper>
+        <Paper withBorder radius="md" p="sm">
+          <Stack gap="xs">
+            <SimpleGrid cols={isMobile ? 1 : 3} spacing="xs">
+              <NativeSelect
+                label={t("budget.year")}
+                data={yearOptions}
+                value={String(selectedYear)}
+                onChange={(event) => setSelectedYear(Number(event.currentTarget.value))}
+              />
+              <NativeSelect
+                label={t("budget.month")}
+                data={monthOptions}
+                value={String(selectedMonth)}
+                onChange={(event) => setSelectedMonth(Number(event.currentTarget.value))}
+              />
+              <Button
+                variant="subtle"
+                color="gray"
+                onClick={() => void copyFromPreviousMonth()}
+                loading={isCopying}
+                disabled={!canCopyFromPrevious}
+                mt={isMobile ? 0 : "auto"}
+              >
+                {t("budget.copyPreviousMonth")}
+              </Button>
+            </SimpleGrid>
 
-      {categories.length === 0 ? (
-        <Paper withBorder radius="md" p="md">
-          <Text size="sm" c="dimmed">
-            {t("budget.noActiveCategories")}
-          </Text>
-        </Paper>
-      ) : (
-        <form onSubmit={onSubmit}>
-          <Stack gap="sm">
             {!periodId ? (
-              <Alert color="blue" variant="light" py={8}>
+              <Alert color="blue" variant="light">
                 {t("budget.noPeriodYet")}
               </Alert>
             ) : null}
+          </Stack>
+        </Paper>
 
-            <Stack gap={2}>
-              <Text size="xs" fw={600}>
-                {t("budget.editByCategory")}
-              </Text>
-              <Text size="xs" c="dimmed">
-                {t("budget.editByCategoryHint")}
-              </Text>
-            </Stack>
-
-            {(Object.keys(groupedCategories) as TransactionType[])
-              .filter((typeKey) => typeKey !== "transfer")
-              .map((typeKey) => (
-              <Paper key={typeKey} withBorder radius="md" p="sm">
-                <Stack gap="xs">
-                  <Group justify="space-between" align="center" wrap="wrap">
-                    <Title
-                      order={5}
-                      c={transactionTypeMantineColor[typeKey]}
-                    >
-                      {typeLabels[typeKey]}
-                    </Title>
-                    <Badge
-                      variant="light"
-                      color={transactionTypeMantineColor[typeKey]}
-                      size="sm"
-                    >
-                      {currencyFormatter.format(totals[typeKey])}
-                    </Badge>
-                  </Group>
-                  {groupedCategories[typeKey].length === 0 ? (
-                    <Text size="sm" c="dimmed">
-                      {t("budget.noActiveCategoriesForType")}
-                    </Text>
-                  ) : (
-                    <Stack gap="xs">
-                      {groupedCategories[typeKey].map(({ category, index }) => (
-                        <Paper key={category.id} withBorder radius="sm" p={isMobile ? 6 : 8}>
-                          <Group justify="space-between" align="center" wrap="nowrap" gap="xs">
-                            <Stack gap={1} style={{ flex: 1, minWidth: 0 }}>
-                              <Text fw={600} size="sm" lineClamp={1}>
-                                {category.name}
-                              </Text>
-                              <Button
-                                component={Link}
-                                href={categoryDrilldownHref(typeKey, category.id)}
-                                variant="subtle"
-                                color="gray"
-                                size="compact-xs"
-                                px={0}
-                                justify="flex-start"
-                              >
-                                {t("budget.viewMovements")}
-                              </Button>
-                            </Stack>
-                            <input
-                              type="hidden"
-                              {...register(`items.${index}.categoryId` as const)}
-                            />
-                            <Controller
-                              name={`items.${index}.amount` as const}
-                              control={control}
-                              render={({ field }) => (
-                                <TextInput
-                                  aria-label={t("budget.amountForCategory", undefined, {
-                                    categoryName: category.name,
-                                  })}
-                                  type="text"
-                                  inputMode="decimal"
-                                  size="sm"
-                                  placeholder="0"
-                                  value={
-                                    typeof field.value === "string"
-                                      ? field.value
-                                      : typeof field.value === "number"
-                                        ? formatBudgetAmount(field.value)
-                                        : ""
-                                  }
-                                  onChange={(event) => {
-                                    field.onChange(
-                                      sanitizeBudgetTypingValue(event.currentTarget.value),
-                                    );
-                                  }}
-                                  onBlur={(event) => {
-                                    const parsed = parseBudgetAmount(event.currentTarget.value);
-                                    field.onChange(formatBudgetAmount(parsed ?? 0));
-                                    field.onBlur();
-                                  }}
-                                  onFocus={(event) => {
-                                    event.currentTarget.select();
-                                  }}
-                                  disabled={!canManageStructure}
-                                  error={errors.items?.[index]?.amount?.message}
-                                  rightSection={
-                                    <Text size="10px" c="dimmed" fw={500}>
-                                      $
-                                    </Text>
-                                  }
-                                  rightSectionWidth={26}
-                                  rightSectionPointerEvents="none"
-                                  styles={{
-                                    input: {
-                                      textAlign: "right",
-                                      fontVariantNumeric: "tabular-nums",
-                                      paddingTop: "0.3rem",
-                                      paddingBottom: "0.3rem",
-                                    },
-                                  }}
-                                  style={{ width: isMobile ? 132 : 164 }}
-                                />
-                              )}
-                            />
-                          </Group>
-                        </Paper>
-                      ))}
-                    </Stack>
-                  )}
-                </Stack>
-              </Paper>
-            ))}
-
-            <Paper
-              withBorder
-              radius="lg"
-              p="sm"
+        {categories.length === 0 ? (
+          <Paper withBorder radius="md" p="md">
+            <Text size="sm" c="dimmed">
+              {t("budget.noActiveCategories")}
+            </Text>
+          </Paper>
+        ) : (
+          <form onSubmit={onSubmit}>
+            <div
               style={{
-                borderColor:
-                  balanceStatus === "balanced"
-                    ? "var(--mantine-color-cyan-4)"
-                    : balanceStatus === "remaining"
-                      ? "var(--mantine-color-yellow-4)"
-                      : "var(--mantine-color-pink-4)",
+                display: "grid",
+                gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1.75fr) minmax(310px, 0.95fr)",
+                gap: "1rem",
+                alignItems: "start",
               }}
             >
-              <Stack gap="xs">
-                <Group justify="space-between" align="center" wrap="wrap">
-                  <Stack gap={0}>
-                    <Title order={4}>{t("budget.periodResultTitle")}</Title>
-                    <Text size="xs" c="dimmed">
-                      {t("budget.periodSummary", undefined, {
-                        monthYear: `${monthLabelFromOptions(
-                          selectedMonth,
-                          monthOptions,
-                          t("common.messages.month"),
-                        )} ${selectedYear}`,
-                      })}
-                    </Text>
-                  </Stack>
-                  <Badge
-                    color={
-                      balanceStatus === "balanced"
-                        ? "cyan"
-                        : balanceStatus === "remaining"
-                          ? "yellow"
-                          : "pink"
-                    }
-                    variant="filled"
-                    size="sm"
-                  >
-                    {balanceStatus === "balanced"
-                      ? t("budget.balanceStatus.balanced")
-                      : balanceStatus === "remaining"
-                        ? t("budget.balanceStatus.remaining")
-                        : t("budget.balanceStatus.overassigned")}
-                  </Badge>
-                </Group>
+              <Stack gap="sm">
+                <Stack gap={2}>
+                  <Text size="sm" fw={700}>
+                    {t("budget.editByCategory")}
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    {t("budget.redesignHint", "Asigná montos y mirá el consumo real por categoría sin perder el contexto global.")}
+                  </Text>
+                </Stack>
 
-                <SimpleGrid cols={3} spacing="xs">
-                  <Paper withBorder radius="sm" p={6}>
-                    <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                      {mapTransactionTypeLabel("income", t, { plural: true })}
-                    </Text>
-                    <Text mt={1} fw={700} size="sm" c={transactionTypeColorShade("income", 7)}>
-                      {currencyFormatter.format(totals.income)}
-                    </Text>
-                  </Paper>
-                  <Paper withBorder radius="sm" p={6}>
-                    <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                      {mapTransactionTypeLabel("expense", t, { plural: true })}
-                    </Text>
-                    <Text mt={1} fw={700} size="sm" c={transactionTypeColorShade("expense", 7)}>
-                      {currencyFormatter.format(totals.expense)}
-                    </Text>
-                  </Paper>
-                  <Paper withBorder radius="sm" p={6}>
-                    <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                      {mapTransactionTypeLabel("saving", t, { plural: true })}
-                    </Text>
-                    <Text mt={1} fw={700} size="sm" c={transactionTypeColorShade("saving", 7)}>
-                      {currencyFormatter.format(totals.saving)}
-                    </Text>
-                  </Paper>
-                </SimpleGrid>
+                <Accordion
+                  multiple
+                  defaultValue={accordionDefaultValue}
+                  variant="separated"
+                  radius="md"
+                >
+                  {(Object.keys(groupedCategories) as TransactionType[])
+                    .filter((typeKey) => typeKey !== "transfer")
+                    .map((typeKey) => {
+                      const items = groupedCategories[typeKey];
+                      const typeTotal = totals[typeKey];
+                      const criticalCount = items.filter(({ category, index }) => {
+                        const budgeted = parseBudgetAmount(watchedItems?.[index]?.amount) ?? 0;
+                        const spent = spentByCategory[category.id] ?? 0;
+                        return budgeted > 0 && spent / budgeted >= 0.8;
+                      }).length;
 
-                <Paper withBorder radius="md" p="xs">
-                  <Group justify="space-between" align="center">
-                    <Text fw={600} size="sm">
-                      {t("budget.assignedTotal")}
-                    </Text>
-                    <Text fw={700} size="sm">
-                      {currencyFormatter.format(totals.assigned)}
-                    </Text>
-                  </Group>
-                </Paper>
+                      return (
+                        <Accordion.Item key={typeKey} value={typeKey}>
+                          <Accordion.Control>
+                            <Group justify="space-between" wrap="nowrap" gap="md">
+                              <Stack gap={2} style={{ minWidth: 0 }}>
+                                <Text fw={700} c={transactionTypeMantineColor[typeKey]}>
+                                  {typeLabels[typeKey]}
+                                </Text>
+                                <Text size="xs" c="dimmed">
+                                  {t("budget.sectionSummary", undefined, {
+                                    count: items.length,
+                                    countPluralSuffix: items.length === 1 ? "" : "s",
+                                    criticalCount,
+                                    criticalPluralSuffix: criticalCount === 1 ? "" : "s",
+                                  })}
+                                </Text>
+                              </Stack>
+
+                              <Badge color={transactionTypeMantineColor[typeKey]} variant="light" size="lg">
+                                {currencyFormatter.format(typeTotal)}
+                              </Badge>
+                            </Group>
+                          </Accordion.Control>
+                          <Accordion.Panel>
+                            {items.length === 0 ? (
+                              <Text size="sm" c="dimmed">
+                                {t("budget.noActiveCategoriesForType")}
+                              </Text>
+                            ) : (
+                              <Stack gap={0}>
+                                {items.map(({ category, index }) => (
+                                  <CategoryBudgetRow
+                                    key={category.id}
+                                    category={category}
+                                    index={index}
+                                    spentAmount={spentByCategory[category.id] ?? 0}
+                                    currencyFormatter={currencyFormatter}
+                                    isMobile={Boolean(isMobile)}
+                                    canManageStructure={canManageStructure}
+                                    drilldownHref={categoryDrilldownHref(typeKey, category.id)}
+                                  />
+                                ))}
+                              </Stack>
+                            )}
+                          </Accordion.Panel>
+                        </Accordion.Item>
+                      );
+                    })}
+                </Accordion>
 
                 <Paper
                   withBorder
                   radius="md"
-                  p="xs"
-                  style={{
-                    backgroundColor:
-                      balanceStatus === "balanced"
-                        ? "var(--mantine-color-cyan-0)"
-                        : balanceStatus === "remaining"
-                          ? "var(--mantine-color-yellow-0)"
-                          : "var(--mantine-color-pink-0)",
-                  }}
-                >
-                  <Group justify="space-between" align="center">
-                    <Text fw={700} size="sm">
-                      {t("budget.finalBalance")}
-                    </Text>
-                    <Text
-                      fw={900}
-                      size={isMobile ? "lg" : "xl"}
-                      c={
-                        balanceStatus === "balanced"
-                          ? "cyan.7"
-                          : balanceStatus === "remaining"
-                            ? "yellow.8"
-                            : "pink.7"
-                      }
-                      style={{ fontVariantNumeric: "tabular-nums" }}
-                    >
-                      {currencyFormatter.format(roundedBalance)}
-                    </Text>
-                  </Group>
-                </Paper>
-
-                <Alert
-                  mt={1}
-                  py={6}
-                  color={
-                    balanceStatus === "balanced"
-                      ? "cyan"
-                      : balanceStatus === "remaining"
-                        ? "yellow"
-                        : "red"
+                  style={
+                    isMobile
+                      ? {
+                          position: "sticky",
+                          bottom: 0,
+                          zIndex: 20,
+                          backgroundColor: "var(--mantine-color-body)",
+                          boxShadow: "0 -8px 18px rgba(0, 0, 0, 0.06)",
+                          paddingTop: "var(--mantine-spacing-sm)",
+                          paddingRight: "var(--mantine-spacing-sm)",
+                          paddingLeft: "var(--mantine-spacing-sm)",
+                          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 0.5rem)",
+                        }
+                      : {
+                          paddingTop: "var(--mantine-spacing-sm)",
+                          paddingRight: "var(--mantine-spacing-sm)",
+                          paddingBottom: "var(--mantine-spacing-sm)",
+                          paddingLeft: "var(--mantine-spacing-sm)",
+                        }
                   }
-                  variant={balanceStatus === "overassigned" ? "filled" : "light"}
                 >
-                  <Text size="xs">
-                    {isBalanced
-                      ? t("budget.balanceMessage.balanced")
-                      : roundedBalance > 0
-                        ? t("budget.balanceMessage.remaining", undefined, {
-                            amount: formattedBalanceAbsolute,
-                          })
-                        : t("budget.balanceMessage.overassigned", undefined, {
-                            amount: formattedBalanceAbsolute,
-                          })}
-                  </Text>
-                </Alert>
+                  <Stack gap="xs">
+                    <Text size="xs" c="dimmed">
+                      {t("budget.confirmChanges")}
+                    </Text>
+                    <Group justify="flex-end" grow={isMobile}>
+                      <Button
+                        type="button"
+                        variant="subtle"
+                        color="gray"
+                        onClick={() => void loadSelectedPeriod()}
+                        disabled={isSaving || isCopying}
+                      >
+                        {t("budget.revert")}
+                      </Button>
+                      <Button
+                        type="submit"
+                        loading={isSaving}
+                        disabled={!canManageStructure || isCopying || (!isDirty && periodHasItems)}
+                      >
+                        {t("budget.saveBudget")}
+                      </Button>
+                    </Group>
+                  </Stack>
+                </Paper>
               </Stack>
-            </Paper>
 
-            <Paper
-              withBorder
-              radius="md"
-              p="sm"
-              style={
-                isMobile && isDirty
-                  ? {
-                      position: "sticky",
-                      bottom: 0,
-                      zIndex: 20,
-                      backgroundColor: "var(--mantine-color-body)",
-                      boxShadow: "0 -8px 18px rgba(0, 0, 0, 0.06)",
-                      paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 0.5rem)",
-                    }
-                  : undefined
-              }
-            >
-              <Stack gap="xs">
-                <Text size="xs" c="dimmed">
-                  {t("budget.confirmChanges")}
-                </Text>
-                <Group justify="flex-end" grow={isMobile}>
-                  <Button
-                    type="button"
-                    variant="subtle"
-                    color="gray"
-                    size="sm"
-                    onClick={() => void loadSelectedPeriod()}
-                    disabled={isSaving || isCopying}
-                  >
-                    {t("budget.revert")}
-                  </Button>
-                  <Button
-                    type="submit"
-                    loading={isSaving}
-                    disabled={!canManageStructure || isCopying}
-                    size="sm"
-                  >
-                    {t("budget.saveBudget")}
-                  </Button>
-                </Group>
-              </Stack>
-            </Paper>
-          </Stack>
-        </form>
-      )}
-    </Stack>
+              {!isMobile ? (
+                <BudgetSummaryPanel
+                  totals={totals}
+                  topSpentCategory={topSpentCategory}
+                  statusLabel={statusLabel}
+                  statusTone={statusTone}
+                  currencyFormatter={currencyFormatter}
+                />
+              ) : (
+                <Paper withBorder radius="md" p="sm">
+                  <Stack gap={6}>
+                    <Text size="sm" fw={700}>
+                      {statusLabel}
+                    </Text>
+                    <Text size="sm" c="dimmed">
+                      {roundedBalance >= 0
+                        ? t("budget.summary.remainingMessage", undefined, {
+                            amount: currencyFormatter.format(roundedBalance),
+                          })
+                        : t("budget.summary.overMessage", undefined, {
+                            amount: currencyFormatter.format(Math.abs(roundedBalance)),
+                          })}
+                    </Text>
+                  </Stack>
+                </Paper>
+              )}
+            </div>
+          </form>
+        )}
+      </Stack>
+    </FormProvider>
   );
 }

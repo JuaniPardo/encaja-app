@@ -1114,6 +1114,33 @@ const dictionaries = {
       noActiveCategoriesForType: "No hay categorías activas de este tipo.",
       viewMovements: "Ver movimientos",
       amountForCategory: "Monto de {{categoryName}}",
+      redesignHint:
+        "Asigná montos y mirá el consumo real por categoría sin perder el contexto global.",
+      global: {
+        income: "Ingresos",
+        expense: "Gastos",
+        saving: "Ahorro",
+        balance: "Balance",
+      },
+      spentFeedback: "Gastado: {{amount}} ({{percent}}%)",
+      remainingFeedback: "{{state}}: {{amount}}",
+      remainingStates: {
+        available: "Disponible",
+        over: "Excedido",
+      },
+      consumptionFeedback: "{{percent}}% usado",
+      sectionSummary:
+        "{{count}} categoría{{countPluralSuffix}} · {{criticalCount}} crítica{{criticalPluralSuffix}}",
+      summary: {
+        title: "Resumen del presupuesto",
+        subtitle: "Leé el estado global antes de seguir asignando montos.",
+        allocation: "Nivel de asignación",
+        topSpent: "Top categoría de gasto",
+        topSpentDetail: "{{percent}}% del presupuesto consumido",
+        balancedMessage: "Tu presupuesto del período está balanceado.",
+        remainingMessage: "Todavía tenés {{amount}} disponibles para asignar.",
+        overMessage: "Estás excedido por {{amount}} frente a tus ingresos.",
+      },
       periodSummary: "Resumen de montos para {{monthYear}}.",
       periodResultTitle: "Resultado del período",
       balanceStatus: {
@@ -2415,6 +2442,33 @@ const dictionaries = {
       noActiveCategoriesForType: "There are no active categories of this type.",
       viewMovements: "View movements",
       amountForCategory: "Amount for {{categoryName}}",
+      redesignHint:
+        "Assign amounts and review real category consumption without losing the overall context.",
+      global: {
+        income: "Income",
+        expense: "Expenses",
+        saving: "Saving",
+        balance: "Balance",
+      },
+      spentFeedback: "Spent: {{amount}} ({{percent}}%)",
+      remainingFeedback: "{{state}}: {{amount}}",
+      remainingStates: {
+        available: "Available",
+        over: "Over",
+      },
+      consumptionFeedback: "{{percent}}% used",
+      sectionSummary:
+        "{{count}} categories · {{criticalCount}} critical{{criticalPluralSuffix}}",
+      summary: {
+        title: "Budget summary",
+        subtitle: "Review the overall state before assigning more amounts.",
+        allocation: "Allocation level",
+        topSpent: "Top spending category",
+        topSpentDetail: "{{percent}}% of budget consumed",
+        balancedMessage: "Your budget for this period is balanced.",
+        remainingMessage: "You still have {{amount}} available to assign.",
+        overMessage: "You are over by {{amount}} compared to your income.",
+      },
       periodSummary: "Amount summary for {{monthYear}}.",
       periodResultTitle: "Period result",
       balanceStatus: {
