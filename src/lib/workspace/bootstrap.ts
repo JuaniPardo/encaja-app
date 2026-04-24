@@ -496,20 +496,19 @@ export async function listUserWorkspaces({
   supabase,
   user,
 }: ListWorkspacesOptions): Promise<WorkspaceSummary[]> {
-  const [workspacesResponse, membershipsResponse] = await Promise.all([
-    supabase
-      .from("workspaces")
-      .select("id, name, slug, is_demo, created_at")
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("workspace_members")
-      .select("workspace_id, role")
-      .eq("user_id", user.id),
-  ]);
+  const workspacesResponse = await supabase
+    .from("workspaces")
+    .select("id, name, slug, is_demo, created_at")
+    .order("created_at", { ascending: true });
 
   if (workspacesResponse.error) {
     throw workspacesResponse.error;
   }
+
+  const membershipsResponse = await supabase
+    .from("workspace_members")
+    .select("workspace_id, role")
+    .eq("user_id", user.id);
 
   if (membershipsResponse.error) {
     throw membershipsResponse.error;

@@ -2,10 +2,10 @@
 
 import { Alert, Group, LoadingOverlay, Stack, Text, Title } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
+import dynamic from "next/dynamic";
 
 import { monthLabelFromOptions } from "@/features/i18n/formatting";
 import { useI18n } from "@/features/i18n/provider";
-import { TransactionFormModal } from "@/features/transactions/transaction-form-modal";
 import {
   TransactionsHeaderActions,
   TransactionsMobileActionsBar,
@@ -14,8 +14,15 @@ import { useTransactionsData } from "@/features/transactions/hooks/use-transacti
 import { useTransactionsMutations } from "@/features/transactions/hooks/use-transactions-mutations";
 import { TransactionsFiltersPanel } from "@/features/transactions/transactions-filters-panel";
 import { TransactionsList } from "@/features/transactions/transactions-list";
-import { TransferModal } from "@/features/transactions/transfer-modal";
 import type { TypeFilter } from "@/features/transactions/utils";
+
+const TransactionFormModal = dynamic(() =>
+  import("@/features/transactions/transaction-form-modal").then((mod) => mod.TransactionFormModal),
+);
+
+const TransferModal = dynamic(() =>
+  import("@/features/transactions/transfer-modal").then((mod) => mod.TransferModal),
+);
 
 export default function TransactionsPage() {
   const { t } = useI18n();
@@ -125,29 +132,33 @@ export default function TransactionsPage() {
         onCreateTransfer={() => mutations.setIsTransferModalOpen(true)}
       />
 
-      <TransactionFormModal
-        opened={mutations.isModalOpen}
-        onClose={mutations.closeModal}
-        editingRow={mutations.editingRow}
-        categories={data.categories}
-        paymentMethods={data.paymentMethods}
-        paymentMethodOptions={mutations.paymentMethodOptions}
-        transactionTypeSelectData={data.transactionTypeSelectData}
-        isMobile={isMobile}
-        quickPaymentMethodType={mutations.quickPaymentMethodType}
-        setQuickPaymentMethodType={mutations.setQuickPaymentMethodType}
-        quickPaymentMethodSelectData={data.quickPaymentMethodSelectData}
-        shouldShowQuickPaymentSetup={mutations.shouldShowQuickPaymentSetup}
-        initialValues={mutations.formInitialValues}
-        onSubmit={mutations.onSubmit}
-      />
+      {mutations.isModalOpen ? (
+        <TransactionFormModal
+          opened={mutations.isModalOpen}
+          onClose={mutations.closeModal}
+          editingRow={mutations.editingRow}
+          categories={data.categories}
+          paymentMethods={data.paymentMethods}
+          paymentMethodOptions={mutations.paymentMethodOptions}
+          transactionTypeSelectData={data.transactionTypeSelectData}
+          isMobile={isMobile}
+          quickPaymentMethodType={mutations.quickPaymentMethodType}
+          setQuickPaymentMethodType={mutations.setQuickPaymentMethodType}
+          quickPaymentMethodSelectData={data.quickPaymentMethodSelectData}
+          shouldShowQuickPaymentSetup={mutations.shouldShowQuickPaymentSetup}
+          initialValues={mutations.formInitialValues}
+          onSubmit={mutations.onSubmit}
+        />
+      ) : null}
 
-      <TransferModal
-        opened={mutations.isTransferModalOpen}
-        onClose={() => mutations.setIsTransferModalOpen(false)}
-        paymentMethods={data.paymentMethods}
-        onSuccess={data.loadTransactions}
-      />
+      {mutations.isTransferModalOpen ? (
+        <TransferModal
+          opened={mutations.isTransferModalOpen}
+          onClose={() => mutations.setIsTransferModalOpen(false)}
+          paymentMethods={data.paymentMethods}
+          onSuccess={data.loadTransactions}
+        />
+      ) : null}
     </Stack>
   );
 }

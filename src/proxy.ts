@@ -7,6 +7,7 @@ import { SUPABASE_AUTH_STORAGE_KEY } from "@/lib/supabase/config";
 import { ROUTES } from "@/lib/routes";
 
 const authPages: ReadonlySet<string> = new Set([ROUTES.LOGIN, ROUTES.REGISTER]);
+const pathnameHeader = "x-encaja-pathname";
 
 function redirectTo(pathname: string, request: NextRequest) {
   const url = request.nextUrl.clone();
@@ -22,6 +23,16 @@ function clearAuthCookie(response: NextResponse) {
     maxAge: 0,
     path: "/",
     sameSite: "lax",
+  });
+}
+
+function nextWithPathname(request: NextRequest) {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(pathnameHeader, request.nextUrl.pathname);
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
   });
 }
 
@@ -43,7 +54,7 @@ export async function proxy(request: NextRequest) {
       return redirectTo(ROUTES.LOGIN, request);
     }
 
-    return NextResponse.next();
+    return nextWithPathname(request);
   }
 
   const tokenIsValid = await isValidToken(accessToken);
@@ -56,19 +67,19 @@ export async function proxy(request: NextRequest) {
     }
 
     if (isAuthPage) {
-      const response = NextResponse.next();
+      const response = nextWithPathname(request);
       clearAuthCookie(response);
       return response;
     }
 
-    return NextResponse.next();
+    return nextWithPathname(request);
   }
 
   if (isAuthPage || pathname === ROUTES.ROOT) {
     return redirectTo(ROUTES.APP, request);
   }
 
-  return NextResponse.next();
+  return nextWithPathname(request);
 }
 
 export const config = {

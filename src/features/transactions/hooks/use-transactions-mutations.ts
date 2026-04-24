@@ -20,7 +20,17 @@ import type { TransactionFormInputValues, TransactionFormValues } from "@/featur
 import type { Database, TransactionType } from "@/types/database";
 import type { Dispatch, SetStateAction } from "react";
 
-type InstallmentPurchaseRow = Database["public"]["Tables"]["installment_purchases"]["Row"];
+type InstallmentPurchaseRow = Pick<
+  Database["public"]["Tables"]["installment_purchases"]["Row"],
+  | "category_id"
+  | "total_amount"
+  | "purchase_date"
+  | "effective_date"
+  | "payment_method_id"
+  | "installments_count"
+  | "description"
+  | "notes"
+>;
 
 type UseTransactionsMutationsOptions = {
   categoryById: Map<string, CategoryRow>;
@@ -135,7 +145,7 @@ export function useTransactionsMutations({
 
     const installmentPurchaseResponse = await supabase
       .from("installment_purchases")
-      .select("*")
+      .select("category_id, total_amount, purchase_date, effective_date, payment_method_id, installments_count, description, notes")
       .eq("workspace_id", workspace.id)
       .eq("id", row.installment_purchase_id)
       .single();
@@ -252,7 +262,7 @@ export function useTransactionsMutations({
           is_active: true,
           created_by: user.id,
         })
-        .select("*")
+        .select("id, workspace_id, name, type, is_active, current_balance, include_in_balance, closing_day, due_day, created_by, created_at, updated_at")
         .single();
 
       if (createQuickMethodResponse.error) {

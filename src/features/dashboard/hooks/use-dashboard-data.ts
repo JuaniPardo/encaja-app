@@ -89,39 +89,34 @@ export function useDashboardData({
 
   useEffect(() => {
     const run = async () => {
-      const [
-        categoriesResponse,
-        systemCategoriesResponse,
-        paymentMethodsResponse,
-        settingsResponse,
-        anyTransactionsResponse,
-      ] =
-        await Promise.all([
-          supabase
-            .from("categories")
-            .select("*")
-            .eq("workspace_id", workspaceId)
-            .order("created_at", { ascending: true }),
-          supabase
-            .from("system_categories")
-            .select("id, key")
-            .order("created_at", { ascending: true }),
-          supabase
-            .from("payment_methods")
-            .select("id, name, type, is_active, include_in_balance, current_balance")
-            .eq("workspace_id", workspaceId)
-            .order("created_at", { ascending: true }),
-          supabase
-            .from("workspace_settings")
-            .select("start_year, currency_code, show_cents")
-            .eq("workspace_id", workspaceId)
-            .maybeSingle(),
-          supabase
-            .from("transactions")
-            .select("id")
-            .eq("workspace_id", workspaceId)
-            .limit(1),
-        ]);
+      const categoriesResponse = await supabase
+        .from("categories")
+        .select("id, name, type, is_active, source, system_category_id, expense_behavior, sort_order")
+        .eq("workspace_id", workspaceId)
+        .order("created_at", { ascending: true });
+
+      const systemCategoriesResponse = await supabase
+        .from("system_categories")
+        .select("id, key")
+        .order("created_at", { ascending: true });
+
+      const paymentMethodsResponse = await supabase
+        .from("payment_methods")
+        .select("id, name, type, is_active, include_in_balance, current_balance")
+        .eq("workspace_id", workspaceId)
+        .order("created_at", { ascending: true });
+
+      const settingsResponse = await supabase
+        .from("workspace_settings")
+        .select("start_year, currency_code, show_cents")
+        .eq("workspace_id", workspaceId)
+        .maybeSingle();
+
+      const anyTransactionsResponse = await supabase
+        .from("transactions")
+        .select("id")
+        .eq("workspace_id", workspaceId)
+        .limit(1);
 
       if (categoriesResponse.error) {
         notifications.show({
@@ -224,6 +219,7 @@ export function useDashboardData({
     }
 
     const run = async () => {
+      setIsLoadingSummary(true);
       const { start, end } = buildMonthRange(selectedYear, selectedMonth);
       const previousPeriodDate = new Date(selectedYear, selectedMonth - 2, 1, 12, 0, 0, 0);
       const previousPeriod = buildMonthRange(previousPeriodDate.getFullYear(), previousPeriodDate.getMonth() + 1);
@@ -231,7 +227,7 @@ export function useDashboardData({
       const nextPeriod = buildMonthRange(nextPeriodDate.getFullYear(), nextPeriodDate.getMonth() + 1);
       const excludedCategoryIdSet = new Set(excludedDashboardCategoryIds);
 
-      const periodResponsePromise = supabase
+      const periodResponse = await supabase
         .from("budget_periods")
         .select("id")
         .eq("workspace_id", workspaceId)
@@ -241,7 +237,7 @@ export function useDashboardData({
 
       const transactionFilter = buildGovernedDateRangeFilter(start, end);
 
-      const transactionsResponsePromise = excludeTransfers(
+      const transactionsResponse = await excludeTransfers(
         supabase
           .from("transactions")
           .select("category_id, amount, transaction_date, effective_date, type, payment_method_id, direction")
@@ -251,7 +247,7 @@ export function useDashboardData({
 
       const historicalFilter = buildGovernedDateBeforeFilter(end);
 
-      const historicalTransactionsPromise = supabase
+      const historicalTransactionsResponse = await supabase
         .from("transactions")
         .select("amount, type, payment_method_id, transaction_date, effective_date, direction")
         .eq("workspace_id", workspaceId)
@@ -259,7 +255,7 @@ export function useDashboardData({
 
       const nextMonthCommitmentFilter = buildGovernedDateRangeFilter(nextPeriod.start, nextPeriod.end);
 
-      const nextMonthCommitmentPromise = supabase
+      const nextMonthCommitmentResponse = await supabase
         .from("transactions")
         .select("payment_method_id, amount, category_id")
         .eq("workspace_id", workspaceId)
@@ -273,7 +269,7 @@ export function useDashboardData({
         previousPeriod.end,
       );
 
-      const previousMonthStatementPromise = supabase
+      const previousMonthStatementResponse = await supabase
         .from("transactions")
         .select("payment_method_id, amount, category_id")
         .eq("workspace_id", workspaceId)
@@ -281,7 +277,7 @@ export function useDashboardData({
         .not("payment_method_id", "is", null)
         .or(previousMonthStatementFilter);
 
-      const currentMonthPaymentsPromise = supabase
+      const currentMonthPaymentsResponse = await supabase
         .from("transactions")
         .select("payment_method_id, amount")
         .eq("workspace_id", workspaceId)
@@ -290,30 +286,12 @@ export function useDashboardData({
         .not("payment_method_id", "is", null)
         .or(transactionFilter);
 
-      const linkedWorkspaceSummaryPromise = supabase.rpc(
+      const linkedWorkspaceSummaryResponse = await supabase.rpc(
         "list_linked_workspace_payment_method_balances",
         {
           p_source_workspace_id: workspaceId,
         },
       );
-
-      const [
-        periodResponse,
-        transactionsResponse,
-        historicalTransactionsResponse,
-        nextMonthCommitmentResponse,
-        previousMonthStatementResponse,
-        currentMonthPaymentsResponse,
-        linkedWorkspaceSummaryResponse,
-      ] = await Promise.all([
-        periodResponsePromise,
-        transactionsResponsePromise,
-        historicalTransactionsPromise,
-        nextMonthCommitmentPromise,
-        previousMonthStatementPromise,
-        currentMonthPaymentsPromise,
-        linkedWorkspaceSummaryPromise,
-      ]);
 
       if (transactionsResponse.error) {
         notifications.show({
