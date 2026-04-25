@@ -1,15 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Alert,
-  ActionIcon,
   Button,
   Group,
   LoadingOverlay,
-  Menu,
   Modal,
   NativeSelect,
   Paper,
@@ -28,10 +25,14 @@ import {
   type CategoryFormInputValues,
   type CategoryFormValues,
 } from "@/features/categories/schema";
+import { CategoriesInsight } from "@/features/categories/components/categories-insight";
+import {
+  CategoriesList,
+  type GroupedCategoryRows,
+} from "@/features/categories/components/categories-list";
 import { localeCompareByName, mapTransactionTypeLabel } from "@/features/i18n/formatting";
 import { useI18n } from "@/features/i18n/provider";
 import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
-import { transactionTypeColorCssVar } from "@/features/transactions/type-colors";
 import { canManageCategories } from "@/features/workspace/permissions";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { CategorySource, Database, ExpenseBehavior, TransactionType } from "@/types/database";
@@ -42,11 +43,6 @@ type CategoryUsageLiteRow = Pick<Database["public"]["Tables"]["transactions"]["R
 type TypeFilter = TransactionType | "all";
 type StatusFilter = "all" | "active" | "inactive";
 type SourceFilter = CategorySource | "all";
-type GroupedCategoryRows = {
-  type: TransactionType;
-  label: string;
-  rows: CategoryRow[];
-};
 
 const categoryTypeOrder: Record<TransactionType, number> = {
   income: 0,
@@ -56,27 +52,6 @@ const categoryTypeOrder: Record<TransactionType, number> = {
 };
 
 const categoryTypeSectionOrder: TransactionType[] = ["income", "expense", "saving"];
-
-const categoryGroupBackgroundColor: Record<TransactionType, string> = {
-  expense: transactionTypeColorCssVar("expense", 0),
-  income: transactionTypeColorCssVar("income", 0),
-  saving: transactionTypeColorCssVar("saving", 0),
-  transfer: transactionTypeColorCssVar("transfer", 0),
-};
-
-const categoryGroupHeaderColor: Record<TransactionType, string> = {
-  expense: transactionTypeColorCssVar("expense", 6),
-  income: transactionTypeColorCssVar("income", 6),
-  saving: transactionTypeColorCssVar("saving", 6),
-  transfer: transactionTypeColorCssVar("transfer", 6),
-};
-
-const categoryGroupBorderColor: Record<TransactionType, string> = {
-  expense: transactionTypeColorCssVar("expense", 4),
-  income: transactionTypeColorCssVar("income", 4),
-  saving: transactionTypeColorCssVar("saving", 4),
-  transfer: transactionTypeColorCssVar("transfer", 4),
-};
 
 function normalizeSearchText(value: string, locale: "es" | "en") {
   return value.trim().toLocaleLowerCase(locale === "en" ? "en" : "es");
@@ -111,67 +86,6 @@ function toCategoryDefaults(row?: CategoryRow): CategoryFormValues {
     type: row.type === "transfer" ? "expense" : row.type,
     expenseBehavior: row.type === "expense" ? (row.expense_behavior ?? "variable") : null,
   };
-}
-
-function DotsIcon({ size = 14 }: { size?: number }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="5" r="1" />
-      <circle cx="12" cy="12" r="1" />
-      <circle cx="12" cy="19" r="1" />
-    </svg>
-  );
-}
-
-function EditIcon({ size = 14 }: { size?: number }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M12 20h9" />
-      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-    </svg>
-  );
-}
-
-function ToggleActiveIcon({ size = 14 }: { size?: number }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M12 2v10" />
-      <path d="M18.36 5.64a9 9 0 1 1-12.72 0" />
-    </svg>
-  );
 }
 
 export default function CategoriesPage() {
@@ -414,6 +328,28 @@ export default function CategoriesPage() {
     Number(sourceFilter !== "all") +
     Number(statusFilter !== "all") +
     Number(normalizedSearchFilter !== "");
+  const unusedVisibleCount = useMemo(
+    () => visibleRows.filter((row) => (usageByCategoryId[row.id] ?? 0) === 0).length,
+    [usageByCategoryId, visibleRows],
+  );
+  const insightMessage = useMemo(() => {
+    if (visibleRows.length === 0) {
+      return t("categories.insight.empty");
+    }
+
+    if (unusedVisibleCount === 0) {
+      return t("categories.insight.noUnused");
+    }
+
+    return activeFiltersCount > 0
+      ? t("categories.insight.filteredUnused", undefined, {
+          count: unusedVisibleCount,
+          total: visibleRows.length,
+        })
+      : t("categories.insight.unused", undefined, {
+          count: unusedVisibleCount,
+        });
+  }, [activeFiltersCount, t, unusedVisibleCount, visibleRows.length]);
   const categoryDrilldownHref = useCallback(
     (type: TransactionType, categoryId: string) =>
       buildTransactionsDrilldownHref({
@@ -635,6 +571,8 @@ export default function CategoriesPage() {
         </Stack>
       </Paper>
 
+      <CategoriesInsight message={insightMessage} />
+
       {groupedRows.length === 0 ? (
         <Paper withBorder radius="md" p="md">
           <Text size="sm" c="dimmed">
@@ -642,175 +580,53 @@ export default function CategoriesPage() {
           </Text>
         </Paper>
       ) : (
-        <Stack gap="md">
-          {groupedRows.map((group) => {
-            const activeRows = group.rows.filter((row) => row.is_active).length;
-            const groupBackground = categoryGroupBackgroundColor[group.type];
-            const groupHeaderColor = categoryGroupHeaderColor[group.type];
-            const groupBorderColor = categoryGroupBorderColor[group.type];
-
-            return (
-              <Paper
-                key={group.type}
-                withBorder
-                radius="md"
-                p="sm"
-                style={{
-                  backgroundColor: groupBackground,
-                  borderLeft: `3px solid ${groupBorderColor}`,
-                }}
-              >
-                <Stack gap="xs">
-                  <Stack gap={1}>
-                    <Text
-                      size="xs"
-                      fw={800}
-                      tt="uppercase"
-                      style={{ letterSpacing: "0.04em", lineHeight: 1.2, color: groupHeaderColor }}
-                    >
-                      {group.label}
-                    </Text>
-                    <Text size="xs" c="dimmed">
-                      {t("categories.groupSummary", undefined, {
-                        total: group.rows.length,
-                        totalPluralSuffix: group.rows.length === 1 ? "" : "s",
-                        active: activeRows,
-                        activePluralSuffix: activeRows === 1 ? "" : "s",
-                      })}
-                    </Text>
-                  </Stack>
-
-                  <Stack gap={6}>
-                    {group.rows.map((row) => {
-                      const usageCount = usageByCategoryId[row.id] ?? 0;
-                      const usageLabel =
-                        usageCount === 0
-                          ? t("categories.usage.none")
-                          : t("categories.usage.count", undefined, {
-                              count: usageCount,
-                              pluralSuffix: usageCount === 1 ? "" : "s",
-                            });
-
-                      return (
-                        <Paper key={row.id} withBorder radius={8} p={isMobile ? "xs" : "sm"}>
-                          <Group justify="space-between" align="flex-start" wrap="nowrap" gap="xs">
-                            <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
-                              <Text fw={600} size="sm" lineClamp={1} style={{ lineHeight: 1.2 }}>
-                                {row.name}
-                              </Text>
-
-                              <Text
-                                size="10px"
-                                c="gray.7"
-                                fw={500}
-                                tt="uppercase"
-                                style={{ letterSpacing: "0.03em" }}
-                              >
-                                {categorySourceLabels[row.source]}
-                              </Text>
-
-                              {row.is_exceptional ? (
-                                <Text
-                                  size="10px"
-                                  c="orange.8"
-                                  fw={600}
-                                  tt="uppercase"
-                                  style={{ letterSpacing: "0.03em" }}
-                                >
-                                  {t("categories.exceptional.label")}
-                                </Text>
-                              ) : null}
-
-                              {row.is_exceptional && row.warning_message ? (
-                                <Text size="11px" c="dimmed">
-                                  {row.warning_message}
-                                </Text>
-                              ) : null}
-
-                              {hasUsageData ? (
-                                <Text size="11px" c="dimmed" lineClamp={1}>
-                                  {usageLabel}
-                                </Text>
-                              ) : null}
-
-                              {hasUsageData && usageCount > 0 ? (
-                                <Button
-                                  component={Link}
-                                  href={categoryDrilldownHref(row.type, row.id)}
-                                  variant="subtle"
-                                  color="gray"
-                                  size="compact-xs"
-                                  px={0}
-                                  justify="flex-start"
-                                >
-                                  {t("categories.viewMovements")}
-                                </Button>
-                              ) : null}
-
-                              <Text
-                                size="10px"
-                                c={row.is_active ? "gray.6" : "gray.7"}
-                                fw={500}
-                                tt="uppercase"
-                                style={{ letterSpacing: "0.03em" }}
-                              >
-                                {row.is_active
-                                  ? t("categories.status.active")
-                                  : t("categories.status.inactive")}
-                              </Text>
-
-                              {row.type === "expense" ? (
-                                <Text
-                                  size="10px"
-                                  c="gray.7"
-                                  fw={500}
-                                  tt="uppercase"
-                                  style={{ letterSpacing: "0.03em" }}
-                                >
-                                  {categoryExpenseBehaviorLabels[row.expense_behavior ?? "variable"]}
-                                </Text>
-                              ) : null}
-                            </Stack>
-
-                            <Menu position="bottom-end" withArrow>
-                              <Menu.Target>
-                                <ActionIcon
-                                  variant="subtle"
-                                  color="gray"
-                                  aria-label={t("categories.actionsFor", undefined, { name: row.name })}
-                                >
-                                  <DotsIcon />
-                                </ActionIcon>
-                              </Menu.Target>
-
-                              <Menu.Dropdown>
-                                <Menu.Item
-                                  leftSection={<EditIcon size={13} />}
-                                  disabled={!canManageStructure}
-                                  onClick={() => openEditModal(row)}
-                                >
-                                  {t("categories.edit")}
-                                </Menu.Item>
-                                <Menu.Item
-                                  color={row.is_active ? "gray" : "cyan"}
-                                  leftSection={<ToggleActiveIcon size={13} />}
-                                  disabled={!canManageStructure || row.is_exceptional}
-                                  onClick={() => void toggleActive(row)}
-                                >
-                                  {row.is_active ? t("categories.deactivate") : t("categories.activate")}
-                                </Menu.Item>
-                              </Menu.Dropdown>
-                            </Menu>
-                          </Group>
-                        </Paper>
-                      );
-                    })}
-                  </Stack>
-                </Stack>
-              </Paper>
-            );
-          })}
-        </Stack>
+        <CategoriesList
+          canManageStructure={canManageStructure}
+          categoryDrilldownHref={categoryDrilldownHref}
+          categoryExpenseBehaviorLabels={categoryExpenseBehaviorLabels}
+          categorySourceLabels={categorySourceLabels}
+          groupedRows={groupedRows}
+          hasUsageData={hasUsageData}
+          isMobile={Boolean(isMobile)}
+          metaLabels={{
+            active: t("categories.status.active"),
+            exceptional: t("categories.exceptional.label"),
+            inactive: t("categories.status.inactive"),
+          }}
+          onEdit={openEditModal}
+          onToggleActive={toggleActive}
+          tableLabels={{
+            actions: t("categories.table.actions"),
+            groupSummary: (total, active) =>
+              t("categories.groupSummary", undefined, {
+                total,
+                totalPluralSuffix: total === 1 ? "" : "s",
+                active,
+                activePluralSuffix: active === 1 ? "" : "s",
+              }),
+            movements: t("categories.table.movements"),
+            name: t("categories.table.name"),
+            status: t("categories.table.status"),
+            type: t("categories.table.type"),
+          }}
+          toggleLabels={{
+            activate: t("categories.activate"),
+            deactivate: t("categories.deactivate"),
+            edit: t("categories.edit"),
+          }}
+          usageByCategoryId={usageByCategoryId}
+          usageLabels={{
+            count: (count) =>
+              count === 0
+                ? t("categories.usage.none")
+                : t("categories.usage.count", undefined, {
+                    count,
+                    pluralSuffix: count === 1 ? "" : "s",
+                  }),
+            none: t("categories.usage.none"),
+            viewMovements: t("categories.viewMovements"),
+          }}
+        />
       )}
 
       <Modal
