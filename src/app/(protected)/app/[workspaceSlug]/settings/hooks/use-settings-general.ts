@@ -174,7 +174,7 @@ export function useSettingsGeneral(options?: UseSettingsGeneralOptions) {
 
     const response = await supabase
       .from("workspace_settings")
-      .select("*")
+      .select("id, currency_code, start_year, savings_rate_mode, deferred_income_enabled, deferred_income_day, show_cents")
       .eq("workspace_id", workspace.id)
       .maybeSingle();
 

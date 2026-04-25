@@ -479,23 +479,23 @@ export function useTransactionsData() {
   const loadBaseData = useCallback(async () => {
     setIsBootstrapping(true);
 
-    const [categoriesResponse, paymentMethodsResponse, settingsResponse] = await Promise.all([
-      supabase
-        .from("categories")
-        .select("*")
-        .eq("workspace_id", workspace.id)
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("payment_methods")
-        .select("*")
-        .eq("workspace_id", workspace.id)
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("workspace_settings")
-        .select("start_year, currency_code, show_cents")
-        .eq("workspace_id", workspace.id)
-        .maybeSingle(),
-    ]);
+    const categoriesResponse = await supabase
+      .from("categories")
+      .select("id, workspace_id, name, type, is_active, source, sort_order, is_exceptional")
+      .eq("workspace_id", workspace.id)
+      .order("created_at", { ascending: true });
+
+    const paymentMethodsResponse = await supabase
+      .from("payment_methods")
+      .select("id, workspace_id, name, type, is_active")
+      .eq("workspace_id", workspace.id)
+      .order("created_at", { ascending: true });
+
+    const settingsResponse = await supabase
+      .from("workspace_settings")
+      .select("start_year, currency_code, show_cents")
+      .eq("workspace_id", workspace.id)
+      .maybeSingle();
 
     if (categoriesResponse.error) {
       notifications.show({
@@ -505,7 +505,7 @@ export function useTransactionsData() {
       });
       setCategories([]);
     } else {
-      const sorted = [...categoriesResponse.data].sort((a, b) => sortCategories(a, b, locale));
+      const sorted = ([...categoriesResponse.data] as CategoryRow[]).sort((a, b) => sortCategories(a, b, locale));
       setCategories(sorted);
     }
 
@@ -517,7 +517,7 @@ export function useTransactionsData() {
       });
       setPaymentMethods([]);
     } else {
-      setPaymentMethods(paymentMethodsResponse.data);
+      setPaymentMethods((paymentMethodsResponse.data ?? []) as PaymentMethodRow[]);
     }
 
     if (settingsResponse.error) {
@@ -550,7 +550,7 @@ export function useTransactionsData() {
 
     let query = supabase
       .from("transactions")
-      .select("*")
+      .select("id, category_id, amount, type, transaction_date, effective_date, payment_method_id, description, notes, installment_purchase_id, installment_number, installment_count, transfer_group_id, direction, created_at")
       .eq("workspace_id", workspace.id)
       .or(periodFilter)
       .order("created_at", { ascending: false });
@@ -579,7 +579,7 @@ export function useTransactionsData() {
       return;
     }
 
-    const sortedRows = [...response.data].sort((a, b) => {
+    const sortedRows = ([...(response.data ?? [])] as unknown as TransactionRow[]).sort((a, b) => {
       const dateDiff = resolveOperationalDate(b).localeCompare(resolveOperationalDate(a));
       if (dateDiff !== 0) {
         return dateDiff;
@@ -616,6 +616,7 @@ export function useTransactionsData() {
 
   return {
     rows,
+    filteredRows,
     categories,
     paymentMethods,
     setPaymentMethods,
@@ -652,6 +653,7 @@ export function useTransactionsData() {
     categoryFilterOptions,
     paymentMethodFilterOptions,
     quickPaymentMethodSelectData,
+    formatDate,
     formatCompactDate,
     groupedRows,
     filteredRowsCount,

@@ -64,19 +64,19 @@ Encaja combina en un mismo flujo:
 ## 📸 Producto
 
 ### Dashboard
-![Dashboard](./docs/assets/dashboard.png)
+![Dashboard](docs/05-assets/dashboard.png)
 
 ### Budget
-![Budget](./docs/assets/budget.png)
+![Budget](docs/05-assets/budget.png)
 
 ### Transactions
-![Transactions](./docs/assets/transaction.png)
+![Transactions](docs/05-assets/transaction.png)
 
 ### Transfers
-![Transfers](./docs/assets/transfer.png)
+![Transfers](docs/05-assets/transfer.png)
 
 ### Insights
-![Insights](./docs/assets/insights.png)
+![Insights](docs/05-assets/insights.png)
 
 ## 🛠️ Stack
 

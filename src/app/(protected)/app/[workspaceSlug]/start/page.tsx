@@ -136,26 +136,25 @@ export default function StartPage() {
   const loadProgress = useCallback(async () => {
     setIsLoading(true);
 
-    const [anyTransactionsResponse, incomeTransactionsResponse, expenseTransactionsResponse] =
-      await Promise.all([
-        supabase
-          .from("transactions")
-          .select("id")
-          .eq("workspace_id", workspace.id)
-          .limit(1),
-        supabase
-          .from("transactions")
-          .select("id")
-          .eq("workspace_id", workspace.id)
-          .eq("type", "income")
-          .limit(1),
-        supabase
-          .from("transactions")
-          .select("id")
-          .eq("workspace_id", workspace.id)
-          .eq("type", "expense")
-          .limit(3),
-      ]);
+    const anyTransactionsResponse = await supabase
+      .from("transactions")
+      .select("id")
+      .eq("workspace_id", workspace.id)
+      .limit(1);
+
+    const incomeTransactionsResponse = await supabase
+      .from("transactions")
+      .select("id")
+      .eq("workspace_id", workspace.id)
+      .eq("type", "income")
+      .limit(1);
+
+    const expenseTransactionsResponse = await supabase
+      .from("transactions")
+      .select("id")
+      .eq("workspace_id", workspace.id)
+      .eq("type", "expense")
+      .limit(3);
 
     setIsLoading(false);
 

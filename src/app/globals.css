@@ -27,6 +27,12 @@ a {
   color: inherit;
 }
 
+@keyframes encaja-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .dashboard-clickable-row {
   cursor: pointer;
   transition: background-color 140ms ease;

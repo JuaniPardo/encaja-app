@@ -8,7 +8,17 @@ export type TranslationFn = (
   values?: Record<string, string | number>,
 ) => string;
 
-export type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
+export type CategoryRow = Pick<
+  Database["public"]["Tables"]["categories"]["Row"],
+  | "id"
+  | "name"
+  | "type"
+  | "is_active"
+  | "source"
+  | "system_category_id"
+  | "expense_behavior"
+  | "sort_order"
+>;
 
 export type WorkspaceSettingsLiteRow = Pick<
   Database["public"]["Tables"]["workspace_settings"]["Row"],

@@ -958,6 +958,32 @@ const dictionaries = {
       installmentBadge: "Cuota {{current}}/{{total}}",
       today: "Hoy",
       yesterday: "Ayer",
+      types: {
+        income: "Ingreso",
+        expense: "Gasto",
+        saving: "Ahorro",
+        transfer: "Transferencia",
+      },
+      insight: {
+        emptyTitle: "No hay gastos en esta vista.",
+        emptyBody: "Cambiá filtros o registrá un movimiento para ver contexto acá.",
+        weekTitle: "Gastaste {{amount}} esta semana.",
+        weekBody: "Categoría principal: {{category}}.",
+        monthTitle: "{{count}} gasto{{pluralSuffix}} en esta vista.",
+        monthBody: "Acumulado: {{amount}} · Categoría principal: {{category}}.",
+      },
+      detail: {
+        title: "Detalle de transacción",
+        emptyTitle: "Seleccioná una transacción",
+        emptyBody:
+          "Elegí un movimiento de la lista para ver el detalle completo sin perder contexto.",
+        category: "Categoría",
+        transactionDate: "Fecha de transacción",
+        effectiveDate: "Fecha efectiva",
+        paymentMethod: "Medio",
+        type: "Tipo",
+        notes: "Notas",
+      },
       exceptionalCategory: {
         title: "Uso excepcional",
         suffix: "excepcional",
@@ -1088,6 +1114,33 @@ const dictionaries = {
       noActiveCategoriesForType: "No hay categorías activas de este tipo.",
       viewMovements: "Ver movimientos",
       amountForCategory: "Monto de {{categoryName}}",
+      redesignHint:
+        "Asigná montos y mirá el consumo real por categoría sin perder el contexto global.",
+      global: {
+        income: "Ingresos",
+        expense: "Gastos",
+        saving: "Ahorro",
+        balance: "Balance",
+      },
+      spentFeedback: "Gastado: {{amount}} ({{percent}}%)",
+      remainingFeedback: "{{state}}: {{amount}}",
+      remainingStates: {
+        available: "Disponible",
+        over: "Excedido",
+      },
+      consumptionFeedback: "{{percent}}% usado",
+      sectionSummary:
+        "{{count}} categoría{{countPluralSuffix}} · {{criticalCount}} crítica{{criticalPluralSuffix}}",
+      summary: {
+        title: "Resumen del presupuesto",
+        subtitle: "Leé el estado global antes de seguir asignando montos.",
+        allocation: "Nivel de asignación",
+        topSpent: "Top categoría de gasto",
+        topSpentDetail: "{{percent}}% del presupuesto consumido",
+        balancedMessage: "Tu presupuesto del período está balanceado.",
+        remainingMessage: "Todavía tenés {{amount}} disponibles para asignar.",
+        overMessage: "Estás excedido por {{amount}} frente a tus ingresos.",
+      },
       periodSummary: "Resumen de montos para {{monthYear}}.",
       periodResultTitle: "Resultado del período",
       balanceStatus: {
@@ -1163,6 +1216,19 @@ const dictionaries = {
       summary: "{{count}} categoría{{pluralSuffix}}{{filtersText}}",
       activeFiltersText: " · {{count}} filtro{{pluralSuffix}} activo{{pluralSuffix}}",
       emptyState: "No hay categorías para los filtros seleccionados.",
+      insight: {
+        empty: "No hay categorías visibles para generar insights.",
+        noUnused: "Todas las categorías visibles ya tienen movimientos asociados.",
+        filteredUnused: "Tenés {{count}} categorías sin uso dentro de las {{total}} visibles.",
+        unused: "Tenés {{count}} categorías sin movimientos registrados.",
+      },
+      table: {
+        name: "Nombre",
+        movements: "Movimientos",
+        type: "Tipo",
+        status: "Estado",
+        actions: "Acciones",
+      },
       groupSummary:
         "{{total}} categoría{{totalPluralSuffix}} · {{active}} activa{{activePluralSuffix}}",
       usage: {
@@ -2230,6 +2296,32 @@ const dictionaries = {
       installmentBadge: "Installment {{current}}/{{total}}",
       today: "Today",
       yesterday: "Yesterday",
+      types: {
+        income: "Income",
+        expense: "Expense",
+        saving: "Saving",
+        transfer: "Transfer",
+      },
+      insight: {
+        emptyTitle: "No expense movements in view.",
+        emptyBody: "Change filters or register a transaction to see spending context here.",
+        weekTitle: "You spent {{amount}} this week.",
+        weekBody: "Main category: {{category}}.",
+        monthTitle: "{{count}} expense movement{{pluralSuffix}} in this view.",
+        monthBody: "Accumulated: {{amount}} · Main category: {{category}}.",
+      },
+      detail: {
+        title: "Transaction detail",
+        emptyTitle: "Select a transaction",
+        emptyBody:
+          "Choose a movement from the list to see its full detail without losing context.",
+        category: "Category",
+        transactionDate: "Transaction date",
+        effectiveDate: "Effective date",
+        paymentMethod: "Method",
+        type: "Type",
+        notes: "Notes",
+      },
       exceptionalCategory: {
         title: "Exceptional use",
         suffix: "exceptional",
@@ -2363,6 +2455,33 @@ const dictionaries = {
       noActiveCategoriesForType: "There are no active categories of this type.",
       viewMovements: "View movements",
       amountForCategory: "Amount for {{categoryName}}",
+      redesignHint:
+        "Assign amounts and review real category consumption without losing the overall context.",
+      global: {
+        income: "Income",
+        expense: "Expenses",
+        saving: "Saving",
+        balance: "Balance",
+      },
+      spentFeedback: "Spent: {{amount}} ({{percent}}%)",
+      remainingFeedback: "{{state}}: {{amount}}",
+      remainingStates: {
+        available: "Available",
+        over: "Over",
+      },
+      consumptionFeedback: "{{percent}}% used",
+      sectionSummary:
+        "{{count}} categories · {{criticalCount}} critical{{criticalPluralSuffix}}",
+      summary: {
+        title: "Budget summary",
+        subtitle: "Review the overall state before assigning more amounts.",
+        allocation: "Allocation level",
+        topSpent: "Top spending category",
+        topSpentDetail: "{{percent}}% of budget consumed",
+        balancedMessage: "Your budget for this period is balanced.",
+        remainingMessage: "You still have {{amount}} available to assign.",
+        overMessage: "You are over by {{amount}} compared to your income.",
+      },
       periodSummary: "Amount summary for {{monthYear}}.",
       periodResultTitle: "Period result",
       balanceStatus: {
@@ -2439,6 +2558,19 @@ const dictionaries = {
       summary: "{{count}} category{{pluralSuffix}}{{filtersText}}",
       activeFiltersText: " · {{count}} active filter{{pluralSuffix}}",
       emptyState: "There are no categories for the selected filters.",
+      insight: {
+        empty: "There are no visible categories to summarize yet.",
+        noUnused: "All visible categories already have linked movements.",
+        filteredUnused: "{{count}} of the {{total}} visible categories have no usage yet.",
+        unused: "You have {{count}} categories without registered movements.",
+      },
+      table: {
+        name: "Name",
+        movements: "Movements",
+        type: "Type",
+        status: "Status",
+        actions: "Actions",
+      },
       groupSummary:
         "{{total}} category{{totalPluralSuffix}} · {{active}} active{{activePluralSuffix}}",
       usage: {
