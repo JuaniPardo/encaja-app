@@ -1189,6 +1189,19 @@ const dictionaries = {
       summary: "{{count}} categoría{{pluralSuffix}}{{filtersText}}",
       activeFiltersText: " · {{count}} filtro{{pluralSuffix}} activo{{pluralSuffix}}",
       emptyState: "No hay categorías para los filtros seleccionados.",
+      insight: {
+        empty: "No hay categorías visibles para generar insights.",
+        noUnused: "Todas las categorías visibles ya tienen movimientos asociados.",
+        filteredUnused: "Tenés {{count}} categorías sin uso dentro de las {{total}} visibles.",
+        unused: "Tenés {{count}} categorías sin movimientos registrados.",
+      },
+      table: {
+        name: "Nombre",
+        movements: "Movimientos",
+        type: "Tipo",
+        status: "Estado",
+        actions: "Acciones",
+      },
       groupSummary:
         "{{total}} categoría{{totalPluralSuffix}} · {{active}} activa{{activePluralSuffix}}",
       usage: {
@@ -2491,6 +2504,19 @@ const dictionaries = {
       summary: "{{count}} category{{pluralSuffix}}{{filtersText}}",
       activeFiltersText: " · {{count}} active filter{{pluralSuffix}}",
       emptyState: "There are no categories for the selected filters.",
+      insight: {
+        empty: "There are no visible categories to summarize yet.",
+        noUnused: "All visible categories already have linked movements.",
+        filteredUnused: "{{count}} of the {{total}} visible categories have no usage yet.",
+        unused: "You have {{count}} categories without registered movements.",
+      },
+      table: {
+        name: "Name",
+        movements: "Movements",
+        type: "Type",
+        status: "Status",
+        actions: "Actions",
+      },
       groupSummary:
         "{{total}} category{{totalPluralSuffix}} · {{active}} active{{activePluralSuffix}}",
       usage: {
