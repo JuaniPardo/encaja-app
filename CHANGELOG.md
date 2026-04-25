@@ -1,3 +1,11 @@
+## [1.6.1] - 2026-04-24
+
+### Changed
+- Redesigned `Transacciones` into a denser operational list with grouped sections, top insight, desktop detail panel, and mobile-first detail flow.
+- Redesigned `Presupuesto` with compact grouped editing, stronger summary hierarchy, and responsive desktop/mobile planning surfaces.
+- Redesigned `Categorías` into a compact grouped list with clearer columns, lower visual noise, and direct edit/toggle actions across breakpoints.
+- Reorganized project documentation into product, engineering, history, and work-items domains for clearer maintenance and release traceability.
+
 ## [1.6.0] - 2026-04-23
 
 ### Added
