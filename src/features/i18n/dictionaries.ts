@@ -1110,10 +1110,14 @@ const dictionaries = {
       noActiveCategories: "No hay categorías activas. Creá al menos una categoría para cargar presupuesto.",
       noPeriodYet: "Este período todavía no tiene presupuesto guardado. Cargá montos y guardá para crearlo.",
       editByCategory: "Edición por categoría",
-      editByCategoryHint: "Cargá montos directos por categoría. Dejá vacío un campo para quitar su monto.",
+      editByCategoryHint:
+        "Cargá montos directos por categoría o por subcategoría. Dejá vacío un campo para quitar su monto.",
       noActiveCategoriesForType: "No hay categorías activas de este tipo.",
       viewMovements: "Ver movimientos",
       amountForCategory: "Monto de {{categoryName}}",
+      withoutSubcategory: "Sin subcategoría",
+      directCategoryHint: "Se imputa directo a la categoría padre.",
+      amountForSubcategory: "Monto de {{subcategoryName}} en {{categoryName}}",
       redesignHint:
         "Asigná montos y mirá el consumo real por categoría sin perder el contexto global.",
       global: {
@@ -2451,10 +2455,14 @@ const dictionaries = {
       noActiveCategories: "There are no active categories. Create at least one category to load budget.",
       noPeriodYet: "This period does not have a saved budget yet. Enter amounts and save to create it.",
       editByCategory: "Edit by category",
-      editByCategoryHint: "Enter direct amounts by category. Leave a field empty to remove its amount.",
+      editByCategoryHint:
+        "Enter direct amounts by category or subcategory. Leave a field empty to remove its amount.",
       noActiveCategoriesForType: "There are no active categories of this type.",
       viewMovements: "View movements",
       amountForCategory: "Amount for {{categoryName}}",
+      withoutSubcategory: "No subcategory",
+      directCategoryHint: "Assigns directly to the parent category.",
+      amountForSubcategory: "Amount for {{subcategoryName}} in {{categoryName}}",
       redesignHint:
         "Assign amounts and review real category consumption without losing the overall context.",
       global: {

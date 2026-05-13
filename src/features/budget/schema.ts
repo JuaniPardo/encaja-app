@@ -6,12 +6,14 @@ export interface BudgetSchemaMessages {
   invalidAmount: string;
   negativeAmount: string;
   invalidCategory: string;
+  invalidSubcategory: string;
 }
 
 const defaultMessages: BudgetSchemaMessages = {
   invalidAmount: "Ingresá un monto válido.",
   negativeAmount: "El monto no puede ser negativo.",
   invalidCategory: "Categoría inválida.",
+  invalidSubcategory: "Subcategoría inválida.",
 };
 
 export function createBudgetFormSchema(messages?: Partial<BudgetSchemaMessages>) {
@@ -48,6 +50,16 @@ export function createBudgetFormSchema(messages?: Partial<BudgetSchemaMessages>)
     items: z.array(
       z.object({
         categoryId: z.string().uuid(resolvedMessages.invalidCategory),
+        subcategoryId: z.preprocess(
+          (value) => {
+            if (value === "" || value === null || value === undefined) {
+              return null;
+            }
+
+            return value;
+          },
+          z.string().uuid(resolvedMessages.invalidSubcategory).nullable(),
+        ),
         amount: optionalBudgetAmount,
       }),
     ),

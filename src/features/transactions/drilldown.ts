@@ -6,6 +6,7 @@ type TransactionsDrilldownParams = {
   month?: number;
   type?: TransactionType;
   categoryId?: string;
+  subcategoryId?: string;
   paymentMethodId?: string;
   search?: string;
 };
@@ -27,6 +28,10 @@ export function buildTransactionsDrilldownHref(params: TransactionsDrilldownPara
 
   if (params.categoryId && params.categoryId.trim() !== "") {
     searchParams.set("categoryId", params.categoryId);
+  }
+
+  if (params.subcategoryId && params.subcategoryId.trim() !== "") {
+    searchParams.set("subcategoryId", params.subcategoryId);
   }
 
   if (params.paymentMethodId && params.paymentMethodId.trim() !== "") {

@@ -29,6 +29,11 @@ import {
   type BudgetFormInputValues,
   type BudgetFormValues,
 } from "@/features/budget/schema";
+import {
+  buildCategoryLineKey,
+  sortSubcategories,
+  type CategorySubcategoryRow,
+} from "@/features/categories/subcategories";
 import { buildMonthRange } from "@/features/dashboard/lib/dashboard-math";
 import {
   buildMonthOptions,
@@ -51,19 +56,27 @@ type WorkspaceSettingsRow = Pick<
 type BudgetPeriodIdRow = Pick<Database["public"]["Tables"]["budget_periods"]["Row"], "id">;
 type BudgetItemLiteRow = Pick<
   Database["public"]["Tables"]["budget_items"]["Row"],
-  "category_id" | "amount"
+  "category_id" | "subcategory_id" | "amount"
 >;
 type TransactionSpentLiteRow = Pick<
   Database["public"]["Tables"]["transactions"]["Row"],
-  "category_id" | "amount" | "type"
+  "category_id" | "subcategory_id" | "amount" | "type"
 >;
 
-type CategorizedItem = {
+type BudgetLine = {
+  key: string;
   category: CategoryRow;
+  subcategory: CategorySubcategoryRow | null;
   index: number;
 };
 
-type GroupedCategories = Record<TransactionType, CategorizedItem[]>;
+type GroupedCategoryBudget = {
+  category: CategoryRow;
+  rootLine: BudgetLine;
+  subcategoryLines: BudgetLine[];
+};
+
+type GroupedCategories = Record<TransactionType, GroupedCategoryBudget[]>;
 
 const typeOrder: Record<TransactionType, number> = {
   income: 0,
@@ -108,6 +121,7 @@ export default function BudgetPage() {
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [categories, setCategories] = useState<CategoryRow[]>([]);
+  const [subcategories, setSubcategories] = useState<CategorySubcategoryRow[]>([]);
   const [periodId, setPeriodId] = useState<string | null>(null);
   const [periodHasItems, setPeriodHasItems] = useState(false);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
@@ -115,6 +129,7 @@ export default function BudgetPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
   const [spentByCategory, setSpentByCategory] = useState<Record<string, number>>({});
+  const [spentByLine, setSpentByLine] = useState<Record<string, number>>({});
 
   const methods = useForm<BudgetFormInputValues, unknown, BudgetFormValues>({
     resolver: zodResolver(
@@ -122,6 +137,7 @@ export default function BudgetPage() {
         invalidAmount: t("common.validation.invalidAmount"),
         negativeAmount: t("common.validation.nonNegative"),
         invalidCategory: t("common.validation.invalidCategory"),
+        invalidSubcategory: t("common.validation.invalidOption"),
       }),
     ),
     defaultValues: {
@@ -158,15 +174,50 @@ export default function BudgetPage() {
       transfer: [],
     };
 
-    categories.forEach((category, index) => {
+    let index = 0;
+
+    categories.forEach((category) => {
+      const sortedSubcategories = subcategories
+        .filter((subcategory) => subcategory.category_id === category.id)
+        .sort((a, b) => sortSubcategories(a, b, locale));
+
+      const rootLine: BudgetLine = {
+        key: buildCategoryLineKey(category.id, null),
+        category,
+        subcategory: null,
+        index,
+      };
+      index += 1;
+
+      const subcategoryLines = sortedSubcategories.map((subcategory) => {
+        const line: BudgetLine = {
+          key: buildCategoryLineKey(category.id, subcategory.id),
+          category,
+          subcategory,
+          index,
+        };
+        index += 1;
+        return line;
+      });
+
       grouped[category.type].push({
         category,
-        index,
+        rootLine,
+        subcategoryLines,
       });
     });
 
     return grouped;
-  }, [categories]);
+  }, [categories, locale, subcategories]);
+
+  const budgetLines = useMemo(
+    () =>
+      (Object.keys(groupedCategories) as TransactionType[])
+        .flatMap((type) => groupedCategories[type])
+        .flatMap((group) => [group.rootLine, ...group.subcategoryLines])
+        .sort((left, right) => left.index - right.index),
+    [groupedCategories],
+  );
 
   const totals = useMemo(() => {
     const subtotalByType: Record<TransactionType, number> = {
@@ -247,6 +298,13 @@ export default function BudgetPage() {
       .eq("is_active", true)
       .order("created_at", { ascending: true });
 
+    const subcategoriesResponse = await supabase
+      .from("category_subcategories")
+      .select("id, workspace_id, category_id, name, is_active, sort_order, created_by, created_at, updated_at")
+      .eq("workspace_id", workspace.id)
+      .eq("is_active", true)
+      .order("created_at", { ascending: true });
+
     const settingsResponse = await supabase
       .from("workspace_settings")
       .select("start_year, currency_code, show_cents")
@@ -278,6 +336,17 @@ export default function BudgetPage() {
       });
 
       setCategories(sortedCategories);
+    }
+
+    if (subcategoriesResponse.error) {
+      notifications.show({
+        color: "red",
+        title: t("budget.notifications.loadSubcategoriesError"),
+        message: subcategoriesResponse.error.message,
+      });
+      setSubcategories([]);
+    } else {
+      setSubcategories((subcategoriesResponse.data ?? []) as CategorySubcategoryRow[]);
     }
 
     if (settingsResponse.error) {
@@ -326,15 +395,16 @@ export default function BudgetPage() {
       setPeriodId(null);
       setPeriodHasItems(false);
       reset({
-        items: categories.map((category) => ({
-          categoryId: category.id,
+        items: budgetLines.map((line) => ({
+          categoryId: line.category.id,
+          subcategoryId: line.subcategory?.id ?? null,
           amount: null,
         })),
       });
     } else {
       const itemsResponse = await supabase
         .from("budget_items")
-        .select("category_id, amount")
+        .select("category_id, subcategory_id, amount")
         .eq("budget_period_id", periodRow.id);
 
       if (itemsResponse.error) {
@@ -348,14 +418,18 @@ export default function BudgetPage() {
       }
 
       const periodItems = (itemsResponse.data ?? []) as BudgetItemLiteRow[];
-      const amountByCategoryId = new Map(
-        periodItems.map((item) => [item.category_id, parseBudgetAmount(item.amount)]),
+      const amountByLineKey = new Map(
+        periodItems.map((item) => [
+          buildCategoryLineKey(item.category_id, item.subcategory_id),
+          parseBudgetAmount(item.amount),
+        ]),
       );
 
       reset({
-        items: categories.map((category) => ({
-          categoryId: category.id,
-          amount: amountByCategoryId.get(category.id) ?? null,
+        items: budgetLines.map((line) => ({
+          categoryId: line.category.id,
+          subcategoryId: line.subcategory?.id ?? null,
+          amount: amountByLineKey.get(line.key) ?? null,
         })),
       });
 
@@ -371,26 +445,40 @@ export default function BudgetPage() {
 
     const transactionsResponse = await supabase
       .from("transactions")
-      .select("category_id, amount, type")
+      .select("category_id, subcategory_id, amount, type")
       .eq("workspace_id", workspace.id)
       .neq("type", "transfer")
       .or(periodFilter);
 
     if (!transactionsResponse.error) {
-      const spent: Record<string, number> = {};
+      const nextSpentByCategory: Record<string, number> = {};
+      const nextSpentByLine: Record<string, number> = {};
+
       ((transactionsResponse.data ?? []) as TransactionSpentLiteRow[]).forEach((transaction) => {
-        if (transaction.category_id) {
-          spent[transaction.category_id] =
-            (spent[transaction.category_id] ?? 0) + Number(transaction.amount);
+        if (!transaction.category_id) {
+          return;
         }
+
+        const amount = Number(transaction.amount);
+        nextSpentByCategory[transaction.category_id] =
+          (nextSpentByCategory[transaction.category_id] ?? 0) + amount;
+
+        const lineKey = buildCategoryLineKey(
+          transaction.category_id,
+          transaction.subcategory_id ?? null,
+        );
+        nextSpentByLine[lineKey] = (nextSpentByLine[lineKey] ?? 0) + amount;
       });
-      setSpentByCategory(spent);
+
+      setSpentByCategory(nextSpentByCategory);
+      setSpentByLine(nextSpentByLine);
     } else {
       setSpentByCategory({});
+      setSpentByLine({});
     }
 
     setIsPeriodLoading(false);
-  }, [categories, reset, selectedMonth, selectedYear, supabase, t, workspace.id]);
+  }, [budgetLines, reset, selectedMonth, selectedYear, supabase, t, workspace.id]);
 
   useEffect(() => {
     void loadBaseData();
@@ -467,6 +555,7 @@ export default function BudgetPage() {
         Array<{
           budget_period_id: string;
           category_id: string;
+          subcategory_id: string | null;
           amount: number;
         }>
       >((accumulator, item) => {
@@ -477,35 +566,38 @@ export default function BudgetPage() {
         accumulator.push({
           budget_period_id: targetPeriodId,
           category_id: item.categoryId,
+          subcategory_id: item.subcategoryId,
           amount: roundMoney(item.amount),
         });
 
         return accumulator;
       }, []);
 
-      const categoriesWithoutBudget = values.items
-        .filter((item) => item.amount === null)
-        .map((item) => item.categoryId);
+      const visibleLineFilters = values.items.map((item) =>
+        item.subcategoryId
+          ? `and(category_id.eq.${item.categoryId},subcategory_id.eq.${item.subcategoryId})`
+          : `and(category_id.eq.${item.categoryId},subcategory_id.is.null)`,
+      );
 
-      if (itemsWithAmount.length > 0) {
-        const upsertResponse = await supabase.from("budget_items").upsert(itemsWithAmount, {
-          onConflict: "budget_period_id,category_id",
-        });
-
-        if (upsertResponse.error) {
-          throw upsertResponse.error;
-        }
-      }
-
-      if (categoriesWithoutBudget.length > 0) {
+      if (visibleLineFilters.length > 0) {
         const deleteResponse = await supabase
           .from("budget_items")
           .delete()
           .eq("budget_period_id", targetPeriodId)
-          .in("category_id", categoriesWithoutBudget);
+          .or(visibleLineFilters.join(","));
 
         if (deleteResponse.error) {
           throw deleteResponse.error;
+        }
+      }
+
+      if (itemsWithAmount.length > 0) {
+        const upsertResponse = await supabase.from("budget_items").upsert(itemsWithAmount, {
+          onConflict: "budget_period_id,line_key",
+        });
+
+        if (upsertResponse.error) {
+          throw upsertResponse.error;
         }
       }
 
@@ -583,7 +675,7 @@ export default function BudgetPage() {
 
       const previousItemsResponse = await supabase
         .from("budget_items")
-        .select("category_id, amount")
+        .select("category_id, subcategory_id, amount")
         .eq("budget_period_id", previousPeriodRow.id);
 
       if (previousItemsResponse.error) {
@@ -591,8 +683,13 @@ export default function BudgetPage() {
       }
 
       const activeCategoryIds = new Set(categories.map((category) => category.id));
+      const activeSubcategoryIds = new Set(subcategories.map((subcategory) => subcategory.id));
       const previousItems = (previousItemsResponse.data ?? []) as BudgetItemLiteRow[];
-      const copyRowsSource = previousItems.filter((item) => activeCategoryIds.has(item.category_id));
+      const copyRowsSource = previousItems.filter(
+        (item) =>
+          activeCategoryIds.has(item.category_id) &&
+          (item.subcategory_id === null || activeSubcategoryIds.has(item.subcategory_id)),
+      );
 
       if (copyRowsSource.length === 0) {
         notifications.show({
@@ -608,6 +705,7 @@ export default function BudgetPage() {
         Array<{
           budget_period_id: string;
           category_id: string;
+          subcategory_id: string | null;
           amount: number;
         }>
       >((accumulator, item) => {
@@ -619,6 +717,7 @@ export default function BudgetPage() {
         accumulator.push({
           budget_period_id: targetPeriodId,
           category_id: item.category_id,
+          subcategory_id: item.subcategory_id,
           amount: roundMoney(parsedAmount),
         });
 
@@ -635,7 +734,7 @@ export default function BudgetPage() {
       }
 
       const copyResponse = await supabase.from("budget_items").upsert(copyRows, {
-        onConflict: "budget_period_id,category_id",
+        onConflict: "budget_period_id,line_key",
       });
 
       if (copyResponse.error) {
@@ -667,12 +766,14 @@ export default function BudgetPage() {
   };
 
   const canCopyFromPrevious =
-    canManageStructure && categories.length > 0 && !isPeriodLoading && !isSaving && !periodHasItems;
+    canManageStructure && budgetLines.length > 0 && !isPeriodLoading && !isSaving && !periodHasItems;
 
   const topSpentCategory = useMemo(() => {
     const expenseCandidates = groupedCategories.expense
-      .map(({ category, index }) => {
-        const budgeted = parseBudgetAmount(watchedItems?.[index]?.amount) ?? 0;
+      .map(({ category, rootLine, subcategoryLines }) => {
+        const budgeted = [rootLine, ...subcategoryLines].reduce((total, line) => {
+          return total + (parseBudgetAmount(watchedItems?.[line.index]?.amount) ?? 0);
+        }, 0);
         const spent = spentByCategory[category.id] ?? 0;
 
         if (spent <= 0) {
@@ -796,7 +897,10 @@ export default function BudgetPage() {
                     {t("budget.editByCategory")}
                   </Text>
                   <Text size="sm" c="dimmed">
-                    {t("budget.redesignHint", "Asigná montos y mirá el consumo real por categoría sin perder el contexto global.")}
+                    {t(
+                      "budget.redesignHint",
+                      "Asigná montos y mirá el consumo real por categoría sin perder el contexto global.",
+                    )}
                   </Text>
                 </Stack>
 
@@ -811,8 +915,10 @@ export default function BudgetPage() {
                     .map((typeKey) => {
                       const items = groupedCategories[typeKey];
                       const typeTotal = totals[typeKey];
-                      const criticalCount = items.filter(({ category, index }) => {
-                        const budgeted = parseBudgetAmount(watchedItems?.[index]?.amount) ?? 0;
+                      const criticalCount = items.filter(({ category, rootLine, subcategoryLines }) => {
+                        const budgeted = [rootLine, ...subcategoryLines].reduce((total, line) => {
+                          return total + (parseBudgetAmount(watchedItems?.[line.index]?.amount) ?? 0);
+                        }, 0);
                         const spent = spentByCategory[category.id] ?? 0;
                         return budgeted > 0 && spent / budgeted >= 0.8;
                       }).length;
@@ -847,12 +953,14 @@ export default function BudgetPage() {
                               </Text>
                             ) : (
                               <Stack gap={0}>
-                                {items.map(({ category, index }) => (
+                                {items.map(({ category, rootLine, subcategoryLines }) => (
                                   <CategoryBudgetRow
                                     key={category.id}
                                     category={category}
-                                    index={index}
-                                    spentAmount={spentByCategory[category.id] ?? 0}
+                                    rootLine={rootLine}
+                                    subcategoryLines={subcategoryLines}
+                                    spentAmount={spentByLine[rootLine.key] ?? 0}
+                                    spentByLine={spentByLine}
                                     currencyFormatter={currencyFormatter}
                                     isMobile={Boolean(isMobile)}
                                     canManageStructure={canManageStructure}

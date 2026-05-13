@@ -4,6 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { notifications } from "@mantine/notifications";
 
 import {
+  sortSubcategories,
+} from "@/features/categories/subcategories";
+import {
   buildMonthOptions,
   localeCompareByName,
   mapTransactionTypeLabel,
@@ -21,6 +24,7 @@ import {
   sortCategories,
   toDateInputValue,
   type CategoryRow,
+  type CategorySubcategoryRow,
   type PaymentMethodRow,
   type TransactionRow,
   type TypeFilter,
@@ -40,6 +44,7 @@ export function useTransactionsData() {
   const now = useMemo(() => new Date(), []);
   const [rows, setRows] = useState<TransactionRow[]>([]);
   const [categories, setCategories] = useState<CategoryRow[]>([]);
+  const [subcategories, setSubcategories] = useState<CategorySubcategoryRow[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodRow[]>([]);
   const [currencyCode, setCurrencyCode] = useState("ARS");
   const [showCents, setShowCents] = useState(false);
@@ -48,6 +53,7 @@ export function useTransactionsData() {
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [subcategoryFilter, setSubcategoryFilter] = useState("all");
   const [paymentMethodFilter, setPaymentMethodFilter] = useState("all");
   const [searchFilter, setSearchFilter] = useState("");
   const [isBootstrapping, setIsBootstrapping] = useState(true);
@@ -82,6 +88,11 @@ export function useTransactionsData() {
   const categoryById = useMemo(
     () => new Map(categories.map((category) => [category.id, category])),
     [categories],
+  );
+
+  const subcategoryById = useMemo(
+    () => new Map(subcategories.map((subcategory) => [subcategory.id, subcategory])),
+    [subcategories],
   );
 
   const paymentMethodById = useMemo(
@@ -311,12 +322,14 @@ export function useTransactionsData() {
 
     return rows.filter((row) => {
       const category = categoryById.get(row.category_id);
+      const subcategory = row.subcategory_id ? subcategoryById.get(row.subcategory_id) : null;
       const paymentMethod = row.payment_method_id
         ? paymentMethodById.get(row.payment_method_id)
         : null;
 
       const searchPool = [
         category?.name ?? "",
+        subcategory?.name ?? "",
         row.description ?? "",
         row.notes ?? "",
         paymentMethod?.name ?? "",
@@ -338,6 +351,7 @@ export function useTransactionsData() {
     formatDate,
     normalizedSearchFilter,
     paymentMethodById,
+    subcategoryById,
     locale,
     roundedCurrencyFormatter,
     rows,
@@ -370,12 +384,14 @@ export function useTransactionsData() {
   const activeFiltersCount =
     Number(typeFilter !== "all") +
     Number(categoryFilter !== "all") +
+    Number(subcategoryFilter !== "all") +
     Number(paymentMethodFilter !== "all") +
     Number(normalizedSearchFilter !== "");
 
   const clearOperationalFilters = useCallback(() => {
     setTypeFilter("all");
     setCategoryFilter("all");
+    setSubcategoryFilter("all");
     setPaymentMethodFilter("all");
     setSearchFilter("");
   }, []);
@@ -410,6 +426,11 @@ export function useTransactionsData() {
     const categoryFromQuery = params.get("categoryId") ?? params.get("category");
     if (categoryFromQuery && categoryFromQuery.trim() !== "") {
       setCategoryFilter(categoryFromQuery);
+    }
+
+    const subcategoryFromQuery = params.get("subcategoryId") ?? params.get("subcategory");
+    if (subcategoryFromQuery && subcategoryFromQuery.trim() !== "") {
+      setSubcategoryFilter(subcategoryFromQuery);
     }
 
     const paymentMethodFromQuery = params.get("paymentMethodId") ?? params.get("paymentMethod");
@@ -463,6 +484,22 @@ export function useTransactionsData() {
       return;
     }
 
+    if (subcategoryFilter === "all") {
+      return;
+    }
+
+    const isFilterAvailable = subcategories.some((subcategory) => subcategory.id === subcategoryFilter);
+    if (!isFilterAvailable) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSubcategoryFilter("all");
+    }
+  }, [isBootstrapping, subcategories, subcategoryFilter]);
+
+  useEffect(() => {
+    if (isBootstrapping) {
+      return;
+    }
+
     if (paymentMethodFilter === "all") {
       return;
     }
@@ -482,6 +519,12 @@ export function useTransactionsData() {
     const categoriesResponse = await supabase
       .from("categories")
       .select("id, workspace_id, name, type, is_active, source, sort_order, is_exceptional")
+      .eq("workspace_id", workspace.id)
+      .order("created_at", { ascending: true });
+
+    const subcategoriesResponse = await supabase
+      .from("category_subcategories")
+      .select("id, workspace_id, category_id, name, is_active, sort_order")
       .eq("workspace_id", workspace.id)
       .order("created_at", { ascending: true });
 
@@ -507,6 +550,20 @@ export function useTransactionsData() {
     } else {
       const sorted = ([...categoriesResponse.data] as CategoryRow[]).sort((a, b) => sortCategories(a, b, locale));
       setCategories(sorted);
+    }
+
+    if (subcategoriesResponse.error) {
+      notifications.show({
+        color: "red",
+        title: t("transactions.notifications.loadSubcategoriesError"),
+        message: subcategoriesResponse.error.message,
+      });
+      setSubcategories([]);
+    } else {
+      const sorted = ([...subcategoriesResponse.data] as CategorySubcategoryRow[]).sort((a, b) =>
+        sortSubcategories(a, b, locale),
+      );
+      setSubcategories(sorted);
     }
 
     if (paymentMethodsResponse.error) {
@@ -550,7 +607,7 @@ export function useTransactionsData() {
 
     let query = supabase
       .from("transactions")
-      .select("id, category_id, amount, type, transaction_date, effective_date, payment_method_id, description, notes, installment_purchase_id, installment_number, installment_count, transfer_group_id, direction, created_at")
+      .select("id, category_id, subcategory_id, amount, type, transaction_date, effective_date, payment_method_id, description, notes, installment_purchase_id, installment_number, installment_count, transfer_group_id, direction, created_at")
       .eq("workspace_id", workspace.id)
       .or(periodFilter)
       .order("created_at", { ascending: false });
@@ -561,6 +618,10 @@ export function useTransactionsData() {
 
     if (categoryFilter !== "all") {
       query = query.eq("category_id", categoryFilter);
+    }
+
+    if (subcategoryFilter !== "all") {
+      query = query.eq("subcategory_id", subcategoryFilter);
     }
 
     if (paymentMethodFilter !== "all") {
@@ -594,6 +655,7 @@ export function useTransactionsData() {
     paymentMethodFilter,
     selectedMonth,
     selectedYear,
+    subcategoryFilter,
     supabase,
     t,
     typeFilter,
@@ -618,6 +680,7 @@ export function useTransactionsData() {
     rows,
     filteredRows,
     categories,
+    subcategories,
     paymentMethods,
     setPaymentMethods,
     currencyCode,
@@ -630,6 +693,8 @@ export function useTransactionsData() {
     setTypeFilter,
     categoryFilter,
     setCategoryFilter,
+    subcategoryFilter,
+    setSubcategoryFilter,
     paymentMethodFilter,
     setPaymentMethodFilter,
     searchFilter,
@@ -643,6 +708,7 @@ export function useTransactionsData() {
     monthOptions,
     transactionTypeSelectData,
     categoryById,
+    subcategoryById,
     paymentMethodById,
     hasAnyPaymentMethods,
     hasAnyActiveCategory,

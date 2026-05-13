@@ -7,12 +7,14 @@ export interface CategorySchemaMessages {
   requiredName: string;
   maxNameLength: string;
   requiredExpenseBehavior: string;
+  invalidParentCategory: string;
 }
 
 const defaultMessages: CategorySchemaMessages = {
   requiredName: "El nombre es obligatorio.",
   maxNameLength: "El nombre no puede superar 80 caracteres.",
   requiredExpenseBehavior: "Definí si el gasto es fijo o variable.",
+  invalidParentCategory: "Categoría padre inválida.",
 };
 
 export function createCategoryFormSchema(messages?: Partial<CategorySchemaMessages>) {
@@ -32,6 +34,17 @@ export function createCategoryFormSchema(messages?: Partial<CategorySchemaMessag
     z.enum(categoryExpenseBehaviorOptions).nullable(),
   );
 
+  const optionalParentCategory = z.preprocess(
+    (value) => {
+      if (value === "" || value === null || value === undefined) {
+        return null;
+      }
+
+      return value;
+    },
+    z.string().uuid(resolvedMessages.invalidParentCategory).nullable(),
+  );
+
   return z
     .object({
       name: z
@@ -39,10 +52,15 @@ export function createCategoryFormSchema(messages?: Partial<CategorySchemaMessag
         .trim()
         .min(1, resolvedMessages.requiredName)
         .max(80, resolvedMessages.maxNameLength),
+      parentCategoryId: optionalParentCategory,
       type: z.enum(categoryTypeOptions),
       expenseBehavior: optionalExpenseBehavior,
     })
     .superRefine((values, context) => {
+      if (values.parentCategoryId) {
+        return;
+      }
+
       if (values.type !== "expense") {
         return;
       }

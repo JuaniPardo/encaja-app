@@ -314,6 +314,38 @@ export interface Database {
         };
         Relationships: [];
       };
+      category_subcategories: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          category_id: string;
+          name: string;
+          is_active: boolean;
+          sort_order: number | null;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          category_id: string;
+          name: string;
+          is_active?: boolean;
+          sort_order?: number | null;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          category_id?: string;
+          name?: string;
+          is_active?: boolean;
+          sort_order?: number | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       payment_methods: {
         Row: {
           id: string;
@@ -361,6 +393,7 @@ export interface Database {
           workspace_id: string;
           payment_method_id: string;
           category_id: string;
+          subcategory_id: string | null;
           purchase_date: string;
           effective_date: string | null;
           first_installment_date: string;
@@ -377,6 +410,7 @@ export interface Database {
           workspace_id: string;
           payment_method_id: string;
           category_id: string;
+          subcategory_id?: string | null;
           purchase_date: string;
           effective_date?: string | null;
           first_installment_date: string;
@@ -392,6 +426,7 @@ export interface Database {
           purchase_date?: string;
           effective_date?: string | null;
           first_installment_date?: string;
+          subcategory_id?: string | null;
           total_amount?: number;
           installments_count?: number;
           description?: string | null;
@@ -434,6 +469,8 @@ export interface Database {
           id: string;
           budget_period_id: string;
           category_id: string;
+          subcategory_id: string | null;
+          line_key: string;
           amount: number;
           created_at: string;
           updated_at: string;
@@ -442,11 +479,13 @@ export interface Database {
           id?: string;
           budget_period_id: string;
           category_id: string;
+          subcategory_id?: string | null;
           amount: number;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
+          subcategory_id?: string | null;
           amount?: number;
           updated_at?: string;
         };
@@ -465,6 +504,7 @@ export interface Database {
           installment_number: number | null;
           installment_count: number | null;
           category_id: string;
+          subcategory_id: string | null;
           payment_method_id: string | null;
           amount: number;
           description: string | null;
@@ -486,6 +526,7 @@ export interface Database {
           installment_number?: number | null;
           installment_count?: number | null;
           category_id: string;
+          subcategory_id?: string | null;
           payment_method_id?: string | null;
           amount: number;
           description?: string | null;
@@ -505,6 +546,7 @@ export interface Database {
           installment_number?: number | null;
           installment_count?: number | null;
           category_id?: string;
+          subcategory_id?: string | null;
           payment_method_id?: string | null;
           amount?: number;
           description?: string | null;
@@ -524,6 +566,7 @@ export interface Database {
           p_workspace_id: string;
           p_payment_method_id: string;
           p_category_id: string;
+          p_subcategory_id?: string | null;
           p_amount: number;
           p_installments_count: number;
           p_transaction_date: string;
@@ -544,6 +587,7 @@ export interface Database {
           p_workspace_id: string;
           p_payment_method_id: string;
           p_category_id: string;
+          p_subcategory_id?: string | null;
           p_amount: number;
           p_installments_count: number;
           p_transaction_date: string;

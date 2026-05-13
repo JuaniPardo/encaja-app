@@ -10,6 +10,7 @@ import { useI18n } from "@/features/i18n/provider";
 import {
   toFormDefaults,
   type CategoryRow,
+  type CategorySubcategoryRow,
   type PaymentMethodRow,
   type QuickPaymentMethodType,
   type TransactionRow,
@@ -23,6 +24,7 @@ import type { Dispatch, SetStateAction } from "react";
 type InstallmentPurchaseRow = Pick<
   Database["public"]["Tables"]["installment_purchases"]["Row"],
   | "category_id"
+  | "subcategory_id"
   | "total_amount"
   | "purchase_date"
   | "effective_date"
@@ -34,6 +36,7 @@ type InstallmentPurchaseRow = Pick<
 
 type UseTransactionsMutationsOptions = {
   categoryById: Map<string, CategoryRow>;
+  subcategoryById: Map<string, CategorySubcategoryRow>;
   paymentMethodById: Map<string, PaymentMethodRow>;
   hasAnyPaymentMethods: boolean;
   typeFilter: TypeFilter;
@@ -50,6 +53,7 @@ type UseTransactionsMutationsOptions = {
 
 export function useTransactionsMutations({
   categoryById,
+  subcategoryById,
   paymentMethodById,
   hasAnyPaymentMethods,
   typeFilter,
@@ -82,6 +86,7 @@ export function useTransactionsMutations({
     return {
       type: "expense",
       categoryId: installmentPurchase.category_id,
+      subcategoryId: installmentPurchase.subcategory_id ?? "",
       amount: formatBudgetAmount(installmentPurchase.total_amount),
       transactionDate: installmentPurchase.purchase_date,
       effectiveDate: installmentPurchase.effective_date ?? "",
@@ -145,7 +150,7 @@ export function useTransactionsMutations({
 
     const installmentPurchaseResponse = await supabase
       .from("installment_purchases")
-      .select("category_id, total_amount, purchase_date, effective_date, payment_method_id, installments_count, description, notes")
+      .select("category_id, subcategory_id, total_amount, purchase_date, effective_date, payment_method_id, installments_count, description, notes")
       .eq("workspace_id", workspace.id)
       .eq("id", row.installment_purchase_id)
       .single();
@@ -239,6 +244,39 @@ export function useTransactionsMutations({
         color: "red",
         title: t("transactions.notifications.inactiveCategoryTitle"),
         message: t("transactions.notifications.inactiveCategoryMessage"),
+      });
+      return;
+    }
+
+    const subcategory = values.subcategoryId ? subcategoryById.get(values.subcategoryId) : null;
+
+    if (values.subcategoryId && (!subcategory || subcategory.workspace_id !== workspace.id)) {
+      notifications.show({
+        color: "red",
+        title: t("transactions.notifications.invalidSubcategoryTitle"),
+        message: t("transactions.notifications.invalidSubcategoryMessage"),
+      });
+      return;
+    }
+
+    if (subcategory && subcategory.category_id !== category.id) {
+      notifications.show({
+        color: "red",
+        title: t("transactions.notifications.incompatibleSubcategoryTitle"),
+        message: t("transactions.notifications.incompatibleSubcategoryMessage"),
+      });
+      return;
+    }
+
+    if (
+      subcategory &&
+      !subcategory.is_active &&
+      (!editingRow || editingRow.subcategory_id !== subcategory.id)
+    ) {
+      notifications.show({
+        color: "red",
+        title: t("transactions.notifications.inactiveSubcategoryTitle"),
+        message: t("transactions.notifications.inactiveSubcategoryMessage"),
       });
       return;
     }
@@ -374,6 +412,7 @@ export function useTransactionsMutations({
           p_workspace_id: workspace.id,
           p_payment_method_id: paymentMethod.id,
           p_category_id: category.id,
+          p_subcategory_id: subcategory?.id ?? null,
           p_amount: Math.round(values.amount * 100) / 100,
           p_installments_count: installmentsCount,
           p_transaction_date: values.transactionDate,
@@ -447,6 +486,7 @@ export function useTransactionsMutations({
           p_workspace_id: workspace.id,
           p_payment_method_id: paymentMethod.id,
           p_category_id: category.id,
+          p_subcategory_id: subcategory?.id ?? null,
           p_amount: Math.round(values.amount * 100) / 100,
           p_installments_count: installmentsCount,
           p_transaction_date: values.transactionDate,
@@ -480,6 +520,7 @@ export function useTransactionsMutations({
     const payload = {
       type: values.type,
       category_id: values.categoryId,
+      subcategory_id: subcategory?.id ?? null,
       amount: Math.round(values.amount * 100) / 100,
       transaction_date: values.transactionDate,
       effective_date: values.effectiveDate,
@@ -515,6 +556,7 @@ export function useTransactionsMutations({
         workspace_id: workspace.id,
         type: payload.type,
         category_id: payload.category_id,
+        subcategory_id: payload.subcategory_id,
         amount: payload.amount,
         transaction_date: payload.transaction_date,
         effective_date: payload.effective_date,
