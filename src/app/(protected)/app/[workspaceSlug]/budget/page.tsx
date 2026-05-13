@@ -22,6 +22,11 @@ import { notifications } from "@mantine/notifications";
 import { Controller, useForm, useWatch } from "react-hook-form";
 
 import {
+  buildCategoryLineKey,
+  sortSubcategories,
+  type CategorySubcategoryRow,
+} from "@/features/categories/subcategories";
+import {
   formatBudgetAmount,
   parseBudgetAmount,
   sanitizeBudgetTypingValue,
@@ -55,15 +60,23 @@ type WorkspaceSettingsRow = Pick<
 type BudgetPeriodIdRow = Pick<Database["public"]["Tables"]["budget_periods"]["Row"], "id">;
 type BudgetItemLiteRow = Pick<
   Database["public"]["Tables"]["budget_items"]["Row"],
-  "category_id" | "amount"
+  "category_id" | "subcategory_id" | "amount"
 >;
 
-type CategorizedItem = {
+type BudgetLine = {
+  key: string;
   category: CategoryRow;
+  subcategory: CategorySubcategoryRow | null;
   index: number;
 };
 
-type GroupedCategories = Record<TransactionType, CategorizedItem[]>;
+type GroupedCategoryBudget = {
+  category: CategoryRow;
+  rootLine: BudgetLine;
+  subcategoryLines: BudgetLine[];
+};
+
+type GroupedCategories = Record<TransactionType, GroupedCategoryBudget[]>;
 
 const typeOrder: Record<TransactionType, number> = {
   income: 0,
@@ -108,6 +121,7 @@ export default function BudgetPage() {
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [categories, setCategories] = useState<CategoryRow[]>([]);
+  const [subcategories, setSubcategories] = useState<CategorySubcategoryRow[]>([]);
   const [periodId, setPeriodId] = useState<string | null>(null);
   const [periodHasItems, setPeriodHasItems] = useState(false);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
@@ -127,6 +141,7 @@ export default function BudgetPage() {
         invalidAmount: t("common.validation.invalidAmount"),
         negativeAmount: t("common.validation.nonNegative"),
         invalidCategory: t("common.validation.invalidCategory"),
+        invalidSubcategory: t("common.validation.invalidOption"),
       }),
     ),
     defaultValues: {
@@ -156,15 +171,50 @@ export default function BudgetPage() {
       transfer: [],
     };
 
-    categories.forEach((category, index) => {
+    let index = 0;
+
+    categories.forEach((category) => {
+      const sortedSubcategories = subcategories
+        .filter((subcategory) => subcategory.category_id === category.id)
+        .sort((a, b) => sortSubcategories(a, b, locale));
+
+      const rootLine: BudgetLine = {
+        key: buildCategoryLineKey(category.id, null),
+        category,
+        subcategory: null,
+        index,
+      };
+      index += 1;
+
+      const subcategoryLines = sortedSubcategories.map((subcategory) => {
+        const line: BudgetLine = {
+          key: buildCategoryLineKey(category.id, subcategory.id),
+          category,
+          subcategory,
+          index,
+        };
+        index += 1;
+        return line;
+      });
+
       grouped[category.type].push({
         category,
-        index,
+        rootLine,
+        subcategoryLines,
       });
     });
 
     return grouped;
-  }, [categories]);
+  }, [categories, locale, subcategories]);
+
+  const budgetLines = useMemo(
+    () =>
+      (Object.keys(groupedCategories) as TransactionType[])
+        .flatMap((type) => groupedCategories[type])
+        .flatMap((group) => [group.rootLine, ...group.subcategoryLines])
+        .sort((left, right) => left.index - right.index),
+    [groupedCategories],
+  );
 
   const totals = useMemo(() => {
     const subtotalByType: Record<TransactionType, number> = {
@@ -238,6 +288,13 @@ export default function BudgetPage() {
       .eq("is_active", true)
       .order("created_at", { ascending: true });
 
+    const subcategoriesResponse = await supabase
+      .from("category_subcategories")
+      .select("id, workspace_id, category_id, name, is_active, sort_order, created_by, created_at, updated_at")
+      .eq("workspace_id", workspace.id)
+      .eq("is_active", true)
+      .order("created_at", { ascending: true });
+
     const settingsResponse = await supabase
       .from("workspace_settings")
       .select("start_year, currency_code, show_cents")
@@ -269,6 +326,17 @@ export default function BudgetPage() {
       });
 
       setCategories(sortedCategories);
+    }
+
+    if (subcategoriesResponse.error) {
+      notifications.show({
+        color: "red",
+        title: t("budget.notifications.loadSubcategoriesError"),
+        message: subcategoriesResponse.error.message,
+      });
+      setSubcategories([]);
+    } else {
+      setSubcategories((subcategoriesResponse.data ?? []) as CategorySubcategoryRow[]);
     }
 
     if (settingsResponse.error) {
@@ -317,8 +385,9 @@ export default function BudgetPage() {
       setPeriodId(null);
       setPeriodHasItems(false);
       reset({
-        items: categories.map((category) => ({
-          categoryId: category.id,
+        items: budgetLines.map((line) => ({
+          categoryId: line.category.id,
+          subcategoryId: line.subcategory?.id ?? null,
           amount: null,
         })),
       });
@@ -328,7 +397,7 @@ export default function BudgetPage() {
 
     const itemsResponse = await supabase
       .from("budget_items")
-      .select("category_id, amount")
+      .select("category_id, subcategory_id, amount")
       .eq("budget_period_id", periodRow.id);
 
     if (itemsResponse.error) {
@@ -343,20 +412,24 @@ export default function BudgetPage() {
 
     const periodItems = (itemsResponse.data ?? []) as BudgetItemLiteRow[];
     const amountByCategoryId = new Map(
-      periodItems.map((item) => [item.category_id, parseBudgetAmount(item.amount)]),
+      periodItems.map((item) => [
+        buildCategoryLineKey(item.category_id, item.subcategory_id),
+        parseBudgetAmount(item.amount),
+      ]),
     );
 
     reset({
-      items: categories.map((category) => ({
-        categoryId: category.id,
-        amount: amountByCategoryId.get(category.id) ?? null,
+      items: budgetLines.map((line) => ({
+        categoryId: line.category.id,
+        subcategoryId: line.subcategory?.id ?? null,
+        amount: amountByCategoryId.get(line.key) ?? null,
       })),
     });
 
     setPeriodId(periodRow.id);
     setPeriodHasItems(periodItems.length > 0);
     setIsPeriodLoading(false);
-  }, [categories, reset, selectedMonth, selectedYear, supabase, t, workspace.id]);
+  }, [budgetLines, reset, selectedMonth, selectedYear, supabase, t, workspace.id]);
 
   useEffect(() => {
     void loadBaseData();
@@ -433,6 +506,7 @@ export default function BudgetPage() {
         Array<{
           budget_period_id: string;
           category_id: string;
+          subcategory_id: string | null;
           amount: number;
         }>
       >((accumulator, item) => {
@@ -443,35 +517,38 @@ export default function BudgetPage() {
         accumulator.push({
           budget_period_id: targetPeriodId,
           category_id: item.categoryId,
+          subcategory_id: item.subcategoryId,
           amount: roundMoney(item.amount),
         });
 
         return accumulator;
       }, []);
 
-      const categoriesWithoutBudget = values.items
-        .filter((item) => item.amount === null)
-        .map((item) => item.categoryId);
+      const visibleLineFilters = values.items.map((item) =>
+        item.subcategoryId
+          ? `and(category_id.eq.${item.categoryId},subcategory_id.eq.${item.subcategoryId})`
+          : `and(category_id.eq.${item.categoryId},subcategory_id.is.null)`,
+      );
 
-      if (itemsWithAmount.length > 0) {
-        const upsertResponse = await supabase.from("budget_items").upsert(itemsWithAmount, {
-          onConflict: "budget_period_id,category_id",
-        });
-
-        if (upsertResponse.error) {
-          throw upsertResponse.error;
-        }
-      }
-
-      if (categoriesWithoutBudget.length > 0) {
+      if (visibleLineFilters.length > 0) {
         const deleteResponse = await supabase
           .from("budget_items")
           .delete()
           .eq("budget_period_id", targetPeriodId)
-          .in("category_id", categoriesWithoutBudget);
+          .or(visibleLineFilters.join(","));
 
         if (deleteResponse.error) {
           throw deleteResponse.error;
+        }
+      }
+
+      if (itemsWithAmount.length > 0) {
+        const upsertResponse = await supabase.from("budget_items").upsert(itemsWithAmount, {
+          onConflict: "budget_period_id,line_key",
+        });
+
+        if (upsertResponse.error) {
+          throw upsertResponse.error;
         }
       }
 
@@ -553,7 +630,7 @@ export default function BudgetPage() {
 
       const previousItemsResponse = await supabase
         .from("budget_items")
-        .select("category_id, amount")
+        .select("category_id, subcategory_id, amount")
         .eq("budget_period_id", previousPeriodRow.id);
 
       if (previousItemsResponse.error) {
@@ -561,9 +638,12 @@ export default function BudgetPage() {
       }
 
       const activeCategoryIds = new Set(categories.map((category) => category.id));
+      const activeSubcategoryIds = new Set(subcategories.map((subcategory) => subcategory.id));
       const previousItems = (previousItemsResponse.data ?? []) as BudgetItemLiteRow[];
-      const copyRowsSource = previousItems.filter((item) =>
-        activeCategoryIds.has(item.category_id),
+      const copyRowsSource = previousItems.filter(
+        (item) =>
+          activeCategoryIds.has(item.category_id) &&
+          (item.subcategory_id === null || activeSubcategoryIds.has(item.subcategory_id)),
       );
 
       if (copyRowsSource.length === 0) {
@@ -580,6 +660,7 @@ export default function BudgetPage() {
         Array<{
           budget_period_id: string;
           category_id: string;
+          subcategory_id: string | null;
           amount: number;
         }>
       >((accumulator, item) => {
@@ -591,6 +672,7 @@ export default function BudgetPage() {
         accumulator.push({
           budget_period_id: targetPeriodId,
           category_id: item.category_id,
+          subcategory_id: item.subcategory_id,
           amount: roundMoney(parsedAmount),
         });
 
@@ -607,7 +689,7 @@ export default function BudgetPage() {
       }
 
       const copyResponse = await supabase.from("budget_items").upsert(copyRows, {
-        onConflict: "budget_period_id,category_id",
+        onConflict: "budget_period_id,line_key",
       });
 
       if (copyResponse.error) {
@@ -639,7 +721,7 @@ export default function BudgetPage() {
   };
 
   const canCopyFromPrevious =
-    canManageStructure && categories.length > 0 && !isPeriodLoading && !isSaving && !periodHasItems;
+    canManageStructure && budgetLines.length > 0 && !isPeriodLoading && !isSaving && !periodHasItems;
   const selectedPeriodLabel = `${selectedYear} · ${monthLabelFromOptions(
     selectedMonth,
     monthOptions,
@@ -772,83 +854,180 @@ export default function BudgetPage() {
                     </Text>
                   ) : (
                     <Stack gap="xs">
-                      {groupedCategories[typeKey].map(({ category, index }) => (
+                      {groupedCategories[typeKey].map(({ category, rootLine, subcategoryLines }) => (
                         <Paper key={category.id} withBorder radius="sm" p={isMobile ? 6 : 8}>
-                          <Group justify="space-between" align="center" wrap="nowrap" gap="xs">
-                            <Stack gap={1} style={{ flex: 1, minWidth: 0 }}>
-                              <Text fw={600} size="sm" lineClamp={1}>
-                                {category.name}
-                              </Text>
-                              <Button
-                                component={Link}
-                                href={categoryDrilldownHref(typeKey, category.id)}
-                                variant="subtle"
-                                color="gray"
-                                size="compact-xs"
-                                px={0}
-                                justify="flex-start"
-                              >
-                                {t("budget.viewMovements")}
-                              </Button>
-                            </Stack>
-                            <input
-                              type="hidden"
-                              {...register(`items.${index}.categoryId` as const)}
-                            />
-                            <Controller
-                              name={`items.${index}.amount` as const}
-                              control={control}
-                              render={({ field }) => (
-                                <TextInput
-                                  aria-label={t("budget.amountForCategory", undefined, {
-                                    categoryName: category.name,
-                                  })}
-                                  type="text"
-                                  inputMode="decimal"
-                                  size="sm"
-                                  placeholder="0"
-                                  value={
-                                    typeof field.value === "string"
-                                      ? field.value
-                                      : typeof field.value === "number"
-                                        ? formatBudgetAmount(field.value)
-                                        : ""
-                                  }
-                                  onChange={(event) => {
-                                    field.onChange(
-                                      sanitizeBudgetTypingValue(event.currentTarget.value),
-                                    );
-                                  }}
-                                  onBlur={(event) => {
-                                    const parsed = parseBudgetAmount(event.currentTarget.value);
-                                    field.onChange(formatBudgetAmount(parsed ?? 0));
-                                    field.onBlur();
-                                  }}
-                                  onFocus={(event) => {
-                                    event.currentTarget.select();
-                                  }}
-                                  disabled={!canManageStructure}
-                                  error={errors.items?.[index]?.amount?.message}
-                                  rightSection={
-                                    <Text size="10px" c="dimmed" fw={500}>
-                                      $
+                          <Stack gap="xs">
+                            <Group justify="space-between" align="center" wrap="nowrap" gap="xs">
+                              <Stack gap={1} style={{ flex: 1, minWidth: 0 }}>
+                                <Text fw={700} size="sm" lineClamp={1}>
+                                  {category.name}
+                                </Text>
+                                <Button
+                                  component={Link}
+                                  href={categoryDrilldownHref(typeKey, category.id)}
+                                  variant="subtle"
+                                  color="gray"
+                                  size="compact-xs"
+                                  px={0}
+                                  justify="flex-start"
+                                >
+                                  {t("budget.viewMovements")}
+                                </Button>
+                              </Stack>
+                            </Group>
+
+                            <Group justify="space-between" align="center" wrap="nowrap" gap="xs">
+                              <Stack gap={1} style={{ flex: 1, minWidth: 0 }}>
+                                <Text fw={600} size="sm" lineClamp={1}>
+                                  {t("budget.withoutSubcategory")}
+                                </Text>
+                                <Text size="xs" c="dimmed">
+                                  {t("budget.directCategoryHint")}
+                                </Text>
+                              </Stack>
+                              <input
+                                type="hidden"
+                                {...register(`items.${rootLine.index}.categoryId` as const)}
+                              />
+                              <input
+                                type="hidden"
+                                {...register(`items.${rootLine.index}.subcategoryId` as const)}
+                              />
+                              <Controller
+                                name={`items.${rootLine.index}.amount` as const}
+                                control={control}
+                                render={({ field }) => (
+                                  <TextInput
+                                    aria-label={t("budget.amountForCategory", undefined, {
+                                      categoryName: category.name,
+                                    })}
+                                    type="text"
+                                    inputMode="decimal"
+                                    size="sm"
+                                    placeholder="0"
+                                    value={
+                                      typeof field.value === "string"
+                                        ? field.value
+                                        : typeof field.value === "number"
+                                          ? formatBudgetAmount(field.value)
+                                          : ""
+                                    }
+                                    onChange={(event) => {
+                                      field.onChange(
+                                        sanitizeBudgetTypingValue(event.currentTarget.value),
+                                      );
+                                    }}
+                                    onBlur={(event) => {
+                                      const parsed = parseBudgetAmount(event.currentTarget.value);
+                                      field.onChange(formatBudgetAmount(parsed ?? 0));
+                                      field.onBlur();
+                                    }}
+                                    onFocus={(event) => {
+                                      event.currentTarget.select();
+                                    }}
+                                    disabled={!canManageStructure}
+                                    error={errors.items?.[rootLine.index]?.amount?.message}
+                                    rightSection={
+                                      <Text size="10px" c="dimmed" fw={500}>
+                                        $
+                                      </Text>
+                                    }
+                                    rightSectionWidth={26}
+                                    rightSectionPointerEvents="none"
+                                    styles={{
+                                      input: {
+                                        textAlign: "right",
+                                        fontVariantNumeric: "tabular-nums",
+                                        paddingTop: "0.3rem",
+                                        paddingBottom: "0.3rem",
+                                      },
+                                    }}
+                                    style={{ width: isMobile ? 132 : 164 }}
+                                  />
+                                )}
+                              />
+                            </Group>
+
+                            {subcategoryLines.length > 0 ? (
+                              <Stack gap={6} pl={isMobile ? 10 : 14}>
+                                {subcategoryLines.map((line) => (
+                                  <Group
+                                    key={line.key}
+                                    justify="space-between"
+                                    align="center"
+                                    wrap="nowrap"
+                                    gap="xs"
+                                  >
+                                    <Text size="sm" c="dimmed" lineClamp={1} style={{ flex: 1, minWidth: 0 }}>
+                                      {line.subcategory?.name}
                                     </Text>
-                                  }
-                                  rightSectionWidth={26}
-                                  rightSectionPointerEvents="none"
-                                  styles={{
-                                    input: {
-                                      textAlign: "right",
-                                      fontVariantNumeric: "tabular-nums",
-                                      paddingTop: "0.3rem",
-                                      paddingBottom: "0.3rem",
-                                    },
-                                  }}
-                                  style={{ width: isMobile ? 132 : 164 }}
-                                />
-                              )}
-                            />
-                          </Group>
+                                    <input
+                                      type="hidden"
+                                      {...register(`items.${line.index}.categoryId` as const)}
+                                    />
+                                    <input
+                                      type="hidden"
+                                      {...register(`items.${line.index}.subcategoryId` as const)}
+                                    />
+                                    <Controller
+                                      name={`items.${line.index}.amount` as const}
+                                      control={control}
+                                      render={({ field }) => (
+                                        <TextInput
+                                          aria-label={t("budget.amountForSubcategory", undefined, {
+                                            categoryName: category.name,
+                                            subcategoryName: line.subcategory?.name ?? "",
+                                          })}
+                                          type="text"
+                                          inputMode="decimal"
+                                          size="sm"
+                                          placeholder="0"
+                                          value={
+                                            typeof field.value === "string"
+                                              ? field.value
+                                              : typeof field.value === "number"
+                                                ? formatBudgetAmount(field.value)
+                                                : ""
+                                          }
+                                          onChange={(event) => {
+                                            field.onChange(
+                                              sanitizeBudgetTypingValue(event.currentTarget.value),
+                                            );
+                                          }}
+                                          onBlur={(event) => {
+                                            const parsed = parseBudgetAmount(event.currentTarget.value);
+                                            field.onChange(formatBudgetAmount(parsed ?? 0));
+                                            field.onBlur();
+                                          }}
+                                          onFocus={(event) => {
+                                            event.currentTarget.select();
+                                          }}
+                                          disabled={!canManageStructure}
+                                          error={errors.items?.[line.index]?.amount?.message}
+                                          rightSection={
+                                            <Text size="10px" c="dimmed" fw={500}>
+                                              $
+                                            </Text>
+                                          }
+                                          rightSectionWidth={26}
+                                          rightSectionPointerEvents="none"
+                                          styles={{
+                                            input: {
+                                              textAlign: "right",
+                                              fontVariantNumeric: "tabular-nums",
+                                              paddingTop: "0.3rem",
+                                              paddingBottom: "0.3rem",
+                                            },
+                                          }}
+                                          style={{ width: isMobile ? 132 : 164 }}
+                                        />
+                                      )}
+                                    />
+                                  </Group>
+                                ))}
+                              </Stack>
+                            ) : null}
+                          </Stack>
                         </Paper>
                       ))}
                     </Stack>

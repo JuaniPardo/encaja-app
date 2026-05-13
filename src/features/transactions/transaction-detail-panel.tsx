@@ -2,9 +2,13 @@
 
 import { ActionIcon, Button, Group, Modal, Paper, Stack, Text } from "@mantine/core";
 
+import { formatCategoryWithOptionalSubcategory } from "@/features/categories/subcategories";
 import { useI18n } from "@/features/i18n/provider";
 import { transactionTypeMantineColor } from "@/features/transactions/type-colors";
 import { resolveOperationalDate, type CategoryRow, type PaymentMethodRow, type TransactionRow } from "@/features/transactions/utils";
+import type { Database } from "@/types/database";
+
+type CategorySubcategoryRow = Database["public"]["Tables"]["category_subcategories"]["Row"];
 
 function EditIcon({ size = 16 }: { size?: number }) {
   return (
@@ -52,6 +56,7 @@ function TrashIcon({ size = 16 }: { size?: number }) {
 type TransactionDetailContentProps = {
   row: TransactionRow | null;
   categoryById: Map<string, CategoryRow>;
+  subcategoryById: Map<string, CategorySubcategoryRow>;
   paymentMethodById: Map<string, PaymentMethodRow>;
   visibleAmountFormatter: Intl.NumberFormat;
   formatDate: (dateValue: string | null) => string;
@@ -63,6 +68,7 @@ type TransactionDetailContentProps = {
 function TransactionDetailContent({
   row,
   categoryById,
+  subcategoryById,
   paymentMethodById,
   visibleAmountFormatter,
   formatDate,
@@ -89,6 +95,7 @@ function TransactionDetailContent({
   }
 
   const category = categoryById.get(row.category_id);
+  const subcategory = row.subcategory_id ? subcategoryById.get(row.subcategory_id) : null;
   const paymentMethod = row.payment_method_id ? paymentMethodById.get(row.payment_method_id) : null;
   const operationalDate = resolveOperationalDate(row);
   const typeColor = transactionTypeMantineColor[row.type];
@@ -96,7 +103,9 @@ function TransactionDetailContent({
   const detailRows = [
     {
       label: t("transactions.detail.category", "Category"),
-      value: category?.name ?? t("transactions.categoryUnavailable"),
+      value: category
+        ? formatCategoryWithOptionalSubcategory(category.name, subcategory?.name ?? null)
+        : t("transactions.categoryUnavailable"),
     },
     {
       label: t("transactions.detail.transactionDate", "Transaction date"),
@@ -124,7 +133,9 @@ function TransactionDetailContent({
             {formatDate(operationalDate)}
           </Text>
           <Text fw={700} size="lg" style={{ lineHeight: 1.15 }}>
-            {category?.name ?? t("transactions.categoryUnavailable")}
+            {category
+              ? formatCategoryWithOptionalSubcategory(category.name, subcategory?.name ?? null)
+              : t("transactions.categoryUnavailable")}
           </Text>
           <Text fw={800} c={`${typeColor}.7`} style={{ fontSize: "2rem", lineHeight: 1 }}>
             {visibleAmountFormatter.format(row.amount)}

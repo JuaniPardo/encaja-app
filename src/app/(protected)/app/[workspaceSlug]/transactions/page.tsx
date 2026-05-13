@@ -39,6 +39,7 @@ export default function TransactionsPage() {
   const data = useTransactionsData();
   const mutations = useTransactionsMutations({
     categoryById: data.categoryById,
+    subcategoryById: data.subcategoryById,
     paymentMethodById: data.paymentMethodById,
     hasAnyPaymentMethods: data.hasAnyPaymentMethods,
     typeFilter: data.typeFilter,
@@ -214,6 +215,7 @@ export default function TransactionsPage() {
           selectedTransactionId={selectedRow?.id ?? null}
           isMobile={Boolean(isMobile)}
           categoryById={data.categoryById}
+          subcategoryById={data.subcategoryById}
           paymentMethodById={data.paymentMethodById}
           visibleAmountFormatter={data.visibleAmountFormatter}
           formatCompactDate={data.formatCompactDate}
@@ -227,6 +229,7 @@ export default function TransactionsPage() {
           <TransactionDetailPanel
             row={selectedRow}
             categoryById={data.categoryById}
+            subcategoryById={data.subcategoryById}
             paymentMethodById={data.paymentMethodById}
             visibleAmountFormatter={data.visibleAmountFormatter}
             formatDate={data.formatDate}
@@ -251,6 +254,7 @@ export default function TransactionsPage() {
           onClose={mutations.closeModal}
           editingRow={mutations.editingRow}
           categories={data.categories}
+          subcategories={data.subcategories}
           paymentMethods={data.paymentMethods}
           paymentMethodOptions={mutations.paymentMethodOptions}
           transactionTypeSelectData={data.transactionTypeSelectData}
@@ -279,6 +283,7 @@ export default function TransactionsPage() {
           onClose={() => setIsDetailModalOpen(false)}
           row={selectedRow}
           categoryById={data.categoryById}
+          subcategoryById={data.subcategoryById}
           paymentMethodById={data.paymentMethodById}
           visibleAmountFormatter={data.visibleAmountFormatter}
           formatDate={data.formatDate}
