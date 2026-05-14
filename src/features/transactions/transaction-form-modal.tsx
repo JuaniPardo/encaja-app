@@ -36,6 +36,7 @@ import classes from "./transaction-form-modal.module.css";
 
 type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
+type CategorySubcategoryRow = Database["public"]["Tables"]["category_subcategories"]["Row"];
 type PaymentMethodRow = Database["public"]["Tables"]["payment_methods"]["Row"];
 type QuickPaymentMethodType = "cash" | "debit_card";
 type CategoryOption = { value: string; label: string };
@@ -46,6 +47,7 @@ type TransactionFormModalProps = {
   onClose: () => void;
   editingRow: TransactionRow | null;
   categories: CategoryRow[];
+  subcategories: CategorySubcategoryRow[];
   paymentMethods: PaymentMethodRow[];
   paymentMethodOptions: Array<{ value: string; label: string }>;
   transactionTypeSelectData: Array<{ value: string; label: string }>;
@@ -63,6 +65,7 @@ export function TransactionFormModal({
   onClose,
   editingRow,
   categories,
+  subcategories,
   paymentMethods,
   paymentMethodOptions,
   transactionTypeSelectData,
@@ -92,6 +95,7 @@ export function TransactionFormModal({
         invalidOption: t("common.validation.invalidOption"),
         requiredCategory: t("common.forms.transaction.requiredCategory"),
         invalidCategory: t("common.forms.transaction.invalidCategory"),
+        invalidSubcategory: t("common.forms.transaction.invalidSubcategory"),
         requiredTransactionDate: t("common.forms.transaction.requiredTransactionDate"),
         descriptionMaxLength: t("common.forms.transaction.descriptionMaxLength"),
         notesMaxLength: t("common.forms.transaction.notesMaxLength"),
@@ -110,6 +114,7 @@ export function TransactionFormModal({
   const selectedType = useWatch({ control, name: "type" });
   const selectedPaymentMethodId = useWatch({ control, name: "paymentMethodId" });
   const selectedInstallmentsCount = useWatch({ control, name: "installmentsCount" });
+  const selectedCategoryId = useWatch({ control, name: "categoryId" });
 
   const paymentMethodById = useMemo(
     () => new Map(paymentMethods.map((paymentMethod) => [paymentMethod.id, paymentMethod])),
@@ -168,11 +173,27 @@ export function TransactionFormModal({
     return groupedOptions;
   }, [categories, editingRow?.category_id, selectedType, t]);
 
-  const selectedCategoryId = useWatch({ control, name: "categoryId" });
   const selectedCategory = useMemo(
     () => categories.find((category) => category.id === selectedCategoryId) ?? null,
     [categories, selectedCategoryId],
   );
+  const subcategoryOptions = useMemo(() => {
+    const currentSubcategoryId = editingRow?.subcategory_id ?? null;
+
+    return subcategories
+      .filter(
+        (subcategory) =>
+          subcategory.category_id === selectedCategoryId &&
+          (subcategory.is_active || subcategory.id === currentSubcategoryId),
+      )
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((subcategory) => ({
+        value: subcategory.id,
+        label: subcategory.is_active
+          ? subcategory.name
+          : `${subcategory.name} (${t("transactions.inactiveSubcategorySuffix")})`,
+      }));
+  }, [editingRow?.subcategory_id, selectedCategoryId, subcategories, t]);
   const selectedExceptionalWarning = selectedCategory?.is_exceptional
     ? selectedCategory.warning_message ?? t("transactions.exceptionalCategory.defaultWarning")
     : null;
@@ -215,6 +236,22 @@ export function TransactionFormModal({
       shouldValidate: true,
     });
   }, [selectedInstallmentsCount, setValue, shouldShowInstallmentsField]);
+
+  useEffect(() => {
+    const currentValue = control._formValues.subcategoryId;
+    if (!currentValue) {
+      return;
+    }
+
+    const isAvailable = subcategoryOptions.some((option) => option.value === currentValue);
+    if (!isAvailable) {
+      setValue("subcategoryId", "", {
+        shouldDirty: true,
+        shouldTouch: true,
+        shouldValidate: true,
+      });
+    }
+  }, [control._formValues.subcategoryId, setValue, subcategoryOptions]);
 
   const selectedTypeColor = transactionTypeMantineColor[selectedType ?? "expense"];
   const typeSegmentVars = {
@@ -269,6 +306,17 @@ export function TransactionFormModal({
               data={[{ value: "", label: t("transactions.form.selectCategory") }, ...categoryOptions]}
               error={errors.categoryId?.message}
               {...register("categoryId")}
+            />
+
+            <NativeSelect
+              label={t("transactions.subcategory")}
+              data={[
+                { value: "", label: t("transactions.form.noSubcategory") },
+                ...subcategoryOptions,
+              ]}
+              error={errors.subcategoryId?.message}
+              disabled={!selectedCategoryId || subcategoryOptions.length === 0}
+              {...register("subcategoryId")}
             />
 
             <Controller

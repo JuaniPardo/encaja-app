@@ -6,6 +6,7 @@ import type { Database, TransactionType } from "@/types/database";
 
 export type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
 export type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
+export type CategorySubcategoryRow = Database["public"]["Tables"]["category_subcategories"]["Row"];
 export type PaymentMethodRow = Database["public"]["Tables"]["payment_methods"]["Row"];
 export type WorkspaceSettingsLiteRow = Pick<
   Database["public"]["Tables"]["workspace_settings"]["Row"],
@@ -102,6 +103,7 @@ export function toFormDefaults(
     return {
       type: preferredType,
       categoryId: "",
+      subcategoryId: "",
       amount: "",
       transactionDate: today,
       effectiveDate: "",
@@ -115,6 +117,7 @@ export function toFormDefaults(
   return {
     type: row.type,
     categoryId: row.category_id,
+    subcategoryId: row.subcategory_id ?? "",
     amount: formatBudgetAmount(row.amount),
     transactionDate: row.transaction_date,
     effectiveDate: row.effective_date ?? "",

@@ -2,6 +2,7 @@
 
 import { Paper, Stack, Text } from "@mantine/core";
 
+import { formatCategoryWithOptionalSubcategory } from "@/features/categories/subcategories";
 import { useI18n } from "@/features/i18n/provider";
 import { TransactionInlineActions } from "@/features/transactions/transaction-detail-panel";
 import { transactionTypeMantineColor } from "@/features/transactions/type-colors";
@@ -10,6 +11,7 @@ import type { Database } from "@/types/database";
 
 type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
+type CategorySubcategoryRow = Database["public"]["Tables"]["category_subcategories"]["Row"];
 type PaymentMethodRow = Database["public"]["Tables"]["payment_methods"]["Row"];
 
 export type TransactionGroup = {
@@ -23,6 +25,7 @@ type TransactionsListProps = {
   selectedTransactionId: string | null;
   isMobile: boolean;
   categoryById: Map<string, CategoryRow>;
+  subcategoryById: Map<string, CategorySubcategoryRow>;
   paymentMethodById: Map<string, PaymentMethodRow>;
   visibleAmountFormatter: Intl.NumberFormat;
   formatCompactDate: (dateValue: string) => string;
@@ -37,6 +40,7 @@ export function TransactionsList({
   selectedTransactionId,
   isMobile,
   categoryById,
+  subcategoryById,
   paymentMethodById,
   visibleAmountFormatter,
   formatCompactDate,
@@ -82,6 +86,9 @@ export function TransactionsList({
 
               {group.rows.map((row) => {
                 const category = categoryById.get(row.category_id);
+                const subcategory = row.subcategory_id
+                  ? subcategoryById.get(row.subcategory_id)
+                  : null;
                 const paymentMethod = row.payment_method_id
                   ? paymentMethodById.get(row.payment_method_id)
                   : null;
@@ -128,7 +135,12 @@ export function TransactionsList({
                     >
                       <div style={{ minWidth: 0 }}>
                         <Text fw={650} size="sm" lineClamp={1} style={{ lineHeight: 1.15 }}>
-                          {category?.name ?? t("transactions.categoryUnavailable")}
+                          {category
+                            ? formatCategoryWithOptionalSubcategory(
+                                category.name,
+                                subcategory?.name ?? null,
+                              )
+                            : t("transactions.categoryUnavailable")}
                         </Text>
                         <Text size="xs" c="dimmed" lineClamp={1} mt={4} style={{ lineHeight: 1.2 }}>
                           {row.description?.trim() ? `${row.description} · ${metaParts.join(" · ")}` : metaParts.join(" · ")}

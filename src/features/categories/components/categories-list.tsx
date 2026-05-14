@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useMemo } from "react";
 import {
   ActionIcon,
   Badge,
@@ -20,6 +21,7 @@ import type {
 } from "@/types/database";
 
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
+type SubcategoryRow = Database["public"]["Tables"]["category_subcategories"]["Row"];
 
 export type GroupedCategoryRows = {
   type: TransactionType;
@@ -36,7 +38,11 @@ type CategoriesListProps = {
   hasUsageData: boolean;
   isMobile: boolean;
   onEdit: (row: CategoryRow) => void;
+  onEditSubcategory: (row: SubcategoryRow) => void;
+  onCreateSubcategory: (parentCategoryId?: string) => void;
   onToggleActive: (row: CategoryRow) => void | Promise<void>;
+  onToggleSubcategoryActive: (row: SubcategoryRow) => void | Promise<void>;
+  subcategories: SubcategoryRow[];
   tableLabels: {
     actions: string;
     movements: string;
@@ -57,10 +63,13 @@ type CategoriesListProps = {
   };
   usageLabels: {
     none: string;
+    newSubcategory: string;
+    withoutSubcategory: string;
     viewMovements: string;
     count: (count: number) => string;
   };
   usageByCategoryId: Record<string, number>;
+  usageBySubcategoryId: Record<string, number>;
 };
 
 function DotsIcon({ size = 14 }: { size?: number }) {
@@ -257,31 +266,87 @@ function CategoryActions({
   );
 }
 
+function SubcategoryActions({
+  canManageStructure,
+  onEdit,
+  onToggleActive,
+  row,
+  toggleLabels,
+}: {
+  canManageStructure: boolean;
+  onEdit: (row: SubcategoryRow) => void;
+  onToggleActive: (row: SubcategoryRow) => void | Promise<void>;
+  row: SubcategoryRow;
+  toggleLabels: CategoriesListProps["toggleLabels"];
+}) {
+  return (
+    <Group gap={2} wrap="nowrap">
+      <ActionIcon
+        variant="subtle"
+        color="gray"
+        radius="md"
+        disabled={!canManageStructure}
+        aria-label={toggleLabels.edit}
+        onClick={(event) => {
+          event.stopPropagation();
+          onEdit(row);
+        }}
+      >
+        <EditIcon size={13} />
+      </ActionIcon>
+
+      <ActionIcon
+        variant="subtle"
+        color={row.is_active ? "gray" : "cyan"}
+        radius="md"
+        disabled={!canManageStructure}
+        aria-label={row.is_active ? toggleLabels.deactivate : toggleLabels.activate}
+        onClick={(event) => {
+          event.stopPropagation();
+          void onToggleActive(row);
+        }}
+      >
+        <ToggleActiveIcon size={13} />
+      </ActionIcon>
+    </Group>
+  );
+}
+
 function CategoryDesktopRow({
   canManageStructure,
   categoryDrilldownHref,
   categoryExpenseBehaviorLabels,
   categorySourceLabels,
+  categorySubcategories,
   hasUsageData,
   metaLabels,
   onEdit,
+  onEditSubcategory,
+  onCreateSubcategory,
   onToggleActive,
+  onToggleSubcategoryActive,
   row,
   toggleLabels,
   usageByCategoryId,
+  usageBySubcategoryId,
   usageLabels,
 }: {
   canManageStructure: boolean;
   categoryDrilldownHref: CategoriesListProps["categoryDrilldownHref"];
   categoryExpenseBehaviorLabels: Record<ExpenseBehavior, string>;
   categorySourceLabels: Record<CategorySource, string>;
+  categorySubcategories: SubcategoryRow[];
   hasUsageData: boolean;
   metaLabels: CategoriesListProps["metaLabels"];
   onEdit: (row: CategoryRow) => void;
+  onEditSubcategory: (row: SubcategoryRow) => void;
+  onCreateSubcategory: (parentCategoryId?: string) => void;
   onToggleActive: (row: CategoryRow) => void | Promise<void>;
+  onToggleSubcategoryActive: (row: SubcategoryRow) => void | Promise<void>;
   row: CategoryRow;
   toggleLabels: CategoriesListProps["toggleLabels"];
   usageByCategoryId: Record<string, number>;
+  usageBySubcategoryId: Record<string, number>;
   usageLabels: CategoriesListProps["usageLabels"];
 }) {
   const { hovered, ref } = useHover<HTMLDivElement>();
@@ -360,6 +425,88 @@ function CategoryDesktopRow({
           />
         </Box>
       </Group>
+
+      {categorySubcategories.length > 0 ? (
+        <Stack gap={0} px="sm" pb="sm" pl="lg">
+          {categorySubcategories.map((subcategory) => {
+            const subcategoryUsage = usageBySubcategoryId[subcategory.id] ?? 0;
+
+            return (
+              <Group
+                key={subcategory.id}
+                justify="space-between"
+                align="center"
+                wrap="nowrap"
+                gap="md"
+                py={6}
+                style={{ borderTop: "1px dashed var(--mantine-color-gray-2)" }}
+              >
+                <Box style={{ flex: "1 1 0", minWidth: 0 }}>
+                  <Text size="sm" lineClamp={1}>
+                    {subcategory.name}
+                  </Text>
+                </Box>
+
+                <Stack gap={2} align="flex-start" style={{ width: 160, flexShrink: 0 }}>
+                  <Text size="sm" fw={500}>
+                    {hasUsageData ? usageLabels.count(subcategoryUsage) : usageLabels.none}
+                  </Text>
+                  {hasUsageData && subcategoryUsage > 0 ? (
+                    <Text
+                      component={Link}
+                      href={categoryDrilldownHref(row.type, row.id)}
+                      size="xs"
+                      c="cyan.7"
+                      style={{ textDecoration: "none" }}
+                    >
+                      {usageLabels.viewMovements}
+                    </Text>
+                  ) : null}
+                </Stack>
+
+                <Box style={{ width: 220, flexShrink: 0 }}>
+                  <Text size="xs" c="dimmed">
+                    Subcategoría
+                  </Text>
+                </Box>
+
+                <Box style={{ width: 124, flexShrink: 0 }}>
+                  <CategoryStatusPill
+                    isActive={subcategory.is_active}
+                    activeLabel={metaLabels.active}
+                    inactiveLabel={metaLabels.inactive}
+                  />
+                </Box>
+
+                <Box style={{ width: 92, display: "flex", justifyContent: "flex-end" }}>
+                  <SubcategoryActions
+                    canManageStructure={canManageStructure}
+                    onEdit={onEditSubcategory}
+                    onToggleActive={onToggleSubcategoryActive}
+                    row={subcategory}
+                    toggleLabels={toggleLabels}
+                  />
+                </Box>
+              </Group>
+            );
+          })}
+        </Stack>
+      ) : null}
+
+      {canManageStructure ? (
+        <Group justify="flex-start" px="sm" pb="sm">
+          <Text
+            component="button"
+            type="button"
+            onClick={() => onCreateSubcategory(row.id)}
+            size="xs"
+            c="cyan.7"
+            style={{ background: "none", border: 0, padding: 0, cursor: "pointer" }}
+          >
+            {usageLabels.newSubcategory}
+          </Text>
+        </Group>
+      ) : null}
     </Box>
   );
 }
@@ -369,26 +516,36 @@ function CategoryMobileRow({
   categoryDrilldownHref,
   categoryExpenseBehaviorLabels,
   categorySourceLabels,
+  categorySubcategories,
   hasUsageData,
   metaLabels,
   onEdit,
+  onEditSubcategory,
+  onCreateSubcategory,
   onToggleActive,
+  onToggleSubcategoryActive,
   row,
   toggleLabels,
   usageByCategoryId,
+  usageBySubcategoryId,
   usageLabels,
 }: {
   canManageStructure: boolean;
   categoryDrilldownHref: CategoriesListProps["categoryDrilldownHref"];
   categoryExpenseBehaviorLabels: Record<ExpenseBehavior, string>;
   categorySourceLabels: Record<CategorySource, string>;
+  categorySubcategories: SubcategoryRow[];
   hasUsageData: boolean;
   metaLabels: CategoriesListProps["metaLabels"];
   onEdit: (row: CategoryRow) => void;
+  onEditSubcategory: (row: SubcategoryRow) => void;
+  onCreateSubcategory: (parentCategoryId?: string) => void;
   onToggleActive: (row: CategoryRow) => void | Promise<void>;
+  onToggleSubcategoryActive: (row: SubcategoryRow) => void | Promise<void>;
   row: CategoryRow;
   toggleLabels: CategoriesListProps["toggleLabels"];
   usageByCategoryId: Record<string, number>;
+  usageBySubcategoryId: Record<string, number>;
   usageLabels: CategoriesListProps["usageLabels"];
 }) {
   const usageCount = usageByCategoryId[row.id] ?? 0;
@@ -479,16 +636,66 @@ function CategoryMobileRow({
   }
 
   return (
-    <UnstyledButton
-      onClick={() => onEdit(row)}
-      style={{
-        display: "block",
-        width: "100%",
-        borderBottom: "1px solid var(--mantine-color-gray-2)",
-      }}
-    >
-      {content}
-    </UnstyledButton>
+    <Box style={{ borderBottom: "1px solid var(--mantine-color-gray-2)" }}>
+      <UnstyledButton
+        onClick={() => onEdit(row)}
+        style={{
+          display: "block",
+          width: "100%",
+        }}
+      >
+        {content}
+      </UnstyledButton>
+
+      {categorySubcategories.length > 0 ? (
+        <Stack gap={0} px="sm" pb="sm">
+          {categorySubcategories.map((subcategory) => {
+            const subcategoryUsage = usageBySubcategoryId[subcategory.id] ?? 0;
+
+            return (
+              <Group
+                key={subcategory.id}
+                justify="space-between"
+                align="center"
+                wrap="nowrap"
+                gap="xs"
+                py={6}
+                style={{ borderTop: "1px dashed var(--mantine-color-gray-2)" }}
+              >
+                <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
+                  <Text size="sm" lineClamp={1}>
+                    {subcategory.name}
+                  </Text>
+                  <Text size="xs" c="dimmed">
+                    {hasUsageData ? usageLabels.count(subcategoryUsage) : usageLabels.none}
+                  </Text>
+                </Stack>
+                <SubcategoryActions
+                  canManageStructure={canManageStructure}
+                  onEdit={onEditSubcategory}
+                  onToggleActive={onToggleSubcategoryActive}
+                  row={subcategory}
+                  toggleLabels={toggleLabels}
+                />
+              </Group>
+            );
+          })}
+        </Stack>
+      ) : null}
+
+      <Group px="sm" pb="sm">
+        <Text
+          component="button"
+          type="button"
+          onClick={() => onCreateSubcategory(row.id)}
+          size="xs"
+          c="cyan.7"
+          style={{ background: "none", border: 0, padding: 0, cursor: "pointer" }}
+        >
+          {usageLabels.newSubcategory}
+        </Text>
+      </Group>
+    </Box>
   );
 }
 
@@ -502,12 +709,32 @@ export function CategoriesList({
   isMobile,
   metaLabels,
   onEdit,
+  onEditSubcategory,
+  onCreateSubcategory,
   onToggleActive,
+  onToggleSubcategoryActive,
+  subcategories,
   tableLabels,
   toggleLabels,
   usageByCategoryId,
+  usageBySubcategoryId,
   usageLabels,
 }: CategoriesListProps) {
+  const subcategoriesByCategoryId = useMemo(() => {
+    const nextMap = new Map<string, SubcategoryRow[]>();
+
+    for (const subcategory of subcategories) {
+      const currentRows = nextMap.get(subcategory.category_id);
+      if (currentRows) {
+        currentRows.push(subcategory);
+      } else {
+        nextMap.set(subcategory.category_id, [subcategory]);
+      }
+    }
+
+    return nextMap;
+  }, [subcategories]);
+
   return (
     <Stack gap="md">
       {groupedRows.map((group) => {
@@ -595,13 +822,18 @@ export function CategoriesList({
                     categoryDrilldownHref={categoryDrilldownHref}
                     categoryExpenseBehaviorLabels={categoryExpenseBehaviorLabels}
                     categorySourceLabels={categorySourceLabels}
+                    categorySubcategories={subcategoriesByCategoryId.get(row.id) ?? []}
                     hasUsageData={hasUsageData}
                     metaLabels={metaLabels}
                     onEdit={onEdit}
+                    onEditSubcategory={onEditSubcategory}
+                    onCreateSubcategory={onCreateSubcategory}
                     onToggleActive={onToggleActive}
+                    onToggleSubcategoryActive={onToggleSubcategoryActive}
                     row={row}
                     toggleLabels={toggleLabels}
                     usageByCategoryId={usageByCategoryId}
+                    usageBySubcategoryId={usageBySubcategoryId}
                     usageLabels={usageLabels}
                   />
                 ) : (
@@ -611,13 +843,18 @@ export function CategoriesList({
                     categoryDrilldownHref={categoryDrilldownHref}
                     categoryExpenseBehaviorLabels={categoryExpenseBehaviorLabels}
                     categorySourceLabels={categorySourceLabels}
+                    categorySubcategories={subcategoriesByCategoryId.get(row.id) ?? []}
                     hasUsageData={hasUsageData}
                     metaLabels={metaLabels}
                     onEdit={onEdit}
+                    onEditSubcategory={onEditSubcategory}
+                    onCreateSubcategory={onCreateSubcategory}
                     onToggleActive={onToggleActive}
+                    onToggleSubcategoryActive={onToggleSubcategoryActive}
                     row={row}
                     toggleLabels={toggleLabels}
                     usageByCategoryId={usageByCategoryId}
+                    usageBySubcategoryId={usageBySubcategoryId}
                     usageLabels={usageLabels}
                   />
                 ),

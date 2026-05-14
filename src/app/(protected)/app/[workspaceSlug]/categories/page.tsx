@@ -20,6 +20,9 @@ import { notifications } from "@mantine/notifications";
 import { useForm, useWatch } from "react-hook-form";
 
 import {
+  sortSubcategories,
+} from "@/features/categories/subcategories";
+import {
   categoryExpenseBehaviorOptions,
   createCategoryFormSchema,
   type CategoryFormInputValues,
@@ -38,7 +41,11 @@ import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { CategorySource, Database, ExpenseBehavior, TransactionType } from "@/types/database";
 
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
-type CategoryUsageLiteRow = Pick<Database["public"]["Tables"]["transactions"]["Row"], "category_id">;
+type SubcategoryRow = Database["public"]["Tables"]["category_subcategories"]["Row"];
+type CategoryUsageLiteRow = Pick<
+  Database["public"]["Tables"]["transactions"]["Row"],
+  "category_id" | "subcategory_id"
+>;
 
 type TypeFilter = TransactionType | "all";
 type StatusFilter = "all" | "active" | "inactive";
@@ -76,6 +83,7 @@ function toCategoryDefaults(row?: CategoryRow): CategoryFormValues {
   if (!row) {
     return {
       name: "",
+      parentCategoryId: null,
       type: "expense",
       expenseBehavior: "variable",
     };
@@ -83,8 +91,18 @@ function toCategoryDefaults(row?: CategoryRow): CategoryFormValues {
 
   return {
     name: row.name,
+    parentCategoryId: null,
     type: row.type === "transfer" ? "expense" : row.type,
     expenseBehavior: row.type === "expense" ? (row.expense_behavior ?? "variable") : null,
+  };
+}
+
+function toSubcategoryDefaults(parentCategoryId?: string, row?: SubcategoryRow): CategoryFormValues {
+  return {
+    name: row?.name ?? "",
+    parentCategoryId: row?.category_id ?? parentCategoryId ?? null,
+    type: "expense",
+    expenseBehavior: null,
   };
 }
 
@@ -94,11 +112,14 @@ export default function CategoriesPage() {
   const canManageStructure = canManageCategories(workspace.role);
   const isMobile = useMediaQuery("(max-width: 47.99em)");
   const [rows, setRows] = useState<CategoryRow[]>([]);
+  const [subcategoryRows, setSubcategoryRows] = useState<SubcategoryRow[]>([]);
   const [usageByCategoryId, setUsageByCategoryId] = useState<Record<string, number>>({});
+  const [usageBySubcategoryId, setUsageBySubcategoryId] = useState<Record<string, number>>({});
   const [hasUsageData, setHasUsageData] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<CategoryRow | null>(null);
+  const [editingSubcategoryRow, setEditingSubcategoryRow] = useState<SubcategoryRow | null>(null);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
@@ -165,11 +186,28 @@ export default function CategoriesPage() {
         requiredName: t("common.validation.requiredName"),
         maxNameLength: t("common.validation.maxName80"),
         requiredExpenseBehavior: t("common.forms.category.requiredExpenseBehavior"),
+        invalidParentCategory: t("common.validation.invalidOption"),
       }),
     ),
     defaultValues: toCategoryDefaults(),
   });
   const selectedType = useWatch({ control, name: "type" });
+  const selectedParentCategoryId = useWatch({ control, name: "parentCategoryId" }) as string | null;
+  const categoryById = useMemo(() => new Map(rows.map((row) => [row.id, row])), [rows]);
+  const isSubcategoryMode = editingSubcategoryRow !== null || selectedParentCategoryId !== null;
+  const selectedParentCategory = selectedParentCategoryId
+    ? categoryById.get(selectedParentCategoryId) ?? null
+    : null;
+  const subcategoryParentOptions = useMemo(
+    () =>
+      rows
+        .filter((row) => row.type !== "transfer")
+        .map((row) => ({
+          value: row.id,
+          label: row.is_active ? row.name : `${row.name} (${t("categories.status.inactive")})`,
+        })),
+    [rows, t],
+  );
 
   const loadRows = useCallback(async () => {
     setIsLoading(true);
@@ -180,9 +218,15 @@ export default function CategoriesPage() {
       .eq("workspace_id", workspace.id)
       .order("created_at", { ascending: true });
 
+    const subcategoriesResponse = await supabase
+      .from("category_subcategories")
+      .select("id, workspace_id, category_id, name, is_active, sort_order, created_by, created_at, updated_at")
+      .eq("workspace_id", workspace.id)
+      .order("created_at", { ascending: true });
+
     const usageResponse = await supabase
       .from("transactions")
-      .select("category_id")
+      .select("category_id, subcategory_id")
       .eq("workspace_id", workspace.id);
     setIsLoading(false);
 
@@ -193,7 +237,9 @@ export default function CategoriesPage() {
         message: categoriesResponse.error.message,
       });
       setRows([]);
+      setSubcategoryRows([]);
       setUsageByCategoryId({});
+      setUsageBySubcategoryId({});
       return;
     }
 
@@ -201,6 +247,21 @@ export default function CategoriesPage() {
       sortCategories(a, b, locale),
     );
     const usageCounter: Record<string, number> = {};
+    const subcategoryUsageCounter: Record<string, number> = {};
+
+    if (subcategoriesResponse.error) {
+      notifications.show({
+        color: "red",
+        title: t("categories.notifications.loadSubcategoriesError"),
+        message: subcategoriesResponse.error.message,
+      });
+      setSubcategoryRows([]);
+    } else {
+      const sortedSubcategoryRows = ([...(subcategoriesResponse.data ?? [])] as SubcategoryRow[]).sort(
+        (a, b) => sortSubcategories(a, b, locale),
+      );
+      setSubcategoryRows(sortedSubcategoryRows);
+    }
 
     if (usageResponse.error) {
       setHasUsageData(false);
@@ -208,12 +269,17 @@ export default function CategoriesPage() {
       const usageRows = (usageResponse.data ?? []) as CategoryUsageLiteRow[];
       for (const usageRow of usageRows) {
         usageCounter[usageRow.category_id] = (usageCounter[usageRow.category_id] ?? 0) + 1;
+        if (usageRow.subcategory_id) {
+          subcategoryUsageCounter[usageRow.subcategory_id] =
+            (subcategoryUsageCounter[usageRow.subcategory_id] ?? 0) + 1;
+        }
       }
       setHasUsageData(true);
     }
 
     setRows(sorted);
     setUsageByCategoryId(usageCounter);
+    setUsageBySubcategoryId(subcategoryUsageCounter);
   }, [locale, supabase, t, workspace.id]);
 
   const showPermissionDenied = useCallback(() => {
@@ -236,7 +302,20 @@ export default function CategoriesPage() {
     }
 
     setEditingRow(null);
+    setEditingSubcategoryRow(null);
     reset(toCategoryDefaults());
+    setIsModalOpen(true);
+  }
+
+  function openCreateSubcategoryModal(parentCategoryId?: string) {
+    if (!canManageStructure) {
+      showPermissionDenied();
+      return;
+    }
+
+    setEditingRow(null);
+    setEditingSubcategoryRow(null);
+    reset(toSubcategoryDefaults(parentCategoryId));
     setIsModalOpen(true);
   }
 
@@ -247,13 +326,27 @@ export default function CategoriesPage() {
     }
 
     setEditingRow(row);
+    setEditingSubcategoryRow(null);
     reset(toCategoryDefaults(row));
+    setIsModalOpen(true);
+  }
+
+  function openEditSubcategoryModal(row: SubcategoryRow) {
+    if (!canManageStructure) {
+      showPermissionDenied();
+      return;
+    }
+
+    setEditingRow(null);
+    setEditingSubcategoryRow(row);
+    reset(toSubcategoryDefaults(undefined, row));
     setIsModalOpen(true);
   }
 
   function closeModal() {
     setIsModalOpen(false);
     setEditingRow(null);
+    setEditingSubcategoryRow(null);
     reset(toCategoryDefaults());
   }
 
@@ -366,6 +459,76 @@ export default function CategoriesPage() {
       return;
     }
 
+    if (values.parentCategoryId) {
+      const parentCategory = categoryById.get(values.parentCategoryId);
+      if (!parentCategory) {
+        notifications.show({
+          color: "red",
+          title: t("categories.notifications.createError"),
+          message: t("categories.notifications.invalidParentCategory"),
+        });
+        return;
+      }
+
+      if (editingSubcategoryRow) {
+        const updateResponse = await supabase
+          .from("category_subcategories")
+          .update({
+            name: values.name.trim(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", editingSubcategoryRow.id)
+          .eq("workspace_id", workspace.id);
+
+        if (updateResponse.error) {
+          notifications.show({
+            color: "red",
+            title: t("categories.notifications.saveError"),
+            message: updateResponse.error.message,
+          });
+          return;
+        }
+
+        notifications.show({
+          color: "cyan",
+          title: t("categories.notifications.updatedTitle"),
+          message: t("categories.notifications.subcategoryUpdatedMessage"),
+        });
+      } else {
+        const insertResponse = await supabase.from("category_subcategories").insert({
+          workspace_id: workspace.id,
+          category_id: values.parentCategoryId,
+          name: values.name.trim(),
+          is_active: true,
+          created_by: user.id,
+        });
+
+        if (insertResponse.error) {
+          const isDuplicatedName = insertResponse.error.code === "23505";
+          notifications.show({
+            color: "red",
+            title: t("categories.notifications.createError"),
+            message: isDuplicatedName
+              ? t("categories.notifications.duplicateSubcategoryName")
+              : insertResponse.error.message,
+          });
+          return;
+        }
+
+        notifications.show({
+          color: "cyan",
+          title: t("categories.notifications.createdTitle"),
+          message: t("categories.notifications.subcategoryCreatedMessage", undefined, {
+            categoryName: parentCategory.name,
+          }),
+        });
+      }
+
+      closeModal();
+      await loadRows();
+      return;
+    }
+
     const categoryType =
       editingRow && editingRow.source === "system" ? editingRow.type : values.type;
     const categoryName =
@@ -473,6 +636,42 @@ export default function CategoriesPage() {
         ? t("categories.notifications.deactivatedTitle")
         : t("categories.notifications.activatedTitle"),
       message: t("categories.notifications.statusUpdatedMessage"),
+    });
+
+    setIsLoading(true);
+    await loadRows();
+  }
+
+  async function toggleSubcategoryActive(row: SubcategoryRow) {
+    if (!canManageStructure) {
+      showPermissionDenied();
+      return;
+    }
+
+    const response = await supabase
+      .from("category_subcategories")
+      .update({
+        is_active: !row.is_active,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", row.id)
+      .eq("workspace_id", workspace.id);
+
+    if (response.error) {
+      notifications.show({
+        color: "red",
+        title: t("categories.notifications.toggleError"),
+        message: response.error.message,
+      });
+      return;
+    }
+
+    notifications.show({
+      color: "cyan",
+      title: row.is_active
+        ? t("categories.notifications.deactivatedTitle")
+        : t("categories.notifications.activatedTitle"),
+      message: t("categories.notifications.subcategoryStatusUpdatedMessage"),
     });
 
     setIsLoading(true);
@@ -594,7 +793,11 @@ export default function CategoriesPage() {
             inactive: t("categories.status.inactive"),
           }}
           onEdit={openEditModal}
+          onEditSubcategory={openEditSubcategoryModal}
+          onCreateSubcategory={openCreateSubcategoryModal}
           onToggleActive={toggleActive}
+          onToggleSubcategoryActive={toggleSubcategoryActive}
+          subcategories={subcategoryRows}
           tableLabels={{
             actions: t("categories.table.actions"),
             groupSummary: (total, active) =>
@@ -615,6 +818,7 @@ export default function CategoriesPage() {
             edit: t("categories.edit"),
           }}
           usageByCategoryId={usageByCategoryId}
+          usageBySubcategoryId={usageBySubcategoryId}
           usageLabels={{
             count: (count) =>
               count === 0
@@ -624,6 +828,8 @@ export default function CategoriesPage() {
                     pluralSuffix: count === 1 ? "" : "s",
                   }),
             none: t("categories.usage.none"),
+            newSubcategory: t("categories.newSubcategory"),
+            withoutSubcategory: t("categories.withoutSubcategory"),
             viewMovements: t("categories.viewMovements"),
           }}
         />
@@ -632,7 +838,15 @@ export default function CategoriesPage() {
       <Modal
         opened={isModalOpen}
         onClose={closeModal}
-        title={editingRow ? t("categories.edit") : t("categories.new")}
+        title={
+          editingSubcategoryRow
+            ? t("categories.editSubcategory")
+            : isSubcategoryMode
+              ? t("categories.newSubcategory")
+              : editingRow
+                ? t("categories.edit")
+                : t("categories.new")
+        }
         fullScreen={isMobile}
       >
         <form onSubmit={onSubmit}>
@@ -653,21 +867,43 @@ export default function CategoriesPage() {
               </Text>
             ) : null}
 
-            <NativeSelect
-              label={t("categories.filters.type")}
-              data={categoryTypeSelectData}
-              disabled={!canManageStructure || editingRow?.source === "system"}
-              error={errors.type?.message}
-              {...register("type")}
-            />
+            {isSubcategoryMode ? (
+              <>
+                <NativeSelect
+                  label={t("categories.form.parentCategory")}
+                  data={subcategoryParentOptions}
+                  disabled={!canManageStructure || editingSubcategoryRow !== null}
+                  error={errors.parentCategoryId?.message}
+                  {...register("parentCategoryId")}
+                />
 
-            {editingRow?.source === "system" ? (
-              <Text size="xs" c="dimmed">
-                {t("categories.form.systemTypeLocked")}
-              </Text>
-            ) : null}
+                {selectedParentCategory ? (
+                  <Text size="xs" c="dimmed">
+                    {t("categories.form.inheritsParentType", undefined, {
+                      type: categoryTypeLabels[selectedParentCategory.type],
+                    })}
+                  </Text>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <NativeSelect
+                  label={t("categories.filters.type")}
+                  data={categoryTypeSelectData}
+                  disabled={!canManageStructure || editingRow?.source === "system"}
+                  error={errors.type?.message}
+                  {...register("type")}
+                />
 
-            {selectedType === "expense" ? (
+                {editingRow?.source === "system" ? (
+                  <Text size="xs" c="dimmed">
+                    {t("categories.form.systemTypeLocked")}
+                  </Text>
+                ) : null}
+              </>
+            )}
+
+            {!isSubcategoryMode && selectedType === "expense" ? (
               <NativeSelect
                 label={t("categories.form.expenseBehavior")}
                 description={t("categories.form.expenseBehaviorDescription")}

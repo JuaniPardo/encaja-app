@@ -13,6 +13,7 @@ export interface TransactionSchemaMessages {
   invalidOption: string;
   requiredCategory: string;
   invalidCategory: string;
+  invalidSubcategory: string;
   requiredTransactionDate: string;
   descriptionMaxLength: string;
   notesMaxLength: string;
@@ -28,6 +29,7 @@ const defaultMessages: TransactionSchemaMessages = {
   invalidOption: "Seleccioná una opción válida.",
   requiredCategory: "Seleccioná una categoría.",
   invalidCategory: "Seleccioná una categoría válida.",
+  invalidSubcategory: "Seleccioná una subcategoría válida.",
   requiredTransactionDate: "La fecha de transacción es obligatoria.",
   descriptionMaxLength: "La descripción no puede superar 180 caracteres.",
   notesMaxLength: "Las notas no pueden superar 1000 caracteres.",
@@ -114,6 +116,7 @@ export function createTransactionFormSchema(messages?: Partial<TransactionSchema
       .string()
       .min(1, resolvedMessages.requiredCategory)
       .uuid(resolvedMessages.invalidCategory),
+    subcategoryId: optionalUuid,
     amount: requiredAmount,
     transactionDate: z
       .string()
