@@ -1,3 +1,15 @@
+## [1.7.0] - 2026-05-13
+
+### Added
+- Added optional subcategories per category so each workspace can model finer budget buckets like `Servicios > Luz`, `Agua`, or `Gas`.
+- Added support for budgeting, saving, and copying monthly budget lines both at category level and optional subcategory level.
+- Added optional subcategory assignment in transactions and linked installment purchases while preserving category as the required classification.
+
+### Changed
+- Updated `Presupuesto` to let users expand categories into subcategories while still keeping direct category amounts for items without subcategory.
+- Updated `Categorías` management so owners can create, edit, activate, and deactivate subcategories inside each category from the same workflow.
+- Updated transaction listings, forms, drilldowns, and detail views to surface subcategory context consistently across the app.
+
 ## [1.6.1] - 2026-04-24
 
 ### Changed
