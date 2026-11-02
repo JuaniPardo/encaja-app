@@ -119,6 +119,7 @@ Cada commit termina con su identificador de cambio y cada integración usa `git 
 Antes de publicar:
 
 - [ ] Funcionalidad testeada
+- [ ] CI en verde
 - [ ] No hay errores críticos
 - [ ] Changelog actualizado
 - [ ] Registros de cambio actualizados con la versión

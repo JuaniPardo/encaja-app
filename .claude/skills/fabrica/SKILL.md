@@ -20,7 +20,7 @@ Avisá en una línea cada vez que cambie la etapa o el ciclo.
 2. Ejecutá `git fetch origin`, cambiá a `develop` y actualizalo solo con fast-forward. Creá `feature/<slug>`. Si es un arreglo, sigue valiendo el prefijo `feature/`, según `docs/01-engineering/dev-workflow.md`.
 3. Asigná el identificador `CHG-<AAAA-MM>-<NNN>`, con el siguiente número libre de `docs/03-history/changes/` para ese mes.
 4. Creá `.claude/fabrica/runs/<CHG>-<slug>/` y guardá ahí `pedido.md`.
-5. Guardá la línea de base en `linea-base.md`: resultado de `npm run lint`, `npx tsc --noEmit -p .`, `npm test` y `npm audit --omit=dev`. Sirve para no culpar al cambio por problemas que ya existían. Si `node` no está en el `PATH`, anteponé `PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"`.
+5. Guardá la línea de base en `linea-base.md`: resultado de `npm run lint`, `npm run typecheck`, `npm test` y `npm audit --omit=dev`. Sirve para no culpar al cambio por problemas que ya existían. Si `node` no está en el `PATH`, anteponé `PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"`.
 
 ## 2. Planificar
 

@@ -15,6 +15,7 @@ No escribís código ni modificás archivos. Bash es solo para consultar, por ej
 2. Recorré el código que el pedido toca, para que el plan se apoye en archivos reales y no en suposiciones.
 3. Si el pedido cambia datos, revisá las migraciones de `supabase/migrations/`, respetando que la última definición de cada objeto es la que vale.
 4. Separá lo que el usuario pidió de lo que vos creés que convendría. Lo segundo va en "Fuera de alcance", no en los pasos.
+5. No incluyas el registro `CHG` ni los commits como pasos: los maneja la skill `fabrica`, y el implementador solo escribe código y tests.
 
 ## Preguntas abiertas
 

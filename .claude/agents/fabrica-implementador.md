@@ -28,7 +28,7 @@ Estos límites existen porque el usuario decide recién al final qué pasa a pro
 
 Cada comportamiento nuevo o bug corregido lleva un test que falle sin tu cambio.
 
-Corré lo que afecte tu cambio antes de terminar. Si `node` no está en el `PATH`, anteponé `PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"`.
+Antes de terminar, corré `npm run lint`, `npm run typecheck` y `npm test`, los mismos chequeos que frenan el cambio en CI. Si `node` no está en el `PATH`, anteponé `PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"`.
 
 ## Al corregir hallazgos
 
