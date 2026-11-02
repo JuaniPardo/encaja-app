@@ -60,6 +60,7 @@ Defines what the system is and how it behaves.
 Defines how the system is built and maintained.
 
 - **Dev Workflow** → Conventions, branching, and development practices
+- **Traceability** → Tracing changes, locating bugs, and rolling back
 
 📍 Location: `docs/01-engineering/`
 
@@ -70,6 +71,7 @@ Chronological evolution of the product.
 
 - **MVPs** → Iterative feature development
 - **Releases** → Stable, versioned milestones
+- **Changes** → Record of each change, with its verification and rollback
 
 📍 Location: `docs/03-history/`
 
