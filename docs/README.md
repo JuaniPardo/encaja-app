@@ -61,6 +61,7 @@ Defines how the system is built and maintained.
 
 - **Dev Workflow** → Conventions, branching, and development practices
 - **Traceability** → Tracing changes, locating bugs, and rolling back
+- **Environments** → Production and development setup, and their safety rules
 
 📍 Location: `docs/01-engineering/`
 

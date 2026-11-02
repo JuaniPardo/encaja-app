@@ -1,10 +1,11 @@
 "use client";
 
 import { Button, Center, Paper, Stack, Text } from "@mantine/core";
+import type { ErrorInfo } from "next/error";
 
 import { useI18n } from "@/features/i18n/provider";
 
-export default function ProtectedError({ unstable_retry }: { unstable_retry: () => void }) {
+export default function ProtectedError({ retry }: Pick<ErrorInfo, "retry">) {
   const { t } = useI18n();
 
   return (
@@ -15,7 +16,7 @@ export default function ProtectedError({ unstable_retry }: { unstable_retry: () 
           <Text size="sm" c="dimmed">
             {t("workspace.sessionUnavailable")}
           </Text>
-          <Button onClick={() => unstable_retry()}>{t("common.actions.retry")}</Button>
+          <Button onClick={() => retry()}>{t("common.actions.retry")}</Button>
         </Stack>
       </Paper>
     </Center>

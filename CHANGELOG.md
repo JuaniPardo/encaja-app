@@ -1,3 +1,16 @@
+## [1.7.2] - 2026-11-02
+
+### Security
+- Upgraded Next.js and `eslint-config-next` to 16.4.4 and Zod to 4.6.7, and updated the affected transitive dependencies, which clears all production `npm audit` findings.
+
+### Fixed
+- Changing months quickly in `Presupuesto` now applies only the latest selection.
+- A failed `Presupuesto` load now shows an error with a retry action and blocks editing, instead of leaving the previous month's data editable or reporting that there are no active categories.
+- Updated the protected error screen to the renamed Next.js retry callback, so its retry button keeps working.
+
+### Added
+- Added a guide and a guarded migration script to prepare a separate Supabase development environment.
+
 ## [1.7.1] - 2026-11-02
 
 ### Fixed
