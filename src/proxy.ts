@@ -1,9 +1,12 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { getSupabaseVerifierClient } from "@/lib/supabase/server-verifier";
-import { getAccessTokenFromSessionCookie } from "@/lib/supabase/session-cookie";
-import { SUPABASE_AUTH_STORAGE_KEY } from "@/lib/supabase/config";
+import { getSessionTokensFromCookie } from "@/lib/supabase/session-cookie";
+import { resolveSessionTokens } from "@/lib/supabase/session-refresh";
+import {
+  SUPABASE_AUTH_COOKIE_MAX_AGE_SECONDS,
+  SUPABASE_AUTH_STORAGE_KEY,
+} from "@/lib/supabase/config";
 import { ROUTES } from "@/lib/routes";
 
 const authPages: ReadonlySet<string> = new Set([ROUTES.LOGIN, ROUTES.REGISTER]);
@@ -26,6 +29,16 @@ function clearAuthCookie(response: NextResponse) {
   });
 }
 
+function writeAuthCookie(response: NextResponse, value: string) {
+  response.cookies.set({
+    name: SUPABASE_AUTH_STORAGE_KEY,
+    value,
+    maxAge: SUPABASE_AUTH_COOKIE_MAX_AGE_SECONDS,
+    path: "/",
+    sameSite: "lax",
+  });
+}
+
 function nextWithPathname(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set(pathnameHeader, request.nextUrl.pathname);
@@ -36,20 +49,14 @@ function nextWithPathname(request: NextRequest) {
   });
 }
 
-async function isValidToken(accessToken: string) {
-  const verifier = getSupabaseVerifierClient();
-  const userResponse = await verifier.auth.getUser(accessToken);
-  return !userResponse.error && Boolean(userResponse.data.user);
-}
-
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const accessToken = getAccessTokenFromSessionCookie(request.headers.get("cookie"));
+  const tokens = getSessionTokensFromCookie(request.headers.get("cookie"));
 
   const requiresAuth = pathname.startsWith(ROUTES.APP) || pathname === ROUTES.ROOT;
   const isAuthPage = authPages.has(pathname);
 
-  if (!accessToken) {
+  if (!tokens) {
     if (requiresAuth) {
       return redirectTo(ROUTES.LOGIN, request);
     }
@@ -57,9 +64,13 @@ export async function proxy(request: NextRequest) {
     return nextWithPathname(request);
   }
 
-  const tokenIsValid = await isValidToken(accessToken);
+  const resolution = await resolveSessionTokens(tokens);
 
-  if (!tokenIsValid) {
+  if (resolution.status === "unverified") {
+    return nextWithPathname(request);
+  }
+
+  if (resolution.status === "rejected") {
     if (requiresAuth) {
       const response = redirectTo(ROUTES.LOGIN, request);
       clearAuthCookie(response);
@@ -73,6 +84,18 @@ export async function proxy(request: NextRequest) {
     }
 
     return nextWithPathname(request);
+  }
+
+  if (resolution.status === "renewed") {
+    const value = JSON.stringify(resolution.session);
+    request.cookies.set(SUPABASE_AUTH_STORAGE_KEY, value);
+
+    const response =
+      isAuthPage || pathname === ROUTES.ROOT
+        ? redirectTo(ROUTES.APP, request)
+        : nextWithPathname(request);
+    writeAuthCookie(response, value);
+    return response;
   }
 
   if (isAuthPage || pathname === ROUTES.ROOT) {

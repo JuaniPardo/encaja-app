@@ -6,6 +6,7 @@ import type { User } from "@supabase/supabase-js";
 import { defaultLocale, localeCookieName, normalizeLocale, type Locale } from "@/features/i18n/config";
 import { pickActiveWorkspace } from "@/features/workspace/context-routing";
 import { getWorkspaceSlugFromPathname } from "@/features/workspace/routing";
+import { isDefinitiveAuthRejection } from "@/lib/supabase/auth-errors";
 import { createSupabaseServerClient } from "@/lib/supabase/server-client";
 import { getAccessTokenFromSessionCookie } from "@/lib/supabase/session-cookie";
 import {
@@ -33,6 +34,10 @@ export async function resolveInitialWorkspaceContext(): Promise<InitialWorkspace
 
   const supabase = createSupabaseServerClient(accessToken);
   const userResponse = await supabase.auth.getUser(accessToken);
+
+  if (userResponse.error && !isDefinitiveAuthRejection(userResponse.error)) {
+    throw new Error("No se pudo validar la sesión");
+  }
 
   if (userResponse.error || !userResponse.data.user) {
     redirect("/login");

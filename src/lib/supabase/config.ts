@@ -1,4 +1,5 @@
 export const SUPABASE_AUTH_STORAGE_KEY = "encaja-auth-token";
+export const SUPABASE_AUTH_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 
 export function getSupabaseConfig() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

@@ -5,6 +5,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 import {
   getSupabaseConfig,
+  SUPABASE_AUTH_COOKIE_MAX_AGE_SECONDS,
   SUPABASE_AUTH_STORAGE_KEY,
 } from "@/lib/supabase/config";
 
@@ -13,8 +14,6 @@ interface BrowserStorageAdapter {
   setItem: (key: string, value: string) => void;
   removeItem: (key: string) => void;
 }
-
-const oneYearInSeconds = 60 * 60 * 24 * 365;
 
 function getCookieValue(key: string) {
   if (typeof document === "undefined") {
@@ -46,7 +45,7 @@ const cookieStorage: BrowserStorageAdapter = {
       return;
     }
 
-    document.cookie = `${key}=${encodeURIComponent(value)}; path=/; max-age=${oneYearInSeconds}; samesite=lax`;
+    document.cookie = `${key}=${encodeURIComponent(value)}; path=/; max-age=${SUPABASE_AUTH_COOKIE_MAX_AGE_SECONDS}; samesite=lax`;
   },
   removeItem(key) {
     if (typeof document === "undefined") {
@@ -77,4 +76,28 @@ export function getSupabaseBrowserClient() {
   });
 
   return browserClient;
+}
+
+async function trySignOut(scope: "global" | "local") {
+  try {
+    const { error } = await getSupabaseBrowserClient().auth.signOut({ scope });
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+// auth-js conserva la sesión si falla /logout o el refresh previo. Es solo para cuando la persona
+// pide salir: ante un fallo de getUser, borrar la cookie cerraría la sesión por un error transitorio.
+export async function signOutBrowserSession() {
+  if (await trySignOut("global")) {
+    return;
+  }
+
+  cookieStorage.removeItem(SUPABASE_AUTH_STORAGE_KEY);
+
+  // Sin sesión guardada, auth-js omite /logout y solo limpia su estado y emite SIGNED_OUT.
+  if (!(await trySignOut("local"))) {
+    cookieStorage.removeItem(SUPABASE_AUTH_STORAGE_KEY);
+  }
 }
