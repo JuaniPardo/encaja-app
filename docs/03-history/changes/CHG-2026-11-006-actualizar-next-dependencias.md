@@ -2,10 +2,10 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Integrado |
+| Estado | En producción |
 | Fecha | 2026-11-02 |
 | Rama | `feature/actualizar-next-dependencias` |
-| Release | Pendiente |
+| Release | v1.7.2 |
 | Tarea relacionada | Ninguna |
 
 ## Pedido
@@ -49,12 +49,12 @@ Ninguna.
 
 ## No verificado
 
-Nada se ejecutó en un navegador ni contra Supabase. Sin probar:
+Las revisiones de la fábrica no probaron en un navegador ni contra Supabase. El dueño informó una prueba manual en develop antes del release, sin detalle de los casos cubiertos. Sin confirmación específica:
 
 - `budget/page.tsx`: el cableado no tiene tests; solo se cubren `load-state.ts` y la alerta. Cambio rápido de mes, guardar, copiar, revertir y reintentar con la red cortada.
 - "Reintentar" de `error.tsx` dentro de Next real.
 - Modal de borrar workspace e insights, cambiados sin tests.
-- `npm ci` en Linux hasta que corra el CI. Versión de Node en Vercel.
+- Versión de Node en Vercel, aunque el despliegue de develop compiló. `npm ci` en Linux quedó confirmado por el CI.
 - Login, renovación de sesión y redirecciones con Next 16.4.4.
 
 ## Qué vigilar
