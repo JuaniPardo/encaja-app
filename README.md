@@ -141,6 +141,7 @@ Nota para entorno Codex: puede requerir `PATH="/usr/local/bin:/opt/homebrew/bin:
 - `npm run dev`: entorno local
 - `npm run build`: build de producción
 - `npm run lint`: chequeo estático
+- `npm run typecheck`: chequeo de tipos
 - `npm run test`: tests de unidad (Vitest)
 
 ## Estructura principal del proyecto

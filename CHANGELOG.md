@@ -1,3 +1,15 @@
+## [1.7.1] - 2026-11-02
+
+### Fixed
+- Expired sessions now renew automatically in the proxy instead of sending users back to login while their refresh token is still valid.
+- Temporary network or auth failures no longer end the session; a retry screen is shown when the session cannot be validated.
+- Signing out now removes the browser session even when the logout request fails.
+- Fixed the type errors reported by `tsc` in workspace tests.
+
+### Added
+- Added a `typecheck` script and a CI workflow that runs lint, types, tests, and build.
+- Added the `/fabrica` software factory for Claude Code and per-change traceability records, with a guide for locating bugs and rolling back.
+
 ## [1.7.0] - 2026-05-13
 
 ### Added
