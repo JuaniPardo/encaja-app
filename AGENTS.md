@@ -36,8 +36,10 @@ La aplicación está diseñada para comenzar como una experiencia simple, pero c
   - `PATH="/usr/local/bin:/opt/homebrew/bin:$PATH" npm run build`
 - Nota operativa: el build puede requerir acceso de red para descargar Google Fonts.
 - Supabase CLI (ruta operativa en este repo): `/tmp/supabase-cli/supabase`
-  - Ver estado de migraciones: `/tmp/supabase-cli/supabase migration list`
-  - Aplicar migraciones remotas: `/tmp/supabase-cli/supabase db push --yes`
+  - ⚠️ Sin `--db-url`, estos comandos apuntan al proyecto enlazado, que es producción.
+  - Ver estado de migraciones en producción: `/tmp/supabase-cli/supabase migration list`
+  - Aplicar migraciones en producción, solo en un release y con confirmación explícita: `/tmp/supabase-cli/supabase db push --yes`
+  - Aplicar migraciones en desarrollo: `scripts/supabase-dev-migrate.sh`, según `/docs/01-engineering/environments.md`
   - Si el binario no existe, reinstalar en esa ruta:
     - `rm -rf /tmp/supabase-cli && mkdir -p /tmp/supabase-cli`
     - `cd /tmp/supabase-cli && curl -fL https://github.com/supabase/cli/releases/download/v2.90.0/supabase_darwin_arm64.tar.gz -o supabase.tar.gz`
