@@ -48,7 +48,7 @@ Ninguna.
 
 ## No verificado
 
-El workflow nunca corrió en GitHub Actions: solo se validó su sintaxis y sus comandos en local. Se ejecuta recién con el primer push.
+Nada pendiente. El workflow pasó en GitHub Actions en su primera ejecución, el 2026-11-02, sobre el commit `14c5b13`.
 
 ## Qué vigilar
 

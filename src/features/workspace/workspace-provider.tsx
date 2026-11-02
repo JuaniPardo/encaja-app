@@ -25,7 +25,10 @@ import {
   getWorkspaceSlugFromPathname,
 } from "@/features/workspace/routing";
 import { LAST_WORKSPACE_SLUG_STORAGE_KEY } from "@/features/workspace/storage";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import {
+  getSupabaseBrowserClient,
+  signOutBrowserSession,
+} from "@/lib/supabase/browser-client";
 import {
   bootstrapUserWorkspace,
   createDemoWorkspaceForUser,
@@ -381,7 +384,7 @@ export function WorkspaceProvider({
   );
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    await signOutBrowserSession();
     setState({
       isInitializing: false,
       errorMessage: null,
@@ -390,7 +393,7 @@ export function WorkspaceProvider({
       workspace: null,
     });
     router.replace("/login");
-  }, [router, supabase]);
+  }, [router]);
 
   const setUserLanguage = useCallback(
     async (language: Locale) => {
