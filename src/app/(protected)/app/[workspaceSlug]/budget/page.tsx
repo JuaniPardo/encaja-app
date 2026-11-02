@@ -48,6 +48,7 @@ import {
 import { buildMonthRange } from "@/features/dashboard/lib/dashboard-math";
 import {
   buildMonthOptions,
+  getCurrencyFormatOptions,
   localeCompareByName,
   mapTransactionTypeLabel,
   monthLabelFromOptions,
@@ -204,8 +205,7 @@ export default function BudgetPage() {
 
   const currencyFormatter = useMemo(() => {
     return new Intl.NumberFormat(intlLocale, {
-      style: "currency",
-      currency: currencyCode || "ARS",
+      ...getCurrencyFormatOptions(currencyCode),
       minimumFractionDigits: showCents ? 2 : 0,
       maximumFractionDigits: showCents ? 2 : 0,
     });
@@ -1068,6 +1068,7 @@ export default function BudgetPage() {
                                     spentAmount={spentByLine[rootLine.key] ?? 0}
                                     spentByLine={spentByLine}
                                     currencyFormatter={currencyFormatter}
+                                    currencyCode={currencyCode}
                                     isMobile={Boolean(isMobile)}
                                     canManageStructure={canManageStructure && isPeriodReady}
                                     drilldownHref={categoryDrilldownHref(typeKey, category.id)}

@@ -8,6 +8,7 @@ import {
 } from "@/features/categories/subcategories";
 import {
   buildMonthOptions,
+  getCurrencyFormatOptions,
   localeCompareByName,
   mapTransactionTypeLabel,
 } from "@/features/i18n/formatting";
@@ -122,8 +123,7 @@ export function useTransactionsData() {
 
   const currencyFormatter = useMemo(() => {
     return new Intl.NumberFormat(intlLocale, {
-      style: "currency",
-      currency: currencyCode || "ARS",
+      ...getCurrencyFormatOptions(currencyCode),
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
@@ -131,8 +131,7 @@ export function useTransactionsData() {
 
   const roundedCurrencyFormatter = useMemo(() => {
     return new Intl.NumberFormat(intlLocale, {
-      style: "currency",
-      currency: currencyCode || "ARS",
+      ...getCurrencyFormatOptions(currencyCode),
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     });

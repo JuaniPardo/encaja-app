@@ -16,3 +16,4 @@ Los cambios anteriores a CHG-2026-11-001 no tienen registro: se rastrean con los
 | [CHG-2026-11-004](CHG-2026-11-004-renovar-sesion-proxy.md) | 2026-11-02 | Renovar la sesión en el proxy | En producción | v1.7.1 | No |
 | [CHG-2026-11-005](CHG-2026-11-005-entorno-supabase-dev.md) | 2026-11-02 | Entorno de Supabase para desarrollo | En producción | v1.7.2 | No |
 | [CHG-2026-11-006](CHG-2026-11-006-actualizar-next-dependencias.md) | 2026-11-02 | Actualizar Next y dependencias vulnerables | En producción | v1.7.2 | No |
+| [CHG-2026-11-007](CHG-2026-11-007-moneda-boliviano.md) | 2026-11-02 | Moneda boliviano (Bs) | Integrado | Pendiente | No |
