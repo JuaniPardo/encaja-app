@@ -21,8 +21,8 @@ function buildMonthRange(year: number, month: number) {
   return { start, end };
 }
 
-function filterSeedRowsByMonth(
-  rows: Array<{ transactionDate: string; effectiveDate: string | null }>,
+function filterSeedRowsByMonth<Row extends { transactionDate: string; effectiveDate: string | null }>(
+  rows: Row[],
   year: number,
   month: number,
 ) {
