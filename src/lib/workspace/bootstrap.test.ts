@@ -7,6 +7,10 @@ import {
 } from "@/lib/workspace/bootstrap";
 import type { Database } from "@/types/database";
 
+type RpcRow =
+  | Database["public"]["Functions"]["create_workspace_with_defaults"]["Returns"][number]
+  | Database["public"]["Functions"]["delete_workspace"]["Returns"][number];
+
 function buildSupabaseMock(options?: { existingDemo?: boolean }) {
   const upsert = vi.fn(async () => ({ error: null }));
   const workspacesLimit = vi.fn(async () => ({
@@ -29,7 +33,7 @@ function buildSupabaseMock(options?: { existingDemo?: boolean }) {
     return {};
   });
 
-  const rpc = vi.fn(async () => ({
+  const rpc = vi.fn(async (): Promise<{ error: null; data: RpcRow[] }> => ({
     error: null,
     data: [
       {
