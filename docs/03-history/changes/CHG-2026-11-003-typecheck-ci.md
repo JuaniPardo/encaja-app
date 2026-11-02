@@ -2,10 +2,10 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Integrado |
+| Estado | En producción |
 | Fecha | 2026-11-02 |
 | Rama | `feature/typecheck-ci` |
-| Release | Pendiente |
+| Release | v1.7.1 |
 | Tarea relacionada | Depende de CHG-2026-11-002 |
 
 ## Pedido

@@ -2,10 +2,10 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Integrado |
+| Estado | En producción |
 | Fecha | 2026-11-02 |
 | Rama | `feature/corregir-tipos-tests` |
-| Release | Pendiente |
+| Release | v1.7.1 |
 | Tarea relacionada | Ninguna |
 
 ## Pedido

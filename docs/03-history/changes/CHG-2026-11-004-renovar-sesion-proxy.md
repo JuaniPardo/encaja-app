@@ -2,10 +2,10 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Integrado |
+| Estado | En producción |
 | Fecha | 2026-11-02 |
 | Rama | `feature/renovar-sesion-proxy` |
-| Release | Pendiente |
+| Release | v1.7.1 |
 | Tarea relacionada | Ninguna |
 
 ## Pedido
@@ -47,7 +47,7 @@ Ninguna.
 
 ## No verificado
 
-No se probó contra Supabase real ni en un navegador real. Sin probar:
+Las revisiones de la fábrica no probaron contra Supabase real ni en un navegador real. Un rechazo de tokens inválidos se comprobó en develop contra Supabase real, y el dueño informó una prueba manual en develop antes del release, sin detalle de los casos cubiertos. Sigue sin confirmación específica:
 
 - Renovación real, rotación de tokens y pedidos simultáneos.
 - *Reuse interval* mayor a 0 en el proyecto; hay que confirmarlo en el dashboard.
