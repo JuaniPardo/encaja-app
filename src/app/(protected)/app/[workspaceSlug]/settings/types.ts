@@ -20,6 +20,7 @@ export const WORKSPACE_CURRENCY_CODES = [
   "MXN",
   "COP",
   "PEN",
+  "BOB",
 ] as const;
 
 export function getMemberDisplayName(member: WorkspaceMemberSummary) {

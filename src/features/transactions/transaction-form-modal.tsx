@@ -30,6 +30,7 @@ import {
 import {
   transactionTypeMantineColor,
 } from "@/features/transactions/type-colors";
+import { getCurrencyInputPrefix } from "@/features/i18n/formatting";
 import { useI18n } from "@/features/i18n/provider";
 import type { Database, TransactionType } from "@/types/database";
 import classes from "./transaction-form-modal.module.css";
@@ -57,6 +58,7 @@ type TransactionFormModalProps = {
   quickPaymentMethodSelectData: Array<{ value: string; label: string }>;
   shouldShowQuickPaymentSetup: boolean;
   initialValues: TransactionFormInputValues;
+  currencyCode: string;
   onSubmit: (values: TransactionFormValues) => Promise<void>;
 };
 
@@ -75,9 +77,11 @@ export function TransactionFormModal({
   quickPaymentMethodSelectData,
   shouldShowQuickPaymentSetup,
   initialValues,
+  currencyCode,
   onSubmit,
 }: TransactionFormModalProps) {
   const { t } = useI18n();
+  const amountPrefix = getCurrencyInputPrefix(currencyCode);
 
   const {
     register,
@@ -346,10 +350,10 @@ export function TransactionFormModal({
                   }}
                   leftSection={
                     <Text size="xs" c="dimmed" fw={700}>
-                      $
+                      {amountPrefix.symbol}
                     </Text>
                   }
-                  leftSectionWidth={24}
+                  leftSectionWidth={amountPrefix.width}
                   styles={{ input: { textAlign: "right", fontVariantNumeric: "tabular-nums" } }}
                 />
               )}

@@ -9,6 +9,7 @@ import {
 } from "@/features/budget/amount-format";
 import type { BudgetFormInputValues } from "@/features/budget/schema";
 import type { CategorySubcategoryRow } from "@/features/categories/subcategories";
+import { getCurrencyInputPrefix } from "@/features/i18n/formatting";
 import { useI18n } from "@/features/i18n/provider";
 import { transactionTypeColorShade, transactionTypeMantineColor } from "@/features/transactions/type-colors";
 import type { Database } from "@/types/database";
@@ -28,6 +29,7 @@ type CategoryBudgetRowProps = {
   spentAmount: number;
   spentByLine: Record<string, number>;
   currencyFormatter: Intl.NumberFormat;
+  currencyCode: string;
   isMobile: boolean;
   canManageStructure: boolean;
   drilldownHref: string;
@@ -40,6 +42,7 @@ export function CategoryBudgetRow({
   spentAmount,
   spentByLine,
   currencyFormatter,
+  currencyCode,
   isMobile,
   canManageStructure,
   drilldownHref,
@@ -52,6 +55,7 @@ export function CategoryBudgetRow({
   } = useFormContext<BudgetFormInputValues>();
   const accentColor = transactionTypeMantineColor[category.type];
   const hasSubcategories = subcategoryLines.length > 0;
+  const amountPrefix = getCurrencyInputPrefix(currencyCode);
 
   const renderBudgetLine = ({
     index,
@@ -124,10 +128,10 @@ export function CategoryBudgetRow({
                   error={errors.items?.[index]?.amount?.message}
                   leftSection={
                     <Text size="xs" c="dimmed" fw={700}>
-                      $
+                      {amountPrefix.symbol}
                     </Text>
                   }
-                  leftSectionWidth={24}
+                  leftSectionWidth={amountPrefix.width}
                   styles={{
                     input: {
                       textAlign: "right",

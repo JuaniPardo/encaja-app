@@ -20,7 +20,7 @@ import { LinkedWorkspaceSummaryCard } from "@/features/dashboard/components/link
 import { useDashboardData } from "@/features/dashboard/hooks/use-dashboard-data";
 import { useDashboardViewModel } from "@/features/dashboard/hooks/use-dashboard-view-model";
 import { useDashboardResponsive } from "@/features/dashboard/lib/dashboard-responsive";
-import { buildMonthOptions } from "@/features/i18n/formatting";
+import { buildMonthOptions, getCurrencyFormatOptions } from "@/features/i18n/formatting";
 import { useI18n } from "@/features/i18n/provider";
 import { useInsightsV2 } from "@/features/insights/use-insights-v2";
 import { canManageWorkspaceSettings } from "@/features/workspace/permissions";
@@ -82,8 +82,7 @@ export default function DashboardPage() {
 
   const currencyFormatter = useMemo(() => {
     return new Intl.NumberFormat(intlLocale, {
-      style: "currency",
-      currency: currencyCode || "ARS",
+      ...getCurrencyFormatOptions(currencyCode),
       minimumFractionDigits: showCents ? 2 : 0,
       maximumFractionDigits: showCents ? 2 : 0,
     });
@@ -129,8 +128,7 @@ export default function DashboardPage() {
 
   const compactCurrencyFormatter = useMemo(() => {
     return new Intl.NumberFormat(intlLocale, {
-      style: "currency",
-      currency: currencyCode || "ARS",
+      ...getCurrencyFormatOptions(currencyCode),
       notation: "compact",
       maximumFractionDigits: 1,
     });

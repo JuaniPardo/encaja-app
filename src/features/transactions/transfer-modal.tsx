@@ -23,6 +23,7 @@ import {
   parseBudgetAmount,
   sanitizeBudgetTypingValue,
 } from "@/features/budget/amount-format";
+import { getCurrencyInputPrefix } from "@/features/i18n/formatting";
 import { useI18n } from "@/features/i18n/provider";
 import { resolveTransferSystemCategoryKey } from "@/features/transactions/transfer-category";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
@@ -71,6 +72,7 @@ interface TransferModalProps {
   opened: boolean;
   onClose: () => void;
   paymentMethods: PaymentMethodRow[];
+  currencyCode: string;
   onSuccess: () => void;
 }
 
@@ -85,10 +87,12 @@ export function TransferModal({
   opened,
   onClose,
   paymentMethods,
+  currencyCode,
   onSuccess,
 }: TransferModalProps) {
   const { supabase, workspace } = useWorkspace();
   const { t } = useI18n();
+  const amountPrefix = getCurrencyInputPrefix(currencyCode);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const transferSchema = useMemo(() => createTransferSchema(t), [t]);
 
@@ -302,10 +306,10 @@ export function TransferModal({
                 }}
                 leftSection={
                   <Text size="xs" c="dimmed" fw={700}>
-                    $
+                    {amountPrefix.symbol}
                   </Text>
                 }
-                leftSectionWidth={24}
+                leftSectionWidth={amountPrefix.width}
                 styles={{ input: { textAlign: "right", fontVariantNumeric: "tabular-nums" } }}
               />
             )}
