@@ -2,10 +2,10 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Integrado |
+| Estado | En producción |
 | Fecha | 2026-11-02 |
 | Rama | `feature/moneda-boliviano` |
-| Release | Pendiente |
+| Release | v1.8.0 |
 | Tarea relacionada | Ninguna |
 
 ## Pedido
@@ -44,7 +44,7 @@ Ninguna.
 
 ## No verificado
 
-No se probó en un navegador ni contra Supabase:
+Las revisiones de la fábrica no probaron en un navegador ni contra Supabase. El dueño informó una prueba manual en develop antes del release, sin detalle de los casos cubiertos. Sin confirmación específica:
 
 - Guardar BOB, recargar y que `currency_code` quede en `BOB`. La conclusión de que no hay restricciones sale de las migraciones del repo; no se consultó la base. Debe probarse con un owner.
 - Que los navegadores muestren `Bs`: solo se comprobó en Node 20.9 y 22. Con otros datos se vería `BOB`, sin error.
