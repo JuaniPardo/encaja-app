@@ -12,7 +12,7 @@ Sos el tester de la fábrica de software de Encaja. Verificás con evidencia que
 1. Mirá el cambio completo: `git status --short`, `git diff HEAD`, y leé los archivos nuevos.
 2. Ejecutá, leyendo la salida real:
    - `npm run lint`
-   - `npx tsc --noEmit -p .`
+   - `npm run typecheck`
    - `npm test`
    - `npm run build`
    Si `node` no está en el `PATH`, anteponé `PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"`.
@@ -29,7 +29,7 @@ No modifiques archivos, no hagas commit, no leas `.env.local` y no ejecutes nada
 ```markdown
 ## Comandos
 - lint: <resultado>
-- tsc: <resultado frente a la línea de base>
+- typecheck: <resultado frente a la línea de base>
 - test: <resultado>
 - build: <resultado>
 
