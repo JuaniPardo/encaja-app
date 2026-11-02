@@ -22,8 +22,19 @@ import { FormProvider, useForm, useWatch } from "react-hook-form";
 
 import { CategoryBudgetRow } from "@/features/budget/components/category-budget-row";
 import { BudgetGlobalSummary } from "@/features/budget/components/budget-global-summary";
+import { BudgetLoadErrorAlert } from "@/features/budget/components/budget-load-error-alert";
 import { BudgetSummaryPanel } from "@/features/budget/components/budget-summary-panel";
 import { parseBudgetAmount } from "@/features/budget/amount-format";
+import {
+  BudgetLoadError,
+  buildBaseLoadKey,
+  buildPeriodLoadKey,
+  deriveLoadStatus,
+  hasFailedResponse,
+  resolveBudgetLoadNotice,
+  startLatestLoad,
+  type LoadSettlement,
+} from "@/features/budget/load-state";
 import {
   createBudgetFormSchema,
   type BudgetFormInputValues,
@@ -78,6 +89,20 @@ type GroupedCategoryBudget = {
 
 type GroupedCategories = Record<TransactionType, GroupedCategoryBudget[]>;
 
+type PeriodSnapshot = {
+  periodId: string | null;
+  periodItems: BudgetItemLiteRow[];
+  spentByCategory: Record<string, number>;
+  spentByLine: Record<string, number>;
+};
+
+const emptyPeriodSnapshot: PeriodSnapshot = {
+  periodId: null,
+  periodItems: [],
+  spentByCategory: {},
+  spentByLine: {},
+};
+
 const typeOrder: Record<TransactionType, number> = {
   income: 0,
   expense: 1,
@@ -124,12 +149,32 @@ export default function BudgetPage() {
   const [subcategories, setSubcategories] = useState<CategorySubcategoryRow[]>([]);
   const [periodId, setPeriodId] = useState<string | null>(null);
   const [periodHasItems, setPeriodHasItems] = useState(false);
-  const [isBootstrapping, setIsBootstrapping] = useState(true);
-  const [isPeriodLoading, setIsPeriodLoading] = useState(true);
+  const [baseLoad, setBaseLoad] = useState<LoadSettlement | null>(null);
+  const [baseReloadCount, setBaseReloadCount] = useState(0);
+  const [periodLoad, setPeriodLoad] = useState<LoadSettlement | null>(null);
+  const [periodReloadCount, setPeriodReloadCount] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
   const [spentByCategory, setSpentByCategory] = useState<Record<string, number>>({});
   const [spentByLine, setSpentByLine] = useState<Record<string, number>>({});
+
+  const baseLoadKey = buildBaseLoadKey(workspace.id, locale, baseReloadCount);
+  const periodLoadKey = buildPeriodLoadKey({
+    baseLoadKey,
+    year: selectedYear,
+    month: selectedMonth,
+    reloadCount: periodReloadCount,
+  });
+  const baseLoadStatus = deriveLoadStatus(baseLoadKey, baseLoad);
+  const isBootstrapping = baseLoadStatus === "loading";
+  const periodLoadStatus = deriveLoadStatus(periodLoadKey, periodLoad);
+  const isPeriodLoading = periodLoadStatus === "loading";
+  const isPeriodReady = periodLoadStatus === "ready";
+  const loadNotice = resolveBudgetLoadNotice({
+    baseLoad,
+    periodLoad,
+    hasPeriod: periodId !== null,
+  });
 
   const methods = useForm<BudgetFormInputValues, unknown, BudgetFormValues>({
     resolver: zodResolver(
@@ -288,9 +333,7 @@ export default function BudgetPage() {
     t("common.messages.month"),
   )} ${selectedYear}`;
 
-  const loadBaseData = useCallback(async () => {
-    setIsBootstrapping(true);
-
+  const fetchBaseData = useCallback(async () => {
     const categoriesResponse = await supabase
       .from("categories")
       .select("id, name, type, is_active, sort_order")
@@ -311,66 +354,73 @@ export default function BudgetPage() {
       .eq("workspace_id", workspace.id)
       .maybeSingle();
 
-    if (categoriesResponse.error) {
-      notifications.show({
-        color: "red",
-        title: t("budget.notifications.loadActiveCategoriesError"),
-        message: categoriesResponse.error.message,
-      });
-      setCategories([]);
-    } else {
-      const categoryRows = (categoriesResponse.data ?? []) as CategoryRow[];
-      const sortedCategories = [...categoryRows].sort((a: CategoryRow, b: CategoryRow) => {
-        const typeDiff = typeOrder[a.type] - typeOrder[b.type];
-        if (typeDiff !== 0) {
-          return typeDiff;
-        }
+    return { categoriesResponse, subcategoriesResponse, settingsResponse };
+  }, [supabase, workspace.id]);
 
-        const sortOrderA = a.sort_order ?? Number.MAX_SAFE_INTEGER;
-        const sortOrderB = b.sort_order ?? Number.MAX_SAFE_INTEGER;
-        if (sortOrderA !== sortOrderB) {
-          return sortOrderA - sortOrderB;
-        }
+  const applyBaseData = useCallback(
+    ({
+      categoriesResponse,
+      subcategoriesResponse,
+      settingsResponse,
+    }: Awaited<ReturnType<typeof fetchBaseData>>) => {
+      if (categoriesResponse.error) {
+        notifications.show({
+          color: "red",
+          title: t("budget.notifications.loadActiveCategoriesError"),
+          message: categoriesResponse.error.message,
+        });
+        setCategories([]);
+      } else {
+        const categoryRows = (categoriesResponse.data ?? []) as CategoryRow[];
+        const sortedCategories = [...categoryRows].sort((a: CategoryRow, b: CategoryRow) => {
+          const typeDiff = typeOrder[a.type] - typeOrder[b.type];
+          if (typeDiff !== 0) {
+            return typeDiff;
+          }
 
-        return localeCompareByName(a.name, b.name, locale);
-      });
+          const sortOrderA = a.sort_order ?? Number.MAX_SAFE_INTEGER;
+          const sortOrderB = b.sort_order ?? Number.MAX_SAFE_INTEGER;
+          if (sortOrderA !== sortOrderB) {
+            return sortOrderA - sortOrderB;
+          }
 
-      setCategories(sortedCategories);
-    }
+          return localeCompareByName(a.name, b.name, locale);
+        });
 
-    if (subcategoriesResponse.error) {
-      notifications.show({
-        color: "red",
-        title: t("budget.notifications.loadSubcategoriesError"),
-        message: subcategoriesResponse.error.message,
-      });
-      setSubcategories([]);
-    } else {
-      setSubcategories((subcategoriesResponse.data ?? []) as CategorySubcategoryRow[]);
-    }
+        setCategories(sortedCategories);
+      }
 
-    if (settingsResponse.error) {
-      notifications.show({
-        color: "red",
-        title: t("budget.notifications.loadSettingsError"),
-        message: settingsResponse.error.message,
-      });
-      setStartYear(new Date().getFullYear());
-      setCurrencyCode("ARS");
-      setShowCents(false);
-    } else {
-      const settingsRow = settingsResponse.data as WorkspaceSettingsRow | null;
-      setStartYear(settingsRow?.start_year ?? new Date().getFullYear());
-      setCurrencyCode(settingsRow?.currency_code ?? "ARS");
-      setShowCents(settingsRow?.show_cents ?? false);
-    }
+      if (subcategoriesResponse.error) {
+        notifications.show({
+          color: "red",
+          title: t("budget.notifications.loadSubcategoriesError"),
+          message: subcategoriesResponse.error.message,
+        });
+        setSubcategories([]);
+      } else {
+        setSubcategories((subcategoriesResponse.data ?? []) as CategorySubcategoryRow[]);
+      }
 
-    setIsBootstrapping(false);
-  }, [locale, supabase, t, workspace.id]);
+      if (settingsResponse.error) {
+        notifications.show({
+          color: "red",
+          title: t("budget.notifications.loadSettingsError"),
+          message: settingsResponse.error.message,
+        });
+        setStartYear(new Date().getFullYear());
+        setCurrencyCode("ARS");
+        setShowCents(false);
+      } else {
+        const settingsRow = settingsResponse.data as WorkspaceSettingsRow | null;
+        setStartYear(settingsRow?.start_year ?? new Date().getFullYear());
+        setCurrencyCode(settingsRow?.currency_code ?? "ARS");
+        setShowCents(settingsRow?.show_cents ?? false);
+      }
+    },
+    [locale, t],
+  );
 
-  const loadSelectedPeriod = useCallback(async () => {
-    setIsPeriodLoading(true);
-
+  const fetchSelectedPeriod = useCallback(async (): Promise<PeriodSnapshot> => {
     const periodResponse = await supabase
       .from("budget_periods")
       .select("id")
@@ -380,61 +430,29 @@ export default function BudgetPage() {
       .maybeSingle();
 
     if (periodResponse.error) {
-      setIsPeriodLoading(false);
-      notifications.show({
-        color: "red",
-        title: t("budget.notifications.loadPeriodError"),
-        message: periodResponse.error.message,
-      });
-      return;
+      throw new BudgetLoadError(
+        "budget.notifications.loadPeriodError",
+        periodResponse.error.message,
+      );
     }
 
     const periodRow = periodResponse.data as BudgetPeriodIdRow | null;
+    let periodItems: BudgetItemLiteRow[] = [];
 
-    if (!periodRow) {
-      setPeriodId(null);
-      setPeriodHasItems(false);
-      reset({
-        items: budgetLines.map((line) => ({
-          categoryId: line.category.id,
-          subcategoryId: line.subcategory?.id ?? null,
-          amount: null,
-        })),
-      });
-    } else {
+    if (periodRow) {
       const itemsResponse = await supabase
         .from("budget_items")
         .select("category_id, subcategory_id, amount")
         .eq("budget_period_id", periodRow.id);
 
       if (itemsResponse.error) {
-        setIsPeriodLoading(false);
-        notifications.show({
-          color: "red",
-          title: t("budget.notifications.loadBudgetError"),
-          message: itemsResponse.error.message,
-        });
-        return;
+        throw new BudgetLoadError(
+          "budget.notifications.loadBudgetError",
+          itemsResponse.error.message,
+        );
       }
 
-      const periodItems = (itemsResponse.data ?? []) as BudgetItemLiteRow[];
-      const amountByLineKey = new Map(
-        periodItems.map((item) => [
-          buildCategoryLineKey(item.category_id, item.subcategory_id),
-          parseBudgetAmount(item.amount),
-        ]),
-      );
-
-      reset({
-        items: budgetLines.map((line) => ({
-          categoryId: line.category.id,
-          subcategoryId: line.subcategory?.id ?? null,
-          amount: amountByLineKey.get(line.key) ?? null,
-        })),
-      });
-
-      setPeriodId(periodRow.id);
-      setPeriodHasItems(periodItems.length > 0);
+      periodItems = (itemsResponse.data ?? []) as BudgetItemLiteRow[];
     }
 
     const { start, end } = buildMonthRange(selectedYear, selectedMonth);
@@ -450,10 +468,10 @@ export default function BudgetPage() {
       .neq("type", "transfer")
       .or(periodFilter);
 
-    if (!transactionsResponse.error) {
-      const nextSpentByCategory: Record<string, number> = {};
-      const nextSpentByLine: Record<string, number> = {};
+    const nextSpentByCategory: Record<string, number> = {};
+    const nextSpentByLine: Record<string, number> = {};
 
+    if (!transactionsResponse.error) {
       ((transactionsResponse.data ?? []) as TransactionSpentLiteRow[]).forEach((transaction) => {
         if (!transaction.category_id) {
           return;
@@ -469,28 +487,99 @@ export default function BudgetPage() {
         );
         nextSpentByLine[lineKey] = (nextSpentByLine[lineKey] ?? 0) + amount;
       });
-
-      setSpentByCategory(nextSpentByCategory);
-      setSpentByLine(nextSpentByLine);
-    } else {
-      setSpentByCategory({});
-      setSpentByLine({});
     }
 
-    setIsPeriodLoading(false);
-  }, [budgetLines, reset, selectedMonth, selectedYear, supabase, t, workspace.id]);
+    return {
+      periodId: periodRow?.id ?? null,
+      periodItems,
+      spentByCategory: nextSpentByCategory,
+      spentByLine: nextSpentByLine,
+    };
+  }, [selectedMonth, selectedYear, supabase, workspace.id]);
 
-  useEffect(() => {
-    void loadBaseData();
-  }, [loadBaseData]);
+  const applyPeriodSnapshot = useCallback(
+    (snapshot: PeriodSnapshot) => {
+      const amountByLineKey = new Map(
+        snapshot.periodItems.map((item) => [
+          buildCategoryLineKey(item.category_id, item.subcategory_id),
+          parseBudgetAmount(item.amount),
+        ]),
+      );
+
+      reset({
+        items: budgetLines.map((line) => ({
+          categoryId: line.category.id,
+          subcategoryId: line.subcategory?.id ?? null,
+          amount: amountByLineKey.get(line.key) ?? null,
+        })),
+      });
+
+      setPeriodId(snapshot.periodId);
+      setPeriodHasItems(snapshot.periodItems.length > 0);
+      setSpentByCategory(snapshot.spentByCategory);
+      setSpentByLine(snapshot.spentByLine);
+    },
+    [budgetLines, reset],
+  );
+
+  const reloadBaseData = useCallback(() => {
+    setBaseReloadCount((count) => count + 1);
+  }, []);
+
+  const reloadSelectedPeriod = useCallback(() => {
+    setPeriodReloadCount((count) => count + 1);
+  }, []);
+
+  useEffect(
+    () =>
+      startLatestLoad({
+        load: fetchBaseData,
+        onLoaded: (responses) => {
+          applyBaseData(responses);
+          setBaseLoad({ key: baseLoadKey, failed: hasFailedResponse(Object.values(responses)) });
+        },
+        onFailed: (error) => {
+          notifications.show({
+            color: "red",
+            title: t("budget.notifications.loadActiveCategoriesError"),
+            message:
+              error instanceof Error ? error.message : t("budget.notifications.unexpectedError"),
+          });
+          setCategories([]);
+          setSubcategories([]);
+          setBaseLoad({ key: baseLoadKey, failed: true });
+        },
+      }),
+    [applyBaseData, baseLoadKey, fetchBaseData, t],
+  );
 
   useEffect(() => {
     if (isBootstrapping) {
       return;
     }
 
-    void loadSelectedPeriod();
-  }, [isBootstrapping, loadSelectedPeriod]);
+    return startLatestLoad({
+      load: fetchSelectedPeriod,
+      onLoaded: (snapshot) => {
+        applyPeriodSnapshot(snapshot);
+        setPeriodLoad({ key: periodLoadKey, failed: false });
+      },
+      onFailed: (error) => {
+        notifications.show({
+          color: "red",
+          title: t(
+            error instanceof BudgetLoadError
+              ? error.titleKey
+              : "budget.notifications.loadPeriodError",
+          ),
+          message:
+            error instanceof Error ? error.message : t("budget.notifications.unexpectedError"),
+        });
+        applyPeriodSnapshot(emptyPeriodSnapshot);
+        setPeriodLoad({ key: periodLoadKey, failed: true });
+      },
+    });
+  }, [applyPeriodSnapshot, fetchSelectedPeriod, isBootstrapping, periodLoadKey, t]);
 
   const ensureBudgetPeriodExists = useCallback(async () => {
     if (periodId) {
@@ -609,7 +698,7 @@ export default function BudgetPage() {
         }),
       });
 
-      await loadSelectedPeriod();
+      reloadSelectedPeriod();
     } catch (error) {
       notifications.show({
         color: "red",
@@ -753,7 +842,7 @@ export default function BudgetPage() {
         }),
       });
 
-      await loadSelectedPeriod();
+      reloadSelectedPeriod();
     } catch (error) {
       notifications.show({
         color: "red",
@@ -766,7 +855,12 @@ export default function BudgetPage() {
   };
 
   const canCopyFromPrevious =
-    canManageStructure && budgetLines.length > 0 && !isPeriodLoading && !isSaving && !periodHasItems;
+    canManageStructure &&
+    baseLoadStatus === "ready" &&
+    budgetLines.length > 0 &&
+    isPeriodReady &&
+    !isSaving &&
+    !periodHasItems;
 
   const topSpentCategory = useMemo(() => {
     const expenseCandidates = groupedCategories.expense
@@ -867,7 +961,13 @@ export default function BudgetPage() {
               </Button>
             </SimpleGrid>
 
-            {!periodId ? (
+            {loadNotice === "periodFailed" ? (
+              <BudgetLoadErrorAlert
+                message={t("budget.notifications.loadBudgetError")}
+                retryDisabled={isPeriodLoading || isSaving || isCopying}
+                onRetry={reloadSelectedPeriod}
+              />
+            ) : loadNotice === "noPeriod" ? (
               <Alert color="blue" variant="light">
                 {t("budget.noPeriodYet")}
               </Alert>
@@ -875,7 +975,13 @@ export default function BudgetPage() {
           </Stack>
         </Paper>
 
-        {categories.length === 0 ? (
+        {loadNotice === "baseFailed" ? (
+          <BudgetLoadErrorAlert
+            message={t("budget.notifications.loadBaseError")}
+            retryDisabled={isBootstrapping}
+            onRetry={reloadBaseData}
+          />
+        ) : categories.length === 0 ? (
           <Paper withBorder radius="md" p="md">
             <Text size="sm" c="dimmed">
               {t("budget.noActiveCategories")}
@@ -963,7 +1069,7 @@ export default function BudgetPage() {
                                     spentByLine={spentByLine}
                                     currencyFormatter={currencyFormatter}
                                     isMobile={Boolean(isMobile)}
-                                    canManageStructure={canManageStructure}
+                                    canManageStructure={canManageStructure && isPeriodReady}
                                     drilldownHref={categoryDrilldownHref(typeKey, category.id)}
                                   />
                                 ))}
@@ -1008,7 +1114,7 @@ export default function BudgetPage() {
                         type="button"
                         variant="subtle"
                         color="gray"
-                        onClick={() => void loadSelectedPeriod()}
+                        onClick={reloadSelectedPeriod}
                         disabled={isSaving || isCopying}
                       >
                         {t("budget.revert")}
@@ -1016,7 +1122,12 @@ export default function BudgetPage() {
                       <Button
                         type="submit"
                         loading={isSaving}
-                        disabled={!canManageStructure || isCopying || (!isDirty && periodHasItems)}
+                        disabled={
+                          !canManageStructure ||
+                          isCopying ||
+                          !isPeriodReady ||
+                          (!isDirty && periodHasItems)
+                        }
                       >
                         {t("budget.saveBudget")}
                       </Button>

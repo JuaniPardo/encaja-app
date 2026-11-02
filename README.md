@@ -86,7 +86,7 @@ Encaja combina en un mismo flujo:
 ![Supabase](https://img.shields.io/badge/Supabase-green)
 ![Mantine](https://img.shields.io/badge/Mantine-blue)
 
-- Next.js `16.2.3` (App Router)
+- Next.js `16.4.4` (App Router)
 - React `19.2.4`
 - TypeScript
 - Mantine

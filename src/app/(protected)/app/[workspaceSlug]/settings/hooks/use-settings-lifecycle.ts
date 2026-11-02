@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 
@@ -32,17 +32,16 @@ export function useSettingsLifecycle() {
     [t, workspace.role],
   );
 
-  const [isDeleteWorkspaceOpen, { open: openDeleteWorkspace, close: closeDeleteWorkspace }] =
+  const [isDeleteWorkspaceOpen, { open: openDeleteWorkspace, close: closeDeleteDisclosure }] =
     useDisclosure(false);
   const [isDeletingWorkspace, setIsDeletingWorkspace] = useState(false);
   const [deleteWorkspaceConfirmation, setDeleteWorkspaceConfirmation] = useState("");
   const [isLeavingWorkspace, setIsLeavingWorkspace] = useState(false);
 
-  useEffect(() => {
-    if (!isDeleteWorkspaceOpen) {
-      setDeleteWorkspaceConfirmation("");
-    }
-  }, [isDeleteWorkspaceOpen]);
+  const closeDeleteWorkspace = useCallback(() => {
+    closeDeleteDisclosure();
+    setDeleteWorkspaceConfirmation("");
+  }, [closeDeleteDisclosure]);
 
   const onDeleteWorkspace = async () => {
     if (!canDeleteCurrentWorkspace) {

@@ -82,19 +82,10 @@ export function useInsightsV2({
     [fallbackFormatter, t],
   );
   const [result, setResult] = useState<InsightsResult>(emptyResult);
+  const [previousEmptyResult, setPreviousEmptyResult] = useState(emptyResult);
 
-  const currencyFormatter = useMemo(
-    () =>
-      buildSafeCurrencyFormatter(
-        intlLocale,
-        settings.currency_code ?? "ARS",
-        settings.show_cents ?? false,
-        fallbackFormatter,
-      ),
-    [fallbackFormatter, intlLocale, settings.currency_code, settings.show_cents],
-  );
-
-  useEffect(() => {
+  if (previousEmptyResult !== emptyResult) {
+    setPreviousEmptyResult(emptyResult);
     setResult((currentResult) => {
       if (
         currentResult.modules.length > 0 ||
@@ -106,7 +97,18 @@ export function useInsightsV2({
 
       return emptyResult;
     });
-  }, [emptyResult]);
+  }
+
+  const currencyFormatter = useMemo(
+    () =>
+      buildSafeCurrencyFormatter(
+        intlLocale,
+        settings.currency_code ?? "ARS",
+        settings.show_cents ?? false,
+        fallbackFormatter,
+      ),
+    [fallbackFormatter, intlLocale, settings.currency_code, settings.show_cents],
+  );
 
   useEffect(() => {
     let isCancelled = false;
