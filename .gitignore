@@ -25,6 +25,7 @@
 .DS_Store
 *.pem
 .playwright-cli/
+/.claude/fabrica/
 
 # debug
 npm-debug.log*

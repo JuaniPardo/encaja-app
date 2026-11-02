@@ -110,6 +110,8 @@ Ejemplo:
 feat(transfers): add transfer between accounts
 ```
 
+Cada commit termina con su identificador de cambio y cada integración usa `git merge --no-ff`. Las reglas y los comandos de rollback están en `docs/01-engineering/traceability.md`.
+
 ---
 
 ## 7. Checklist de release
@@ -119,6 +121,7 @@ Antes de publicar:
 - [ ] Funcionalidad testeada
 - [ ] No hay errores críticos
 - [ ] Changelog actualizado
+- [ ] Registros de cambio actualizados con la versión
 - [ ] Versión actualizada
 - [ ] Merge correcto a main
 - [ ] Tag creado

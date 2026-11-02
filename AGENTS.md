@@ -127,11 +127,12 @@ Cuando se implemente una feature nueva:
 
 Tomar como referencia principal los archivos dentro de `/docs`, especialmente:
 
-- `01-vision-v1.md`
-- `02-modelo_de_datos-v1.md`
-- `03-reglas_de_negocio-v1.md`
-- `01-mvp1-definition.md`
-- `04-lineamientos-ui-v1.md`
+- `00-product/vision.md`
+- `00-product/data-model.md`
+- `00-product/business-rules.md`
+- `00-product/ui-guidelines.md`
+- `01-engineering/dev-workflow.md`
+- `01-engineering/traceability.md`
 
 Si hay contradicción entre código y documentación, preferir alinear el código a la documentación vigente, salvo que se esté haciendo una refactorización explícita de los documentos.
 
@@ -173,7 +174,7 @@ Cada cambio debería dejar el proyecto:
 
 El sistema de versionado y releases del proyecto está definido en:
 
-`/docs/dev-workflow.md`
+`/docs/01-engineering/dev-workflow.md`
 
 Todo agente debe respetar:
 
@@ -190,5 +191,16 @@ Reglas clave:
 - ✅ La versión siempre representa el estado de `main`
 
 Este flujo es obligatorio para mantener consistencia, trazabilidad y estabilidad del producto.
+
+---
+
+## 15. Trazabilidad de cambios
+
+Todo cambio debe poder rastrearse y revertirse según `/docs/01-engineering/traceability.md`:
+
+- Registro `CHG-AAAA-MM-NNN` en `/docs/03-history/changes/`
+- `Change-Id` en cada commit
+- `git merge --no-ff` en cada integración
+- Compensación documentada para cada migración
 
 ---
