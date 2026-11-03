@@ -29,7 +29,11 @@ import {
   PaymentMethodCard,
   type PaymentMethodCardData,
 } from "@/features/payment-methods/components/payment-method-card";
-import { localeCompareByName, mapPaymentMethodTypeLabel } from "@/features/i18n/formatting";
+import {
+  getCurrencyFormatOptions,
+  localeCompareByName,
+  mapPaymentMethodTypeLabel,
+} from "@/features/i18n/formatting";
 import { useI18n } from "@/features/i18n/provider";
 import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
 import { canManagePaymentMethods } from "@/features/workspace/permissions";
@@ -153,8 +157,7 @@ export default function PaymentMethodsPage() {
   }, [intlLocale, now]);
   const currencyFormatter = useMemo(() => {
     return new Intl.NumberFormat(intlLocale, {
-      style: "currency",
-      currency: currencyCode || "ARS",
+      ...getCurrencyFormatOptions(currencyCode),
       minimumFractionDigits: showCents ? 2 : 0,
       maximumFractionDigits: showCents ? 2 : 0,
     });

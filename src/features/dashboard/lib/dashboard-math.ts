@@ -1,4 +1,4 @@
-import { localeCompareByName } from "@/features/i18n/formatting";
+import { getCurrencyFormatOptions, localeCompareByName } from "@/features/i18n/formatting";
 import type { CategoryRow, DashboardLocale } from "@/features/dashboard/types/dashboard";
 import type { TransactionType } from "@/types/database";
 
@@ -45,8 +45,7 @@ export function buildSafeCurrencyFormatter(
 ) {
   try {
     return new Intl.NumberFormat(intlLocale, {
-      style: "currency",
-      currency: currencyCode || "ARS",
+      ...getCurrencyFormatOptions(currencyCode),
       minimumFractionDigits: showCents ? 2 : 0,
       maximumFractionDigits: showCents ? 2 : 0,
     });

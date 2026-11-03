@@ -1,3 +1,11 @@
+## [1.8.0] - 2026-11-02
+
+### Added
+- Added the Bolivian boliviano (`BOB`, `Bs`) as a workspace currency, available from settings.
+
+### Changed
+- Amounts and amount inputs now show `Bs` in `BOB` workspaces. Other currencies keep their current format.
+
 ## [1.7.2] - 2026-11-02
 
 ### Security

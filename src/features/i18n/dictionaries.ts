@@ -780,6 +780,7 @@ const dictionaries = {
         mxn: "MXN · Peso mexicano",
         cop: "COP · Peso colombiano",
         pen: "PEN · Sol peruano",
+        bob: "BOB · Boliviano (Bs)",
         custom: "{{code}} · Moneda existente en este workspace",
       },
       identity: {
@@ -2122,6 +2123,7 @@ const dictionaries = {
         mxn: "MXN · Mexican peso",
         cop: "COP · Colombian peso",
         pen: "PEN · Peruvian sol",
+        bob: "BOB · Bolivian boliviano (Bs)",
         custom: "{{code}} · Existing workspace currency",
       },
       identity: {

@@ -264,6 +264,7 @@ export default function TransactionsPage() {
           quickPaymentMethodSelectData={data.quickPaymentMethodSelectData}
           shouldShowQuickPaymentSetup={mutations.shouldShowQuickPaymentSetup}
           initialValues={mutations.formInitialValues}
+          currencyCode={data.currencyCode}
           onSubmit={mutations.onSubmit}
         />
       ) : null}
@@ -273,6 +274,7 @@ export default function TransactionsPage() {
           opened={mutations.isTransferModalOpen}
           onClose={() => mutations.setIsTransferModalOpen(false)}
           paymentMethods={data.paymentMethods}
+          currencyCode={data.currencyCode}
           onSuccess={data.loadTransactions}
         />
       ) : null}

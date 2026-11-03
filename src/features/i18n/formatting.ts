@@ -1,6 +1,29 @@
 import type { Locale } from "@/features/i18n/config";
 import type { PaymentMethodType, TransactionType, WorkspaceLinkVisibilityMode } from "@/types/database";
 
+function isBolivianoCurrency(currencyCode: string) {
+  return currencyCode.toUpperCase() === "BOB";
+}
+
+export function getCurrencyFormatOptions(currencyCode: string): Intl.NumberFormatOptions {
+  const options: Intl.NumberFormatOptions = {
+    style: "currency",
+    currency: currencyCode || "ARS",
+  };
+
+  // Intl muestra "BOB" por defecto. No generalizar: narrowSymbol cambia ARS, USD, CLP, UYU, MXN y COP.
+  if (isBolivianoCurrency(currencyCode)) {
+    options.currencyDisplay = "narrowSymbol";
+  }
+
+  return options;
+}
+
+// Fuera de BOB el prefijo sigue siendo "$": el símbolo de Intl cambiaría los campos de las otras monedas.
+export function getCurrencyInputPrefix(currencyCode: string) {
+  return isBolivianoCurrency(currencyCode) ? { symbol: "Bs", width: 32 } : { symbol: "$", width: 24 };
+}
+
 export function buildMonthOptions(intlLocale: string) {
   const formatter = new Intl.DateTimeFormat(intlLocale, { month: "long" });
 
