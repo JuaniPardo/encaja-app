@@ -39,6 +39,10 @@ feature → develop → main
 7. Ajustes si es necesario
 8. Preparación de release
 
+### Integrar desde un worktree
+
+La fábrica trabaja e integra en worktrees dentro de `.claude/worktrees/`, para no cambiar de rama en el checkout principal. Integrar es abrir un worktree separado desde `origin/develop` u `origin/main`, hacer el merge y publicar con `git push origin HEAD:develop`. Los comandos están en la etapa 8 de `.claude/skills/fabrica/SKILL.md`.
+
 ---
 
 ## 3. Versionado (SemVer)

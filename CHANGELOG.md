@@ -1,3 +1,12 @@
+## [1.8.1] - 2026-11-04
+
+### Added
+- Added real controls to the `/fabrica` software factory: a `PreToolUse` hook that blocks production migrations, `.env*` reads, force pushes and branch deletion, and asks before pushes, merges to `main`, tags and deploys.
+- Added a run-state script that enforces the correction cap, a size and risk classification that picks the reviewers, a diagnosis agent before the second correction, and documented financial invariants.
+
+### Changed
+- The Claude Code permission allowlist now holds exact commands only, with no `*` prefixes.
+
 ## [1.8.0] - 2026-11-02
 
 ### Added

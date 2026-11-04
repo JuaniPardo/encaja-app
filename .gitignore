@@ -26,6 +26,8 @@
 *.pem
 .playwright-cli/
 /.claude/fabrica/
+/.claude/worktrees/
+/.claude/settings.local.json
 
 # debug
 npm-debug.log*
