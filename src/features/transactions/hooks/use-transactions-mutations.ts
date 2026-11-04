@@ -18,6 +18,7 @@ import {
 } from "@/features/transactions/utils";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
 import type { TransactionFormInputValues, TransactionFormValues } from "@/features/transactions/schema";
+import { getUserFacingErrorMessage } from "@/lib/errors/user-facing-error";
 import type { Database, TransactionType } from "@/types/database";
 import type { Dispatch, SetStateAction } from "react";
 
@@ -159,7 +160,7 @@ export function useTransactionsMutations({
       notifications.show({
         color: "red",
         title: t("transactions.notifications.installmentLoadEditError"),
-        message: installmentPurchaseResponse.error.message,
+        message: getUserFacingErrorMessage(installmentPurchaseResponse.error, t("common.errors.generic"), t),
       });
       return;
     }
@@ -307,7 +308,7 @@ export function useTransactionsMutations({
         notifications.show({
           color: "red",
           title: t("transactions.notifications.quickPaymentCreateError"),
-          message: createQuickMethodResponse.error.message,
+          message: getUserFacingErrorMessage(createQuickMethodResponse.error, t("common.errors.generic"), t),
         });
         return;
       }
@@ -426,7 +427,7 @@ export function useTransactionsMutations({
         notifications.show({
           color: "red",
           title: t("transactions.notifications.installmentUpdateError"),
-          message: updateInstallmentResponse.error.message,
+          message: getUserFacingErrorMessage(updateInstallmentResponse.error, t("common.errors.generic"), t),
         });
         return;
       }
@@ -500,7 +501,7 @@ export function useTransactionsMutations({
         notifications.show({
           color: "red",
           title: t("transactions.notifications.installmentRegisterError"),
-          message: createInstallmentResponse.error.message,
+          message: getUserFacingErrorMessage(createInstallmentResponse.error, t("common.errors.generic"), t),
         });
         return;
       }
@@ -541,7 +542,7 @@ export function useTransactionsMutations({
         notifications.show({
           color: "red",
           title: t("transactions.notifications.saveChangesError"),
-          message: updateResponse.error.message,
+          message: getUserFacingErrorMessage(updateResponse.error, t("common.errors.generic"), t),
         });
         return;
       }
@@ -571,7 +572,7 @@ export function useTransactionsMutations({
         notifications.show({
           color: "red",
           title: t("transactions.notifications.registerError"),
-          message: insertResponse.error.message,
+          message: getUserFacingErrorMessage(insertResponse.error, t("common.errors.generic"), t),
         });
         return;
       }
@@ -624,7 +625,7 @@ export function useTransactionsMutations({
             : row.type === "transfer"
               ? t("transactions.notifications.transferDeleteError")
               : t("transactions.notifications.deleteError"),
-        message: response.error.message,
+        message: getUserFacingErrorMessage(response.error, t("common.errors.generic"), t),
       });
       return;
     }

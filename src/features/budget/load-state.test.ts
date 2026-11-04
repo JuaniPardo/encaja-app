@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  BudgetLoadError,
   buildBaseLoadKey,
   buildPeriodLoadKey,
   deriveLoadStatus,
@@ -349,5 +350,17 @@ describe("recarga desde un handler", () => {
 
     expect(page.applied).toEqual(["marzo", "marzo guardado"]);
     expect(page.status()).toBe("ready");
+  });
+});
+
+describe("BudgetLoadError", () => {
+  it("keeps the title key and the original error as cause", () => {
+    const original = { code: "42501", message: "permission denied for table budget_items" };
+
+    const error = new BudgetLoadError("budget.notifications.loadBudgetError", original);
+
+    expect(error.titleKey).toBe("budget.notifications.loadBudgetError");
+    expect(error.cause).toBe(original);
+    expect(error.message).not.toContain("permission denied");
   });
 });

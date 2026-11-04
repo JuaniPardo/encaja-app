@@ -1,6 +1,7 @@
-import type { SupabaseClient, User } from "@supabase/supabase-js";
+import { PostgrestError, type SupabaseClient, type User } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
 
+import { UserFacingError } from "@/lib/errors/user-facing-error";
 import {
   createWorkspaceForUser,
   deleteWorkspaceForUser,
@@ -119,5 +120,39 @@ describe("workspace bootstrap", () => {
       deleted_workspace_id: "workspace-1",
       deleted_workspace_slug: "hogar",
     });
+  });
+
+  it("rethrows the delete_workspace RPC error keeping its code", async () => {
+    const { supabase, rpc } = buildSupabaseMock();
+    const rpcError = new PostgrestError({
+      code: "P0001",
+      message: "Solo el owner puede eliminar este workspace.",
+      details: "",
+      hint: "",
+    });
+    rpc.mockResolvedValueOnce({ error: rpcError, data: null } as never);
+
+    const deletion = deleteWorkspaceForUser({ supabase, workspaceId: "workspace-1" });
+
+    await expect(deletion).rejects.toBe(rpcError);
+  });
+
+  it("does not expose an internal message when delete_workspace returns no rows", async () => {
+    const { supabase, rpc } = buildSupabaseMock();
+    rpc.mockResolvedValueOnce({ error: null, data: [] });
+
+    const deletion = deleteWorkspaceForUser({ supabase, workspaceId: "workspace-1" });
+
+    await expect(deletion).rejects.toThrow("delete_workspace returned no rows");
+    await expect(deletion).rejects.not.toBeInstanceOf(UserFacingError);
+  });
+
+  it("rejects short workspace names with a user-facing error", async () => {
+    const { supabase } = buildSupabaseMock();
+    const user = { id: "user-1", email: "owner@encaja.app" } as User;
+
+    const creation = createWorkspaceForUser({ supabase, user, name: "A" });
+
+    await expect(creation).rejects.toBeInstanceOf(UserFacingError);
   });
 });

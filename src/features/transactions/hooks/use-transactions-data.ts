@@ -31,6 +31,7 @@ import {
   type TypeFilter,
   type WorkspaceSettingsLiteRow,
 } from "@/features/transactions/utils";
+import { getUserFacingErrorMessage } from "@/lib/errors/user-facing-error";
 import type { TransactionType } from "@/types/database";
 
 import type { TransactionGroup } from "../transactions-list";
@@ -543,7 +544,7 @@ export function useTransactionsData() {
       notifications.show({
         color: "red",
         title: t("transactions.notifications.loadCategoriesError"),
-        message: categoriesResponse.error.message,
+        message: getUserFacingErrorMessage(categoriesResponse.error, t("common.errors.generic"), t),
       });
       setCategories([]);
     } else {
@@ -555,7 +556,7 @@ export function useTransactionsData() {
       notifications.show({
         color: "red",
         title: t("transactions.notifications.loadSubcategoriesError"),
-        message: subcategoriesResponse.error.message,
+        message: getUserFacingErrorMessage(subcategoriesResponse.error, t("common.errors.generic"), t),
       });
       setSubcategories([]);
     } else {
@@ -569,7 +570,7 @@ export function useTransactionsData() {
       notifications.show({
         color: "red",
         title: t("transactions.notifications.loadPaymentMethodsError"),
-        message: paymentMethodsResponse.error.message,
+        message: getUserFacingErrorMessage(paymentMethodsResponse.error, t("common.errors.generic"), t),
       });
       setPaymentMethods([]);
     } else {
@@ -580,7 +581,7 @@ export function useTransactionsData() {
       notifications.show({
         color: "red",
         title: t("transactions.notifications.loadSettingsError"),
-        message: settingsResponse.error.message,
+        message: getUserFacingErrorMessage(settingsResponse.error, t("common.errors.generic"), t),
       });
       setStartYear(new Date().getFullYear());
       setCurrencyCode("ARS");
@@ -634,7 +635,7 @@ export function useTransactionsData() {
       notifications.show({
         color: "red",
         title: t("transactions.notifications.loadTransactionsError"),
-        message: response.error.message,
+        message: getUserFacingErrorMessage(response.error, t("common.errors.generic"), t),
       });
       return;
     }

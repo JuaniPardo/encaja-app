@@ -23,6 +23,7 @@ import type {
   WorkspaceSettingsLiteRow,
 } from "@/features/dashboard/types/dashboard";
 import { excludeTransfers } from "@/features/transactions/queries";
+import { getUserFacingErrorMessage } from "@/lib/errors/user-facing-error";
 import type { Database } from "@/types/database";
 
 type UseDashboardDataOptions = {
@@ -122,7 +123,7 @@ export function useDashboardData({
         notifications.show({
           color: "red",
           title: t("dashboard.notifications.loadCategoriesError"),
-          message: categoriesResponse.error.message,
+          message: getUserFacingErrorMessage(categoriesResponse.error, t("common.errors.generic"), t),
         });
         setCategories([]);
         setExcludedDashboardCategoryIds([]);
@@ -135,7 +136,7 @@ export function useDashboardData({
           notifications.show({
             color: "red",
             title: t("dashboard.notifications.loadCategoriesError"),
-            message: systemCategoriesResponse.error.message,
+            message: getUserFacingErrorMessage(systemCategoriesResponse.error, t("common.errors.generic"), t),
           });
           setExcludedDashboardCategoryIds([]);
           setSystemCategoryKeyById(new Map());
@@ -172,7 +173,7 @@ export function useDashboardData({
         notifications.show({
           color: "red",
           title: t("dashboard.notifications.loadSettingsError"),
-          message: settingsResponse.error.message,
+          message: getUserFacingErrorMessage(settingsResponse.error, t("common.errors.generic"), t),
         });
         setStartYear(new Date().getFullYear());
         setCurrencyCode("ARS");
@@ -188,7 +189,7 @@ export function useDashboardData({
         notifications.show({
           color: "red",
           title: t("dashboard.notifications.loadFinancialMethodsError"),
-          message: paymentMethodsResponse.error.message,
+          message: getUserFacingErrorMessage(paymentMethodsResponse.error, t("common.errors.generic"), t),
         });
         setPaymentMethodRows([]);
       } else {
@@ -199,7 +200,7 @@ export function useDashboardData({
         notifications.show({
           color: "red",
           title: t("dashboard.notifications.loadOnboardingSignalsError"),
-          message: anyTransactionsResponse.error.message,
+          message: getUserFacingErrorMessage(anyTransactionsResponse.error, t("common.errors.generic"), t),
         });
         setHasAnyTransactions(false);
       } else {
@@ -297,7 +298,7 @@ export function useDashboardData({
         notifications.show({
           color: "red",
           title: t("dashboard.notifications.loadPeriodTransactionsError"),
-          message: transactionsResponse.error.message,
+          message: getUserFacingErrorMessage(transactionsResponse.error, t("common.errors.generic"), t),
         });
         setTransactionRows([]);
       } else {
@@ -311,7 +312,7 @@ export function useDashboardData({
         notifications.show({
           color: "red",
           title: t("dashboard.notifications.loadPeriodTransactionsError"),
-          message: historicalTransactionsResponse.error.message,
+          message: getUserFacingErrorMessage(historicalTransactionsResponse.error, t("common.errors.generic"), t),
         });
         setAllTransactionsImpact(new Map());
       } else {
@@ -343,7 +344,7 @@ export function useDashboardData({
         notifications.show({
           color: "red",
           title: t("dashboard.notifications.loadNextMonthCommitmentError"),
-          message: nextMonthCommitmentResponse.error.message,
+          message: getUserFacingErrorMessage(nextMonthCommitmentResponse.error, t("common.errors.generic"), t),
         });
         setNextMonthCommitmentByMethodId(new Map());
       } else {
@@ -372,7 +373,7 @@ export function useDashboardData({
         notifications.show({
           color: "red",
           title: t("dashboard.notifications.loadPreviousMonthStatementError"),
-          message: previousMonthStatementResponse.error.message,
+          message: getUserFacingErrorMessage(previousMonthStatementResponse.error, t("common.errors.generic"), t),
         });
         setPreviousMonthStatementByMethodId(new Map());
       } else {
@@ -401,7 +402,7 @@ export function useDashboardData({
         notifications.show({
           color: "red",
           title: t("dashboard.notifications.loadCurrentMonthPaymentsError"),
-          message: currentMonthPaymentsResponse.error.message,
+          message: getUserFacingErrorMessage(currentMonthPaymentsResponse.error, t("common.errors.generic"), t),
         });
         setCurrentMonthPaymentsByMethodId(new Map());
       } else {
@@ -427,7 +428,7 @@ export function useDashboardData({
         notifications.show({
           color: "red",
           title: t("dashboard.notifications.loadExternalSummariesError"),
-          message: linkedWorkspaceSummaryResponse.error.message,
+          message: getUserFacingErrorMessage(linkedWorkspaceSummaryResponse.error, t("common.errors.generic"), t),
         });
         setLinkedWorkspacePaymentMethodBalances([]);
       } else {
@@ -440,7 +441,7 @@ export function useDashboardData({
         notifications.show({
           color: "red",
           title: t("dashboard.notifications.loadBudgetPeriodError"),
-          message: periodResponse.error.message,
+          message: getUserFacingErrorMessage(periodResponse.error, t("common.errors.generic"), t),
         });
         setBudgetItems([]);
         setIsLoadingSummary(false);
@@ -463,7 +464,7 @@ export function useDashboardData({
         notifications.show({
           color: "red",
           title: t("dashboard.notifications.loadPeriodBudgetError"),
-          message: budgetItemsResponse.error.message,
+          message: getUserFacingErrorMessage(budgetItemsResponse.error, t("common.errors.generic"), t),
         });
         setBudgetItems([]);
       } else {

@@ -38,6 +38,7 @@ import { useIsMobile } from "@/features/layout/use-responsive-breakpoints";
 import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
 import { canManagePaymentMethods } from "@/features/workspace/permissions";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
+import { getUserFacingErrorMessage } from "@/lib/errors/user-facing-error";
 import type { Database, PaymentMethodType, TransactionType } from "@/types/database";
 
 type PaymentMethodRow = Database["public"]["Tables"]["payment_methods"]["Row"];
@@ -199,7 +200,7 @@ export default function PaymentMethodsPage() {
       notifications.show({
         color: "red",
         title: t("paymentMethods.notifications.loadError"),
-        message: paymentMethodsResponse.error.message,
+        message: getUserFacingErrorMessage(paymentMethodsResponse.error, t("common.errors.generic"), t),
       });
       return;
     }
@@ -208,7 +209,7 @@ export default function PaymentMethodsPage() {
       notifications.show({
         color: "red",
         title: t("paymentMethods.notifications.loadSettingsError"),
-        message: settingsResponse.error.message,
+        message: getUserFacingErrorMessage(settingsResponse.error, t("common.errors.generic"), t),
       });
       setCurrencyCode("ARS");
       setShowCents(false);
@@ -222,7 +223,7 @@ export default function PaymentMethodsPage() {
       notifications.show({
         color: "red",
         title: t("paymentMethods.notifications.loadMovementsError"),
-        message: transactionsResponse.error.message,
+        message: getUserFacingErrorMessage(transactionsResponse.error, t("common.errors.generic"), t),
       });
       setMovementByMethodId({});
       setMovementCountByMethodId({});
@@ -363,7 +364,7 @@ export default function PaymentMethodsPage() {
         notifications.show({
           color: "red",
           title: t("paymentMethods.notifications.saveError"),
-          message: updateResponse.error.message,
+          message: getUserFacingErrorMessage(updateResponse.error, t("common.errors.generic"), t),
         });
         return;
       }
@@ -390,7 +391,7 @@ export default function PaymentMethodsPage() {
         notifications.show({
           color: "red",
           title: t("paymentMethods.notifications.createError"),
-          message: insertResponse.error.message,
+          message: getUserFacingErrorMessage(insertResponse.error, t("common.errors.generic"), t),
         });
         return;
       }
@@ -427,7 +428,7 @@ export default function PaymentMethodsPage() {
       notifications.show({
         color: "red",
         title: t("paymentMethods.notifications.toggleError"),
-        message: response.error.message,
+        message: getUserFacingErrorMessage(response.error, t("common.errors.generic"), t),
       });
       return;
     }
@@ -454,7 +455,7 @@ export default function PaymentMethodsPage() {
       notifications.show({
         color: "red",
         title: t("paymentMethods.notifications.deleteError"),
-        message: response.error.message,
+        message: getUserFacingErrorMessage(response.error, t("common.errors.generic"), t),
       });
       return;
     }

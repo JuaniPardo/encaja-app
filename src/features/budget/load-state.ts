@@ -10,9 +10,9 @@ export type BudgetLoadNotice = "baseFailed" | "periodFailed" | "noPeriod" | null
 export class BudgetLoadError extends Error {
   constructor(
     readonly titleKey: string,
-    message: string,
+    cause: unknown,
   ) {
-    super(message);
+    super(titleKey, { cause });
     this.name = "BudgetLoadError";
   }
 }

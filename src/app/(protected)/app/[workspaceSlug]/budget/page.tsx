@@ -60,6 +60,7 @@ import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldow
 import { transactionTypeMantineColor } from "@/features/transactions/type-colors";
 import { canManageBudgetStructure } from "@/features/workspace/permissions";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
+import { getUserFacingErrorMessage } from "@/lib/errors/user-facing-error";
 import type { Database, TransactionType } from "@/types/database";
 
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
@@ -372,7 +373,7 @@ export default function BudgetPage() {
         notifications.show({
           color: "red",
           title: t("budget.notifications.loadActiveCategoriesError"),
-          message: categoriesResponse.error.message,
+          message: getUserFacingErrorMessage(categoriesResponse.error, t("budget.notifications.unexpectedError"), t),
         });
         setCategories([]);
       } else {
@@ -399,7 +400,7 @@ export default function BudgetPage() {
         notifications.show({
           color: "red",
           title: t("budget.notifications.loadSubcategoriesError"),
-          message: subcategoriesResponse.error.message,
+          message: getUserFacingErrorMessage(subcategoriesResponse.error, t("budget.notifications.unexpectedError"), t),
         });
         setSubcategories([]);
       } else {
@@ -410,7 +411,7 @@ export default function BudgetPage() {
         notifications.show({
           color: "red",
           title: t("budget.notifications.loadSettingsError"),
-          message: settingsResponse.error.message,
+          message: getUserFacingErrorMessage(settingsResponse.error, t("budget.notifications.unexpectedError"), t),
         });
         setStartYear(new Date().getFullYear());
         setCurrencyCode("ARS");
@@ -437,7 +438,7 @@ export default function BudgetPage() {
     if (periodResponse.error) {
       throw new BudgetLoadError(
         "budget.notifications.loadPeriodError",
-        periodResponse.error.message,
+        periodResponse.error,
       );
     }
 
@@ -453,7 +454,7 @@ export default function BudgetPage() {
       if (itemsResponse.error) {
         throw new BudgetLoadError(
           "budget.notifications.loadBudgetError",
-          itemsResponse.error.message,
+          itemsResponse.error,
         );
       }
 
@@ -547,8 +548,7 @@ export default function BudgetPage() {
           notifications.show({
             color: "red",
             title: t("budget.notifications.loadActiveCategoriesError"),
-            message:
-              error instanceof Error ? error.message : t("budget.notifications.unexpectedError"),
+            message: getUserFacingErrorMessage(error, t("budget.notifications.unexpectedError"), t),
           });
           setCategories([]);
           setSubcategories([]);
@@ -577,8 +577,7 @@ export default function BudgetPage() {
               ? error.titleKey
               : "budget.notifications.loadPeriodError",
           ),
-          message:
-            error instanceof Error ? error.message : t("budget.notifications.unexpectedError"),
+          message: getUserFacingErrorMessage(error, t("budget.notifications.unexpectedError"), t),
         });
         applyPeriodSnapshot(emptyPeriodSnapshot);
         setPeriodLoad({ key: periodLoadKey, failed: true });
@@ -708,7 +707,7 @@ export default function BudgetPage() {
       notifications.show({
         color: "red",
         title: t("budget.notifications.saveError"),
-        message: error instanceof Error ? error.message : t("budget.notifications.unexpectedError"),
+        message: getUserFacingErrorMessage(error, t("budget.notifications.unexpectedError"), t),
       });
     } finally {
       setIsSaving(false);
@@ -852,7 +851,7 @@ export default function BudgetPage() {
       notifications.show({
         color: "red",
         title: t("budget.notifications.copyError"),
-        message: error instanceof Error ? error.message : t("budget.notifications.unexpectedError"),
+        message: getUserFacingErrorMessage(error, t("budget.notifications.unexpectedError"), t),
       });
     } finally {
       setIsCopying(false);
