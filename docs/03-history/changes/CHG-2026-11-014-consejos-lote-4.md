@@ -2,10 +2,10 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Entregado |
+| Estado | En producción |
 | Fecha | 2026-11-04 |
 | Rama | `feature/consejos-lote-4` |
-| Release | Pendiente |
+| Release | v1.11.0 |
 | Tarea relacionada | Review de consejos y avisos (lote 4) |
 | Clasificación | L, riesgo alto, UI, financiero |
 | Revisores por ciclo | Ciclo 0: tester, clean-code, seguridad, ui |
@@ -53,6 +53,8 @@ Ninguna.
 - Ciclos de corrección usados: 0 de 2.
 
 ## No verificado
+
+El dueño no informó una prueba en develop antes del release v1.11.0. Todo lo de esta sección sigue sin verificar en producción.
 
 - Nada se vio en un navegador: los badges nuevos, la sección "Presupuesto" y cómo se cortan en mobile los títulos con nombre de categoría o porcentaje.
 - Cuántas veces "En riesgo" ocupa el consejo principal a principio de mes: usa la misma regla que el contador, sin mínimo de días (el día 1 alcanza con más del 13% gastado).
