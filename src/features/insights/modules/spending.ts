@@ -5,6 +5,7 @@ type SpendingModuleOptions = {
   context: InsightsContext;
   t: TranslationFn;
   currencyFormatter: Intl.NumberFormat;
+  percentFormatter: Intl.NumberFormat;
 };
 
 const zeroTolerance = 0.005;
@@ -28,6 +29,7 @@ export function generateSpendingInsights({
   context,
   t,
   currencyFormatter,
+  percentFormatter,
 }: SpendingModuleOptions): Insight[] {
   const insights: Insight[] = [];
   const projectedExpense = context.projectedExpenseTotal;
@@ -47,7 +49,7 @@ export function generateSpendingInsights({
           urgency: 5,
           title: t("insightsV2.modules.spending.insights.excessSpending.alertTitle"),
           message: t("insightsV2.modules.spending.insights.excessSpending.alertMessage", undefined, {
-            ratio: formatPercentValue(projectedExpenseVsIncome, currencyFormatter),
+            ratio: formatPercentValue(projectedExpenseVsIncome, percentFormatter),
           }),
           data: {
             projectedExpenseVsIncome,
@@ -67,7 +69,7 @@ export function generateSpendingInsights({
           urgency: 4,
           title: t("insightsV2.modules.spending.insights.excessSpending.warningTitle"),
           message: t("insightsV2.modules.spending.insights.excessSpending.warningMessage", undefined, {
-            ratio: formatPercentValue(projectedExpenseVsIncome, currencyFormatter),
+            ratio: formatPercentValue(projectedExpenseVsIncome, percentFormatter),
           }),
           data: {
             projectedExpenseVsIncome,

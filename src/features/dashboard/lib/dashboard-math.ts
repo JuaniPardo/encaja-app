@@ -90,7 +90,7 @@ export function getDeviationColor(type: TransactionType, deviation: number) {
     return "var(--encaja-text-neutral)";
   }
 
-  if (type === "income") {
+  if (type === "income" || type === "saving") {
     return deviation > 0 ? "var(--encaja-positive-text)" : "var(--encaja-negative-text)";
   }
 

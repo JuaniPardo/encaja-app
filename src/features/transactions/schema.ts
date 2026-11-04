@@ -19,8 +19,15 @@ export interface TransactionSchemaMessages {
   notesMaxLength: string;
   invalidInstallmentsCount: string;
   installmentsCountMin: string;
+  installmentsCountMinForPurchase: string;
   installmentsCountMax: string;
 }
+
+export interface TransactionSchemaOptions {
+  requireInstallments?: boolean;
+}
+
+const minInstallmentsForPurchase = 2;
 
 const defaultMessages: TransactionSchemaMessages = {
   invalidAmount: "Ingresá un monto válido.",
@@ -35,6 +42,7 @@ const defaultMessages: TransactionSchemaMessages = {
   notesMaxLength: "Las notas no pueden superar 1000 caracteres.",
   invalidInstallmentsCount: "Ingresá una cantidad de cuotas válida.",
   installmentsCountMin: "La cantidad de cuotas debe ser al menos 1.",
+  installmentsCountMinForPurchase: "Una compra en cuotas necesita al menos 2 cuotas.",
   installmentsCountMax: "La cantidad de cuotas no puede superar 120.",
 };
 
@@ -52,7 +60,10 @@ function optionalText(maxLength: number, message: string) {
   );
 }
 
-export function createTransactionFormSchema(messages?: Partial<TransactionSchemaMessages>) {
+export function createTransactionFormSchema(
+  messages?: Partial<TransactionSchemaMessages>,
+  options?: TransactionSchemaOptions,
+) {
   const resolvedMessages = {
     ...defaultMessages,
     ...messages,
@@ -106,7 +117,12 @@ export function createTransactionFormSchema(messages?: Partial<TransactionSchema
     z
       .number()
       .int(resolvedMessages.invalidInstallmentsCount)
-      .min(1, resolvedMessages.installmentsCountMin)
+      .min(
+        options?.requireInstallments ? minInstallmentsForPurchase : 1,
+        options?.requireInstallments
+          ? resolvedMessages.installmentsCountMinForPurchase
+          : resolvedMessages.installmentsCountMin,
+      )
       .max(120, resolvedMessages.installmentsCountMax),
   );
 

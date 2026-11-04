@@ -4,7 +4,7 @@ import type { Insight, InsightModuleMetadata, InsightsContext } from "@/features
 type BehaviorModuleOptions = {
   context: InsightsContext;
   t: TranslationFn;
-  currencyFormatter: Intl.NumberFormat;
+  percentFormatter: Intl.NumberFormat;
 };
 
 const zeroTolerance = 0.005;
@@ -27,7 +27,7 @@ export function resolveBehaviorModuleMetadata(t: TranslationFn): InsightModuleMe
 export function generateBehaviorInsights({
   context,
   t,
-  currencyFormatter,
+  percentFormatter,
 }: BehaviorModuleOptions): Insight[] {
   const totalExpense = context.expenseCurrentMonth;
   if (totalExpense <= zeroTolerance || context.expenseByCategoryCurrentMonth.length === 0) {
@@ -53,10 +53,12 @@ export function generateBehaviorInsights({
         priority: 820,
         impact: 4,
         urgency: 4,
-        title: t("insightsV2.modules.behavior.insights.categoryImbalance.alertTitle"),
+        title: t("insightsV2.modules.behavior.insights.categoryImbalance.alertTitle", undefined, {
+          categoryName: topCategory.categoryName,
+        }),
         message: t("insightsV2.modules.behavior.insights.categoryImbalance.alertMessage", undefined, {
           categoryName: topCategory.categoryName,
-          ratio: formatPercentValue(topShare, currencyFormatter),
+          ratio: formatPercentValue(topShare, percentFormatter),
         }),
         data: {
           categoryId: topCategory.categoryId,
@@ -76,10 +78,12 @@ export function generateBehaviorInsights({
       priority: 680,
       impact: 3,
       urgency: 3,
-      title: t("insightsV2.modules.behavior.insights.categoryImbalance.warningTitle"),
+      title: t("insightsV2.modules.behavior.insights.categoryImbalance.warningTitle", undefined, {
+        categoryName: topCategory.categoryName,
+      }),
       message: t("insightsV2.modules.behavior.insights.categoryImbalance.warningMessage", undefined, {
         categoryName: topCategory.categoryName,
-        ratio: formatPercentValue(topShare, currencyFormatter),
+        ratio: formatPercentValue(topShare, percentFormatter),
       }),
       data: {
         categoryId: topCategory.categoryId,

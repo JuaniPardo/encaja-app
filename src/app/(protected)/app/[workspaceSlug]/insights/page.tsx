@@ -61,6 +61,8 @@ export default function InsightsPage() {
     });
   }, [errorMessage, t]);
 
+  const modules = result?.modules ?? [];
+
   return (
     <Stack gap="sm" pos="relative">
       <LoadingOverlay visible={isLoading} />
@@ -74,14 +76,14 @@ export default function InsightsPage() {
         </Text>
       </Stack>
 
-      {result.modules.length === 0 ? (
+      {modules.length === 0 ? (
         <Paper withBorder radius="sm" p="md" style={{ borderColor: "var(--encaja-border-strong)" }}>
           <Text size="sm" c="var(--encaja-text-muted)">
             {t("insightsV2.emptyState")}
           </Text>
         </Paper>
       ) : (
-        result.modules.map((moduleResult) => (
+        modules.map((moduleResult) => (
           <Paper
             key={moduleResult.module}
             withBorder

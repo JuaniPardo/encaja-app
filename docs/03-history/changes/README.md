@@ -19,3 +19,4 @@ Los cambios anteriores a CHG-2026-11-001 no tienen registro: se rastrean con los
 | [CHG-2026-11-007](CHG-2026-11-007-moneda-boliviano.md) | 2026-11-02 | Moneda boliviano (Bs) | En producción | v1.8.0 | No |
 | [CHG-2026-11-008](CHG-2026-11-008-fabrica-controles.md) | 2026-11-03 | Controles reales para la fábrica de software | En producción | v1.8.1 | No |
 | [CHG-2026-11-009](CHG-2026-11-009-mvp-qol.md) | 2026-11-04 | MVP QoL: traducciones, ingreso superado, modo oscuro y ancho en iPhone | En producción | v1.9.0 | No |
+| [CHG-2026-11-011](CHG-2026-11-011-consejos-lote-1.md) | 2026-11-04 | Consejos y avisos, lote 1 | Entregado | Pendiente | No |

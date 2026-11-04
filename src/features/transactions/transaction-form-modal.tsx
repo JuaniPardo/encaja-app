@@ -44,6 +44,13 @@ type QuickPaymentMethodType = "cash" | "debit_card";
 type CategoryOption = { value: string; label: string };
 type CategoryOptionGroup = { group: string; items: CategoryOption[] };
 
+function isInstallmentsFieldVisible(
+  type: TransactionFormInputValues["type"] | undefined,
+  paymentMethodType: PaymentMethodRow["type"] | null,
+) {
+  return type === "expense" && paymentMethodType === "credit_card";
+}
+
 type TransactionFormModalProps = {
   opened: boolean;
   onClose: () => void;
@@ -83,6 +90,29 @@ export function TransactionFormModal({
 }: TransactionFormModalProps) {
   const { t } = useI18n();
   const amountPrefix = getCurrencyInputPrefix(currencyCode);
+  const isEditingInstallmentPurchase = Boolean(editingRow?.installment_purchase_id);
+
+  const paymentMethodById = useMemo(
+    () => new Map(paymentMethods.map((paymentMethod) => [paymentMethod.id, paymentMethod])),
+    [paymentMethods],
+  );
+
+  const schemaMessages = {
+    invalidAmount: t("common.validation.invalidAmount"),
+    amountGtZero: t("common.validation.amountGtZero"),
+    invalidDate: t("common.validation.invalidDate"),
+    invalidOption: t("common.validation.invalidOption"),
+    requiredCategory: t("common.forms.transaction.requiredCategory"),
+    invalidCategory: t("common.forms.transaction.invalidCategory"),
+    invalidSubcategory: t("common.forms.transaction.invalidSubcategory"),
+    requiredTransactionDate: t("common.forms.transaction.requiredTransactionDate"),
+    descriptionMaxLength: t("common.forms.transaction.descriptionMaxLength"),
+    notesMaxLength: t("common.forms.transaction.notesMaxLength"),
+    invalidInstallmentsCount: t("common.validation.integerNumber"),
+    installmentsCountMin: t("transactions.form.installmentsCountMin"),
+    installmentsCountMinForPurchase: t("transactions.form.installmentsCountMinForPurchase"),
+    installmentsCountMax: t("transactions.form.installmentsCountMax"),
+  };
 
   const {
     register,
@@ -92,23 +122,20 @@ export function TransactionFormModal({
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<TransactionFormInputValues, unknown, TransactionFormValues>({
-    resolver: zodResolver(
-      createTransactionFormSchema({
-        invalidAmount: t("common.validation.invalidAmount"),
-        amountGtZero: t("common.validation.amountGtZero"),
-        invalidDate: t("common.validation.invalidDate"),
-        invalidOption: t("common.validation.invalidOption"),
-        requiredCategory: t("common.forms.transaction.requiredCategory"),
-        invalidCategory: t("common.forms.transaction.invalidCategory"),
-        invalidSubcategory: t("common.forms.transaction.invalidSubcategory"),
-        requiredTransactionDate: t("common.forms.transaction.requiredTransactionDate"),
-        descriptionMaxLength: t("common.forms.transaction.descriptionMaxLength"),
-        notesMaxLength: t("common.forms.transaction.notesMaxLength"),
-        invalidInstallmentsCount: t("common.validation.integerNumber"),
-        installmentsCountMin: t("transactions.form.installmentsCountMin"),
-        installmentsCountMax: t("transactions.form.installmentsCountMax"),
-      }),
-    ),
+    // El mínimo de 2 cuotas solo aplica con el campo visible, para que el error nunca quede oculto.
+    resolver: (values, context, options) =>
+      zodResolver(
+        createTransactionFormSchema(schemaMessages, {
+          requireInstallments:
+            isEditingInstallmentPurchase &&
+            isInstallmentsFieldVisible(
+              values.type,
+              typeof values.paymentMethodId === "string"
+                ? (paymentMethodById.get(values.paymentMethodId)?.type ?? null)
+                : null,
+            ),
+        }),
+      )(values, context, options),
     defaultValues: initialValues,
   });
 
@@ -121,11 +148,6 @@ export function TransactionFormModal({
   const selectedInstallmentsCount = useWatch({ control, name: "installmentsCount" });
   const selectedCategoryId = useWatch({ control, name: "categoryId" });
 
-  const paymentMethodById = useMemo(
-    () => new Map(paymentMethods.map((paymentMethod) => [paymentMethod.id, paymentMethod])),
-    [paymentMethods],
-  );
-
   const selectedPaymentMethod = useMemo(() => {
     if (typeof selectedPaymentMethodId !== "string" || selectedPaymentMethodId.trim() === "") {
       return null;
@@ -134,8 +156,10 @@ export function TransactionFormModal({
     return paymentMethodById.get(selectedPaymentMethodId) ?? null;
   }, [paymentMethodById, selectedPaymentMethodId]);
 
-  const shouldShowInstallmentsField =
-    selectedType === "expense" && selectedPaymentMethod?.type === "credit_card";
+  const shouldShowInstallmentsField = isInstallmentsFieldVisible(
+    selectedType,
+    selectedPaymentMethod?.type ?? null,
+  );
 
   const categoryOptions = useMemo(() => {
     const currentCategoryId = editingRow?.category_id ?? null;
@@ -227,7 +251,7 @@ export function TransactionFormModal({
   }, [categoryOptions, control._formValues, reset, selectedCategoryId]);
 
   useEffect(() => {
-    if (shouldShowInstallmentsField) {
+    if (shouldShowInstallmentsField || isEditingInstallmentPurchase) {
       return;
     }
 
@@ -240,7 +264,7 @@ export function TransactionFormModal({
       shouldTouch: true,
       shouldValidate: true,
     });
-  }, [selectedInstallmentsCount, setValue, shouldShowInstallmentsField]);
+  }, [isEditingInstallmentPurchase, selectedInstallmentsCount, setValue, shouldShowInstallmentsField]);
 
   useEffect(() => {
     const currentValue = control._formValues.subcategoryId;
