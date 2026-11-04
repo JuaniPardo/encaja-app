@@ -1,0 +1,5 @@
+export const INSIGHT_ZERO_TOLERANCE = 0.005;
+
+export const MIN_ELAPSED_DAYS_FOR_PACE_SIGNALS = 10;
+
+export const MIN_VARIABLE_EXPENSE_COUNT = 5;

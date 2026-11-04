@@ -5,6 +5,11 @@ import {
   dashboardAdjustmentSystemKeys,
 } from "@/features/dashboard/lib/dashboard-domain-rules";
 import { buildMonthRange, parseAmountValue, roundMoney } from "@/features/dashboard/lib/dashboard-math";
+import {
+  buildExpenseBudgetByCategory,
+  resolveCardComparisonCutoffDay,
+  sumCardExpenseUpToDay,
+} from "@/features/insights/context-math";
 import type { InsightsContext } from "@/features/insights/types";
 import type { Database } from "@/types/database";
 
@@ -200,6 +205,7 @@ export async function loadInsightsContext({
   const creditCardPaymentsByMethodId = new Map<string, number>();
 
   const expenseByCategoryMap = new Map<string, number>();
+  const expenseCountByCategoryMap = new Map<string, number>();
 
   for (const row of currentTransactions) {
     const amount = parseAmountValue(row.amount);
@@ -228,6 +234,7 @@ export async function loadInsightsContext({
 
         const previousAmount = expenseByCategoryMap.get(row.category_id) ?? 0;
         expenseByCategoryMap.set(row.category_id, roundMoney(previousAmount + amount));
+        expenseCountByCategoryMap.set(row.category_id, (expenseCountByCategoryMap.get(row.category_id) ?? 0) + 1);
       }
 
       if (row.payment_method_id && creditCardIds.has(row.payment_method_id) && !isExcludedCategory) {
@@ -364,6 +371,32 @@ export async function loadInsightsContext({
     referenceDate,
   });
 
+  const cardComparisonCutoffDay = resolveCardComparisonCutoffDay(
+    referenceDate,
+    projectionSummary.daysInMonth,
+    new Date(currentYear, currentMonth - 1, 0).getDate(),
+  );
+  const creditCardExpenseCurrentMonthToDate = sumCardExpenseUpToDay({
+    rows: currentTransactions,
+    period: currentPeriod,
+    cutoffDay: cardComparisonCutoffDay,
+    creditCardIds,
+    excludedCategoryIds: excludedDashboardCategoryIds,
+  });
+  const creditCardExpensePreviousMonthToDate = sumCardExpenseUpToDay({
+    rows: historicalTransactions,
+    period: previousPeriod,
+    cutoffDay: cardComparisonCutoffDay,
+    creditCardIds,
+    excludedCategoryIds: excludedDashboardCategoryIds,
+  });
+
+  const expenseBudgetByCategoryCurrentMonth = buildExpenseBudgetByCategory({
+    categories,
+    budgetItems,
+    expenseByCategory: expenseByCategoryMap,
+  });
+
   const expenseByCategoryCurrentMonth = Array.from(expenseByCategoryMap.entries())
     .map(([categoryId, amount]) => {
       const category = categoryById.get(categoryId);
@@ -372,6 +405,7 @@ export async function loadInsightsContext({
         categoryName: category?.name ?? "Sin categoría",
         amount: roundMoney(amount),
         behavior: category?.type === "expense" ? (category.expense_behavior === "fixed" ? "fixed" : "variable") : null,
+        transactionCount: expenseCountByCategoryMap.get(categoryId) ?? 0,
       } as const;
     })
     .sort((left, right) => right.amount - left.amount);
@@ -387,7 +421,8 @@ export async function loadInsightsContext({
     expenseCurrentMonth: roundMoney(expenseCurrentMonth),
     savingCurrentMonth: roundMoney(savingCurrentMonth),
     creditCardExpenseCurrentMonth: roundMoney(creditCardExpenseCurrentMonth),
-    creditCardExpensePreviousMonth: roundMoney(creditCardPreviousMonthStatement),
+    creditCardExpenseCurrentMonthToDate,
+    creditCardExpensePreviousMonthToDate,
     creditCardPaymentsCurrentMonth: roundMoney(creditCardPaymentsCurrentMonth),
     creditCardPreviousMonthStatement: roundMoney(creditCardPreviousMonthStatement),
     creditCardRolledDebtCurrent: roundMoney(creditCardRolledDebtCurrent),
@@ -403,5 +438,7 @@ export async function loadInsightsContext({
     daysInCurrentMonth: projectionSummary.daysInMonth,
     relevantTransactionCountCurrentMonth,
     expenseByCategoryCurrentMonth,
+    expenseBudgetByCategoryCurrentMonth,
+    variableExpenseBudgetTotal: roundMoney(projectionSummary.expense.variableBudget),
   };
 }

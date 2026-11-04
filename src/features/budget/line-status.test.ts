@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   isBudgetCategoryAtRisk,
+  resolveBudgetCategoryRisk,
   resolveBudgetLineStatus,
   resolveMonthElapsedRatio,
 } from "@/features/budget/line-status";
@@ -174,6 +175,68 @@ describe("isBudgetCategoryAtRisk", () => {
     expect(isBudgetCategoryAtRisk({ ...variableExpense, budgeted: 10000, actual: 6001, monthElapsedRatio: 0.5 })).toBe(
       true,
     );
+  });
+});
+
+describe("resolveBudgetCategoryRisk", () => {
+  const variableExpense = { type: "expense", expenseBehavior: "variable" } as const;
+
+  it("returns exceeded when the actual is over the budget by more than the tolerance", () => {
+    expect(resolveBudgetCategoryRisk({ ...variableExpense, budgeted: 10000, actual: 10500, monthElapsedRatio: 1 })).toBe(
+      "exceeded",
+    );
+    expect(resolveBudgetCategoryRisk({ ...variableExpense, budgeted: 100, actual: 110, monthElapsedRatio: 10 / 30 })).toBe(
+      "exceeded",
+    );
+    expect(
+      resolveBudgetCategoryRisk({ ...variableExpense, budgeted: 100, actual: 100.004, monthElapsedRatio: 1 }),
+    ).not.toBe("exceeded");
+  });
+
+  it("returns atRisk when the used share is ahead of the month pace without exceeding", () => {
+    expect(resolveBudgetCategoryRisk({ ...variableExpense, budgeted: 10000, actual: 8000, monthElapsedRatio: 10 / 30 })).toBe(
+      "atRisk",
+    );
+    expect(resolveBudgetCategoryRisk({ ...variableExpense, budgeted: 10000, actual: 6001, monthElapsedRatio: 0.5 })).toBe(
+      "atRisk",
+    );
+    expect(
+      resolveBudgetCategoryRisk({ type: "expense", expenseBehavior: null, budgeted: 100, actual: 60, monthElapsedRatio: 10 / 30 }),
+    ).toBe("atRisk");
+  });
+
+  it("returns none at the pace margin, for fixed expenses, other types and categories without budget", () => {
+    expect(resolveBudgetCategoryRisk({ ...variableExpense, budgeted: 10000, actual: 6000, monthElapsedRatio: 0.5 })).toBe(
+      "none",
+    );
+    expect(resolveBudgetCategoryRisk({ ...variableExpense, budgeted: 10000, actual: 8000, monthElapsedRatio: 28 / 30 })).toBe(
+      "none",
+    );
+    expect(
+      resolveBudgetCategoryRisk({ type: "expense", expenseBehavior: "fixed", budgeted: 100, actual: 150, monthElapsedRatio: 1 }),
+    ).toBe("none");
+    expect(resolveBudgetCategoryRisk({ type: "income", expenseBehavior: null, budgeted: 100, actual: 150, monthElapsedRatio: 0.5 })).toBe(
+      "none",
+    );
+    expect(resolveBudgetCategoryRisk({ type: "saving", expenseBehavior: null, budgeted: 100, actual: 150, monthElapsedRatio: 0.5 })).toBe(
+      "none",
+    );
+    expect(resolveBudgetCategoryRisk({ ...variableExpense, budgeted: 0, actual: 50, monthElapsedRatio: 0.5 })).toBe("none");
+  });
+
+  it("agrees with isBudgetCategoryAtRisk on every case", () => {
+    const cases = [
+      { ...variableExpense, budgeted: 100, actual: 10, monthElapsedRatio: 0 },
+      { ...variableExpense, budgeted: 100, actual: 11, monthElapsedRatio: 0 },
+      { ...variableExpense, budgeted: 100, actual: 100.006, monthElapsedRatio: 1 },
+      { ...variableExpense, budgeted: 100, actual: 99, monthElapsedRatio: 1 },
+      { type: "expense", expenseBehavior: "fixed", budgeted: 100, actual: 200, monthElapsedRatio: 0.2 },
+      { ...variableExpense, budgeted: 0, actual: 0, monthElapsedRatio: 0.2 },
+    ] as const;
+
+    for (const options of cases) {
+      expect(isBudgetCategoryAtRisk(options)).toBe(resolveBudgetCategoryRisk(options) !== "none");
+    }
   });
 });
 

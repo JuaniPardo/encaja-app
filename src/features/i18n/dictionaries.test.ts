@@ -71,4 +71,25 @@ describe("dictionaries", () => {
     expect(getTranslation("en", "common.domain.transactionType.income")).toBe("Income");
     expect(getTranslation("en", "common.domain.expenseBehavior.fixed")).toBe("Fixed");
   });
+
+  it.each(supportedLocales)("defines the lote 4 insight keys and drops the generic attention badge in %s", (locale) => {
+    const keys = new Set(listTranslationKeys(locale));
+
+    expect(keys.has("insightsV2.dashboard.kindBadge.attention")).toBe(false);
+    expect(keys.has("insightsV2.modules.behavior.insights.categoryImbalance.alertTitle")).toBe(false);
+    expect(keys.has("insightsV2.modules.behavior.insights.categoryImbalance.warningTitle")).toBe(false);
+    for (const key of [
+      "insightsV2.dashboard.kindBadge.cardAcceleration",
+      "insightsV2.dashboard.kindBadge.budgetExceeded",
+      "insightsV2.dashboard.kindBadge.budgetAtRisk",
+      "insightsV2.dashboard.kindBadge.budgetUnderPace",
+      "insightsV2.modules.budget.insights.others.one",
+      "insightsV2.modules.budget.insights.others.other",
+      "insightsV2.modules.behavior.insights.categoryImbalance.highTitle",
+      "insightsV2.modules.behavior.insights.categoryImbalance.moderateTitle",
+      "insightsV2.modules.behavior.insights.categoryImbalance.message",
+    ]) {
+      expect(keys.has(key)).toBe(true);
+    }
+  });
 });

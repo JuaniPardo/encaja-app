@@ -42,7 +42,9 @@ export function resolveMonthElapsedRatio(year: number, month: number, referenceD
   return daysInMonth > 0 ? elapsedDays / daysInMonth : 0;
 }
 
-type IsBudgetCategoryAtRiskOptions = {
+export type BudgetCategoryRisk = "exceeded" | "atRisk" | "none";
+
+type BudgetCategoryRiskOptions = {
   type: TransactionType;
   expenseBehavior: ExpenseBehavior | null;
   budgeted: number;
@@ -50,20 +52,24 @@ type IsBudgetCategoryAtRiskOptions = {
   monthElapsedRatio: number;
 };
 
-export function isBudgetCategoryAtRisk({
+export function resolveBudgetCategoryRisk({
   type,
   expenseBehavior,
   budgeted,
   actual,
   monthElapsedRatio,
-}: IsBudgetCategoryAtRiskOptions): boolean {
+}: BudgetCategoryRiskOptions): BudgetCategoryRisk {
   if (type !== "expense" || expenseBehavior === "fixed" || budgeted <= 0) {
-    return false;
+    return "none";
   }
 
   if (actual > budgeted + OVER_BUDGET_TOLERANCE) {
-    return true;
+    return "exceeded";
   }
 
-  return actual / budgeted > monthElapsedRatio + AT_RISK_PACE_MARGIN;
+  return actual / budgeted > monthElapsedRatio + AT_RISK_PACE_MARGIN ? "atRisk" : "none";
+}
+
+export function isBudgetCategoryAtRisk(options: BudgetCategoryRiskOptions): boolean {
+  return resolveBudgetCategoryRisk(options) !== "none";
 }

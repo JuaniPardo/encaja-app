@@ -1,17 +1,34 @@
+import type { ExpenseBehavior } from "@/types/database";
+
 export type InsightSeverity = "info" | "warning" | "alert" | "positive";
 
-export type InsightModule = "credit_card" | "behavior" | "spending" | "cashflow" | "activity";
+export type InsightModule = "credit_card" | "behavior" | "spending" | "budget" | "cashflow" | "activity";
+
+export type InsightKind =
+  | "unpaid"
+  | "rolled_debt"
+  | "full_payment"
+  | "high_usage"
+  | "high_debt"
+  | "next_month_commitment"
+  | "spending_acceleration"
+  | "stable"
+  | "excess_spending"
+  | "category_imbalance"
+  | "low_saving"
+  | "low_activity"
+  | "budget_exceeded"
+  | "budget_at_risk"
+  | "budget_pace_below";
 
 export type Insight = {
   id: string;
   module: InsightModule;
-  kind: string;
+  kind: InsightKind;
   severity: InsightSeverity;
   title: string;
   message: string;
   priority: number;
-  impact?: number;
-  urgency?: number;
   data?: Record<string, unknown>;
 };
 
@@ -71,6 +88,15 @@ export type InsightCategoryExpense = {
   categoryName: string;
   amount: number;
   behavior: "fixed" | "variable" | null;
+  transactionCount: number;
+};
+
+export type InsightCategoryBudget = {
+  categoryId: string;
+  categoryName: string;
+  expenseBehavior: ExpenseBehavior | null;
+  budgeted: number;
+  actual: number;
 };
 
 export type InsightsContext = {
@@ -84,7 +110,8 @@ export type InsightsContext = {
   expenseCurrentMonth: number;
   savingCurrentMonth: number;
   creditCardExpenseCurrentMonth: number;
-  creditCardExpensePreviousMonth: number;
+  creditCardExpenseCurrentMonthToDate: number;
+  creditCardExpensePreviousMonthToDate: number;
   creditCardPaymentsCurrentMonth: number;
   creditCardPreviousMonthStatement: number;
   creditCardRolledDebtCurrent: number;
@@ -100,4 +127,6 @@ export type InsightsContext = {
   daysInCurrentMonth: number;
   relevantTransactionCountCurrentMonth: number;
   expenseByCategoryCurrentMonth: InsightCategoryExpense[];
+  expenseBudgetByCategoryCurrentMonth: InsightCategoryBudget[];
+  variableExpenseBudgetTotal: number;
 };

@@ -30,6 +30,8 @@ Las fuentes de base de datos son la última definición de cada objeto, reconstr
 | FIN-08 | El pago de tarjeta reduce el disponible y no cuenta como gasto. | `business-rules.md` §5 y §7.1; mismo signo por `direction`. El test del punto anterior no contiene ninguna fila de pago | `Sin test` |
 | FIN-09 | Con el mes abierto, el ingreso fijo esperado es la suma, por categoría de ingreso fija, del máximo entre lo cobrado y lo presupuestado. El ingreso esperado total es el fijo esperado más el variable proyectado. | `business-rules.md` §11; `buildProjectionBehaviorSummary`; tests de `expected income (FIN-09)` | `Confirmada` |
 | FIN-10 | Sin ingreso fijo esperado y con el mes abierto, un balance proyectado negativo no da "Crítico". | `business-rules.md` §14; `resolveFinancialState`; test `caps the level at attention when there is no expected fixed income and the month is open` | `Confirmada` |
+| FIN-11 | Los consejos de tarjeta que comparan contra ingresos (uso alto, deuda alta y compromiso del mes siguiente) usan el ingreso esperado, no el cobrado. | `business-rules.md` §11; `generateCreditCardInsights`; test `does not report high usage on day 5 when the salary is expected but not yet received` | `Confirmada` |
+| FIN-12 | El consejo de presupuesto en riesgo o excedido y el contador de la pantalla de Presupuesto usan la misma regla. | `business-rules.md` §9; `resolveBudgetCategoryRisk`, del que depende `isBudgetCategoryAtRisk`; test `counts the same categories as the budget page counter` | `Confirmada` |
 
 ## 2. Base de datos
 

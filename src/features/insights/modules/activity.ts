@@ -36,8 +36,6 @@ export function generateActivityInsights({ context, t }: ActivityModuleOptions):
         kind: "low_activity",
         severity: "warning",
         priority: 540,
-        impact: 2,
-        urgency: 3,
         title: t("insightsV2.modules.activity.insights.lowActivity.warningTitle"),
         message: t("insightsV2.modules.activity.insights.lowActivity.warningMessage", undefined, {
           days: elapsedDays,
@@ -57,8 +55,6 @@ export function generateActivityInsights({ context, t }: ActivityModuleOptions):
         kind: "low_activity",
         severity: "info",
         priority: 320,
-        impact: 1,
-        urgency: 2,
         title: t("insightsV2.modules.activity.insights.lowActivity.infoTitle"),
         message: t("insightsV2.modules.activity.insights.lowActivity.infoMessage", undefined, {
           count: transactionsCount,
