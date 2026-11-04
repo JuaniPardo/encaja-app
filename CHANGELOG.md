@@ -1,3 +1,25 @@
+## [1.10.0] - 2026-11-04
+
+### Added
+- The financial state card on the dashboard now explains its level in one sentence, and both it and the main insight show a "Today" label.
+
+### Changed
+- Insights and the financial state project fixed income as the larger of what was received and what was budgeted while the month is open, so a budgeted salary not yet received no longer shows a critical state. Without any fixed income, a projected deficit shows as "attention" until the last day of the month.
+- The unpaid card insight is informational until day 15 and a warning from day 16, never an alert.
+- The dashboard hides the financial state and main insight when viewing a past month.
+- The budget counter now shows variable expenses "at risk" by spending pace instead of "critical" categories; fixed expenses, income and savings no longer count.
+- Savings above budget now show as positive ("Saved", "To save", "Above target") in the budget and on the dashboard.
+- Budget lines that match the plan show "On budget" instead of a zero remaining amount.
+- Over-assigned budgets now read "You assigned X above your income" instead of "exceeded", and a balanced budget shows as balanced on mobile too.
+- The dashboard shows loading and error states for the financial state and main insight instead of defaulting to "Stable".
+- Removed the duplicate card statement alert and the card insights for workspaces without credit cards.
+
+### Fixed
+- Percentages in insights no longer show a currency symbol (for example "$ 62%").
+- Card unpaid and rolled-debt messages no longer state that not paying reduces available money.
+- The category concentration insight title showed `{{categoryName}}` instead of the category name.
+- Editing an installment purchase now requires at least 2 installments, with the error shown on the field.
+
 ## [1.9.0] - 2026-11-04
 
 ### Added

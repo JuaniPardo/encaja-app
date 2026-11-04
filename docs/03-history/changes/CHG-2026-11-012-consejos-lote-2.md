@@ -2,10 +2,10 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Entregado |
+| Estado | En producción |
 | Fecha | 2026-11-04 |
 | Rama | `feature/consejos-lote-2` |
-| Release | Pendiente |
+| Release | v1.10.0 |
 | Tarea relacionada | Review de consejos y avisos (lote 2); sigue a CHG-2026-11-011 |
 | Clasificación | L, riesgo alto, UI, financiero |
 | Revisores por ciclo | Ciclo 0: tester, clean-code, seguridad, ui |
@@ -59,6 +59,8 @@ Ninguna.
 - Ciclos de corrección usados: 0 de 2.
 
 ## No verificado
+
+El dueño no informó una prueba en develop antes del release v1.10.0. Todo lo de esta sección sigue sin verificar en producción.
 
 - La lectura de `budget_items` en los consejos no tiene test ni se ejecutó contra la base. Verificar en develop: con el sueldo presupuestado y sin cobrar, a principio de mes, el estado no debería salir "Crítico".
 - Nada se vio en un navegador: el rótulo "Hoy", la frase en 375 px, el ocultamiento con un mes pasado, el ahorro en modo oscuro y el contador en mobile.
