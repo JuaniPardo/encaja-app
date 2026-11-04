@@ -1,3 +1,15 @@
+## [1.11.0] - 2026-11-04
+
+### Added
+- New "Budget" insights section, shown when variable expenses are budgeted: a category already over budget, a category at risk at the current pace (same rule as the budget "at risk" counter), and a positive insight when variable spending is projected under budget.
+- Each insight kind now has its own badge on the dashboard; the generic "Attention" badge is gone.
+
+### Changed
+- Card usage, card debt and next-month commitment insights now compare against expected income (budgeted fixed income as a floor), so they no longer spike before the salary arrives.
+- The card acceleration insight compares this month's card spending with the previous month at the same date, from day 10, instead of against the previous statement.
+- The category concentration insight now looks at variable spending only, requires day 10, five transactions and two categories, and is a warning instead of an alert.
+- Insights are ordered by severity and then priority.
+
 ## [1.10.1] - 2026-11-04
 
 ### Fixed

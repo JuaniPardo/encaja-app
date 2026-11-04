@@ -397,7 +397,10 @@ const dictionaries = {
           lowSaving: "Ahorro bajo",
           lowActivity: "Baja actividad",
           controlled: "Controlado",
-          attention: "Atención",
+          cardAcceleration: "Uso en aumento",
+          budgetExceeded: "Presupuesto superado",
+          budgetAtRisk: "En riesgo",
+          budgetUnderPace: "Debajo de lo previsto",
         },
       },
       financialState: {
@@ -457,9 +460,9 @@ const dictionaries = {
             },
             highUsage: {
               alertTitle: "Estás usando más de un ingreso mensual en la tarjeta",
-              alertMessage: "Tu consumo con tarjeta ya representa {{ratio}} de tus ingresos del mes.",
+              alertMessage: "Tu consumo con tarjeta ya representa {{ratio}} de lo que esperás cobrar este mes.",
               warningTitle: "La tarjeta está consumiendo gran parte de tus ingresos",
-              warningMessage: "Tu consumo con tarjeta ya representa {{ratio}} de tus ingresos del mes.",
+              warningMessage: "Tu consumo con tarjeta ya representa {{ratio}} de lo que esperás cobrar este mes.",
             },
             highDebt: {
               alertTitle: "Tu deuda de tarjeta equivale a más de un mes de ingresos",
@@ -476,8 +479,9 @@ const dictionaries = {
               infoMessage: "Ese monto va a reducir el margen disponible de tus próximos ingresos.",
             },
             acceleration: {
-              title: "Aceleraste el gasto con tarjeta",
-              message: "Pasaste de {{previousAmount}} a {{currentAmount}} en gastos de tarjeta vs el mes anterior.",
+              title: "Estás usando más la tarjeta que el mes pasado",
+              message:
+                "Llevás {{currentAmount}} con tarjeta este mes; a esta altura del mes pasado llevabas {{previousAmount}}.",
             },
             stable: {
               title: "Tu módulo de tarjeta está estable por ahora",
@@ -501,16 +505,40 @@ const dictionaries = {
             },
           },
         },
+        budget: {
+          title: "Presupuesto",
+          description:
+            "Compara lo que llevás gastado en cada categoría variable con lo que presupuestaste, según cuánto pasó del mes.",
+          insights: {
+            exceeded: {
+              title: "Ya superaste tu presupuesto en {{categoryName}}",
+              message: "Llevás {{actualAmount}} de {{budgetAmount}} presupuestados.",
+            },
+            atRisk: {
+              title: "Podrías excederte en {{categoryName}} si mantenés este ritmo",
+              message:
+                "Llevás {{usedRatio}} del presupuesto ({{actualAmount}} de {{budgetAmount}}) y pasó el {{elapsedRatio}} del mes.",
+            },
+            paceBelow: {
+              title: "Vas {{ratio}} por debajo de lo previsto en gastos variables",
+              message:
+                "A este ritmo cerrarías el mes con {{projectedAmount}} de gasto variable, frente a {{budgetAmount}} presupuestados.",
+            },
+            others: {
+              one: "Hay 1 categoría más en la misma situación.",
+              other: "Hay {{count}} categorías más en la misma situación.",
+            },
+          },
+        },
         behavior: {
           title: "Desbalance por categoría",
           description:
-            "Detecta cuando una sola categoría concentra demasiado peso y empieza a dominar el mes.",
+            "Detecta cuando una sola categoría concentra gran parte de tu gasto variable del mes.",
           insights: {
             categoryImbalance: {
-              alertTitle: "{{categoryName}} está concentrando gran parte de tu gasto",
-              alertMessage: "Esta categoría ya representa {{ratio}} del gasto del mes.",
-              warningTitle: "{{categoryName}} está tomando más peso del habitual",
-              warningMessage: "Esta categoría ya representa {{ratio}} del gasto del mes.",
+              highTitle: "{{categoryName}} concentra la mayor parte de tu gasto variable",
+              moderateTitle: "{{categoryName}} ya es más de la mitad de tu gasto variable",
+              message: "Representa {{ratio}} de tu gasto variable del mes.",
             },
           },
         },
@@ -1821,7 +1849,10 @@ const dictionaries = {
           lowSaving: "Low saving",
           lowActivity: "Low activity",
           controlled: "Controlled",
-          attention: "Attention",
+          cardAcceleration: "Rising card use",
+          budgetExceeded: "Over budget",
+          budgetAtRisk: "At risk",
+          budgetUnderPace: "Under budget",
         },
       },
       financialState: {
@@ -1879,9 +1910,9 @@ const dictionaries = {
             },
             highUsage: {
               alertTitle: "Your card spending is above one full monthly income",
-              alertMessage: "Card spending already represents {{ratio}} of your monthly income.",
+              alertMessage: "Your card spending is already {{ratio}} of the income you expect this month.",
               warningTitle: "Card spending is taking a large share of your income",
-              warningMessage: "Card spending already represents {{ratio}} of your monthly income.",
+              warningMessage: "Your card spending is already {{ratio}} of the income you expect this month.",
             },
             highDebt: {
               alertTitle: "Your card debt equals more than one month of income",
@@ -1898,8 +1929,9 @@ const dictionaries = {
               infoMessage: "That amount will reduce the margin available from your upcoming income.",
             },
             acceleration: {
-              title: "Card spending accelerated",
-              message: "You moved from {{previousAmount}} to {{currentAmount}} in card spending vs last month.",
+              title: "You're using your card more than last month",
+              message:
+                "You've spent {{currentAmount}} on your card so far this month; by this point last month you had spent {{previousAmount}}.",
             },
             stable: {
               title: "Your credit card module is stable for now",
@@ -1923,16 +1955,40 @@ const dictionaries = {
             },
           },
         },
+        budget: {
+          title: "Budget",
+          description:
+            "Compares what you've spent in each variable category with your budget, given how much of the month has passed.",
+          insights: {
+            exceeded: {
+              title: "You've already gone over budget in {{categoryName}}",
+              message: "You've spent {{actualAmount}} of a {{budgetAmount}} budget.",
+            },
+            atRisk: {
+              title: "You could go over budget in {{categoryName}} at this pace",
+              message:
+                "You've used {{usedRatio}} of the budget ({{actualAmount}} of {{budgetAmount}}) with {{elapsedRatio}} of the month gone.",
+            },
+            paceBelow: {
+              title: "You're {{ratio}} under budget on variable spending",
+              message:
+                "At this pace you'd end the month with {{projectedAmount}} in variable spending, against a {{budgetAmount}} budget.",
+            },
+            others: {
+              one: "1 more category is in the same situation.",
+              other: "{{count}} more categories are in the same situation.",
+            },
+          },
+        },
         behavior: {
           title: "Category imbalance",
           description:
-            "Detects when one category is concentrating too much weight and starts dominating the month.",
+            "Detects when a single category takes up a large share of your variable spending this month.",
           insights: {
             categoryImbalance: {
-              alertTitle: "{{categoryName}} is concentrating a large share of your spending",
-              alertMessage: "This category already represents {{ratio}} of this month's spending.",
-              warningTitle: "{{categoryName}} is taking more weight than usual",
-              warningMessage: "This category already represents {{ratio}} of this month's spending.",
+              highTitle: "{{categoryName}} accounts for most of your variable spending",
+              moderateTitle: "{{categoryName}} is already more than half of your variable spending",
+              message: "It is {{ratio}} of your variable spending this month.",
             },
           },
         },

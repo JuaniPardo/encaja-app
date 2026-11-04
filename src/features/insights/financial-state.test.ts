@@ -29,7 +29,8 @@ function buildBaseContext(overrides: Partial<InsightsContext> = {}): InsightsCon
     expenseCurrentMonth: 700_000,
     savingCurrentMonth: 120_000,
     creditCardExpenseCurrentMonth: 250_000,
-    creditCardExpensePreviousMonth: 240_000,
+    creditCardExpenseCurrentMonthToDate: 250_000,
+    creditCardExpensePreviousMonthToDate: 240_000,
     creditCardPaymentsCurrentMonth: 250_000,
     creditCardPreviousMonthStatement: 240_000,
     creditCardRolledDebtCurrent: -10_000,
@@ -45,6 +46,8 @@ function buildBaseContext(overrides: Partial<InsightsContext> = {}): InsightsCon
     daysInCurrentMonth: 30,
     relevantTransactionCountCurrentMonth: 14,
     expenseByCategoryCurrentMonth: [],
+    expenseBudgetByCategoryCurrentMonth: [],
+    variableExpenseBudgetTotal: 0,
     ...overrides,
   };
 }
@@ -120,7 +123,8 @@ const CURRENCY_NEXT_TO_PERCENT = /(\$|Bs|US\$|ARS|BOB)\s?-?\d[\d.,]*\s?%/;
 const noCardContext: Partial<InsightsContext> = {
   creditCardCount: 0,
   creditCardExpenseCurrentMonth: 0,
-  creditCardExpensePreviousMonth: 0,
+  creditCardExpenseCurrentMonthToDate: 0,
+  creditCardExpensePreviousMonthToDate: 0,
   creditCardPaymentsCurrentMonth: 0,
   creditCardPreviousMonthStatement: 0,
   creditCardRolledDebtCurrent: 0,

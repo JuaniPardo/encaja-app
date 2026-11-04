@@ -45,8 +45,6 @@ export function generateCashflowInsights({
         kind: "low_saving",
         severity: "warning",
         priority: 660,
-        impact: 3,
-        urgency: 3,
         title: t("insightsV2.modules.cashflow.insights.lowSaving.warningTitle"),
         message: t("insightsV2.modules.cashflow.insights.lowSaving.warningMessage", undefined, {
           ratio: formatPercentValue(savingsRate, percentFormatter),
@@ -66,8 +64,6 @@ export function generateCashflowInsights({
       kind: "low_saving",
       severity: "info",
       priority: 420,
-      impact: 2,
-      urgency: 2,
       title: t("insightsV2.modules.cashflow.insights.lowSaving.infoTitle"),
       message: t("insightsV2.modules.cashflow.insights.lowSaving.infoMessage", undefined, {
         ratio: formatPercentValue(savingsRate, percentFormatter),
