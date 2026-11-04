@@ -1,5 +1,6 @@
 import { Alert, Badge, Group, Paper, Progress, Stack, Text, Title } from "@mantine/core";
 
+import type { BudgetBalanceSummary } from "@/features/budget/balance-summary";
 import { useI18n } from "@/features/i18n/provider";
 import {
   mantineColorTintCssVar,
@@ -21,6 +22,7 @@ type BudgetSummaryPanelProps = {
   } | null;
   statusLabel: string;
   statusTone: "cyan" | "yellow" | "pink";
+  balanceSummary: BudgetBalanceSummary;
   currencyFormatter: Intl.NumberFormat;
 };
 
@@ -29,6 +31,7 @@ export function BudgetSummaryPanel({
   topSpentCategory,
   statusLabel,
   statusTone,
+  balanceSummary,
   currencyFormatter,
 }: BudgetSummaryPanelProps) {
   const { t } = useI18n();
@@ -72,7 +75,7 @@ export function BudgetSummaryPanel({
             <Text size="xs" fw={800} tt="uppercase" c="dimmed" style={{ letterSpacing: "0.08em" }}>
               {t("budget.global.balance", "Balance")}
             </Text>
-            <Text size="xl" fw={900} c={totals.balance >= 0 ? "cyan.7" : "red.7"} style={{ fontVariantNumeric: "tabular-nums" }}>
+            <Text size="xl" fw={900} c={balanceSummary.status === "overassigned" ? "red.7" : "cyan.7"} style={{ fontVariantNumeric: "tabular-nums" }}>
               {currencyFormatter.format(totals.balance)}
             </Text>
           </Stack>
@@ -141,15 +144,9 @@ export function BudgetSummaryPanel({
 
         <Alert color={statusTone === "pink" ? "red" : statusTone} variant={statusTone === "pink" ? "filled" : "light"}>
           <Text size="sm" fw={600}>
-            {totals.balance === 0
-              ? t("budget.summary.balancedMessage", "Tu presupuesto del período está balanceado.")
-              : totals.balance > 0
-                ? t("budget.summary.remainingMessage", undefined, {
-                    amount: currencyFormatter.format(totals.balance),
-                  })
-                : t("budget.summary.overMessage", undefined, {
-                    amount: currencyFormatter.format(Math.abs(totals.balance)),
-                  })}
+            {t(balanceSummary.messageKey, undefined, {
+              amount: currencyFormatter.format(balanceSummary.amount),
+            })}
           </Text>
         </Alert>
       </Stack>

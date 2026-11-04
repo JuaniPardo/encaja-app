@@ -8,6 +8,7 @@ describe("resolveBudgetLineStatus", () => {
       percent: 108,
       clampedPercent: 100,
       isOver: true,
+      isOnTarget: false,
       tone: "overPositive",
     });
   });
@@ -17,6 +18,7 @@ describe("resolveBudgetLineStatus", () => {
       percent: 90,
       clampedPercent: 90,
       isOver: false,
+      isOnTarget: false,
       tone: "within",
     });
   });
@@ -26,6 +28,7 @@ describe("resolveBudgetLineStatus", () => {
       percent: 108,
       clampedPercent: 100,
       isOver: true,
+      isOnTarget: false,
       tone: "overNegative",
     });
   });
@@ -47,6 +50,7 @@ describe("resolveBudgetLineStatus", () => {
       percent: 100,
       clampedPercent: 100,
       isOver: false,
+      isOnTarget: false,
       tone: "within",
     });
   });
@@ -56,6 +60,7 @@ describe("resolveBudgetLineStatus", () => {
       percent: 0,
       clampedPercent: 0,
       isOver: false,
+      isOnTarget: false,
       tone: "within",
     });
   });
@@ -66,6 +71,18 @@ describe("resolveBudgetLineStatus", () => {
       percent: 250,
       clampedPercent: 100,
     });
+  });
+
+  it.each(["income", "expense", "saving"] as const)("marks a %s matching its budget as on target", (type) => {
+    expect(resolveBudgetLineStatus(type, 10000, 10000).isOnTarget).toBe(true);
+    expect(resolveBudgetLineStatus(type, 10000, 10000.004).isOnTarget).toBe(true);
+    expect(resolveBudgetLineStatus(type, 10000, 9999.996).isOnTarget).toBe(true);
+  });
+
+  it("does not mark a line on target without budget or with a real difference", () => {
+    expect(resolveBudgetLineStatus("expense", 0, 0).isOnTarget).toBe(false);
+    expect(resolveBudgetLineStatus("expense", 10000, 10000.01).isOnTarget).toBe(false);
+    expect(resolveBudgetLineStatus("income", 10000, 9999.99).isOnTarget).toBe(false);
   });
 });
 

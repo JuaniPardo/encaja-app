@@ -6,10 +6,12 @@ export type BudgetLineStatus = {
   percent: number;
   clampedPercent: number;
   isOver: boolean;
+  isOnTarget: boolean;
   tone: BudgetLineTone;
 };
 
 const CRITICAL_CONSUMPTION_RATIO = 0.8;
+const ON_TARGET_TOLERANCE = 0.005;
 
 export function resolveBudgetLineStatus(
   type: TransactionType,
@@ -28,6 +30,7 @@ export function resolveBudgetLineStatus(
     percent,
     clampedPercent: Math.min(percent, 100),
     isOver,
+    isOnTarget: budgeted > 0 && Math.abs(actual - budgeted) < ON_TARGET_TOLERANCE,
     tone,
   };
 }

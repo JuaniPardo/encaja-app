@@ -8,24 +8,28 @@ import { generateBehaviorInsights, resolveBehaviorModuleMetadata } from "@/featu
 import { generateSpendingInsights, resolveSpendingModuleMetadata } from "@/features/insights/modules/spending";
 import { generateCashflowInsights, resolveCashflowModuleMetadata } from "@/features/insights/modules/cashflow";
 import { generateActivityInsights, resolveActivityModuleMetadata } from "@/features/insights/modules/activity";
-import type { TranslationFn } from "@/features/insights/intl";
-import type { InsightsContext, InsightsResult } from "@/features/insights/types";
+import { createPercentFormatter, type TranslationFn } from "@/features/insights/intl";
+import type { InsightModuleResult, InsightsContext, InsightsResult } from "@/features/insights/types";
 
 type BuildInsightsResultOptions = {
   context: InsightsContext;
   t: TranslationFn;
   currencyFormatter: Intl.NumberFormat;
+  intlLocale: string;
 };
 
 export function buildInsightsResult({
   context,
   t,
   currencyFormatter,
+  intlLocale,
 }: BuildInsightsResultOptions): InsightsResult {
+  const percentFormatter = createPercentFormatter(intlLocale);
   const financialState = resolveFinancialState({
     context,
     t,
     currencyFormatter,
+    percentFormatter,
   });
 
   const creditCardMetadata = resolveCreditCardModuleMetadata(t);
@@ -33,24 +37,26 @@ export function buildInsightsResult({
     context,
     t,
     currencyFormatter,
+    percentFormatter,
   }).sort(compareInsightsByPriority);
   const spendingMetadata = resolveSpendingModuleMetadata(t);
   const spendingInsights = generateSpendingInsights({
     context,
     t,
     currencyFormatter,
+    percentFormatter,
   }).sort(compareInsightsByPriority);
   const behaviorMetadata = resolveBehaviorModuleMetadata(t);
   const behaviorInsights = generateBehaviorInsights({
     context,
     t,
-    currencyFormatter,
+    percentFormatter,
   }).sort(compareInsightsByPriority);
   const cashflowMetadata = resolveCashflowModuleMetadata(t);
   const cashflowInsights = generateCashflowInsights({
     context,
     t,
-    currencyFormatter,
+    percentFormatter,
   }).sort(compareInsightsByPriority);
   const activityMetadata = resolveActivityModuleMetadata(t);
   const activityInsights = generateActivityInsights({
@@ -58,29 +64,36 @@ export function buildInsightsResult({
     t,
   }).sort(compareInsightsByPriority);
 
-  const modules = [
+  const creditCardModule: InsightModuleResult[] =
+    context.creditCardCount === 0
+      ? []
+      : [
+          {
+            module: "credit_card",
+            metadata: creditCardMetadata,
+            insights: creditCardInsights,
+          },
+        ];
+
+  const modules: InsightModuleResult[] = [
+    ...creditCardModule,
     {
-      module: "credit_card" as const,
-      metadata: creditCardMetadata,
-      insights: creditCardInsights,
-    },
-    {
-      module: "spending" as const,
+      module: "spending",
       metadata: spendingMetadata,
       insights: spendingInsights,
     },
     {
-      module: "behavior" as const,
+      module: "behavior",
       metadata: behaviorMetadata,
       insights: behaviorInsights,
     },
     {
-      module: "cashflow" as const,
+      module: "cashflow",
       metadata: cashflowMetadata,
       insights: cashflowInsights,
     },
     {
-      module: "activity" as const,
+      module: "activity",
       metadata: activityMetadata,
       insights: activityInsights,
     },

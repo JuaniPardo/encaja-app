@@ -5,6 +5,7 @@ type CreditCardModuleOptions = {
   context: InsightsContext;
   t: TranslationFn;
   currencyFormatter: Intl.NumberFormat;
+  percentFormatter: Intl.NumberFormat;
 };
 
 export const creditCardModuleMetadataKey = "credit_card" as const;
@@ -28,18 +29,10 @@ export function generateCreditCardInsights({
   context,
   t,
   currencyFormatter,
+  percentFormatter,
 }: CreditCardModuleOptions): Insight[] {
   if (context.creditCardCount === 0) {
-    return [
-      createInsight({
-        id: "credit_card_stable",
-        kind: "stable",
-        severity: "info",
-        priority: 120,
-        title: t("insightsV2.modules.creditCard.insights.stable.title"),
-        message: t("insightsV2.modules.creditCard.insights.stable.message"),
-      }),
-    ];
+    return [];
   }
 
   const insights: Insight[] = [];
@@ -65,7 +58,9 @@ export function generateCreditCardInsights({
           severity: "warning",
           priority: 810,
           title: t("insightsV2.modules.creditCard.insights.rolledDebt.title"),
-          message: t("insightsV2.modules.creditCard.insights.rolledDebt.message"),
+          message: t("insightsV2.modules.creditCard.insights.rolledDebt.message", undefined, {
+            paidAmount: currencyFormatter.format(monthlyCardPayments),
+          }),
           data: {
             monthlyCardPayments,
             previousMonthCardExpense,
@@ -115,7 +110,7 @@ export function generateCreditCardInsights({
           priority: 930,
           title: t("insightsV2.modules.creditCard.insights.highUsage.alertTitle"),
           message: t("insightsV2.modules.creditCard.insights.highUsage.alertMessage", undefined, {
-            ratio: formatPercentValue(expenseVsIncome, currencyFormatter),
+            ratio: formatPercentValue(expenseVsIncome, percentFormatter),
           }),
           data: {
             expenseVsIncome,
@@ -131,7 +126,7 @@ export function generateCreditCardInsights({
           priority: 820,
           title: t("insightsV2.modules.creditCard.insights.highUsage.warningTitle"),
           message: t("insightsV2.modules.creditCard.insights.highUsage.warningMessage", undefined, {
-            ratio: formatPercentValue(expenseVsIncome, currencyFormatter),
+            ratio: formatPercentValue(expenseVsIncome, percentFormatter),
           }),
           data: {
             expenseVsIncome,
@@ -174,42 +169,6 @@ export function generateCreditCardInsights({
         }),
       );
     }
-
-    const currentStatementVsIncome = statementCurrent / totalIncome;
-    if (currentStatementVsIncome >= 0.5) {
-      insights.push(
-        createInsight({
-          id: "credit_card_statement_alert",
-          kind: "high_statement",
-          severity: "alert",
-          priority: 710,
-          title: t("insightsV2.modules.creditCard.insights.statementPressure.alertTitle"),
-          message: t("insightsV2.modules.creditCard.insights.statementPressure.alertMessage", undefined, {
-            statementAmount: currencyFormatter.format(statementCurrent),
-          }),
-          data: {
-            currentStatementVsIncome,
-          },
-        }),
-      );
-    } else if (currentStatementVsIncome >= 0.35) {
-      insights.push(
-        createInsight({
-          id: "credit_card_statement_warning",
-          kind: "high_statement",
-          severity: "warning",
-          priority: 690,
-          title: t("insightsV2.modules.creditCard.insights.statementPressure.warningTitle"),
-          message: t("insightsV2.modules.creditCard.insights.statementPressure.warningMessage", undefined, {
-            statementAmount: currencyFormatter.format(statementCurrent),
-          }),
-          data: {
-            currentStatementVsIncome,
-          },
-        }),
-      );
-    }
-
   }
 
   if (nextMonthCommitment > tolerance) {

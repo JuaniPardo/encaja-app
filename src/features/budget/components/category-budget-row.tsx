@@ -100,6 +100,7 @@ export function CategoryBudgetRow({
               percent: consumptionPercent,
               clampedPercent,
               isOver,
+              isOnTarget,
               tone,
             } = resolveBudgetLineStatus(category.type, budgetedAmount, spent);
             const isOverNegative = tone === "overNegative";
@@ -190,7 +191,11 @@ export function CategoryBudgetRow({
                     })}
                   </Text>
 
-                  {budgetedAmount > 0 ? (
+                  {isOnTarget ? (
+                    <Text size="10px" c={accentTextColor} fw={700} ta="right">
+                      {t("budget.onTargetFeedback")}
+                    </Text>
+                  ) : budgetedAmount > 0 ? (
                     <Text
                       size="10px"
                       c={isOverNegative ? "red.7" : accentTextColor}

@@ -22,6 +22,7 @@ import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { CategoryBudgetRow } from "@/features/budget/components/category-budget-row";
 import { BudgetGlobalSummary } from "@/features/budget/components/budget-global-summary";
 import { BudgetLoadErrorAlert } from "@/features/budget/components/budget-load-error-alert";
+import { resolveBudgetBalanceSummary } from "@/features/budget/balance-summary";
 import { BudgetSummaryPanel } from "@/features/budget/components/budget-summary-panel";
 import { parseBudgetAmount } from "@/features/budget/amount-format";
 import { isBudgetCategoryCritical } from "@/features/budget/line-status";
@@ -302,13 +303,11 @@ export default function BudgetPage() {
     };
   }, [categories, watchedItems]);
 
-  const roundedBalance = roundMoney(totals.balance);
-  const isBalanced = Math.abs(roundedBalance) < 0.005;
-  const balanceStatus = isBalanced
-    ? "balanced"
-    : roundedBalance > 0
-      ? "remaining"
-      : "overassigned";
+  const balanceSummary = resolveBudgetBalanceSummary(totals.balance);
+  const balanceStatus = balanceSummary.status;
+  const balanceSummaryMessage = t(balanceSummary.messageKey, undefined, {
+    amount: currencyFormatter.format(balanceSummary.amount),
+  });
   const statusTone = balanceStatus === "balanced" ? "cyan" : balanceStatus === "remaining" ? "yellow" : "pink";
   const statusLabel = t(`budget.balanceStatus.${balanceStatus}`);
 
@@ -1144,6 +1143,7 @@ export default function BudgetPage() {
                   topSpentCategory={topSpentCategory}
                   statusLabel={statusLabel}
                   statusTone={statusTone}
+                  balanceSummary={balanceSummary}
                   currencyFormatter={currencyFormatter}
                 />
               ) : (
@@ -1153,13 +1153,7 @@ export default function BudgetPage() {
                       {statusLabel}
                     </Text>
                     <Text size="sm" c="dimmed">
-                      {roundedBalance >= 0
-                        ? t("budget.summary.remainingMessage", undefined, {
-                            amount: currencyFormatter.format(roundedBalance),
-                          })
-                        : t("budget.summary.overMessage", undefined, {
-                            amount: currencyFormatter.format(Math.abs(roundedBalance)),
-                          })}
+                      {balanceSummaryMessage}
                     </Text>
                   </Stack>
                 </Paper>

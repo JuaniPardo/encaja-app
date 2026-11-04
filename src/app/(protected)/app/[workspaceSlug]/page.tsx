@@ -9,6 +9,7 @@ import { DashboardCreditCommitmentsSummaryCard } from "@/features/dashboard/comp
 import { DashboardFinancialStateCard } from "@/features/dashboard/components/dashboard-financial-state-card";
 import { DashboardFinancialMethodsCard } from "@/features/dashboard/components/dashboard-financial-methods-card";
 import { DashboardHeaderCard } from "@/features/dashboard/components/dashboard-header-card";
+import { DashboardInsightsStatusCard } from "@/features/dashboard/components/dashboard-insights-status-card";
 import { DashboardMonthFlowCard } from "@/features/dashboard/components/dashboard-month-flow-card";
 import { DashboardOnboardingCtaCard } from "@/features/dashboard/components/dashboard-onboarding-cta-card";
 import { DashboardPriorityOverviewCard } from "@/features/dashboard/components/dashboard-priority-overview-card";
@@ -20,6 +21,7 @@ import { LinkedWorkspaceSummaryCard } from "@/features/dashboard/components/link
 import { useDashboardData } from "@/features/dashboard/hooks/use-dashboard-data";
 import { useDashboardViewModel } from "@/features/dashboard/hooks/use-dashboard-view-model";
 import { useDashboardResponsive } from "@/features/dashboard/lib/dashboard-responsive";
+import { resolveDashboardInsightsView } from "@/features/dashboard/lib/insights-view-state";
 import { buildMonthOptions, getCurrencyFormatOptions } from "@/features/i18n/formatting";
 import { useI18n } from "@/features/i18n/provider";
 import { useInsightsV2 } from "@/features/insights/use-insights-v2";
@@ -246,7 +248,31 @@ export default function DashboardPage() {
   const expenseRows = summaryRowsByType.get("expense") ?? [];
   const sectionGap = isMobile ? "xs" : "sm";
 
-  const primaryInsightBlock = shouldShowOnboardingCta ? (
+  const insightsView = resolveDashboardInsightsView({
+    shouldShowOnboardingCta,
+    isLoading: isLoadingInsights,
+    hasError: insightsErrorMessage !== null,
+    result: insightsResult,
+  });
+
+  const financialStateBlock =
+    insightsView.financialState === "ready" && insightsResult ? (
+      <DashboardFinancialStateCard
+        isMobile={isMobile}
+        financialState={insightsResult.financialState}
+        currencyFormatter={currencyFormatter}
+        t={t}
+      />
+    ) : insightsView.financialState === "loading" || insightsView.financialState === "error" ? (
+      <DashboardInsightsStatusCard
+        isMobile={isMobile}
+        slot="financialState"
+        status={insightsView.financialState}
+        t={t}
+      />
+    ) : null;
+
+  const primaryInsightBlock = insightsView.primarySlot === "onboarding" ? (
     <DashboardOnboardingCtaCard
       onboardingHref={onboardingHref}
       demoWorkspaceHref={demoWorkspaceHref}
@@ -258,11 +284,18 @@ export default function DashboardPage() {
       }}
       t={t}
     />
-  ) : !isLoadingInsights && insightsResult.primaryInsight ? (
+  ) : insightsView.primarySlot === "insight" && insightsResult?.primaryInsight ? (
     <DashboardPrimaryInsightCard
       insight={insightsResult.primaryInsight}
       insightsHref={insightsHref}
       isMobile={isMobile}
+      t={t}
+    />
+  ) : insightsView.primarySlot === "loading" || insightsView.primarySlot === "error" ? (
+    <DashboardInsightsStatusCard
+      isMobile={isMobile}
+      slot="primaryInsight"
+      status={insightsView.primarySlot}
       t={t}
     />
   ) : (
@@ -306,7 +339,7 @@ export default function DashboardPage() {
         t={t}
       />
 
-      {isDesktop ? (
+      {isDesktop && financialStateBlock ? (
         <Box
           style={{
             display: "grid",
@@ -315,23 +348,13 @@ export default function DashboardPage() {
             alignItems: "start",
           }}
         >
-          <DashboardFinancialStateCard
-            isMobile={isMobile}
-            financialState={insightsResult.financialState}
-            currencyFormatter={currencyFormatter}
-            t={t}
-          />
+          {financialStateBlock}
 
           {primaryInsightBlock}
         </Box>
       ) : (
         <>
-          <DashboardFinancialStateCard
-            isMobile={isMobile}
-            financialState={insightsResult.financialState}
-            currencyFormatter={currencyFormatter}
-            t={t}
-          />
+          {financialStateBlock}
           {primaryInsightBlock}
         </>
       )}

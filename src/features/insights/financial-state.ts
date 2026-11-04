@@ -6,6 +6,7 @@ type ResolveFinancialStateOptions = {
   context: InsightsContext;
   t: TranslationFn;
   currencyFormatter: Intl.NumberFormat;
+  percentFormatter: Intl.NumberFormat;
 };
 
 const zeroTolerance = 0.005;
@@ -97,6 +98,7 @@ export function resolveFinancialState({
   context,
   t,
   currencyFormatter,
+  percentFormatter,
 }: ResolveFinancialStateOptions): FinancialState {
   const availableCurrent = roundMoney(context.availableCurrent);
   const futurePressureAmount = roundMoney(
@@ -132,7 +134,7 @@ export function resolveFinancialState({
     projectedVariableExpense: currencyFormatter.format(context.projectedExpenseVariable),
     projectedBalance: currencyFormatter.format(context.projectedBalance),
     pressureRatio:
-      futurePressureVsIncome === null ? "-" : formatPercentValue(futurePressureVsIncome, currencyFormatter),
+      futurePressureVsIncome === null ? "-" : formatPercentValue(futurePressureVsIncome, percentFormatter),
   };
   const messageKey =
     futurePressureVsIncome === null
