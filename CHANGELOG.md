@@ -1,3 +1,8 @@
+## [1.10.1] - 2026-11-04
+
+### Fixed
+- Error toasts and the session error screen no longer show raw database messages (in English, sometimes with internal details such as row-level security or constraint names). Known cases such as missing permission, expired session, duplicates, invalid data, linked records, connection problems and timeouts now show a translated message, and business messages from the database (for example inviting an email without an account) are shown translated. The original error is logged to the browser console.
+
 ## [1.10.0] - 2026-11-04
 
 ### Added

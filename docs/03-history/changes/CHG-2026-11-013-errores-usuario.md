@@ -2,10 +2,10 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Entregado |
+| Estado | En producción |
 | Fecha | 2026-11-04 |
 | Rama | `feature/errores-usuario` |
-| Release | Pendiente |
+| Release | v1.10.1 |
 | Tarea relacionada | Review de consejos y avisos (lote 3, K11) |
 | Clasificación | L, riesgo alto, UI |
 | Revisores por ciclo | Ciclo 0: tester, clean-code, seguridad, ui |
@@ -55,6 +55,8 @@ Ninguna.
 - Ciclos de corrección usados: 0 de 2.
 
 ## No verificado
+
+El dueño no informó una prueba en develop antes del release v1.10.1. Todo lo de esta sección sigue sin verificar en producción.
 
 - Nada se probó en un navegador ni contra la base: cómo se ven los avisos, la pantalla de sesión y qué forma tienen los errores de red reales en Safari, Chrome y Firefox (una forma desconocida cae en el mensaje genérico).
 - Que los textos de negocio reconocidos coincidan exactamente con los `raise exception` vigentes en la base. Si no coinciden, se ve el mensaje de respaldo, nunca el crudo.
