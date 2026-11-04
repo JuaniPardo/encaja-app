@@ -2,10 +2,10 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Entregado |
+| Estado | En producción |
 | Fecha | 2026-11-03 |
 | Rama | `feature/fabrica-controles` |
-| Release | Pendiente |
+| Release | v1.8.1 |
 | Tarea relacionada | Ninguna |
 | Clasificación | L, riesgo alto, no financiero |
 | Revisores por ciclo | Ciclo 0: tester, seguridad, clean-code, ui. Ciclo 1: tester, seguridad, clean-code. Ciclos 2 a 5: tester, seguridad, clean-code |
