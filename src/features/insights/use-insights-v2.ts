@@ -26,7 +26,7 @@ type UseInsightsV2Options = {
 type UseInsightsV2State = {
   isLoading: boolean;
   errorMessage: string | null;
-  result: InsightsResult;
+  result: InsightsResult | null;
   currencyFormatter: Intl.NumberFormat;
 };
 
@@ -54,50 +54,7 @@ export function useInsightsV2({
     currency_code: "ARS",
     show_cents: false,
   });
-  const emptyResult: InsightsResult = useMemo(
-    () => ({
-      financialState: {
-        level: "stable",
-        title: t("insightsV2.financialState.levels.stable.title"),
-        message: t("insightsV2.financialState.levels.stable.messageNoIncome", undefined, {
-          availableAmount: fallbackFormatter.format(0),
-          futurePressureAmount: fallbackFormatter.format(0),
-          projectedVariableExpense: fallbackFormatter.format(0),
-          projectedBalance: fallbackFormatter.format(0),
-          pressureRatio: "-",
-        }),
-        pressureScore: 0,
-        data: {
-          availableCurrent: 0,
-          futurePressureAmount: 0,
-          futurePressureVsIncome: null,
-          projectedExpenseVariable: 0,
-          projectedBalance: 0,
-        },
-      },
-      allInsights: [],
-      primaryInsight: null,
-      modules: [],
-    }),
-    [fallbackFormatter, t],
-  );
-  const [result, setResult] = useState<InsightsResult>(emptyResult);
-  const [previousEmptyResult, setPreviousEmptyResult] = useState(emptyResult);
-
-  if (previousEmptyResult !== emptyResult) {
-    setPreviousEmptyResult(emptyResult);
-    setResult((currentResult) => {
-      if (
-        currentResult.modules.length > 0 ||
-        currentResult.primaryInsight !== null ||
-        currentResult.allInsights.length > 0
-      ) {
-        return currentResult;
-      }
-
-      return emptyResult;
-    });
-  }
+  const [result, setResult] = useState<InsightsResult | null>(null);
 
   const currencyFormatter = useMemo(
     () =>
@@ -155,6 +112,7 @@ export function useInsightsV2({
             context: loadedContext,
             t,
             currencyFormatter: localFormatter,
+            intlLocale,
           }),
         );
       } catch (error) {
@@ -162,7 +120,7 @@ export function useInsightsV2({
           return;
         }
 
-        setResult(emptyResult);
+        setResult(null);
         setErrorMessage(error instanceof Error ? error.message : "Unknown insights error");
       } finally {
         if (!isCancelled) {
@@ -176,7 +134,7 @@ export function useInsightsV2({
     return () => {
       isCancelled = true;
     };
-  }, [effectiveReferenceDate, emptyResult, fallbackFormatter, intlLocale, supabase, t, workspaceId]);
+  }, [effectiveReferenceDate, fallbackFormatter, intlLocale, supabase, t, workspaceId]);
 
   return {
     isLoading,

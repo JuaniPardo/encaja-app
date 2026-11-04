@@ -372,7 +372,7 @@ export function useTransactionsMutations({
       if (installmentsCount < 2) {
         notifications.show({
           color: "red",
-          title: t("transactions.notifications.invalidInstallmentTypeTitle"),
+          title: t("transactions.notifications.invalidInstallmentsCountTitle"),
           message: t("transactions.notifications.installmentsRequireAtLeastTwo"),
         });
         return;

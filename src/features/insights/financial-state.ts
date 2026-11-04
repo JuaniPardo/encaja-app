@@ -1,11 +1,17 @@
 import { roundMoney } from "@/features/dashboard/lib/dashboard-math";
 import { formatPercentValue, type TranslationFn } from "@/features/insights/intl";
-import type { FinancialState, FinancialStateLevel, InsightsContext } from "@/features/insights/types";
+import type {
+  FinancialState,
+  FinancialStateLevel,
+  FinancialStateReason,
+  InsightsContext,
+} from "@/features/insights/types";
 
 type ResolveFinancialStateOptions = {
   context: InsightsContext;
   t: TranslationFn;
   currencyFormatter: Intl.NumberFormat;
+  percentFormatter: Intl.NumberFormat;
 };
 
 const zeroTolerance = 0.005;
@@ -47,6 +53,11 @@ function resolvePressureScore({
   return clampScore(incomePressure + availabilityPressure + projectionPressure);
 }
 
+type FinancialStateLevelResult = {
+  level: FinancialStateLevel;
+  reason: FinancialStateReason;
+};
+
 function resolveFinancialStateLevel({
   futurePressureAmount,
   futurePressureVsIncome,
@@ -54,6 +65,8 @@ function resolveFinancialStateLevel({
   projectedExpenseVsIncome,
   projectedBalance,
   availableCurrent,
+  hasExpectedFixedIncome,
+  isMonthClosed,
 }: {
   futurePressureAmount: number;
   futurePressureVsIncome: number | null;
@@ -61,42 +74,60 @@ function resolveFinancialStateLevel({
   projectedExpenseVsIncome: number | null;
   projectedBalance: number;
   availableCurrent: number;
-}): FinancialStateLevel {
-  if (
-    (futurePressureVsAvailable !== null && futurePressureVsAvailable >= 1.15) ||
-    (futurePressureVsIncome !== null && futurePressureVsIncome >= 0.9) ||
-    projectedBalance < -zeroTolerance
-  ) {
-    return "critical";
+  hasExpectedFixedIncome: boolean;
+  isMonthClosed: boolean;
+}): FinancialStateLevelResult {
+  const hasProjectedDeficit = projectedBalance < -zeroTolerance;
+
+  if (futurePressureVsAvailable !== null && futurePressureVsAvailable >= 1.15) {
+    return { level: "critical", reason: "pressureOverAvailable" };
   }
 
-  if (
-    (futurePressureVsAvailable !== null && futurePressureVsAvailable >= 0.8) ||
-    (futurePressureVsIncome !== null && futurePressureVsIncome >= 0.6) ||
-    (projectedExpenseVsIncome !== null && projectedExpenseVsIncome >= 0.95)
-  ) {
-    return "attention";
+  if (futurePressureVsIncome !== null && futurePressureVsIncome >= 0.9) {
+    return { level: "critical", reason: "pressureOverIncome" };
+  }
+
+  if (hasProjectedDeficit && (hasExpectedFixedIncome || isMonthClosed)) {
+    return { level: "critical", reason: "projectedDeficit" };
+  }
+
+  if (futurePressureVsAvailable !== null && futurePressureVsAvailable >= 0.8) {
+    return { level: "attention", reason: "pressureOverAvailable" };
+  }
+
+  if (futurePressureVsIncome !== null && futurePressureVsIncome >= 0.6) {
+    return { level: "attention", reason: "pressureOverIncome" };
+  }
+
+  if (projectedExpenseVsIncome !== null && projectedExpenseVsIncome >= 0.95) {
+    return { level: "attention", reason: "expenseNearIncome" };
   }
 
   if (futurePressureAmount > zeroTolerance && availableCurrent <= zeroTolerance && futurePressureVsIncome === null) {
-    return "attention";
+    return { level: "attention", reason: "pressureWithoutAvailable" };
   }
+
+  if (hasProjectedDeficit) {
+    return { level: "attention", reason: "projectedDeficitWithoutFixedIncome" };
+  }
+
+  const reason: FinancialStateReason = futurePressureAmount > zeroTolerance ? "margin" : "marginWithoutCard";
 
   if (
     (futurePressureVsIncome === null || futurePressureVsIncome < 0.35) &&
-    (futurePressureVsAvailable === null || futurePressureVsAvailable < 0.5) &&
-    projectedBalance >= -zeroTolerance
+    (futurePressureVsAvailable === null || futurePressureVsAvailable < 0.5)
   ) {
-    return "healthy";
+    return { level: "healthy", reason };
   }
 
-  return "stable";
+  return { level: "stable", reason };
 }
 
 export function resolveFinancialState({
   context,
   t,
   currencyFormatter,
+  percentFormatter,
 }: ResolveFinancialStateOptions): FinancialState {
   const availableCurrent = roundMoney(context.availableCurrent);
   const futurePressureAmount = roundMoney(
@@ -117,32 +148,33 @@ export function resolveFinancialState({
       ? null
       : context.projectedExpenseTotal / incomeReference;
 
-  const level = resolveFinancialStateLevel({
+  const { level, reason } = resolveFinancialStateLevel({
     futurePressureAmount,
     futurePressureVsIncome,
     futurePressureVsAvailable,
     projectedExpenseVsIncome,
     projectedBalance: context.projectedBalance,
     availableCurrent,
+    hasExpectedFixedIncome: context.projectedFixedIncome > zeroTolerance,
+    isMonthClosed: context.elapsedDaysCurrentMonth >= context.daysInCurrentMonth,
   });
 
+  const formatRatio = (ratio: number | null) =>
+    ratio === null ? "-" : formatPercentValue(ratio, percentFormatter);
   const values = {
     availableAmount: currencyFormatter.format(availableCurrent),
     futurePressureAmount: currencyFormatter.format(futurePressureAmount),
-    projectedVariableExpense: currencyFormatter.format(context.projectedExpenseVariable),
     projectedBalance: currencyFormatter.format(context.projectedBalance),
-    pressureRatio:
-      futurePressureVsIncome === null ? "-" : formatPercentValue(futurePressureVsIncome, currencyFormatter),
+    pressureRatio: formatRatio(futurePressureVsIncome),
+    availableRatio: formatRatio(futurePressureVsAvailable),
+    expenseRatio: formatRatio(projectedExpenseVsIncome),
   };
-  const messageKey =
-    futurePressureVsIncome === null
-      ? `insightsV2.financialState.levels.${level}.messageNoIncome`
-      : `insightsV2.financialState.levels.${level}.message`;
 
   return {
     level,
+    reason,
     title: t(`insightsV2.financialState.levels.${level}.title`),
-    message: t(messageKey, undefined, values),
+    message: t(`insightsV2.financialState.reasons.${reason}`, undefined, values),
     pressureScore: resolvePressureScore({
       futurePressureVsIncome,
       futurePressureVsAvailable,

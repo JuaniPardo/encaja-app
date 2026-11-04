@@ -6,6 +6,7 @@ import {
   buildGovernedDateRangeFilter,
   buildProjectionBehaviorSummary,
   resolveCategoryBehavior,
+  resolvePeriodElapsedDays,
 } from "./dashboard-domain-rules";
 
 describe("dashboard-domain-rules", () => {
@@ -310,5 +311,174 @@ describe("dashboard-domain-rules", () => {
     expect(summary.remainingDays).toBe(0);
     expect(summary.income.variableProjected).toBe(800);
     expect(summary.expense.variableProjected).toBe(620);
+  });
+});
+
+describe("expected income (FIN-09)", () => {
+  const categories = [
+    {
+      id: "cat-income-salary",
+      type: "income" as const,
+      source: "system" as const,
+      system_category_id: "sys-income-salary",
+      expense_behavior: null,
+    },
+    {
+      id: "cat-income-rent",
+      type: "income" as const,
+      source: "system" as const,
+      system_category_id: "sys-income-rent",
+      expense_behavior: null,
+    },
+    {
+      id: "cat-income-extra",
+      type: "income" as const,
+      source: "system" as const,
+      system_category_id: "sys-income-extra",
+      expense_behavior: null,
+    },
+    {
+      id: "cat-expense-groceries",
+      type: "expense" as const,
+      source: "system" as const,
+      system_category_id: "sys-expense-groceries",
+      expense_behavior: "variable" as const,
+    },
+  ];
+  const systemCategoryKeyById = new Map([
+    ["sys-income-salary", "income_salary"],
+    ["sys-income-rent", "income_rent"],
+    ["sys-income-extra", "income_extra"],
+  ]);
+
+  type SummaryInput = Pick<
+    Parameters<typeof buildProjectionBehaviorSummary>[0],
+    "transactionRows" | "budgetItems"
+  > & { selectedMonth?: number; day?: number };
+
+  function buildSummary({ transactionRows, budgetItems, selectedMonth = 4, day = 5 }: SummaryInput) {
+    return buildProjectionBehaviorSummary({
+      categories,
+      transactionRows,
+      budgetItems,
+      systemCategoryKeyById,
+      selectedYear: 2026,
+      selectedMonth,
+      referenceDate: new Date(2026, 3, day, 12, 0, 0, 0),
+    });
+  }
+
+  it("uses the budget of a fixed income not yet received while the month is open", () => {
+    const summary = buildSummary({
+      transactionRows: [{ category_id: "cat-expense-groceries", amount: 200, type: "expense" }],
+      budgetItems: [{ category_id: "cat-income-salary", amount: 1000 }],
+    });
+
+    expect(summary.expectedIncome.fixedExpected).toBe(1000);
+    expect(summary.expectedIncome.total).toBe(1000);
+    expect(summary.expense.projectedTotal).toBe(1200);
+    expect(summary.expectedBalance).toBe(-200);
+    expect(summary.income.projectedTotal).toBe(0);
+    expect(summary.projectedBalance).toBe(-1200);
+  });
+
+  it("keeps the received amount when it exceeds the budget", () => {
+    const summary = buildSummary({
+      transactionRows: [{ category_id: "cat-income-salary", amount: 1200, type: "income" }],
+      budgetItems: [{ category_id: "cat-income-salary", amount: 1000 }],
+    });
+
+    expect(summary.expectedIncome.fixedExpected).toBe(1200);
+    expect(summary.income.projectedTotal).toBe(1200);
+  });
+
+  it("adds the maximum of each fixed category instead of the maximum of the totals", () => {
+    const summary = buildSummary({
+      transactionRows: [{ category_id: "cat-income-salary", amount: 1200, type: "income" }],
+      budgetItems: [
+        { category_id: "cat-income-salary", amount: 1000 },
+        { category_id: "cat-income-rent", amount: 500 },
+      ],
+    });
+
+    expect(summary.expectedIncome.fixedExpected).toBe(1700);
+  });
+
+  it("adds budget items of the same category before comparing", () => {
+    const summary = buildSummary({
+      transactionRows: [{ category_id: "cat-income-salary", amount: 700, type: "income" }],
+      budgetItems: [
+        { category_id: "cat-income-salary", amount: 600 },
+        { category_id: "cat-income-salary", amount: 400 },
+      ],
+    });
+
+    expect(summary.expectedIncome.fixedExpected).toBe(1000);
+  });
+
+  it("does not use the budget of a variable income as a floor", () => {
+    const summary = buildSummary({
+      transactionRows: [{ category_id: "cat-income-extra", amount: 50, type: "income" }],
+      budgetItems: [{ category_id: "cat-income-extra", amount: 800 }],
+    });
+
+    expect(summary.expectedIncome.fixedExpected).toBe(0);
+    expect(summary.expectedIncome.total).toBe(summary.income.variableProjected);
+  });
+
+  it("adds the projected variable income to the expected total", () => {
+    const summary = buildSummary({
+      transactionRows: [
+        { category_id: "cat-income-extra", amount: 100, type: "income" },
+        { category_id: "cat-expense-groceries", amount: 50, type: "expense" },
+      ],
+      budgetItems: [{ category_id: "cat-income-salary", amount: 1000 }],
+    });
+
+    expect(summary.income.variableProjected).toBe(600);
+    expect(summary.expectedIncome.total).toBe(1600);
+    expect(summary.expense.projectedTotal).toBe(300);
+    expect(summary.expectedBalance).toBe(1300);
+    expect(summary.income.projectedTotal).toBe(600);
+    expect(summary.projectedBalance).toBe(300);
+  });
+
+  it("matches the received fixed income in a closed month (FIN-04)", () => {
+    const summary = buildSummary({
+      transactionRows: [{ category_id: "cat-income-salary", amount: 800, type: "income" }],
+      budgetItems: [{ category_id: "cat-income-salary", amount: 1000 }],
+      selectedMonth: 3,
+      day: 15,
+    });
+
+    expect(summary.expectedIncome.fixedExpected).toBe(800);
+    expect(summary.expectedIncome.fixedExpected).toBe(summary.income.fixedReal);
+    expect(summary.expectedIncome.total).toBe(summary.income.projectedTotal);
+    expect(summary.expectedBalance).toBe(summary.projectedBalance);
+  });
+});
+
+describe("resolvePeriodElapsedDays", () => {
+  const referenceDate = new Date(2026, 3, 10, 12, 0, 0, 0);
+
+  it("counts every day of a past month", () => {
+    expect(resolvePeriodElapsedDays({ year: 2026, month: 3, referenceDate })).toEqual({
+      daysInMonth: 31,
+      elapsedDays: 31,
+    });
+  });
+
+  it("counts the days up to today in the current month", () => {
+    expect(resolvePeriodElapsedDays({ year: 2026, month: 4, referenceDate })).toEqual({
+      daysInMonth: 30,
+      elapsedDays: 10,
+    });
+  });
+
+  it("counts no days in a future month", () => {
+    expect(resolvePeriodElapsedDays({ year: 2026, month: 5, referenceDate })).toEqual({
+      daysInMonth: 31,
+      elapsedDays: 0,
+    });
   });
 });

@@ -179,7 +179,9 @@ const dictionaries = {
       savingLabel: "Ahorro",
       balanceLabel: "Balance",
       financialStateTitle: "Estado financiero",
-      financialStatePressureLabel: "Presión futura",
+      financialStatePressureLabel: "Por pagar de tarjeta",
+      todayLabel: "Hoy",
+      financialStateLoadError: "No pudimos calcular tu estado financiero.",
       financialStateQuickMessage: {
         healthy: "Tenés margen para el próximo mes",
         stable: "Tu próximo mes está bajo control",
@@ -360,6 +362,7 @@ const dictionaries = {
         slotTitle: "Insight principal",
         viewAll: "Ver todos los insights",
         open: "Abrir insights",
+        loadError: "No pudimos cargar el insight principal.",
         kindBadge: {
           pendingDebt: "Deuda pendiente",
           highDebt: "Deuda alta",
@@ -377,32 +380,32 @@ const dictionaries = {
         levels: {
           healthy: {
             title: "Saludable",
-            message:
-              "Tu presión futura es {{pressureRatio}} de tus ingresos proyectados y mantenés {{availableAmount}} disponibles.",
-            messageNoIncome:
-              "Tu presión futura es {{futurePressureAmount}} y hoy contás con {{availableAmount}} disponibles.",
           },
           stable: {
             title: "Estable",
-            message:
-              "Tu presión futura llega a {{pressureRatio}} de tus ingresos proyectados, con {{availableAmount}} como margen actual.",
-            messageNoIncome:
-              "Tu presión futura llega a {{futurePressureAmount}} y hoy tu margen disponible es {{availableAmount}}.",
           },
           attention: {
             title: "Atento",
-            message:
-              "Tu presión futura ya representa {{pressureRatio}} de tus ingresos proyectados y conviene seguirla de cerca.",
-            messageNoIncome:
-              "Ya acumulaste {{futurePressureAmount}} de presión futura y hoy el disponible es {{availableAmount}}.",
           },
           critical: {
             title: "Crítico",
-            message:
-              "Tu presión futura ya está en {{pressureRatio}} de tus ingresos proyectados y puede comprometer el próximo mes.",
-            messageNoIncome:
-              "La presión futura de {{futurePressureAmount}} supera el margen disponible actual ({{availableAmount}}).",
           },
+        },
+        reasons: {
+          pressureOverAvailable:
+            "Lo que tenés por pagar de tarjeta ({{futurePressureAmount}}) es el {{availableRatio}} de tu disponible actual.",
+          pressureOverIncome:
+            "Lo que tenés por pagar de tarjeta ({{futurePressureAmount}}) es el {{pressureRatio}} de lo que esperás cobrar este mes.",
+          projectedDeficit: "Con el ritmo de gasto actual, cerrarías el mes con {{projectedBalance}}.",
+          projectedDeficitWithoutFixedIncome:
+            "Todavía no registraste ni presupuestaste ingresos fijos este mes; con lo cargado hasta hoy cerrarías con {{projectedBalance}}.",
+          expenseNearIncome:
+            "Tus gastos proyectados llegan al {{expenseRatio}} de lo que esperás cobrar este mes.",
+          pressureWithoutAvailable:
+            "Tenés {{futurePressureAmount}} por pagar de tarjeta y hoy no tenés disponible.",
+          margin: "Tenés {{futurePressureAmount}} por pagar de tarjeta y {{availableAmount}} disponibles.",
+          marginWithoutCard:
+            "No tenés pagos de tarjeta pendientes y hoy tenés {{availableAmount}} disponibles.",
         },
       },
       modules: {
@@ -413,7 +416,8 @@ const dictionaries = {
           insights: {
             unpaid: {
               title: "Todavía no pagaste tu tarjeta este mes",
-              message: "Esto reduce el dinero disponible para este mes.",
+              message:
+                "Todavía no registraste pagos a tu tarjeta este mes. Cuando lo pagues, ese pago sale de tu disponible.",
             },
             partialPayment: {
               title: "Hiciste un pago parcial de tu tarjeta",
@@ -421,7 +425,7 @@ const dictionaries = {
             },
             rolledDebt: {
               title: "Arrastraste deuda de tu tarjeta al mes actual",
-              message: "Esto reduce el dinero disponible para este mes.",
+              message: "Pagaste {{paidAmount}}, menos que el resumen anterior. Lo que falte pagar pasa al próximo resumen.",
             },
             fullPayment: {
               title: "Pagaste tu tarjeta completa este mes",
@@ -438,12 +442,6 @@ const dictionaries = {
               alertMessage: "Tu deuda total de tarjeta ya llega a {{debtAmount}}.",
               warningTitle: "Tu deuda de tarjeta representa una parte importante de tus ingresos",
               warningMessage: "Tu deuda total de tarjeta ya llega a {{debtAmount}}.",
-            },
-            statementPressure: {
-              alertTitle: "Tus consumos del mes con tarjeta ya son altos",
-              alertMessage: "Ya llevás consumidos {{statementAmount}} con tarjeta en lo que va del mes.",
-              warningTitle: "Tus consumos del mes con tarjeta ya son altos",
-              warningMessage: "Ya llevás consumidos {{statementAmount}} con tarjeta en lo que va del mes.",
             },
             nextCommitment: {
               alertTitle: "Ya tenés {{amount}} comprometidos en la tarjeta para el mes que viene",
@@ -1015,6 +1013,7 @@ const dictionaries = {
         installmentsCount: "Cantidad de cuotas",
         installmentsHint: "Solo disponible para gastos con tarjeta de crédito.",
         installmentsCountMin: "La cantidad mínima es 1.",
+        installmentsCountMinForPurchase: "Una compra en cuotas necesita al menos 2 cuotas.",
         installmentsCountMax: "La cantidad máxima es 120.",
         noPaymentMethod: "Sin medio de pago",
         noSubcategory: "Sin subcategoría",
@@ -1103,6 +1102,7 @@ const dictionaries = {
         installmentCreateFromEditBlockedMessage:
           "Por ahora, solo podés crear cuotas desde una transacción nueva.",
         invalidInstallmentTypeTitle: "Tipo incompatible con cuotas",
+        invalidInstallmentsCountTitle: "Cantidad de cuotas inválida",
         invalidInstallmentTypeMessage:
           "Las cuotas solo están disponibles para transacciones de gasto.",
         installmentsRequireAtLeastTwo:
@@ -1152,17 +1152,22 @@ const dictionaries = {
       },
       spentFeedback: "Gastado: {{amount}} ({{percent}}%)",
       receivedFeedback: "Recibido: {{amount}} ({{percent}}%)",
+      savedFeedback: "Ahorrado: {{amount}} ({{percent}}%)",
       remainingFeedback: "{{state}}: {{amount}}",
+      onTargetFeedback: "En lo previsto",
       remainingStates: {
         available: "Disponible",
         over: "Excedido",
         pending: "Por recibir",
+        toSave: "Por ahorrar",
         exceeded: "Superado",
       },
       consumptionFeedback: "{{percent}}% usado",
       receivedConsumptionFeedback: "{{percent}}% recibido",
-      sectionSummary:
-        "{{count}} categoría{{countPluralSuffix}} · {{criticalCount}} crítica{{criticalPluralSuffix}}",
+      savedConsumptionFeedback: "{{percent}}% ahorrado",
+      categoryCountOne: "1 categoría",
+      categoryCountOther: "{{count}} categorías",
+      atRiskCount: "{{count}} en riesgo",
       summary: {
         title: "Resumen del presupuesto",
         subtitle: "Leé el estado global antes de seguir asignando montos.",
@@ -1171,7 +1176,7 @@ const dictionaries = {
         topSpentDetail: "{{percent}}% del presupuesto consumido",
         balancedMessage: "Tu presupuesto del período está balanceado.",
         remainingMessage: "Todavía tenés {{amount}} disponibles para asignar.",
-        overMessage: "Estás excedido por {{amount}} frente a tus ingresos.",
+        overMessage: "Asignaste {{amount}} por encima de tus ingresos.",
       },
       periodSummary: "Resumen de montos para {{monthYear}}.",
       periodResultTitle: "Resultado del período",
@@ -1572,7 +1577,9 @@ const dictionaries = {
       savingLabel: "Savings",
       balanceLabel: "Balance",
       financialStateTitle: "Financial state",
-      financialStatePressureLabel: "Future pressure",
+      financialStatePressureLabel: "Card amount to pay",
+      todayLabel: "Today",
+      financialStateLoadError: "We couldn't calculate your financial state.",
       financialStateQuickMessage: {
         healthy: "You have room for next month",
         stable: "Your next month is under control",
@@ -1755,6 +1762,7 @@ const dictionaries = {
         slotTitle: "Primary insight",
         viewAll: "View all insights",
         open: "Open insights",
+        loadError: "We couldn't load the primary insight.",
         kindBadge: {
           pendingDebt: "Pending debt",
           highDebt: "High debt",
@@ -1772,32 +1780,29 @@ const dictionaries = {
         levels: {
           healthy: {
             title: "Healthy",
-            message:
-              "Your future pressure is {{pressureRatio}} of projected income and you still have {{availableAmount}} available.",
-            messageNoIncome:
-              "Your future pressure is {{futurePressureAmount}} and you currently have {{availableAmount}} available.",
           },
           stable: {
             title: "Stable",
-            message:
-              "Your future pressure is already {{pressureRatio}} of projected income, with {{availableAmount}} as current margin.",
-            messageNoIncome:
-              "Your future pressure reaches {{futurePressureAmount}} and your current available margin is {{availableAmount}}.",
           },
           attention: {
             title: "Attention",
-            message:
-              "Your future pressure already represents {{pressureRatio}} of projected income and is worth following closely.",
-            messageNoIncome:
-              "You already accumulated {{futurePressureAmount}} in future pressure while current availability is {{availableAmount}}.",
           },
           critical: {
             title: "Critical",
-            message:
-              "Your future pressure is already {{pressureRatio}} of projected income and may compromise next month.",
-            messageNoIncome:
-              "Future pressure of {{futurePressureAmount}} is above your current available margin ({{availableAmount}}).",
           },
+        },
+        reasons: {
+          pressureOverAvailable:
+            "What you owe on your cards ({{futurePressureAmount}}) is {{availableRatio}} of your current available money.",
+          pressureOverIncome:
+            "What you owe on your cards ({{futurePressureAmount}}) is {{pressureRatio}} of the income you expect this month.",
+          projectedDeficit: "At your current spending pace, you would end the month at {{projectedBalance}}.",
+          projectedDeficitWithoutFixedIncome:
+            "You haven't recorded or budgeted fixed income this month yet; with what you've entered so far you would end at {{projectedBalance}}.",
+          expenseNearIncome: "Your projected expenses reach {{expenseRatio}} of the income you expect this month.",
+          pressureWithoutAvailable: "You owe {{futurePressureAmount}} on your cards and have no available money today.",
+          margin: "You owe {{futurePressureAmount}} on your cards and have {{availableAmount}} available.",
+          marginWithoutCard: "You have no pending card payments and {{availableAmount}} available today.",
         },
       },
       modules: {
@@ -1808,7 +1813,8 @@ const dictionaries = {
           insights: {
             unpaid: {
               title: "You still haven't paid your card this month",
-              message: "This reduces the money available for this month.",
+              message:
+                "You haven't recorded any payments to your card this month. When you pay it, that payment comes out of your available money.",
             },
             partialPayment: {
               title: "You made a partial card payment",
@@ -1816,7 +1822,8 @@ const dictionaries = {
             },
             rolledDebt: {
               title: "You carried card debt into the current month",
-              message: "This reduces the money available for this month.",
+              message:
+                "You paid {{paidAmount}}, less than the previous statement. Whatever is left to pay moves to the next statement.",
             },
             fullPayment: {
               title: "You paid your card in full this month",
@@ -1833,12 +1840,6 @@ const dictionaries = {
               alertMessage: "Your total card debt is already {{debtAmount}}.",
               warningTitle: "Your card debt is a significant share of your income",
               warningMessage: "Your total card debt is already {{debtAmount}}.",
-            },
-            statementPressure: {
-              alertTitle: "Your card spending this month is already high",
-              alertMessage: "You have already spent {{statementAmount}} on your card so far this month.",
-              warningTitle: "Your card spending this month is already high",
-              warningMessage: "You have already spent {{statementAmount}} on your card so far this month.",
             },
             nextCommitment: {
               alertTitle: "You already have {{amount}} committed on your card for next month",
@@ -2410,6 +2411,7 @@ const dictionaries = {
         installmentsCount: "Installments",
         installmentsHint: "Only available for credit card expense transactions.",
         installmentsCountMin: "Minimum value is 1.",
+        installmentsCountMinForPurchase: "An installment purchase needs at least 2 installments.",
         installmentsCountMax: "Maximum value is 120.",
         noPaymentMethod: "No payment method",
         noSubcategory: "No subcategory",
@@ -2501,6 +2503,7 @@ const dictionaries = {
         installmentCreateFromEditBlockedMessage:
           "For now, you can only create installments from a new transaction.",
         invalidInstallmentTypeTitle: "Type incompatible with installments",
+        invalidInstallmentsCountTitle: "Invalid number of installments",
         invalidInstallmentTypeMessage:
           "Installments are only available for expense transactions.",
         installmentsRequireAtLeastTwo:
@@ -2550,17 +2553,22 @@ const dictionaries = {
       },
       spentFeedback: "Spent: {{amount}} ({{percent}}%)",
       receivedFeedback: "Received: {{amount}} ({{percent}}%)",
+      savedFeedback: "Saved: {{amount}} ({{percent}}%)",
       remainingFeedback: "{{state}}: {{amount}}",
+      onTargetFeedback: "On budget",
       remainingStates: {
         available: "Available",
         over: "Over",
         pending: "Pending",
+        toSave: "To save",
         exceeded: "Above target",
       },
       consumptionFeedback: "{{percent}}% used",
       receivedConsumptionFeedback: "{{percent}}% received",
-      sectionSummary:
-        "{{count}} categories · {{criticalCount}} critical{{criticalPluralSuffix}}",
+      savedConsumptionFeedback: "{{percent}}% saved",
+      categoryCountOne: "1 category",
+      categoryCountOther: "{{count}} categories",
+      atRiskCount: "{{count}} at risk",
       summary: {
         title: "Budget summary",
         subtitle: "Review the overall state before assigning more amounts.",
@@ -2569,7 +2577,7 @@ const dictionaries = {
         topSpentDetail: "{{percent}}% of budget consumed",
         balancedMessage: "Your budget for this period is balanced.",
         remainingMessage: "You still have {{amount}} available to assign.",
-        overMessage: "You are over by {{amount}} compared to your income.",
+        overMessage: "You assigned {{amount}} above your income.",
       },
       periodSummary: "Amount summary for {{monthYear}}.",
       periodResultTitle: "Period result",

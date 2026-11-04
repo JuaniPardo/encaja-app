@@ -4,7 +4,7 @@ import type { Insight, InsightModuleMetadata, InsightsContext } from "@/features
 type CashflowModuleOptions = {
   context: InsightsContext;
   t: TranslationFn;
-  currencyFormatter: Intl.NumberFormat;
+  percentFormatter: Intl.NumberFormat;
 };
 
 const zeroTolerance = 0.005;
@@ -27,7 +27,7 @@ export function resolveCashflowModuleMetadata(t: TranslationFn): InsightModuleMe
 export function generateCashflowInsights({
   context,
   t,
-  currencyFormatter,
+  percentFormatter,
 }: CashflowModuleOptions): Insight[] {
   if (context.elapsedDaysCurrentMonth < 7 || context.incomeCurrentMonth <= zeroTolerance) {
     return [];
@@ -49,7 +49,7 @@ export function generateCashflowInsights({
         urgency: 3,
         title: t("insightsV2.modules.cashflow.insights.lowSaving.warningTitle"),
         message: t("insightsV2.modules.cashflow.insights.lowSaving.warningMessage", undefined, {
-          ratio: formatPercentValue(savingsRate, currencyFormatter),
+          ratio: formatPercentValue(savingsRate, percentFormatter),
         }),
         data: {
           savingsRate,
@@ -70,7 +70,7 @@ export function generateCashflowInsights({
       urgency: 2,
       title: t("insightsV2.modules.cashflow.insights.lowSaving.infoTitle"),
       message: t("insightsV2.modules.cashflow.insights.lowSaving.infoMessage", undefined, {
-        ratio: formatPercentValue(savingsRate, currencyFormatter),
+        ratio: formatPercentValue(savingsRate, percentFormatter),
       }),
       data: {
         savingsRate,

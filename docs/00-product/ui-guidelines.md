@@ -102,6 +102,9 @@ Reglas:
 - `src/app/theme-tokens.test.ts` hace cumplir ambas reglas
 
 Presupuesto contra real:
-- en ingresos, superar lo previsto es positivo: se muestra con el color del tipo (`teal`, tono 7), con "Recibido", "Por recibir" y "Superado", y no suma al contador de críticas
-- en gastos y ahorro, superar lo previsto sigue en rojo con "Excedido"
-- es el mismo criterio que `getDeviationColor` en `src/features/dashboard/lib/dashboard-math.ts`
+- en ingresos, superar lo previsto es positivo: se muestra con el color del tipo (`teal`, tono 7), con "Recibido", "Por recibir" y "Superado"
+- en ahorro, sigue el patrón del ingreso: superar lo previsto es positivo y se muestra con el color del tipo (`indigo`, tono 7), con "Ahorrado", "Por ahorrar" y "Superado"
+- en gastos, superar lo previsto sigue en rojo con "Excedido"
+- es el mismo criterio que `getDeviationColor` en `src/features/dashboard/lib/dashboard-math.ts` en los tres tipos: superar lo previsto es positivo en ingresos y ahorro, y negativo en gastos
+- el contador del encabezado de sección se llama "en riesgo" y solo aplica a gastos variables (ver `business-rules.md` §9); ingresos y ahorro muestran solo la cantidad de categorías
+- con presupuesto mayor que 0 y el real igual a lo previsto (diferencia menor que 0,005), la línea muestra "En lo previsto" ("On budget") en lugar de un restante de 0, en los tres tipos
