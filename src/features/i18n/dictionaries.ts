@@ -3,6 +3,30 @@ import { defaultLocale, type Locale } from "@/features/i18n/config";
 const dictionaries = {
   es: {
     common: {
+      errors: {
+        generic: "Ocurrió un error inesperado. Probá de nuevo en unos minutos.",
+        permissionDenied: "No tenés permiso para hacer esta acción en esta Caja.",
+        sessionExpired: "Tu sesión expiró. Volvé a ingresar para continuar.",
+        duplicate: "Ya existe un registro con esos datos.",
+        invalidValue: "Alguno de los datos no es válido. Revisalos y probá de nuevo.",
+        relatedRecords: "No se puede completar porque hay otros datos vinculados a este registro.",
+        network: "No pudimos conectarnos. Revisá tu conexión y probá de nuevo.",
+        timeout: "La operación tardó demasiado. Probá de nuevo.",
+        business: {
+          inviteEmailNotFound: "No encontramos ese email. La persona tiene que registrarse primero.",
+          inviteSelf: "No podés invitarte a vos mismo.",
+          ownerOnly: "Solo la persona dueña de la Caja puede hacer esto.",
+          removeSelf: "No podés quitarte a vos mismo de la Caja.",
+          removeOwner: "No podés quitar a la persona dueña de la Caja.",
+          memberNotFound: "No encontramos a ese miembro en esta Caja.",
+          linkSelf: "No podés vincular una Caja consigo misma.",
+          linkTargetAccess: "Necesitás acceso a la Caja destino para vincularla.",
+          linkNotFound: "No encontramos un vínculo activo para desactivar.",
+          leaveNotAllowed: "No podés abandonar esta Caja.",
+          installmentsCountRange: "La compra en cuotas debe tener entre 2 y 120 cuotas.",
+          installmentsRequireCreditCard: "Las compras en cuotas requieren una tarjeta de crédito.",
+        },
+      },
       role: {
         owner: "owner",
         member: "member",
@@ -1401,6 +1425,30 @@ const dictionaries = {
   },
   en: {
     common: {
+      errors: {
+        generic: "Something went wrong. Please try again in a few minutes.",
+        permissionDenied: "You don't have permission to do this in this workspace.",
+        sessionExpired: "Your session has expired. Sign in again to continue.",
+        duplicate: "A record with these details already exists.",
+        invalidValue: "Some of the data isn't valid. Check it and try again.",
+        relatedRecords: "This can't be completed because other data is linked to this record.",
+        network: "We couldn't connect. Check your connection and try again.",
+        timeout: "The operation took too long. Please try again.",
+        business: {
+          inviteEmailNotFound: "We couldn't find that email. The person needs to sign up first.",
+          inviteSelf: "You can't invite yourself.",
+          ownerOnly: "Only the workspace owner can do this.",
+          removeSelf: "You can't remove yourself from the workspace.",
+          removeOwner: "You can't remove the workspace owner.",
+          memberNotFound: "We couldn't find that member in this workspace.",
+          linkSelf: "You can't link a workspace to itself.",
+          linkTargetAccess: "You need access to the target workspace to link it.",
+          linkNotFound: "We couldn't find an active link to deactivate.",
+          leaveNotAllowed: "You can't leave this workspace.",
+          installmentsCountRange: "An installment purchase must have between 2 and 120 installments.",
+          installmentsRequireCreditCard: "Installment purchases require a credit card.",
+        },
+      },
       role: {
         owner: "owner",
         member: "member",

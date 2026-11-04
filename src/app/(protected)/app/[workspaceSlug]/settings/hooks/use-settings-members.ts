@@ -13,6 +13,7 @@ import {
 } from "@/features/workspace/members-schema";
 import { canManageWorkspaceMembers } from "@/features/workspace/permissions";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
+import { getUserFacingErrorMessage } from "@/lib/errors/user-facing-error";
 
 import type { WorkspaceMemberSummary } from "../types";
 
@@ -63,7 +64,7 @@ export function useSettingsMembers() {
       notifications.show({
         color: "red",
         title: t("workspaceSettings.notifications.loadMembersError"),
-        message: response.error.message,
+        message: getUserFacingErrorMessage(response.error, t("common.errors.generic"), t),
       });
       return;
     }
@@ -107,7 +108,7 @@ export function useSettingsMembers() {
       notifications.show({
         color: "red",
         title: t("workspaceSettings.notifications.inviteMemberError"),
-        message: response.error.message,
+        message: getUserFacingErrorMessage(response.error, t("common.errors.generic"), t),
       });
       return;
     }
@@ -165,7 +166,7 @@ export function useSettingsMembers() {
       notifications.show({
         color: "red",
         title: t("workspaceSettings.notifications.removeMemberError"),
-        message: response.error.message,
+        message: getUserFacingErrorMessage(response.error, t("common.errors.generic"), t),
       });
       return;
     }

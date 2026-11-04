@@ -27,6 +27,7 @@ import { getCurrencyInputPrefix } from "@/features/i18n/formatting";
 import { useI18n } from "@/features/i18n/provider";
 import { resolveTransferSystemCategoryKey } from "@/features/transactions/transfer-category";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
+import { getUserFacingErrorMessage } from "@/lib/errors/user-facing-error";
 import type { Database } from "@/types/database";
 
 type PaymentMethodRow = Database["public"]["Tables"]["payment_methods"]["Row"];
@@ -218,7 +219,7 @@ export function TransferModal({
         notifications.show({
           color: "red",
           title: t("transactions.notifications.registerError"),
-          message: error.message,
+          message: getUserFacingErrorMessage(error, t("common.errors.generic"), t),
         });
         return;
       }

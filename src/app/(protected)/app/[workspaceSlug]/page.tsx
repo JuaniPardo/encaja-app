@@ -28,6 +28,7 @@ import { useInsightsV2 } from "@/features/insights/use-insights-v2";
 import { canManageWorkspaceSettings } from "@/features/workspace/permissions";
 import { buildWorkspaceHref } from "@/features/workspace/routing";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
+import { getUserFacingErrorMessage } from "@/lib/errors/user-facing-error";
 
 export default function DashboardPage() {
   const { supabase, workspace, workspaces, createDemoWorkspace, switchWorkspace } = useWorkspace();
@@ -234,7 +235,7 @@ export default function DashboardPage() {
       notifications.show({
         color: "red",
         title: t("dashboard.notifications.createDemoWorkspaceError"),
-        message: error instanceof Error ? error.message : t("dashboard.notifications.createDemoWorkspaceError"),
+        message: getUserFacingErrorMessage(error, t("common.errors.generic"), t),
       });
     } finally {
       setIsCreatingDemoWorkspace(false);

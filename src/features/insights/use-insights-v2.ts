@@ -8,6 +8,7 @@ import { buildInsightsResult } from "@/features/insights/engine";
 import { loadInsightsContext } from "@/features/insights/data";
 import type { TranslationFn } from "@/features/insights/intl";
 import type { InsightsResult } from "@/features/insights/types";
+import { getUserFacingErrorMessage } from "@/lib/errors/user-facing-error";
 import type { Database } from "@/types/database";
 
 type WorkspaceSettingsRow = Pick<
@@ -121,7 +122,7 @@ export function useInsightsV2({
         }
 
         setResult(null);
-        setErrorMessage(error instanceof Error ? error.message : "Unknown insights error");
+        setErrorMessage(getUserFacingErrorMessage(error, t("common.errors.generic"), t));
       } finally {
         if (!isCancelled) {
           setIsLoading(false);

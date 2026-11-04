@@ -14,6 +14,7 @@ vi.mock("@/lib/workspace/demo-seed", () => ({
   materializeDemoSeedTransactions: vi.fn(),
 }));
 
+import { UserFacingError } from "@/lib/errors/user-facing-error";
 import {
   createDemoPaymentMethods,
   resolveBalanceAdjustmentCategoryForWorkspace,
@@ -31,7 +32,7 @@ function buildSupabaseMock(options?: {
   existingDemo?: boolean;
   systemCategoryRows?: Array<{ id: string; key: string }>;
   workspaceCategoryRows?: Array<{ id: string; system_category_id: string | null }>;
-  transactionsInsertError?: { message: string } | null;
+  transactionsInsertError?: { message: string; code?: string } | null;
 }) {
   const upsert = vi.fn(async () => ({ error: null }));
 
@@ -331,13 +332,14 @@ describe("createDemoWorkspaceForUser", () => {
       email: "owner@encaja.app",
     } as User;
 
-    await expect(
-      createDemoWorkspaceForUser({
-        supabase,
-        user,
-        name: "Caja Demo",
-      }),
-    ).rejects.toThrow("Ya tenés una Caja Demo activa.");
+    const creation = createDemoWorkspaceForUser({
+      supabase,
+      user,
+      name: "Caja Demo",
+    });
+
+    await expect(creation).rejects.toBeInstanceOf(UserFacingError);
+    await expect(creation).rejects.toThrow("Ya tenés una Caja Demo activa.");
 
     expect(rpc).not.toHaveBeenCalledWith("create_workspace_with_defaults", {
       p_workspace_name: "Caja Demo",
@@ -349,6 +351,7 @@ describe("createDemoWorkspaceForUser", () => {
     const { supabase, rpc } = buildSupabaseMock({
       transactionsInsertError: {
         message: "insert failed",
+        code: "23503",
       },
     });
     const user = {
@@ -362,7 +365,7 @@ describe("createDemoWorkspaceForUser", () => {
         user,
         name: "Caja Demo",
       }),
-    ).rejects.toThrow("insert failed");
+    ).rejects.toMatchObject({ message: "insert failed", code: "23503" });
 
     expect(rpc).toHaveBeenCalledWith("delete_workspace", {
       p_workspace_id: "workspace-demo",

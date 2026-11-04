@@ -8,9 +8,8 @@ import { useI18n } from "@/features/i18n/provider";
 import { canDeleteWorkspace } from "@/features/workspace/permissions";
 import { buildWorkspaceHref } from "@/features/workspace/routing";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
+import { getUserFacingErrorMessage } from "@/lib/errors/user-facing-error";
 import { ROUTES } from "@/lib/routes";
-
-import { getErrorMessage } from "../types";
 
 export function useSettingsLifecycle() {
   const { t } = useI18n();
@@ -78,9 +77,10 @@ export function useSettingsLifecycle() {
       notifications.show({
         color: "red",
         title: t("workspaceSettings.notifications.deleteWorkspaceError"),
-        message: getErrorMessage(
+        message: getUserFacingErrorMessage(
           error,
           t("workspaceSettings.notifications.unexpectedDeleteWorkspaceError"),
+          t,
         ),
       });
     } finally {
@@ -119,9 +119,10 @@ export function useSettingsLifecycle() {
         notifications.show({
           color: "red",
           title: t("workspaceSettings.notifications.leaveWorkspaceError"),
-          message: getErrorMessage(
+          message: getUserFacingErrorMessage(
             error,
             t("workspaceSettings.notifications.unexpectedLeaveWorkspaceError"),
+            t,
           ),
         });
         return;
@@ -145,9 +146,10 @@ export function useSettingsLifecycle() {
       notifications.show({
         color: "red",
         title: t("workspaceSettings.notifications.leaveWorkspaceError"),
-        message: getErrorMessage(
+        message: getUserFacingErrorMessage(
           error,
           t("workspaceSettings.notifications.unexpectedLeaveWorkspaceError"),
+          t,
         ),
       });
     } finally {

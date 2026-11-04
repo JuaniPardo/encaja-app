@@ -37,6 +37,7 @@ import {
   listUserWorkspaces,
   type WorkspaceSummary,
 } from "@/lib/workspace/bootstrap";
+import { getUserFacingErrorMessage, UserFacingError } from "@/lib/errors/user-facing-error";
 import type { Database } from "@/types/database";
 import type { InitialWorkspaceContext } from "@/lib/workspace/server-context";
 
@@ -173,7 +174,7 @@ export function WorkspaceProvider({
         );
 
         if (!workspace) {
-          throw new Error(t("workspace.noWorkspaceAssociated"));
+          throw new UserFacingError(t("workspace.noWorkspaceAssociated"));
         }
 
         if (requestCounterRef.current !== requestId) {
@@ -196,10 +197,7 @@ export function WorkspaceProvider({
 
         setState({
           isInitializing: false,
-          errorMessage:
-            error instanceof Error
-              ? error.message
-              : t("workspace.initializingError"),
+          errorMessage: getUserFacingErrorMessage(error, t("workspace.initializingError"), t),
           user,
           workspaces: [],
           workspace: null,
@@ -230,7 +228,7 @@ export function WorkspaceProvider({
       );
 
       if (!workspace) {
-        throw new Error(t("workspace.noWorkspaceAssociated"));
+        throw new UserFacingError(t("workspace.noWorkspaceAssociated"));
       }
 
       if (requestCounterRef.current !== requestId) {
@@ -252,8 +250,7 @@ export function WorkspaceProvider({
 
       setState((prev) => ({
         ...prev,
-        errorMessage:
-          error instanceof Error ? error.message : t("workspace.refreshError"),
+        errorMessage: getUserFacingErrorMessage(error, t("workspace.refreshError"), t),
       }));
     }
   }, [loadSessionAndWorkspaces, state.user, state.workspace?.slug, supabase, t]);
@@ -261,7 +258,7 @@ export function WorkspaceProvider({
   const createWorkspace = useCallback(
     async (name: string) => {
       if (!state.user) {
-        throw new Error(t("workspace.noSessionAvailable"));
+        throw new UserFacingError(t("workspace.noSessionAvailable"));
       }
 
       const createdWorkspace = await createWorkspaceForUser({
@@ -292,7 +289,7 @@ export function WorkspaceProvider({
   const createDemoWorkspace = useCallback(
     async (name: string) => {
       if (!state.user) {
-        throw new Error(t("workspace.noSessionAvailable"));
+        throw new UserFacingError(t("workspace.noSessionAvailable"));
       }
 
       const createdWorkspace = await createDemoWorkspaceForUser({
@@ -323,14 +320,14 @@ export function WorkspaceProvider({
   const deleteWorkspace = useCallback(
     async (workspaceId: string) => {
       if (!state.user) {
-        throw new Error(t("workspace.noSessionAvailable"));
+        throw new UserFacingError(t("workspace.noSessionAvailable"));
       }
 
       const workspaceToDelete = state.workspaces.find(
         (workspaceItem) => workspaceItem.id === workspaceId,
       );
       if (!workspaceToDelete) {
-        throw new Error(t("workspace.deleteWorkspaceNotFound"));
+        throw new UserFacingError(t("workspace.deleteWorkspaceNotFound"));
       }
 
       await deleteWorkspaceForUser({
@@ -355,7 +352,7 @@ export function WorkspaceProvider({
       });
 
       if (!workspace) {
-        throw new Error(t("workspace.needActiveWorkspace"));
+        throw new UserFacingError(t("workspace.needActiveWorkspace"));
       }
 
       setState((prev) => ({
@@ -398,7 +395,7 @@ export function WorkspaceProvider({
   const setUserLanguage = useCallback(
     async (language: Locale) => {
       if (!state.user) {
-        throw new Error(t("workspace.noSessionAvailable"));
+        throw new UserFacingError(t("workspace.noSessionAvailable"));
       }
 
       const normalizedLanguage = normalizeLocale(language) ?? locale;

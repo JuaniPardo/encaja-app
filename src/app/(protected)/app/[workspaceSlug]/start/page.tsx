@@ -18,6 +18,7 @@ import { useI18n } from "@/features/i18n/provider";
 import { buildStartProgress, type StartProgress, type StartStatus } from "@/features/start/progress";
 import { buildWorkspaceHref } from "@/features/workspace/routing";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
+import { getUserFacingErrorMessage } from "@/lib/errors/user-facing-error";
 import type { Database } from "@/types/database";
 
 type TransactionIdRow = Pick<Database["public"]["Tables"]["transactions"]["Row"], "id">;
@@ -158,17 +159,17 @@ export default function StartPage() {
 
     setIsLoading(false);
 
-    const hasError =
+    const firstError =
       anyTransactionsResponse.error ||
       incomeTransactionsResponse.error ||
       expenseTransactionsResponse.error;
 
-    if (hasError) {
-      const message =
-        anyTransactionsResponse.error?.message ||
-        incomeTransactionsResponse.error?.message ||
-        expenseTransactionsResponse.error?.message ||
-        t("start.notifications.loadErrorFallback");
+    if (firstError) {
+      const message = getUserFacingErrorMessage(
+        firstError,
+        t("start.notifications.loadErrorFallback"),
+        t,
+      );
 
       notifications.show({
         color: "red",

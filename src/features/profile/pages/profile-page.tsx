@@ -26,6 +26,7 @@ import {
   type ProfileFormInputValues,
   type ProfileFormValues,
 } from "@/features/profile/schema";
+import { getUserFacingErrorMessage } from "@/lib/errors/user-facing-error";
 import { ROUTES } from "@/lib/routes";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
@@ -95,7 +96,7 @@ export default function ProfilePage() {
       notifications.show({
         color: "red",
         title: t("profile.notifications.loadErrorTitle"),
-        message: profileResponse.error.message,
+        message: getUserFacingErrorMessage(profileResponse.error, t("common.errors.generic"), t),
       });
       setIsLoadingProfile(false);
       return;
@@ -144,7 +145,7 @@ export default function ProfilePage() {
       notifications.show({
         color: "red",
         title: t("profile.notifications.saveErrorTitle"),
-        message: response.error.message,
+        message: getUserFacingErrorMessage(response.error, t("common.errors.generic"), t),
       });
       return;
     }
@@ -174,7 +175,7 @@ export default function ProfilePage() {
       notifications.show({
         color: "red",
         title: t("profile.notifications.passwordResetErrorTitle"),
-        message: response.error.message,
+        message: getUserFacingErrorMessage(response.error, t("common.errors.generic"), t),
       });
       return;
     }
