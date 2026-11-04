@@ -18,6 +18,7 @@ function buildResult(overrides: Partial<InsightsResult> = {}): InsightsResult {
   return {
     financialState: {
       level: "healthy",
+      reason: "margin",
       title: "Saludable",
       message: "message",
       pressureScore: 0,
@@ -41,6 +42,7 @@ describe("resolveDashboardInsightsView", () => {
     expect(
       resolveDashboardInsightsView({
         shouldShowOnboardingCta: true,
+        isPastPeriod: false,
         isLoading: false,
         hasError: false,
         result: buildResult(),
@@ -52,6 +54,7 @@ describe("resolveDashboardInsightsView", () => {
     expect(
       resolveDashboardInsightsView({
         shouldShowOnboardingCta: false,
+        isPastPeriod: false,
         isLoading: true,
         hasError: false,
         result: null,
@@ -63,6 +66,7 @@ describe("resolveDashboardInsightsView", () => {
     expect(
       resolveDashboardInsightsView({
         shouldShowOnboardingCta: false,
+        isPastPeriod: false,
         isLoading: false,
         hasError: true,
         result: null,
@@ -74,6 +78,7 @@ describe("resolveDashboardInsightsView", () => {
     expect(
       resolveDashboardInsightsView({
         shouldShowOnboardingCta: false,
+        isPastPeriod: false,
         isLoading: false,
         hasError: false,
         result: null,
@@ -85,6 +90,7 @@ describe("resolveDashboardInsightsView", () => {
     expect(
       resolveDashboardInsightsView({
         shouldShowOnboardingCta: false,
+        isPastPeriod: false,
         isLoading: false,
         hasError: false,
         result: buildResult(),
@@ -96,6 +102,7 @@ describe("resolveDashboardInsightsView", () => {
     expect(
       resolveDashboardInsightsView({
         shouldShowOnboardingCta: false,
+        isPastPeriod: false,
         isLoading: false,
         hasError: false,
         result: buildResult({ allInsights: [], primaryInsight: null }),
@@ -107,10 +114,40 @@ describe("resolveDashboardInsightsView", () => {
     expect(
       resolveDashboardInsightsView({
         shouldShowOnboardingCta: false,
+        isPastPeriod: false,
         isLoading: true,
         hasError: false,
         result: buildResult(),
       }),
     ).toEqual({ financialState: "ready", primarySlot: "insight" });
+  });
+
+  it.each([
+    { label: "a computed result", isLoading: false, hasError: false, result: buildResult() },
+    { label: "a first load", isLoading: true, hasError: false, result: null },
+    { label: "an error", isLoading: false, hasError: true, result: null },
+    { label: "an empty result", isLoading: false, hasError: false, result: buildResult({ primaryInsight: null }) },
+  ])("hides today's state and primary insight for a past month with $label", ({ isLoading, hasError, result }) => {
+    expect(
+      resolveDashboardInsightsView({
+        shouldShowOnboardingCta: false,
+        isPastPeriod: true,
+        isLoading,
+        hasError,
+        result,
+      }),
+    ).toEqual({ financialState: "hidden", primarySlot: "hidden" });
+  });
+
+  it("keeps the onboarding CTA in a past month", () => {
+    expect(
+      resolveDashboardInsightsView({
+        shouldShowOnboardingCta: true,
+        isPastPeriod: true,
+        isLoading: false,
+        hasError: false,
+        result: buildResult(),
+      }),
+    ).toEqual({ financialState: "hidden", primarySlot: "onboarding" });
   });
 });

@@ -36,6 +36,7 @@ function buildBaseContext(overrides: Partial<InsightsContext> = {}): InsightsCon
     creditCardCurrentStatement: 400_000,
     creditCardNextMonthCommitment: 100_000,
     projectedIncomeTotal: 1_100_000,
+    projectedFixedIncome: 1_000_000,
     projectedExpenseTotal: 820_000,
     projectedExpenseVariable: 420_000,
     projectedBalance: 280_000,
@@ -75,7 +76,68 @@ describe("buildInsightsResult", () => {
     });
 
     expect(result.primaryInsight?.kind).toBe("unpaid");
-    expect(result.primaryInsight?.severity).toBe("alert");
+    expect(result.primaryInsight?.severity).toBe("warning");
+  });
+
+  it.each([
+    { day: 3, expectedSeverity: "info" },
+    { day: 15, expectedSeverity: "info" },
+    { day: 16, expectedSeverity: "warning" },
+    { day: 25, expectedSeverity: "warning" },
+  ] as const)("reports the unpaid card as $expectedSeverity on day $day, never as an alert", ({ day, expectedSeverity }) => {
+    const result = buildInsightsResult({
+      context: buildBaseContext({
+        referenceDate: new Date(2026, 3, day, 12),
+        creditCardExpenseCurrentMonth: 520_000,
+        creditCardExpensePreviousMonth: 520_000,
+        creditCardPaymentsCurrentMonth: 0,
+        creditCardCurrentStatement: 520_000,
+      }),
+      t,
+      currencyFormatter,
+      intlLocale: "es-AR",
+    });
+
+    const unpaid = result.allInsights.find((insight) => insight.kind === "unpaid");
+    expect(unpaid?.severity).toBe(expectedSeverity);
+    expect(unpaid?.priority).toBe(980);
+  });
+
+  it("does not raise an excess spending alert or a critical state on day 5 with budgeted fixed income not yet received", () => {
+    const result = buildInsightsResult({
+      context: buildBaseContext({
+        referenceDate: new Date(2026, 3, 5, 12),
+        availableCurrent: 300_000,
+        creditCardCount: 0,
+        incomeCurrentMonth: 0,
+        expenseCurrentMonth: 200,
+        savingCurrentMonth: 0,
+        creditCardExpenseCurrentMonth: 0,
+        creditCardExpensePreviousMonth: 0,
+        creditCardPaymentsCurrentMonth: 0,
+        creditCardPreviousMonthStatement: 0,
+        creditCardRolledDebtCurrent: 0,
+        creditCardDebtTotal: 0,
+        creditCardCurrentStatement: 0,
+        creditCardNextMonthCommitment: 0,
+        projectedIncomeTotal: 1_000,
+        projectedFixedIncome: 1_000,
+        projectedExpenseTotal: 200,
+        projectedExpenseVariable: 200,
+        projectedBalance: 800,
+        elapsedDaysCurrentMonth: 5,
+        daysInCurrentMonth: 30,
+        expenseByCategoryCurrentMonth: [
+          { categoryId: "cat-food", categoryName: "Comida", amount: 200, behavior: "variable" },
+        ],
+      }),
+      t,
+      currencyFormatter,
+      intlLocale: "es-AR",
+    });
+
+    expect(result.allInsights.some((insight) => insight.id === "spending_excess_alert")).toBe(false);
+    expect(result.financialState.level).not.toBe("critical");
   });
 
   it("returns partial payment insight when statement remains pending after payment", () => {

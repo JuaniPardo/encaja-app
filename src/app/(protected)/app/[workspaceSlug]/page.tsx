@@ -248,8 +248,12 @@ export default function DashboardPage() {
   const expenseRows = summaryRowsByType.get("expense") ?? [];
   const sectionGap = isMobile ? "xs" : "sm";
 
+  const isPastPeriod =
+    selectedYear * 100 + selectedMonth < now.getFullYear() * 100 + now.getMonth() + 1;
+
   const insightsView = resolveDashboardInsightsView({
     shouldShowOnboardingCta,
+    isPastPeriod,
     isLoading: isLoadingInsights,
     hasError: insightsErrorMessage !== null,
     result: insightsResult,
@@ -272,7 +276,7 @@ export default function DashboardPage() {
       />
     ) : null;
 
-  const primaryInsightBlock = insightsView.primarySlot === "onboarding" ? (
+  const primaryInsightBlock = insightsView.primarySlot === "hidden" ? null : insightsView.primarySlot === "onboarding" ? (
     <DashboardOnboardingCtaCard
       onboardingHref={onboardingHref}
       demoWorkspaceHref={demoWorkspaceHref}

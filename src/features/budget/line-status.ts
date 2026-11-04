@@ -1,4 +1,5 @@
-import type { TransactionType } from "@/types/database";
+import { resolvePeriodElapsedDays } from "@/features/dashboard/lib/dashboard-domain-rules";
+import type { ExpenseBehavior, TransactionType } from "@/types/database";
 
 export type BudgetLineTone = "within" | "overNegative" | "overPositive";
 
@@ -10,8 +11,9 @@ export type BudgetLineStatus = {
   tone: BudgetLineTone;
 };
 
-const CRITICAL_CONSUMPTION_RATIO = 0.8;
 const ON_TARGET_TOLERANCE = 0.005;
+const OVER_BUDGET_TOLERANCE = 0.005;
+const AT_RISK_PACE_MARGIN = 0.1;
 
 export function resolveBudgetLineStatus(
   type: TransactionType,
@@ -22,7 +24,7 @@ export function resolveBudgetLineStatus(
   const isOver = budgeted > 0 && actual > budgeted;
   const tone: BudgetLineTone = !isOver
     ? "within"
-    : type === "income"
+    : type === "income" || type === "saving"
       ? "overPositive"
       : "overNegative";
 
@@ -35,14 +37,33 @@ export function resolveBudgetLineStatus(
   };
 }
 
-export function isBudgetCategoryCritical(
-  type: TransactionType,
-  budgeted: number,
-  actual: number,
-): boolean {
-  if (type === "income") {
+export function resolveMonthElapsedRatio(year: number, month: number, referenceDate: Date): number {
+  const { daysInMonth, elapsedDays } = resolvePeriodElapsedDays({ year, month, referenceDate });
+  return daysInMonth > 0 ? elapsedDays / daysInMonth : 0;
+}
+
+type IsBudgetCategoryAtRiskOptions = {
+  type: TransactionType;
+  expenseBehavior: ExpenseBehavior | null;
+  budgeted: number;
+  actual: number;
+  monthElapsedRatio: number;
+};
+
+export function isBudgetCategoryAtRisk({
+  type,
+  expenseBehavior,
+  budgeted,
+  actual,
+  monthElapsedRatio,
+}: IsBudgetCategoryAtRiskOptions): boolean {
+  if (type !== "expense" || expenseBehavior === "fixed" || budgeted <= 0) {
     return false;
   }
 
-  return budgeted > 0 && actual / budgeted >= CRITICAL_CONSUMPTION_RATIO;
+  if (actual > budgeted + OVER_BUDGET_TOLERANCE) {
+    return true;
+  }
+
+  return actual / budgeted > monthElapsedRatio + AT_RISK_PACE_MARGIN;
 }

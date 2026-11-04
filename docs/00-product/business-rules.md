@@ -253,6 +253,23 @@ Categoría sin presupuesto:
 Presupuesto sin gasto:
 - no implica ahorro
 
+### Categoría en riesgo
+
+En la pantalla de presupuesto, el contador de la sección Gastos cuenta como "en riesgo" a una categoría de gasto variable con presupuesto mayor que cero cuando:
+
+- lo real supera lo presupuestado (por más de 0,005), o
+- lo real dividido lo presupuestado supera la fracción del mes transcurrida más 10 puntos porcentuales
+
+La fracción del mes es 1 en un mes pasado, días transcurridos / días del mes en el mes actual y 0 en un mes futuro.
+
+Nunca cuentan:
+
+- los gastos fijos, aunque estén exactos o superados
+- los ingresos y el ahorro
+- una categoría sin presupuesto (se interpreta como cero)
+
+Las secciones Ingresos y Ahorro muestran solo la cantidad de categorías.
+
 ---
 
 ## 10. Categorías y comportamiento
@@ -309,6 +326,18 @@ Total proyectado =
 
 No proyectar sobre totales mixtos.
 
+### Ingreso esperado (insights y estado financiero)
+
+Los insights y el estado financiero usan el ingreso esperado, no el total proyectado:
+
+- con el mes abierto, el ingreso fijo de cada categoría es el máximo entre lo cobrado y lo presupuestado para esa categoría; el presupuesto es un piso, no una proyección
+- con el mes cerrado, el ingreso fijo es lo cobrado
+- el ingreso variable se proyecta como siempre; su presupuesto no se usa como piso
+- ingreso esperado = ingreso fijo esperado + ingreso variable proyectado
+- balance esperado = ingreso esperado − gasto total proyectado
+
+La composición "fijo real + variable proyectado" sigue siendo el total proyectado.
+
 ---
 
 ## 12. Métricas inteligentes
@@ -346,6 +375,7 @@ Interpretaciones automáticas.
 - se muestra uno en dashboard
 - es clickeable
 - tono informativo
+- la tarjeta sin pagos del resumen anterior es informativa hasta el día 15 del mes y advertencia desde el 16; nunca es alerta
 
 ---
 
@@ -383,7 +413,11 @@ Evalúa:
 
 ### Regla
 
-Debe poder explicarse en una sola frase.
+Debe poder explicarse en una sola frase: el dashboard muestra, junto al nivel, una frase que explica el motivo.
+
+Sin ingreso fijo esperado (ni cobrado ni presupuestado) y con el mes abierto, un balance proyectado negativo da como máximo "atento". Las demás causas de "crítico" no cambian.
+
+El dashboard muestra el estado y el consejo principal de hoy con el rótulo "Hoy", y los oculta al mirar un mes pasado.
 
 ---
 

@@ -108,9 +108,14 @@ export function DashboardPrimaryInsightCard({
       >
         <Stack gap={4}>
           <Group justify="space-between" align="center">
-            <Text size="11px" fw={700} c="var(--encaja-text-muted)">
-              {t("insightsV2.dashboard.slotTitle")}
-            </Text>
+            <Group gap={6} align="baseline" wrap="nowrap">
+              <Text size="11px" fw={700} c="var(--encaja-text-muted)">
+                {t("insightsV2.dashboard.slotTitle")}
+              </Text>
+              <Text size="11px" c="var(--encaja-text-muted)">
+                {t("dashboard.todayLabel")}
+              </Text>
+            </Group>
             <Badge color={resolveSeverityColor(insight.severity)} variant={tone.badgeVariant} size="xs">
               {resolveInsightKindLabel(insight, t)}
             </Badge>

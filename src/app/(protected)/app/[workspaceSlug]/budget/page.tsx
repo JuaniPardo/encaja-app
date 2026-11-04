@@ -25,7 +25,7 @@ import { BudgetLoadErrorAlert } from "@/features/budget/components/budget-load-e
 import { resolveBudgetBalanceSummary } from "@/features/budget/balance-summary";
 import { BudgetSummaryPanel } from "@/features/budget/components/budget-summary-panel";
 import { parseBudgetAmount } from "@/features/budget/amount-format";
-import { isBudgetCategoryCritical } from "@/features/budget/line-status";
+import { isBudgetCategoryAtRisk, resolveMonthElapsedRatio } from "@/features/budget/line-status";
 import {
   BudgetLoadError,
   buildBaseLoadKey,
@@ -213,6 +213,11 @@ export default function BudgetPage() {
     });
   }, [currencyCode, intlLocale, showCents]);
 
+  const monthElapsedRatio = useMemo(
+    () => resolveMonthElapsedRatio(selectedYear, selectedMonth, now),
+    [now, selectedMonth, selectedYear],
+  );
+
   const groupedCategories = useMemo<GroupedCategories>(() => {
     const grouped: GroupedCategories = {
       income: [],
@@ -336,7 +341,7 @@ export default function BudgetPage() {
   const fetchBaseData = useCallback(async () => {
     const categoriesResponse = await supabase
       .from("categories")
-      .select("id, name, type, is_active, sort_order")
+      .select("id, name, type, is_active, sort_order, expense_behavior")
       .eq("workspace_id", workspace.id)
       .eq("is_active", true)
       .order("created_at", { ascending: true });
@@ -1021,13 +1026,28 @@ export default function BudgetPage() {
                     .map((typeKey) => {
                       const items = groupedCategories[typeKey];
                       const typeTotal = totals[typeKey];
-                      const criticalCount = items.filter(({ category, rootLine, subcategoryLines }) => {
+                      const atRiskCount = items.filter(({ category, rootLine, subcategoryLines }) => {
                         const budgeted = [rootLine, ...subcategoryLines].reduce((total, line) => {
                           return total + (parseBudgetAmount(watchedItems?.[line.index]?.amount) ?? 0);
                         }, 0);
                         const spent = spentByCategory[category.id] ?? 0;
-                        return isBudgetCategoryCritical(typeKey, budgeted, spent);
+                        return isBudgetCategoryAtRisk({
+                          type: typeKey,
+                          expenseBehavior: category.expense_behavior,
+                          budgeted,
+                          actual: spent,
+                          monthElapsedRatio,
+                        });
                       }).length;
+                      const categoryCountLabel = t(
+                        items.length === 1 ? "budget.categoryCountOne" : "budget.categoryCountOther",
+                        undefined,
+                        { count: items.length },
+                      );
+                      const sectionSummary =
+                        typeKey === "expense"
+                          ? `${categoryCountLabel} · ${t("budget.atRiskCount", undefined, { count: atRiskCount })}`
+                          : categoryCountLabel;
 
                       return (
                         <Accordion.Item key={typeKey} value={typeKey}>
@@ -1038,12 +1058,7 @@ export default function BudgetPage() {
                                   {typeLabels[typeKey]}
                                 </Text>
                                 <Text size="xs" c="dimmed">
-                                  {t("budget.sectionSummary", undefined, {
-                                    count: items.length,
-                                    countPluralSuffix: items.length === 1 ? "" : "s",
-                                    criticalCount,
-                                    criticalPluralSuffix: criticalCount === 1 ? "" : "s",
-                                  })}
+                                  {sectionSummary}
                                 </Text>
                               </Stack>
 
