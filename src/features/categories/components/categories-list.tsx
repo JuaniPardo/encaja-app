@@ -12,7 +12,10 @@ import {
 } from "@mantine/core";
 import { useHover } from "@mantine/hooks";
 
-import { transactionTypeColorCssVar } from "@/features/transactions/type-colors";
+import {
+  transactionTypeColorCssVar,
+  transactionTypeTintCssVar,
+} from "@/features/transactions/type-colors";
 import type {
   CategorySource,
   Database,
@@ -137,7 +140,7 @@ function resolveGroupAccent(type: TransactionType) {
   return {
     border: transactionTypeColorCssVar(type, 3),
     text: transactionTypeColorCssVar(type, 6),
-    tint: transactionTypeColorCssVar(type, 0),
+    tint: transactionTypeTintCssVar(type),
   };
 }
 
@@ -196,8 +199,8 @@ function CategoryStatusPill({
       style={{
         width: "fit-content",
         borderRadius: "999px",
-        border: `1px solid ${isActive ? "var(--mantine-color-cyan-2)" : "var(--mantine-color-gray-3)"}`,
-        backgroundColor: isActive ? "var(--mantine-color-cyan-0)" : "var(--mantine-color-gray-0)",
+        border: `1px solid ${isActive ? "var(--mantine-color-cyan-2)" : "var(--encaja-border-muted)"}`,
+        backgroundColor: isActive ? "var(--encaja-tint-cyan)" : "var(--encaja-tint-gray)",
         padding: "4px 8px",
       }}
     >
@@ -211,7 +214,7 @@ function CategoryStatusPill({
           flexShrink: 0,
         }}
       />
-      <Text size="xs" fw={600} c={isActive ? "cyan.8" : "gray.7"}>
+      <Text size="xs" fw={600} c={isActive ? "var(--encaja-nav-active-text)" : "var(--encaja-text-label)"}>
         {isActive ? activeLabel : inactiveLabel}
       </Text>
     </Group>
@@ -356,8 +359,8 @@ function CategoryDesktopRow({
     <Box
       ref={ref}
       style={{
-        borderBottom: "1px solid var(--mantine-color-gray-2)",
-        backgroundColor: hovered ? "var(--mantine-color-gray-0)" : "transparent",
+        borderBottom: "1px solid var(--encaja-border-subtle)",
+        backgroundColor: hovered ? "var(--encaja-tint-gray)" : "transparent",
         transition: "background-color 120ms ease",
       }}
     >
@@ -439,7 +442,7 @@ function CategoryDesktopRow({
                 wrap="nowrap"
                 gap="md"
                 py={6}
-                style={{ borderTop: "1px dashed var(--mantine-color-gray-2)" }}
+                style={{ borderTop: "1px dashed var(--encaja-border-subtle)" }}
               >
                 <Box style={{ flex: "1 1 0", minWidth: 0 }}>
                   <Text size="sm" lineClamp={1}>
@@ -627,7 +630,7 @@ function CategoryMobileRow({
     return (
       <Box
         style={{
-          borderBottom: "1px solid var(--mantine-color-gray-2)",
+          borderBottom: "1px solid var(--encaja-border-subtle)",
         }}
       >
         {content}
@@ -636,7 +639,7 @@ function CategoryMobileRow({
   }
 
   return (
-    <Box style={{ borderBottom: "1px solid var(--mantine-color-gray-2)" }}>
+    <Box style={{ borderBottom: "1px solid var(--encaja-border-subtle)" }}>
       <UnstyledButton
         onClick={() => onEdit(row)}
         style={{
@@ -660,7 +663,7 @@ function CategoryMobileRow({
                 wrap="nowrap"
                 gap="xs"
                 py={6}
-                style={{ borderTop: "1px dashed var(--mantine-color-gray-2)" }}
+                style={{ borderTop: "1px dashed var(--encaja-border-subtle)" }}
               >
                 <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
                   <Text size="sm" lineClamp={1}>
@@ -746,9 +749,9 @@ export function CategoriesList({
             key={group.type}
             style={{
               borderRadius: "14px",
-              border: "1px solid var(--mantine-color-gray-3)",
+              border: "1px solid var(--encaja-border-muted)",
               overflow: "hidden",
-              backgroundColor: "white",
+              backgroundColor: "var(--encaja-surface)",
             }}
           >
             <Group
@@ -759,7 +762,7 @@ export function CategoriesList({
               px="sm"
               py="sm"
               style={{
-                borderBottom: "1px solid var(--mantine-color-gray-2)",
+                borderBottom: "1px solid var(--encaja-border-subtle)",
                 backgroundColor: accent.tint,
               }}
             >
@@ -785,8 +788,8 @@ export function CategoriesList({
                 px="sm"
                 py={10}
                 style={{
-                  borderBottom: "1px solid var(--mantine-color-gray-2)",
-                  backgroundColor: "var(--mantine-color-gray-0)",
+                  borderBottom: "1px solid var(--encaja-border-subtle)",
+                  backgroundColor: "var(--encaja-tint-gray)",
                 }}
               >
                 <Text size="xs" fw={700} c="dimmed" tt="uppercase" style={{ flex: "1 1 0", minWidth: 0 }}>

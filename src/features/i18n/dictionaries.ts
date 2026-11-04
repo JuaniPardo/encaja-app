@@ -49,7 +49,13 @@ const dictionaries = {
         retry: "Reintentar",
         signOut: "Salir",
         closeSession: "Cerrar sesión",
+        clearFilters: "Limpiar",
       },
+      colorScheme: {
+        toDark: "Cambiar a modo oscuro",
+        toLight: "Cambiar a modo claro",
+      },
+      you: "Vos",
       quickActions: {
         open: "Abrir acciones rápidas",
         close: "Cerrar acciones rápidas",
@@ -80,6 +86,7 @@ const dictionaries = {
         transaction: {
           requiredCategory: "Seleccioná una categoría.",
           invalidCategory: "Seleccioná una categoría válida.",
+          invalidSubcategory: "Seleccioná una subcategoría válida.",
           requiredTransactionDate: "La fecha de transacción es obligatoria.",
           descriptionMaxLength: "La descripción no puede superar 180 caracteres.",
           notesMaxLength: "Las notas no pueden superar 1000 caracteres.",
@@ -949,7 +956,12 @@ const dictionaries = {
       all: "Todos",
       allCategories: "Todas",
       inactiveCategorySuffix: "inactiva",
+      inactiveSubcategorySuffix: "inactiva",
       inactivePaymentMethodSuffix: "inactivo",
+      subcategory: "Subcategoría",
+      filters: "Filtros",
+      showFilters: "Mostrar",
+      hideFilters: "Ocultar",
       summaryMovements: "{{monthYear}} · {{count}} movimiento{{pluralSuffix}}{{filtersText}}",
       activeFiltersText:
         " · {{count}} filtro{{pluralSuffix}} activo{{activePluralSuffix}}",
@@ -1005,6 +1017,7 @@ const dictionaries = {
         installmentsCountMin: "La cantidad mínima es 1.",
         installmentsCountMax: "La cantidad máxima es 120.",
         noPaymentMethod: "Sin medio de pago",
+        noSubcategory: "Sin subcategoría",
         description: "Descripción",
         descriptionPlaceholder: "Ej: Compra semanal",
         notes: "Notas",
@@ -1034,12 +1047,21 @@ const dictionaries = {
         loadPaymentMethodsError: "No pudimos cargar medios de pago",
         loadSettingsError: "No pudimos cargar settings",
         loadTransactionsError: "No pudimos cargar transacciones",
+        loadSubcategoriesError: "No pudimos cargar subcategorías",
         invalidCategoryTitle: "Categoría inválida",
         invalidCategoryMessage: "La categoría seleccionada no pertenece al workspace actual.",
         incompatibleTypeTitle: "Tipo incompatible",
         incompatibleTypeMessage: "La categoría debe coincidir con el tipo de transacción.",
         inactiveCategoryTitle: "Categoría inactiva",
         inactiveCategoryMessage: "Seleccioná una categoría activa para crear una nueva transacción.",
+        invalidSubcategoryTitle: "Subcategoría inválida",
+        invalidSubcategoryMessage: "La subcategoría seleccionada no pertenece al workspace actual.",
+        incompatibleSubcategoryTitle: "Subcategoría incompatible",
+        incompatibleSubcategoryMessage:
+          "La subcategoría seleccionada no pertenece a la categoría elegida.",
+        inactiveSubcategoryTitle: "Subcategoría inactiva",
+        inactiveSubcategoryMessage:
+          "Seleccioná una subcategoría activa o dejá el movimiento sin subcategoría.",
         invalidPaymentMethodTitle: "Medio de pago inválido",
         invalidPaymentMethodMessage:
           "El medio de pago seleccionado no pertenece al workspace actual.",
@@ -1129,12 +1151,16 @@ const dictionaries = {
         balance: "Balance",
       },
       spentFeedback: "Gastado: {{amount}} ({{percent}}%)",
+      receivedFeedback: "Recibido: {{amount}} ({{percent}}%)",
       remainingFeedback: "{{state}}: {{amount}}",
       remainingStates: {
         available: "Disponible",
         over: "Excedido",
+        pending: "Por recibir",
+        exceeded: "Superado",
       },
       consumptionFeedback: "{{percent}}% usado",
+      receivedConsumptionFeedback: "{{percent}}% recibido",
       sectionSummary:
         "{{count}} categoría{{countPluralSuffix}} · {{criticalCount}} crítica{{criticalPluralSuffix}}",
       summary: {
@@ -1169,6 +1195,7 @@ const dictionaries = {
         loadSettingsError: "No pudimos cargar settings del workspace",
         loadPeriodError: "No pudimos cargar el período",
         loadBudgetError: "No pudimos cargar el presupuesto",
+        loadSubcategoriesError: "No pudimos cargar subcategorías",
         loadBaseError: "No pudimos cargar las categorías y la configuración del presupuesto",
         permissionDeniedTitle: "Acción no permitida",
         permissionDeniedMessage: "Solo el owner puede administrar la estructura de presupuesto.",
@@ -1195,6 +1222,9 @@ const dictionaries = {
       subtitle: "Administrá el catálogo de ingresos, gastos y ahorro del workspace.",
       new: "Nueva categoría",
       edit: "Editar categoría",
+      newSubcategory: "Nueva subcategoría",
+      editSubcategory: "Editar subcategoría",
+      withoutSubcategory: "Sin subcategoría",
       activate: "Activar",
       deactivate: "Desactivar",
       viewMovements: "Ver movimientos",
@@ -1258,6 +1288,8 @@ const dictionaries = {
           "Las categorías del sistema mantienen su nombre oficial. El nombre no se puede editar.",
         systemTypeLocked:
           "Las categorías del sistema mantienen su tipo base. Solo podés ajustar configuración operativa.",
+        parentCategory: "Categoría padre",
+        inheritsParentType: "Hereda el tipo de la categoría padre: {{type}}.",
       },
       notifications: {
         loadError: "No pudimos cargar categorías",
@@ -1268,6 +1300,12 @@ const dictionaries = {
         updatedMessage: "Los cambios se guardaron correctamente.",
         createError: "No pudimos crear la categoría",
         duplicateName: "Ya existe una categoría con ese nombre en el workspace.",
+        duplicateSubcategoryName: "Ya existe una subcategoría con ese nombre en esta categoría.",
+        invalidParentCategory: "La categoría padre seleccionada no es válida.",
+        loadSubcategoriesError: "No pudimos cargar subcategorías",
+        subcategoryCreatedMessage: "La subcategoría ya está disponible en {{categoryName}}.",
+        subcategoryUpdatedMessage: "La subcategoría se actualizó correctamente.",
+        subcategoryStatusUpdatedMessage: "Estado de la subcategoría actualizado correctamente.",
         createdTitle: "Categoría creada",
         createdMessage: "La categoría ya está disponible.",
         toggleError: "No pudimos actualizar estado",
@@ -1382,7 +1420,13 @@ const dictionaries = {
         retry: "Retry",
         signOut: "Sign out",
         closeSession: "Close session",
+        clearFilters: "Clear",
       },
+      colorScheme: {
+        toDark: "Switch to dark mode",
+        toLight: "Switch to light mode",
+      },
+      you: "You",
       quickActions: {
         open: "Open quick actions",
         close: "Close quick actions",
@@ -1413,6 +1457,7 @@ const dictionaries = {
         transaction: {
           requiredCategory: "Select a category.",
           invalidCategory: "Select a valid category.",
+          invalidSubcategory: "Select a valid subcategory.",
           requiredTransactionDate: "Transaction date is required.",
           descriptionMaxLength: "Description cannot exceed 180 characters.",
           notesMaxLength: "Notes cannot exceed 1000 characters.",
@@ -1429,6 +1474,14 @@ const dictionaries = {
         },
       },
       domain: {
+        transactionType: {
+          income: "Income",
+          expense: "Expense",
+          saving: "Saving",
+          incomes: "Income",
+          expenses: "Expenses",
+          savings: "Savings",
+        },
         workspaceLinkVisibilityMode: {
           summary_only: "Summary only",
         },
@@ -1436,6 +1489,10 @@ const dictionaries = {
           cash: "Cash",
           debit_card: "Debit card",
           credit_card: "Credit card",
+        },
+        expenseBehavior: {
+          fixed: "Fixed",
+          variable: "Variable",
         },
       },
     },
@@ -2294,7 +2351,12 @@ const dictionaries = {
       all: "All",
       allCategories: "All",
       inactiveCategorySuffix: "inactive",
+      inactiveSubcategorySuffix: "inactive",
       inactivePaymentMethodSuffix: "inactive",
+      subcategory: "Subcategory",
+      filters: "Filters",
+      showFilters: "Show",
+      hideFilters: "Hide",
       summaryMovements: "{{monthYear}} · {{count}} movement{{pluralSuffix}}{{filtersText}}",
       activeFiltersText:
         " · {{count}} filter{{pluralSuffix}} active{{activePluralSuffix}}",
@@ -2350,6 +2412,7 @@ const dictionaries = {
         installmentsCountMin: "Minimum value is 1.",
         installmentsCountMax: "Maximum value is 120.",
         noPaymentMethod: "No payment method",
+        noSubcategory: "No subcategory",
         description: "Description",
         descriptionPlaceholder: "e.g. Weekly groceries",
         notes: "Notes",
@@ -2379,12 +2442,21 @@ const dictionaries = {
         loadPaymentMethodsError: "We couldn't load payment methods",
         loadSettingsError: "We couldn't load settings",
         loadTransactionsError: "We couldn't load transactions",
+        loadSubcategoriesError: "We couldn't load subcategories",
         invalidCategoryTitle: "Invalid category",
         invalidCategoryMessage: "The selected category does not belong to the current workspace.",
         incompatibleTypeTitle: "Incompatible type",
         incompatibleTypeMessage: "Category must match transaction type.",
         inactiveCategoryTitle: "Inactive category",
         inactiveCategoryMessage: "Select an active category to create a new transaction.",
+        invalidSubcategoryTitle: "Invalid subcategory",
+        invalidSubcategoryMessage: "The selected subcategory does not belong to the current workspace.",
+        incompatibleSubcategoryTitle: "Incompatible subcategory",
+        incompatibleSubcategoryMessage:
+          "The selected subcategory does not belong to the chosen category.",
+        inactiveSubcategoryTitle: "Inactive subcategory",
+        inactiveSubcategoryMessage:
+          "Select an active subcategory or leave the transaction without a subcategory.",
         invalidPaymentMethodTitle: "Invalid payment method",
         invalidPaymentMethodMessage:
           "The selected payment method does not belong to the current workspace.",
@@ -2477,12 +2549,16 @@ const dictionaries = {
         balance: "Balance",
       },
       spentFeedback: "Spent: {{amount}} ({{percent}}%)",
+      receivedFeedback: "Received: {{amount}} ({{percent}}%)",
       remainingFeedback: "{{state}}: {{amount}}",
       remainingStates: {
         available: "Available",
         over: "Over",
+        pending: "Pending",
+        exceeded: "Above target",
       },
       consumptionFeedback: "{{percent}}% used",
+      receivedConsumptionFeedback: "{{percent}}% received",
       sectionSummary:
         "{{count}} categories · {{criticalCount}} critical{{criticalPluralSuffix}}",
       summary: {
@@ -2517,6 +2593,7 @@ const dictionaries = {
         loadSettingsError: "We couldn't load workspace settings",
         loadPeriodError: "We couldn't load the period",
         loadBudgetError: "We couldn't load the budget",
+        loadSubcategoriesError: "We couldn't load subcategories",
         loadBaseError: "We couldn't load the budget categories and settings",
         permissionDeniedTitle: "Action not allowed",
         permissionDeniedMessage: "Only the owner can manage budget structure.",
@@ -2544,6 +2621,9 @@ const dictionaries = {
       subtitle: "Manage the workspace catalog for income, expenses, and savings.",
       new: "New category",
       edit: "Edit category",
+      newSubcategory: "New subcategory",
+      editSubcategory: "Edit subcategory",
+      withoutSubcategory: "No subcategory",
       activate: "Activate",
       deactivate: "Deactivate",
       viewMovements: "View movements",
@@ -2607,6 +2687,8 @@ const dictionaries = {
           "System categories keep their official name. Name cannot be edited.",
         systemTypeLocked:
           "System categories keep their base type. You can only adjust operational configuration.",
+        parentCategory: "Parent category",
+        inheritsParentType: "Inherits the parent category type: {{type}}.",
       },
       notifications: {
         loadError: "We couldn't load categories",
@@ -2617,6 +2699,12 @@ const dictionaries = {
         updatedMessage: "Changes were saved successfully.",
         createError: "We couldn't create the category",
         duplicateName: "A category with this name already exists in this workspace.",
+        duplicateSubcategoryName: "A subcategory with this name already exists in this category.",
+        invalidParentCategory: "The selected parent category is not valid.",
+        loadSubcategoriesError: "We couldn't load subcategories",
+        subcategoryCreatedMessage: "The subcategory is now available in {{categoryName}}.",
+        subcategoryUpdatedMessage: "The subcategory was updated successfully.",
+        subcategoryStatusUpdatedMessage: "Subcategory status updated successfully.",
         createdTitle: "Category created",
         createdMessage: "Category is now available.",
         toggleError: "We couldn't update status",
@@ -2709,6 +2797,23 @@ const dictionaries = {
 } as const;
 
 type DictionaryNode = Record<string, unknown>;
+
+function collectKeys(node: DictionaryNode, prefix: string, keys: string[]) {
+  for (const [segment, value] of Object.entries(node)) {
+    const key = prefix ? `${prefix}.${segment}` : segment;
+    if (typeof value === "string") {
+      keys.push(key);
+    } else if (value && typeof value === "object") {
+      collectKeys(value as DictionaryNode, key, keys);
+    }
+  }
+}
+
+export function listTranslationKeys(locale: Locale): string[] {
+  const keys: string[] = [];
+  collectKeys(dictionaries[locale], "", keys);
+  return keys.sort();
+}
 
 function lookupInDictionary(dictionary: DictionaryNode, key: string): string | null {
   const segments = key.split(".");

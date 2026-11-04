@@ -65,16 +65,16 @@ export function DashboardFinancialMethodsCard({
       withBorder
       radius="sm"
       p={isMobile ? "xs" : "sm"}
-      bg="#ffffff"
-      style={{ borderColor: "#e5e9f0" }}
+      bg="var(--encaja-surface)"
+      style={{ borderColor: "var(--encaja-border-soft)" }}
     >
       <Stack gap={isMobile ? "xs" : "sm"}>
         <Group justify="space-between" align="flex-start" wrap="wrap" gap={6}>
           <Stack gap={2}>
-            <Text size="xs" fw={700} c="#475467">
+            <Text size="xs" fw={700} c="var(--encaja-text-secondary)">
               {t("dashboard.financialMethods")}
             </Text>
-            <Text size="xs" c="#667085">
+            <Text size="xs" c="var(--encaja-text-muted)">
               {t("dashboard.activeInBalance", undefined, {
                 count: financialSummary.includedActiveCount,
               })}
@@ -84,13 +84,13 @@ export function DashboardFinancialMethodsCard({
 
         <Stack gap={6}>
           <Stack gap={2}>
-            <Text fw={800} c={financialSummary.availabilityTotalBalance >= 0 ? "#087f5b" : "#c92a2a"}>
+            <Text fw={800} c={financialSummary.availabilityTotalBalance >= 0 ? "var(--encaja-positive-text)" : "var(--encaja-negative-text)"}>
               {t("dashboard.totalBalance")}: {currencyFormatter.format(financialSummary.availabilityTotalBalance)}
             </Text>
           </Stack>
 
           {financialSummary.availabilityRows.length === 0 ? (
-            <Text size="xs" c="#667085">
+            <Text size="xs" c="var(--encaja-text-muted)">
               {t("dashboard.noAvailabilityMethods")}
             </Text>
           ) : (
@@ -104,22 +104,22 @@ export function DashboardFinancialMethodsCard({
                   style={{
                     display: "block",
                     borderRadius: 8,
-                    border: "1px solid #edf1f5",
-                    backgroundColor: "#fcfdff",
+                    border: "1px solid var(--encaja-border-faint)",
+                    backgroundColor: "var(--encaja-surface-subtle)",
                     padding: isMobile ? "6px 8px" : "6px 10px",
                   }}
                 >
                   <Group justify="space-between" align="center" wrap="nowrap">
                     <Stack gap={0} style={{ minWidth: 0 }}>
-                      <Text size="sm" fw={700} c="#1f2937" truncate>
+                      <Text size="sm" fw={700} c="var(--encaja-text-strong)" truncate>
                         {row.name}
                       </Text>
-                      <Text size="xs" c="#667085">
+                      <Text size="xs" c="var(--encaja-text-muted)">
                         {paymentMethodTypeLabels[row.type]} · {t("dashboard.viewMovements")}
                       </Text>
                     </Stack>
                     <Stack gap={0} style={{ minWidth: 0, textAlign: "right" }}>
-                      <Text size="sm" fw={800} c={row.currentBalance >= 0 ? "#087f5b" : "#c92a2a"}>
+                      <Text size="sm" fw={800} c={row.currentBalance >= 0 ? "var(--encaja-positive-text)" : "var(--encaja-negative-text)"}>
                         {currencyFormatter.format(row.currentBalance)}
                       </Text>
                     </Stack>
@@ -132,13 +132,13 @@ export function DashboardFinancialMethodsCard({
 
         <Stack gap={6}>
           <Stack gap={2}>
-            <Text size="xs" fw={700} c="#475467">
+            <Text size="xs" fw={700} c="var(--encaja-text-secondary)">
               {t("dashboard.creditCardsSectionTitle")}
             </Text>
           </Stack>
 
           {financialSummary.creditCardRows.length === 0 ? (
-            <Text size="xs" c="#667085">
+            <Text size="xs" c="var(--encaja-text-muted)">
               {t("dashboard.noCreditCardsInBalance")}
             </Text>
           ) : (
@@ -152,8 +152,8 @@ export function DashboardFinancialMethodsCard({
                   style={{
                     display: "block",
                     borderRadius: 8,
-                    border: "1px solid #f4dfe0",
-                    backgroundColor: "#fffdfd",
+                    border: "1px solid var(--encaja-negative-border-soft)",
+                    backgroundColor: "var(--encaja-negative-bg)",
                     padding: isMobile ? "6px 8px" : "6px 10px",
                   }}
                 >
@@ -174,20 +174,20 @@ export function DashboardFinancialMethodsCard({
                         paddingRight: isMobile ? 4 : 8,
                       }}
                     >
-                      <Text size="sm" fw={700} c="#1f2937" truncate>
+                      <Text size="sm" fw={700} c="var(--encaja-text-strong)" truncate>
                         {row.name}
                       </Text>
-                      <Text size="xs" c="#667085">
+                      <Text size="xs" c="var(--encaja-text-muted)">
                         {paymentMethodTypeLabels[row.type]}
                       </Text>
-                      <Text size="xs" c="#667085">
+                      <Text size="xs" c="var(--encaja-text-muted)">
                         {t("dashboard.viewMovements")}
                       </Text>
                     </Stack>
 
                     <div
                       style={{
-                        borderLeft: "1px solid #f1d0d0",
+                        borderLeft: "1px solid var(--encaja-negative-border-soft)",
                         paddingLeft: creditFinancialBlockPadding,
                         minWidth: 0,
                         height: "100%",
@@ -200,24 +200,24 @@ export function DashboardFinancialMethodsCard({
                           key: "previous-month-statement",
                           label: t("dashboard.previousMonthStatementLabel"),
                           value: formatSignedCurrency(-row.previousMonthStatement, currencyFormatter),
-                          labelColor: "#667085",
-                          valueColor: "#667085",
+                          labelColor: "var(--encaja-text-muted)",
+                          valueColor: "var(--encaja-text-muted)",
                           valueWeight: 700,
                         },
                         {
                           key: "month-payments",
                           label: t("dashboard.monthPaymentsLabel"),
                           value: formatSignedCurrency(row.monthPayments, currencyFormatter),
-                          labelColor: "#087f5b",
-                          valueColor: "#087f5b",
+                          labelColor: "var(--encaja-positive-text)",
+                          valueColor: "var(--encaja-positive-text)",
                           valueWeight: 700,
                         },
                         {
                           key: "month-consumption",
                           label: t("dashboard.statementCurrentLabel"),
                           value: formatSignedCurrency(-row.monthConsumption, currencyFormatter),
-                          labelColor: "#c92a2a",
-                          valueColor: "#c92a2a",
+                          labelColor: "var(--encaja-negative-text)",
+                          valueColor: "var(--encaja-negative-text)",
                           valueWeight: 800,
                         },
                         ...(row.nextMonthInstallments > 0.004
@@ -225,8 +225,8 @@ export function DashboardFinancialMethodsCard({
                           key: "next-month-installments",
                           label: t("dashboard.nextMonthCommitmentLabel"),
                           value: formatSignedCurrency(-row.nextMonthInstallments, currencyFormatter),
-                          labelColor: "#b54708",
-                          valueColor: "#b54708",
+                          labelColor: "var(--encaja-warning-text)",
+                          valueColor: "var(--encaja-warning-text)",
                           valueWeight: 700,
                           }]
                           : []),
@@ -240,7 +240,7 @@ export function DashboardFinancialMethodsCard({
         </Stack>
 
         {financialSummary.excludedActiveCount > 0 || financialSummary.inactiveCount > 0 ? (
-          <Text size="xs" c="#667085">
+          <Text size="xs" c="var(--encaja-text-muted)">
             {t("dashboard.outOfBalanceSummary", undefined, {
               excluded: financialSummary.excludedActiveCount,
               inactive: financialSummary.inactiveCount,

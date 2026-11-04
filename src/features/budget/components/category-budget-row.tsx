@@ -7,6 +7,7 @@ import {
   parseBudgetAmount,
   sanitizeBudgetTypingValue,
 } from "@/features/budget/amount-format";
+import { resolveBudgetLineStatus } from "@/features/budget/line-status";
 import type { BudgetFormInputValues } from "@/features/budget/schema";
 import type { CategorySubcategoryRow } from "@/features/categories/subcategories";
 import { getCurrencyInputPrefix } from "@/features/i18n/formatting";
@@ -56,6 +57,8 @@ export function CategoryBudgetRow({
   const accentColor = transactionTypeMantineColor[category.type];
   const hasSubcategories = subcategoryLines.length > 0;
   const amountPrefix = getCurrencyInputPrefix(currencyCode);
+  const isIncome = category.type === "income";
+  const accentTextColor = transactionTypeColorShade(category.type, 7);
 
   const renderBudgetLine = ({
     index,
@@ -93,10 +96,20 @@ export function CategoryBudgetRow({
           control={control}
           render={({ field }) => {
             const budgetedAmount = parseBudgetAmount(field.value) ?? 0;
-            const consumptionPercent =
-              budgetedAmount > 0 ? Math.round((spent / budgetedAmount) * 100) : spent > 0 ? 100 : 0;
-            const clampedPercent = Math.min(consumptionPercent, 100);
-            const isOverSpent = budgetedAmount > 0 && spent > budgetedAmount;
+            const {
+              percent: consumptionPercent,
+              clampedPercent,
+              isOver,
+              tone,
+            } = resolveBudgetLineStatus(category.type, budgetedAmount, spent);
+            const isOverNegative = tone === "overNegative";
+            const remainingState = isIncome
+              ? isOver
+                ? t("budget.remainingStates.exceeded")
+                : t("budget.remainingStates.pending")
+              : isOver
+                ? t("budget.remainingStates.over")
+                : t("budget.remainingStates.available");
 
             return (
               <>
@@ -145,7 +158,7 @@ export function CategoryBudgetRow({
                 <div style={{ width: isMobile ? 88 : 120 }}>
                   <Progress
                     value={clampedPercent}
-                    color={isOverSpent ? "red" : accentColor}
+                    color={isOverNegative ? "red" : accentColor}
                     size="sm"
                     radius="xl"
                   />
@@ -154,17 +167,24 @@ export function CategoryBudgetRow({
                     fw={700}
                     ta="right"
                     mt={4}
-                    c={isOverSpent ? "red.7" : transactionTypeColorShade(category.type, 7)}
+                    c={isOverNegative ? "red.7" : accentTextColor}
                   >
-                    {t("budget.consumptionFeedback", undefined, {
-                      percent: consumptionPercent,
-                    })}
+                    {t(
+                      isIncome ? "budget.receivedConsumptionFeedback" : "budget.consumptionFeedback",
+                      undefined,
+                      { percent: consumptionPercent },
+                    )}
                   </Text>
                 </div>
 
                 <Stack gap={0} align="flex-end">
-                  <Text size="xs" fw={600} c={isOverSpent ? "red.7" : "dimmed"} ta="right">
-                    {t("budget.spentFeedback", undefined, {
+                  <Text
+                    size="xs"
+                    fw={600}
+                    c={isOverNegative ? "red.7" : tone === "overPositive" ? accentTextColor : "dimmed"}
+                    ta="right"
+                  >
+                    {t(isIncome ? "budget.receivedFeedback" : "budget.spentFeedback", undefined, {
                       amount: currencyFormatter.format(spent),
                       percent: consumptionPercent,
                     })}
@@ -173,16 +193,13 @@ export function CategoryBudgetRow({
                   {budgetedAmount > 0 ? (
                     <Text
                       size="10px"
-                      c={isOverSpent ? "red.7" : `${accentColor}.7`}
+                      c={isOverNegative ? "red.7" : accentTextColor}
                       fw={700}
                       ta="right"
                     >
                       {t("budget.remainingFeedback", undefined, {
                         amount: currencyFormatter.format(Math.abs(budgetedAmount - spent)),
-                        state:
-                          budgetedAmount - spent >= 0
-                            ? t("budget.remainingStates.available")
-                            : t("budget.remainingStates.over"),
+                        state: remainingState,
                       })}
                     </Text>
                   ) : null}
@@ -199,7 +216,7 @@ export function CategoryBudgetRow({
     <Box
       style={{
         padding: isMobile ? "0.8rem 0" : "0.9rem 0",
-        borderBottom: "1px solid var(--mantine-color-gray-2)",
+        borderBottom: "1px solid var(--encaja-border-subtle)",
       }}
     >
       <Stack gap={6}>

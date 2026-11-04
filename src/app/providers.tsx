@@ -1,11 +1,12 @@
 "use client";
 
-import { MantineProvider, createTheme } from "@mantine/core";
+import { MantineProvider, createTheme, localStorageColorSchemeManager } from "@mantine/core";
 import { ModalsProvider } from "@mantine/modals";
 import { Notifications } from "@mantine/notifications";
 
 import { type Locale } from "@/features/i18n/config";
 import { I18nProvider } from "@/features/i18n/provider";
+import { colorSchemeStorageKey, defaultColorScheme } from "@/features/layout/color-scheme";
 
 const theme = createTheme({
   primaryColor: "cyan",
@@ -14,6 +15,8 @@ const theme = createTheme({
     fontFamily: "'IBM Plex Sans Condensed', sans-serif",
   },
 });
+
+const colorSchemeManager = localStorageColorSchemeManager({ key: colorSchemeStorageKey });
 
 export function AppProviders({
   children,
@@ -24,7 +27,11 @@ export function AppProviders({
 }) {
   return (
     <I18nProvider initialLocale={initialLocale}>
-      <MantineProvider theme={theme} defaultColorScheme="light">
+      <MantineProvider
+        theme={theme}
+        defaultColorScheme={defaultColorScheme}
+        colorSchemeManager={colorSchemeManager}
+      >
         <Notifications position="top-right" />
         <ModalsProvider>{children}</ModalsProvider>
       </MantineProvider>

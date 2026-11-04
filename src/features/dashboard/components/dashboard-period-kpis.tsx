@@ -35,18 +35,18 @@ function BalancePeriodCard({
   t: TranslationFn;
 }) {
   return (
-    <Paper withBorder radius="sm" p={isDesktop ? "sm" : "xs"} bg="#ffffff">
+    <Paper withBorder radius="sm" p={isDesktop ? "sm" : "xs"} bg="var(--encaja-surface)">
       <Stack gap={4}>
-        <Text size="xs" fw={700} c="#475467">
+        <Text size="xs" fw={700} c="var(--encaja-text-secondary)">
           {t("dashboard.periodBalance")}
         </Text>
-        <Text fw={800} c={balanceReal >= 0 ? "#0ca678" : "#e03131"}>
+        <Text fw={800} c={balanceReal >= 0 ? "var(--mantine-color-teal-7)" : "var(--mantine-color-red-8)"}>
           {currencyFormatter.format(balanceReal)}
         </Text>
-        <Text size="xs" c="#667085">
+        <Text size="xs" c="var(--encaja-text-muted)">
           {t("dashboard.budgetAbbrev")}: {currencyFormatter.format(balanceBudget)}
         </Text>
-        <Text size="xs" c={balanceDelta >= 0 ? "#087f5b" : "#c92a2a"}>
+        <Text size="xs" c={balanceDelta >= 0 ? "var(--encaja-positive-text)" : "var(--encaja-negative-text)"}>
           {t("dashboard.delta")}: {formatSignedCurrency(balanceDelta, currencyFormatter)}
         </Text>
       </Stack>
@@ -72,18 +72,18 @@ function SavingsPeriodCard({
   t: TranslationFn;
 }) {
   return (
-    <Paper withBorder radius="sm" p={isDesktop ? "sm" : "xs"} bg="#ffffff">
+    <Paper withBorder radius="sm" p={isDesktop ? "sm" : "xs"} bg="var(--encaja-surface)">
       <Stack gap={4}>
-        <Text size="xs" fw={700} c="#475467">
+        <Text size="xs" fw={700} c="var(--encaja-text-secondary)">
           {t("dashboard.periodSavings")}
         </Text>
-        <Text fw={800} c="#2b8aaf">
+        <Text fw={800} c="var(--encaja-kpi-accent)">
           {currencyFormatter.format(savingReal)}
         </Text>
-        <Text size="xs" c="#667085">
+        <Text size="xs" c="var(--encaja-text-muted)">
           {t("dashboard.budgetAbbrev")}: {currencyFormatter.format(savingBudget)}
         </Text>
-        <Text size="xs" c="#667085">
+        <Text size="xs" c="var(--encaja-text-muted)">
           {t("dashboard.ratio")}: {" "}
           {savingsVsIncome === null
             ? t("dashboard.notApplicable")

@@ -18,12 +18,14 @@ import {
   Title,
   UnstyledButton,
 } from "@mantine/core";
-import { useDisclosure, useMediaQuery } from "@mantine/hooks";
+import { useDisclosure } from "@mantine/hooks";
 import { useEffect, useMemo, useState } from "react";
 
 import { GlobalFeedbackButton } from "@/features/feedback/components/global-feedback-button";
 import { useI18n } from "@/features/i18n/provider";
+import { ColorSchemeToggle } from "@/features/layout/color-scheme-toggle";
 import { QuickActionsFab } from "@/features/layout/quick-actions-fab";
+import { useIsMobile } from "@/features/layout/use-responsive-breakpoints";
 import {
   buildWorkspaceHref,
   getWorkspaceScopedSectionPath,
@@ -187,7 +189,7 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [opened, { toggle, close }] = useDisclosure(false);
   const [desktopCollapsed, setDesktopCollapsed] = useState(false);
-  const isMobile = useMediaQuery("(max-width: 47.99em)");
+  const isMobile = useIsMobile();
   const { t } = useI18n();
   const { workspace, workspaces, switchWorkspace, signOut } = useWorkspace();
   const sectionPath = getWorkspaceScopedSectionPath(pathname ?? "");
@@ -240,9 +242,9 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
             padding: desktopCollapsed ? "10px 0" : isMobile ? "10px 10px" : "11px 12px",
             borderRadius: 8,
             display: "block",
-            backgroundColor: isActive ? "var(--mantine-color-cyan-0)" : "transparent",
+            backgroundColor: isActive ? "var(--encaja-tint-cyan)" : "transparent",
             border: `1px solid ${isActive ? "var(--mantine-color-cyan-2)" : "transparent"}`,
-            color: isActive ? "var(--mantine-color-cyan-8)" : "#475467",
+            color: isActive ? "var(--encaja-nav-active-text)" : "var(--encaja-text-secondary)",
             boxShadow: isActive ? "inset 3px 0 0 var(--mantine-color-cyan-6)" : "none",
           }}
         >
@@ -290,8 +292,8 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
     >
       <AppShell.Header
         style={{
-          borderBottom: "1px solid #e4e7ec",
-          backgroundColor: "rgba(255, 255, 255, 0.94)",
+          borderBottom: "1px solid var(--encaja-border)",
+          backgroundColor: "var(--encaja-surface-header)",
           backdropFilter: "blur(6px)",
         }}
       >
@@ -319,6 +321,7 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
             </Group>
 
             <Group gap="xs" wrap="nowrap">
+              <ColorSchemeToggle />
               <GlobalFeedbackButton />
               <Box style={{ minWidth: 0 }}>
                 {workspaces.length > 1 ? (
@@ -347,8 +350,8 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
       <AppShell.Navbar
         p={isMobile ? "xs" : "sm"}
         style={{
-          borderRight: "1px solid #e4e7ec",
-          backgroundColor: "#f9fbfa",
+          borderRight: "1px solid var(--encaja-border)",
+          backgroundColor: "var(--encaja-surface-nav)",
         }}
       >
         <Group
@@ -359,7 +362,7 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
         >
           <Image src="/logo-EnCaja.svg" alt="Encaja" width={24} height={24} />
           {!desktopCollapsed ? (
-            <Text size="sm" fw={700} c="#1f2937">
+            <Text size="sm" fw={700} c="var(--encaja-text-strong)">
               Encaja
             </Text>
           ) : null}
@@ -410,7 +413,7 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
                   width: "100%",
                   padding: desktopCollapsed ? "11px 0" : "11px 12px",
                   borderRadius: 8,
-                  color: "#475467",
+                  color: "var(--encaja-text-secondary)",
                   border: "1px solid transparent",
                 }}
               >

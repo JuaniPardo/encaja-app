@@ -15,7 +15,6 @@ import {
   TextInput,
   Title,
 } from "@mantine/core";
-import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useForm, useWatch } from "react-hook-form";
 
@@ -35,6 +34,7 @@ import {
 } from "@/features/categories/components/categories-list";
 import { localeCompareByName, mapTransactionTypeLabel } from "@/features/i18n/formatting";
 import { useI18n } from "@/features/i18n/provider";
+import { useIsMobile } from "@/features/layout/use-responsive-breakpoints";
 import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
 import { canManageCategories } from "@/features/workspace/permissions";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
@@ -110,7 +110,7 @@ export default function CategoriesPage() {
   const { supabase, workspace, user } = useWorkspace();
   const { locale, t } = useI18n();
   const canManageStructure = canManageCategories(workspace.role);
-  const isMobile = useMediaQuery("(max-width: 47.99em)");
+  const isMobile = useIsMobile();
   const [rows, setRows] = useState<CategoryRow[]>([]);
   const [subcategoryRows, setSubcategoryRows] = useState<SubcategoryRow[]>([]);
   const [usageByCategoryId, setUsageByCategoryId] = useState<Record<string, number>>({});

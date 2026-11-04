@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ColorSchemeScript, mantineHtmlProps } from "@mantine/core";
 import { IBM_Plex_Sans, IBM_Plex_Sans_Condensed } from "next/font/google";
 
 import "@mantine/core/styles.css";
@@ -10,6 +11,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { AppProviders } from "@/app/providers";
 import { defaultLocale } from "@/features/i18n/config";
+import { colorSchemeStorageKey, defaultColorScheme } from "@/features/layout/color-scheme";
 
 const sans = IBM_Plex_Sans({
   variable: "--font-sans",
@@ -70,7 +72,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang={defaultLocale} className={`${sans.variable} ${condensed.variable}`}>
+    <html
+      lang={defaultLocale}
+      className={`${sans.variable} ${condensed.variable}`}
+      {...mantineHtmlProps}
+    >
+      <head>
+        <ColorSchemeScript
+          defaultColorScheme={defaultColorScheme}
+          localStorageKey={colorSchemeStorageKey}
+        />
+      </head>
       <body>
         <AppProviders initialLocale={defaultLocale}>{children}</AppProviders>
         <Analytics />

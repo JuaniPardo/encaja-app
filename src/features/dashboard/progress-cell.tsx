@@ -38,10 +38,10 @@ function clampToPercent(value: number) {
 function getProgressVisualScale(type: TransactionType, value: number): ProgressVisualScale {
   if (value < 100) {
     return {
-      fill: "#64748b",
-      track: "#e2e8f0",
-      border: "#cbd5e1",
-      text: value < 40 ? "#0f172a" : "#ffffff",
+      fill: "var(--encaja-progress-fill)",
+      track: "var(--encaja-border-slate)",
+      border: "var(--encaja-border-slate-strong)",
+      text: value < 40 ? "var(--encaja-text-ink)" : "#ffffff",
     };
   }
 
@@ -66,8 +66,8 @@ function getProgressVisualScale(type: TransactionType, value: number): ProgressV
 
   return {
     fill: value > 100 ? targetColors[type].exceeded : targetColors[type].reached,
-    track: "#e2e8f0",
-    border: "#cbd5e1",
+    track: "var(--encaja-border-slate)",
+    border: "var(--encaja-border-slate-strong)",
     text: "#ffffff",
   };
 }
@@ -82,14 +82,14 @@ export function ProgressCell({ type, value, percentageFormatter, compact = false
         style={{
           height,
           borderRadius: 6,
-          backgroundColor: "#f1f5f9",
-          border: "1px solid #e2e8f0",
+          backgroundColor: "var(--encaja-surface-slate)",
+          border: "1px solid var(--encaja-border-slate)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        <Text size={fontSize} fw={700} c="#64748b" style={{ lineHeight: 1 }}>
+        <Text size={fontSize} fw={700} c="var(--encaja-text-neutral)" style={{ lineHeight: 1 }}>
           N/A
         </Text>
       </Box>

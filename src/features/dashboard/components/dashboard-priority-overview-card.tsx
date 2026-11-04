@@ -52,17 +52,17 @@ function PriorityMetricCard({
         <Text fw={900} size={isMobile ? "xl" : "1.85rem"} c={tone.valueColor} lh={1.1}>
           {value}
         </Text>
-        <Text size="xs" c="#667085">
+        <Text size="xs" c="var(--encaja-text-muted)">
           {helper}
         </Text>
         {detailRows.length > 0 ? (
           <Stack gap={4} pt={2}>
             {detailRows.map((row) => (
               <Group key={row.label} justify="space-between" align="center" wrap="nowrap" gap={8}>
-                <Text size="11px" c="#667085" lineClamp={1}>
+                <Text size="11px" c="var(--encaja-text-muted)" lineClamp={1}>
                   {row.label}
                 </Text>
-                <Text size="11px" fw={700} c={row.color ?? "#344054"} style={{ whiteSpace: "nowrap" }}>
+                <Text size="11px" fw={700} c={row.color ?? "var(--encaja-text-primary)"} style={{ whiteSpace: "nowrap" }}>
                   {row.value}
                 </Text>
               </Group>
@@ -91,16 +91,16 @@ export function DashboardPriorityOverviewCard({
       radius="sm"
       p={isMobile ? "xs" : "sm"}
       style={{
-        borderColor: "#e5e9f0",
-        backgroundColor: "#ffffff",
+        borderColor: "var(--encaja-border-soft)",
+        backgroundColor: "var(--encaja-surface)",
       }}
     >
       <Stack gap={isMobile ? "xs" : "sm"}>
         <Group justify="space-between" align="center" wrap="wrap" gap={6}>
-          <Text size="xs" fw={800} c="#344054">
+          <Text size="xs" fw={800} c="var(--encaja-text-primary)">
             {t("dashboard.priorityBlockTitle")}
           </Text>
-          <Text size="xs" c="#667085">
+          <Text size="xs" c="var(--encaja-text-muted)">
             {t("dashboard.current")}
           </Text>
         </Group>
@@ -117,10 +117,10 @@ export function DashboardPriorityOverviewCard({
             value={currencyFormatter.format(availableAmount)}
             helper={t("dashboard.totalBalanceDescription")}
             tone={{
-              titleColor: "#087f5b",
-              valueColor: availableAmount >= 0 ? "#087f5b" : "#c92a2a",
-              borderColor: "#b6e3c9",
-              backgroundColor: "#f7fcf9",
+              titleColor: "var(--encaja-positive-text)",
+              valueColor: availableAmount >= 0 ? "var(--encaja-positive-text)" : "var(--encaja-negative-text)",
+              borderColor: "var(--encaja-positive-border)",
+              backgroundColor: "var(--encaja-positive-bg)",
             }}
             isMobile={isMobile}
           />
@@ -133,19 +133,19 @@ export function DashboardPriorityOverviewCard({
               {
                 label: t("dashboard.nextMonthCommitmentLabel"),
                 value: formatSignedCurrency(-nextCommitmentAmount, currencyFormatter),
-                color: "#b54708",
+                color: "var(--encaja-warning-text)",
               },
               {
                 label: t("dashboard.creditRolledDebtLabel"),
                 value: formatSignedCurrency(-rolledDebtAmount, currencyFormatter),
-                color: rolledDebtAmount > 0 ? "#c92a2a" : "#087f5b",
+                color: rolledDebtAmount > 0 ? "var(--encaja-negative-text)" : "var(--encaja-positive-text)",
               },
             ]}
             tone={{
-              titleColor: "#b42318",
-              valueColor: cardSpendingAmount > 0 ? "#b42318" : "#344054",
-              borderColor: "#f1c0bd",
-              backgroundColor: "#fff9f8",
+              titleColor: "var(--encaja-critical-text)",
+              valueColor: cardSpendingAmount > 0 ? "var(--encaja-critical-text)" : "var(--encaja-text-primary)",
+              borderColor: "var(--encaja-negative-border)",
+              backgroundColor: "var(--encaja-negative-bg)",
             }}
             isMobile={isMobile}
           />

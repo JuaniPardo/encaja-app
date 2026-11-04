@@ -11,8 +11,8 @@ export function CategoriesInsight({ message }: CategoriesInsightProps) {
       py={10}
       style={{
         borderRadius: "12px",
-        border: "1px solid var(--mantine-color-gray-3)",
-        backgroundColor: "var(--mantine-color-gray-0)",
+        border: "1px solid var(--encaja-border-muted)",
+        backgroundColor: "var(--encaja-tint-gray)",
       }}
     >
       <Group gap={8} wrap="nowrap">

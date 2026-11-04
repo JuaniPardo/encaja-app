@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { Alert, Group, LoadingOverlay, Stack, Text, Title } from "@mantine/core";
-import { useMediaQuery } from "@mantine/hooks";
 import dynamic from "next/dynamic";
 
 import { monthLabelFromOptions } from "@/features/i18n/formatting";
 import { useI18n } from "@/features/i18n/provider";
+import { useIsMobile } from "@/features/layout/use-responsive-breakpoints";
 import {
   TransactionDetailModal,
   TransactionDetailPanel,
@@ -32,7 +32,7 @@ const TransferModal = dynamic(() =>
 
 export default function TransactionsPage() {
   const { t } = useI18n();
-  const isMobile = useMediaQuery("(max-width: 47.99em)");
+  const isMobile = useIsMobile();
   const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
