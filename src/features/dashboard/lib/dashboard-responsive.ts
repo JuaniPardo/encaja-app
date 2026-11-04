@@ -2,6 +2,8 @@
 
 import { useMediaQuery } from "@mantine/hooks";
 
+import { useIsMobile, useIsNarrowMobile } from "@/features/layout/use-responsive-breakpoints";
+
 type DashboardTableColumnWidths = {
   category: string;
   real: string;
@@ -29,8 +31,8 @@ export type DashboardResponsiveState = {
 };
 
 export function useDashboardResponsive(): DashboardResponsiveState {
-  const isMobile = useMediaQuery("(max-width: 47.99em)");
-  const isNarrowMobile = useMediaQuery("(max-width: 33.99em)");
+  const isMobile = useIsMobile();
+  const isNarrowMobile = useIsNarrowMobile();
   const isTablet = useMediaQuery("(min-width: 48em) and (max-width: 74.99em)");
 
   const kpiColumns = isMobile ? (isNarrowMobile ? 1 : 2) : 2;

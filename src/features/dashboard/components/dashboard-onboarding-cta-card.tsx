@@ -27,18 +27,17 @@ export function DashboardOnboardingCtaCard({
       radius="sm"
       p="md"
       style={{
-        border: "1px solid #a5d8ff",
-        background:
-          "linear-gradient(135deg, rgba(232, 244, 255, 0.95) 0%, rgba(230, 250, 255, 0.9) 100%)",
+        border: "1px solid var(--encaja-info-gradient-border)",
+        background: "var(--encaja-info-gradient)",
         boxShadow: "0 8px 20px rgba(12, 74, 110, 0.08)",
       }}
     >
       <Stack gap="sm">
         <Stack gap={2}>
-          <Title order={3} size="h4" c="#1f2937">
+          <Title order={3} size="h4" c="var(--encaja-text-strong)">
             {t("dashboard.gettingStarted.title")}
           </Title>
-          <Text size="sm" c="#334155">
+          <Text size="sm" c="var(--encaja-text-slate)">
             {t("dashboard.gettingStarted.description")}
           </Text>
         </Stack>

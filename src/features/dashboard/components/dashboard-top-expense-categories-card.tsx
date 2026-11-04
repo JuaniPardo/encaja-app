@@ -32,17 +32,17 @@ export function DashboardTopExpenseCategoriesCard({
       radius="sm"
       p={isMobile ? "xs" : "sm"}
       style={{
-        borderColor: "#e5e9f0",
-        backgroundColor: "#ffffff",
+        borderColor: "var(--encaja-border-soft)",
+        backgroundColor: "var(--encaja-surface)",
       }}
     >
       <Stack gap={isMobile ? "xs" : "sm"}>
-        <Text size="xs" fw={800} c="#344054">
+        <Text size="xs" fw={800} c="var(--encaja-text-primary)">
           {t("dashboard.topExpenseCategoriesTitle")}
         </Text>
 
         {topRows.length === 0 ? (
-          <Text size="xs" c="#98a2b3">
+          <Text size="xs" c="var(--encaja-text-faint)">
             {t("dashboard.topExpenseCategoriesNoData")}
           </Text>
         ) : (
@@ -58,17 +58,17 @@ export function DashboardTopExpenseCategoriesCard({
                   style={{
                     display: "block",
                     borderRadius: 8,
-                    border: "1px solid #f0f3f7",
-                    backgroundColor: "#fdfdff",
+                    border: "1px solid var(--encaja-border-faint)",
+                    backgroundColor: "var(--encaja-surface-subtle)",
                     padding: isMobile ? "7px 8px" : "8px 10px",
                   }}
                 >
                   <Stack gap={5}>
                     <Group justify="space-between" align="center" wrap="nowrap" gap={6}>
-                      <Text size="xs" fw={700} c="#1f2937" lineClamp={1}>
+                      <Text size="xs" fw={700} c="var(--encaja-text-strong)" lineClamp={1}>
                         {row.categoryName}
                       </Text>
-                      <Text size="xs" fw={700} c="#344054" style={{ whiteSpace: "nowrap" }}>
+                      <Text size="xs" fw={700} c="var(--encaja-text-primary)" style={{ whiteSpace: "nowrap" }}>
                         {compactCurrencyFormatter.format(row.realAmount)}
                       </Text>
                     </Group>
@@ -78,7 +78,7 @@ export function DashboardTopExpenseCategoriesCard({
                         width: "100%",
                         height: 8,
                         borderRadius: 999,
-                        backgroundColor: "#edf2f7",
+                        backgroundColor: "var(--encaja-surface-track)",
                         overflow: "hidden",
                       }}
                     >
@@ -87,7 +87,7 @@ export function DashboardTopExpenseCategoriesCard({
                           width: `${widthPercent}%`,
                           height: "100%",
                           borderRadius: 999,
-                          background: "linear-gradient(90deg, #d6336c 0%, #f06595 100%)",
+                          background: "linear-gradient(90deg, var(--mantine-color-pink-7) 0%, #f06595 100%)",
                         }}
                       />
                     </Box>

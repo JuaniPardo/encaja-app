@@ -16,7 +16,6 @@ import {
   Text,
   Title,
 } from "@mantine/core";
-import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
 
@@ -25,6 +24,7 @@ import { BudgetGlobalSummary } from "@/features/budget/components/budget-global-
 import { BudgetLoadErrorAlert } from "@/features/budget/components/budget-load-error-alert";
 import { BudgetSummaryPanel } from "@/features/budget/components/budget-summary-panel";
 import { parseBudgetAmount } from "@/features/budget/amount-format";
+import { isBudgetCategoryCritical } from "@/features/budget/line-status";
 import {
   BudgetLoadError,
   buildBaseLoadKey,
@@ -54,6 +54,7 @@ import {
   monthLabelFromOptions,
 } from "@/features/i18n/formatting";
 import { useI18n } from "@/features/i18n/provider";
+import { useIsMobile } from "@/features/layout/use-responsive-breakpoints";
 import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
 import { transactionTypeMantineColor } from "@/features/transactions/type-colors";
 import { canManageBudgetStructure } from "@/features/workspace/permissions";
@@ -128,7 +129,7 @@ export default function BudgetPage() {
   const { intlLocale, locale, t } = useI18n();
   const canManageStructure = canManageBudgetStructure(workspace.role);
   const roleLabel = t(`common.role.${workspace.role}`, workspace.role);
-  const isMobile = useMediaQuery("(max-width: 47.99em)");
+  const isMobile = useIsMobile();
   const monthOptions = useMemo(() => buildMonthOptions(intlLocale), [intlLocale]);
   const typeLabels = useMemo<Record<TransactionType, string>>(
     () => ({
@@ -1026,7 +1027,7 @@ export default function BudgetPage() {
                           return total + (parseBudgetAmount(watchedItems?.[line.index]?.amount) ?? 0);
                         }, 0);
                         const spent = spentByCategory[category.id] ?? 0;
-                        return budgeted > 0 && spent / budgeted >= 0.8;
+                        return isBudgetCategoryCritical(typeKey, budgeted, spent);
                       }).length;
 
                       return (

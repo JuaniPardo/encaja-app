@@ -1,3 +1,16 @@
+## [1.9.0] - 2026-11-04
+
+### Added
+- Added a dark mode with a light/dark toggle in the header. The app starts in light mode and remembers the choice in the browser.
+
+### Changed
+- In the budget, income above the planned amount now shows as positive ("Received", "Above target") in the income color and no longer counts as critical. Expenses and savings are unchanged.
+- Pages now render the mobile layout first and switch to the desktop layout once loaded.
+- The desktop clear-filters button in transactions now reads "Limpiar" / "Clear".
+
+### Fixed
+- Translated the category, subcategory and filter texts that showed raw keys such as `categories.newSubcategory`, and the transaction type labels that showed in Spanish in English.
+
 ## [1.8.1] - 2026-11-04
 
 ### Added

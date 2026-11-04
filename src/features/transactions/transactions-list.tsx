@@ -5,7 +5,10 @@ import { Paper, Stack, Text } from "@mantine/core";
 import { formatCategoryWithOptionalSubcategory } from "@/features/categories/subcategories";
 import { useI18n } from "@/features/i18n/provider";
 import { TransactionInlineActions } from "@/features/transactions/transaction-detail-panel";
-import { transactionTypeMantineColor } from "@/features/transactions/type-colors";
+import {
+  transactionTypeMantineColor,
+  transactionTypeTintCssVar,
+} from "@/features/transactions/type-colors";
 import { resolveOperationalDate } from "@/features/transactions/utils";
 import type { Database } from "@/types/database";
 
@@ -69,8 +72,8 @@ export function TransactionsList({
                   padding: "0.7rem 1rem 0.45rem",
                   backgroundColor: "color-mix(in srgb, var(--mantine-color-body) 94%, white 6%)",
                   borderTop:
-                    groupIndex === 0 ? "none" : "1px solid var(--mantine-color-gray-2)",
-                  borderBottom: "1px solid var(--mantine-color-gray-2)",
+                    groupIndex === 0 ? "none" : "1px solid var(--encaja-border-subtle)",
+                  borderBottom: "1px solid var(--encaja-border-subtle)",
                 }}
               >
                 <Text
@@ -116,9 +119,9 @@ export function TransactionsList({
                     }}
                     style={{
                       textAlign: "left",
-                      borderBottom: "1px solid var(--mantine-color-gray-2)",
+                      borderBottom: "1px solid var(--encaja-border-subtle)",
                       backgroundColor: isSelected
-                        ? `var(--mantine-color-${typeColor}-0)`
+                        ? transactionTypeTintCssVar(row.type)
                         : "transparent",
                       cursor: "pointer",
                       outline: "none",

@@ -35,17 +35,17 @@ export function DashboardHeaderCard({
       radius="sm"
       p={isMobile ? "xs" : "sm"}
       style={{
-        border: "1px solid #d6dde7",
-        backgroundColor: "#ffffff",
+        border: "1px solid var(--encaja-border-strong)",
+        backgroundColor: "var(--encaja-surface)",
       }}
     >
       <Group justify="space-between" align={isMobile ? "flex-start" : "end"} wrap="wrap" gap="xs">
         <Stack gap={1}>
           <Group gap={6} align="baseline">
-            <Title order={2} component="h1" size="h3" c="#1f2937">
+            <Title order={2} component="h1" size="h3" c="var(--encaja-text-strong)">
               {t("dashboard.financialDashboard")}
             </Title>
-            <Text size="sm" fw={600} c="#667085">
+            <Text size="sm" fw={600} c="var(--encaja-text-muted)">
               - {currencyCode}
             </Text>
           </Group>
@@ -66,11 +66,11 @@ export function DashboardHeaderCard({
                 style={{
                   padding: "4px 10px",
                   borderRadius: 999,
-                  border: "1px solid #d0d5dd",
-                  backgroundColor: "#f8fafc",
+                  border: "1px solid var(--encaja-border-input)",
+                  backgroundColor: "var(--encaja-surface-muted)",
                   fontSize: 12,
                   fontWeight: 700,
-                  color: "#344054",
+                  color: "var(--encaja-text-primary)",
                   cursor: "pointer",
                 }}
               >

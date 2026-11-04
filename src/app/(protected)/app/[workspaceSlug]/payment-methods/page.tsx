@@ -15,7 +15,6 @@ import {
   Text,
   Title,
 } from "@mantine/core";
-import { useMediaQuery } from "@mantine/hooks";
 import { modals } from "@mantine/modals";
 import { notifications } from "@mantine/notifications";
 import { useForm, useWatch } from "react-hook-form";
@@ -35,6 +34,7 @@ import {
   mapPaymentMethodTypeLabel,
 } from "@/features/i18n/formatting";
 import { useI18n } from "@/features/i18n/provider";
+import { useIsMobile } from "@/features/layout/use-responsive-breakpoints";
 import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
 import { canManagePaymentMethods } from "@/features/workspace/permissions";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
@@ -100,7 +100,7 @@ export default function PaymentMethodsPage() {
   const { supabase, workspace, user } = useWorkspace();
   const { intlLocale, locale, t } = useI18n();
   const canManageStructure = canManagePaymentMethods(workspace.role);
-  const isMobile = useMediaQuery("(max-width: 47.99em)");
+  const isMobile = useIsMobile();
   const now = useMemo(() => new Date(), []);
   const [rows, setRows] = useState<PaymentMethodRow[]>([]);
   const [movementByMethodId, setMovementByMethodId] = useState<Record<string, number>>({});
@@ -543,14 +543,14 @@ export default function PaymentMethodsPage() {
 
       <Paper withBorder radius="md" p="md">
         <Stack gap={2}>
-          <Text size="xs" fw={700} c="#475467">
+          <Text size="xs" fw={700} c="var(--encaja-text-secondary)">
             {t("paymentMethods.totalBalanceTitle", undefined, { period: currentPeriodLabel })}
           </Text>
           <Text
             fw={900}
             size="2rem"
             lh={1}
-            c={consolidatedBalance > 0 ? "#087f5b" : consolidatedBalance < 0 ? "#c92a2a" : "#475467"}
+            c={consolidatedBalance > 0 ? "var(--encaja-positive-text)" : consolidatedBalance < 0 ? "var(--encaja-negative-text)" : "var(--encaja-text-secondary)"}
           >
             {currencyFormatter.format(consolidatedBalance)}
           </Text>

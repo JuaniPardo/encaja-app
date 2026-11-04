@@ -56,23 +56,23 @@ export function DashboardTypeSummarySection({
     <Paper
       radius="sm"
       style={{
-        border: "1px solid #e5e9f0",
-        backgroundColor: "#ffffff",
+        border: "1px solid var(--encaja-border-soft)",
+        backgroundColor: "var(--encaja-surface)",
       }}
     >
       <Box
         px={isMobile ? "xs" : "sm"}
         py={6}
         style={{
-          backgroundColor: "#fbfcfe",
-          borderBottom: "1px solid #e8ecf2",
+          backgroundColor: "var(--encaja-surface-subtle)",
+          borderBottom: "1px solid var(--encaja-border-faint)",
         }}
       >
         <Group justify="space-between" wrap={isMobile ? "wrap" : "nowrap"} gap={6}>
           <Text size="xs" fw={800} c={typeTheme[type].header}>
             {typeLabel}
           </Text>
-          <Text size="xs" c="#667085">
+          <Text size="xs" c="var(--encaja-text-muted)">
             {isMobile
               ? t("dashboard.realBudgetCompact", undefined, {
                   real: compactFormatter.format(totals.real),
@@ -89,24 +89,24 @@ export function DashboardTypeSummarySection({
       <Table
         horizontalSpacing={tableHorizontalSpacing}
         verticalSpacing={tableVerticalSpacing}
-        style={{ color: "#1f2937", tableLayout: "fixed", width: "100%" }}
+        style={{ color: "var(--encaja-text-strong)", tableLayout: "fixed", width: "100%" }}
       >
         <Table.Thead>
           <Table.Tr>
-            <Table.Th style={{ color: "#475467", width: tableColumnWidths.category }}>
+            <Table.Th style={{ color: "var(--encaja-text-secondary)", width: tableColumnWidths.category }}>
               {t("dashboard.category")}
             </Table.Th>
-            <Table.Th style={{ color: "#475467", textAlign: "right", width: tableColumnWidths.real }}>
+            <Table.Th style={{ color: "var(--encaja-text-secondary)", textAlign: "right", width: tableColumnWidths.real }}>
               {t("dashboard.real")}
             </Table.Th>
             {!isMobile ? (
-              <Table.Th style={{ color: "#475467", textAlign: "right", width: tableColumnWidths.budget }}>
+              <Table.Th style={{ color: "var(--encaja-text-secondary)", textAlign: "right", width: tableColumnWidths.budget }}>
                 {t("dashboard.budgetAbbrevWithDot")}
               </Table.Th>
             ) : null}
             <Table.Th
               style={{
-                color: "#475467",
+                color: "var(--encaja-text-secondary)",
                 textAlign: isMobile ? "left" : "right",
                 width: tableColumnWidths.execution,
               }}
@@ -115,7 +115,7 @@ export function DashboardTypeSummarySection({
             </Table.Th>
             <Table.Th
               style={{
-                color: "#475467",
+                color: "var(--encaja-text-secondary)",
                 textAlign: "right",
                 width: tableColumnWidths.deviation,
               }}
@@ -128,7 +128,7 @@ export function DashboardTypeSummarySection({
           {rows.length === 0 ? (
             <Table.Tr>
               <Table.Td colSpan={isMobile ? 4 : 5}>
-                <Text size="xs" c="#98a2b3">
+                <Text size="xs" c="var(--encaja-text-faint)">
                   {t("dashboard.noCategoriesForType")}
                 </Text>
               </Table.Td>
@@ -145,27 +145,27 @@ export function DashboardTypeSummarySection({
                         component={Link}
                         href={categoryDrilldownHref(type, row.categoryId)}
                         size="xs"
-                        c="#1f2937"
+                        c="var(--encaja-text-strong)"
                         lineClamp={isMobile ? 2 : 1}
                         style={{ textDecoration: "none" }}
                       >
                         {row.categoryName}
                       </Text>
                       {!isMobile && !row.categoryIsActive ? (
-                        <Text size="xs" c="#98a2b3">
+                        <Text size="xs" c="var(--encaja-text-faint)">
                           {t("dashboard.inactive")}
                         </Text>
                       ) : null}
                     </Group>
                   </Table.Td>
                   <Table.Td style={{ textAlign: isMobile ? "left" : "right" }}>
-                    <Text size="xs" c="#1f2937">
+                    <Text size="xs" c="var(--encaja-text-strong)">
                       {compactFormatter.format(row.realAmount)}
                     </Text>
                   </Table.Td>
                   {!isMobile ? (
                     <Table.Td style={{ textAlign: "right" }}>
-                      <Text size="xs" c="#475467">
+                      <Text size="xs" c="var(--encaja-text-secondary)">
                         {compactFormatter.format(row.budgetAmount)}
                       </Text>
                     </Table.Td>
@@ -197,23 +197,23 @@ export function DashboardTypeSummarySection({
 
           <Table.Tr
             style={{
-              backgroundColor: "#f7faff",
-              borderTop: "1px solid #e4e9f2",
+              backgroundColor: "var(--encaja-info-bg)",
+              borderTop: "1px solid var(--encaja-border-soft)",
             }}
           >
             <Table.Td>
-              <Text size="xs" fw={800} c="#344054">
+              <Text size="xs" fw={800} c="var(--encaja-text-primary)">
                 {t("dashboard.totalUpper")}
               </Text>
             </Table.Td>
             <Table.Td style={{ textAlign: isMobile ? "left" : "right" }}>
-              <Text size="xs" fw={800} c="#344054">
+              <Text size="xs" fw={800} c="var(--encaja-text-primary)">
                 {compactFormatter.format(totals.real)}
               </Text>
             </Table.Td>
             {!isMobile ? (
               <Table.Td style={{ textAlign: "right" }}>
-                <Text size="xs" fw={800} c="#344054">
+                <Text size="xs" fw={800} c="var(--encaja-text-primary)">
                   {compactFormatter.format(totals.budget)}
                 </Text>
               </Table.Td>

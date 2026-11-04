@@ -29,6 +29,7 @@ import {
 } from "@/features/transactions/schema";
 import {
   transactionTypeMantineColor,
+  transactionTypeTintCssVar,
 } from "@/features/transactions/type-colors";
 import { getCurrencyInputPrefix } from "@/features/i18n/formatting";
 import { useI18n } from "@/features/i18n/provider";
@@ -260,7 +261,7 @@ export function TransactionFormModal({
   const selectedTypeColor = transactionTypeMantineColor[selectedType ?? "expense"];
   const typeSegmentVars = {
     "--transaction-type-active-label-color": `var(--mantine-color-${selectedTypeColor}-7)`,
-    "--transaction-type-indicator-background": `var(--mantine-color-${selectedTypeColor}-0)`,
+    "--transaction-type-indicator-background": transactionTypeTintCssVar(selectedType ?? "expense"),
     "--transaction-type-indicator-border": `var(--mantine-color-${selectedTypeColor}-2)`,
   } as CSSProperties;
 

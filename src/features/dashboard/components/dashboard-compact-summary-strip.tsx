@@ -32,8 +32,8 @@ export function DashboardCompactSummaryStrip({
       p="xs"
       radius="sm"
       style={{
-        border: "1px solid #d6dde7",
-        backgroundColor: "#ffffff",
+        border: "1px solid var(--encaja-border-strong)",
+        backgroundColor: "var(--encaja-surface)",
       }}
     >
       <SimpleGrid cols={3} spacing={8}>
@@ -56,8 +56,8 @@ export function DashboardCompactSummaryStrip({
               radius="sm"
               p={6}
               style={{
-                border: "1px solid #e4e7ec",
-                backgroundColor: "#f8fafc",
+                border: "1px solid var(--encaja-border)",
+                backgroundColor: "var(--encaja-surface-muted)",
                 minWidth: 0,
               }}
             >
@@ -69,7 +69,7 @@ export function DashboardCompactSummaryStrip({
                   rootColor={compactSummaryBaseColor}
                   sections={sections}
                   label={
-                    <Text size={isNarrowMobile ? "9px" : "10px"} fw={800} ta="center" c="#1f2937">
+                    <Text size={isNarrowMobile ? "9px" : "10px"} fw={800} ta="center" c="var(--encaja-text-strong)">
                       {compactCurrencyFormatter.format(realValue)}
                     </Text>
                   }

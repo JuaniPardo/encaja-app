@@ -20,31 +20,31 @@ function resolveLevelTone(level: FinancialState["level"]): LevelTone {
   if (level === "critical") {
     return {
       badgeColor: "red",
-      borderColor: "#f4c7c3",
-      backgroundColor: "#fff8f7",
+      borderColor: "var(--encaja-negative-border)",
+      backgroundColor: "var(--encaja-negative-bg)",
     };
   }
 
   if (level === "attention") {
     return {
       badgeColor: "yellow",
-      borderColor: "#f2dda4",
-      backgroundColor: "#fffaf0",
+      borderColor: "var(--encaja-warning-border)",
+      backgroundColor: "var(--encaja-warning-bg)",
     };
   }
 
   if (level === "healthy") {
     return {
       badgeColor: "green",
-      borderColor: "#b8e6c8",
-      backgroundColor: "#f4fff8",
+      borderColor: "var(--encaja-positive-border)",
+      backgroundColor: "var(--encaja-positive-bg)",
     };
   }
 
   return {
     badgeColor: "blue",
-    borderColor: "#c6daf8",
-    backgroundColor: "#f5f9ff",
+    borderColor: "var(--encaja-info-border)",
+    backgroundColor: "var(--encaja-info-bg)",
   };
 }
 
@@ -76,7 +76,7 @@ export function DashboardFinancialStateCard({
     >
       <Stack gap={isMobile ? 7 : 9}>
         <Group justify="space-between" align="center" wrap="wrap" gap={6}>
-          <Text size="xs" fw={800} c="#344054">
+          <Text size="xs" fw={800} c="var(--encaja-text-primary)">
             {t("dashboard.financialStateTitle")}
           </Text>
           <Badge variant="light" color={tone.badgeColor}>
@@ -84,15 +84,15 @@ export function DashboardFinancialStateCard({
           </Badge>
         </Group>
 
-        <Text size={isMobile ? "md" : "lg"} fw={800} c="#1f2937" lh={1.2}>
+        <Text size={isMobile ? "md" : "lg"} fw={800} c="var(--encaja-text-strong)" lh={1.2}>
           {resolveQuickMessage(financialState.level, t)}
         </Text>
 
         <Group justify="space-between" align="center" wrap="wrap" gap={6}>
-          <Text size="11px" c="#667085">
+          <Text size="11px" c="var(--encaja-text-muted)">
             {t("dashboard.financialStatePressureLabel")}
           </Text>
-          <Text size="11px" fw={700} c="#344054">
+          <Text size="11px" fw={700} c="var(--encaja-text-primary)">
             {currencyFormatter.format(financialState.data.futurePressureAmount)}
           </Text>
         </Group>

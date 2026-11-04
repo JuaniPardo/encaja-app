@@ -196,12 +196,12 @@ export function DashboardMonthFlowCard({
       radius="sm"
       p={isMobile ? "xs" : "sm"}
       style={{
-        borderColor: "#e5e9f0",
-        backgroundColor: "#ffffff",
+        borderColor: "var(--encaja-border-soft)",
+        backgroundColor: "var(--encaja-surface)",
       }}
     >
       <Stack gap={isMobile ? "xs" : "sm"}>
-        <Text size="xs" fw={800} c="#344054">
+        <Text size="xs" fw={800} c="var(--encaja-text-primary)">
           {t("dashboard.monthFlowTitle")}
         </Text>
 
@@ -210,8 +210,8 @@ export function DashboardMonthFlowCard({
             <Box
               style={{
                 borderRadius: 9,
-                border: "1px solid #ecf0f4",
-                background: "linear-gradient(180deg, #fbfcfe 0%, #ffffff 100%)",
+                border: "1px solid var(--encaja-border-faint)",
+                background: "linear-gradient(180deg, var(--encaja-surface-subtle) 0%, var(--encaja-surface) 100%)",
                 padding: isMobile ? 8 : 10,
               }}
             >
@@ -235,7 +235,7 @@ export function DashboardMonthFlowCard({
                       y1={y}
                       x2={flow.chartRight}
                       y2={y}
-                      stroke="#dbe3ed"
+                      style={{ stroke: "var(--encaja-chart-grid)" }}
                       strokeOpacity={0.68}
                       strokeWidth={1}
                       strokeDasharray="4 4"
@@ -247,7 +247,7 @@ export function DashboardMonthFlowCard({
                     y1={flow.chartTop}
                     x2={flow.chartLeft}
                     y2={flow.chartBottom}
-                    stroke="#d2dbe8"
+                    style={{ stroke: "var(--encaja-chart-axis)" }}
                     strokeOpacity={0.82}
                     strokeWidth={1}
                     vectorEffect="non-scaling-stroke"
@@ -260,7 +260,7 @@ export function DashboardMonthFlowCard({
                       y={tick.y + 0.6}
                       textAnchor="end"
                       fontSize="2"
-                      fill="#98a2b3"
+                      style={{ fill: "var(--encaja-text-faint)" }}
                     >
                       {tick.label}
                     </text>
@@ -290,33 +290,33 @@ export function DashboardMonthFlowCard({
 
             <Group grow>
               <Stack gap={2}>
-                <Text size="xs" fw={700} c="#087f5b">
+                <Text size="xs" fw={700} c="var(--encaja-positive-text)">
                   {t("dashboard.incomeLabel")}
                 </Text>
-                <Text size="sm" fw={800} c="#087f5b">
+                <Text size="sm" fw={800} c="var(--encaja-positive-text)">
                   {compactCurrencyFormatter.format(flow.incomeTotal)}
                 </Text>
               </Stack>
               <Stack gap={2}>
-                <Text size="xs" fw={700} c="#c2255c">
+                <Text size="xs" fw={700} c="var(--encaja-expense-text)">
                   {t("dashboard.expenseLabel")}
                 </Text>
-                <Text size="sm" fw={800} c="#c2255c">
+                <Text size="sm" fw={800} c="var(--encaja-expense-text)">
                   {compactCurrencyFormatter.format(flow.expenseTotal)}
                 </Text>
               </Stack>
               <Stack gap={2}>
-                <Text size="xs" fw={700} c="#475467">
+                <Text size="xs" fw={700} c="var(--encaja-text-secondary)">
                   {t("dashboard.balanceLabel")}
                 </Text>
-                <Text size="sm" fw={800} c={flow.balance >= 0 ? "#087f5b" : "#c92a2a"}>
+                <Text size="sm" fw={800} c={flow.balance >= 0 ? "var(--encaja-positive-text)" : "var(--encaja-negative-text)"}>
                   {formatSignedCurrency(flow.balance, compactCurrencyFormatter)}
                 </Text>
               </Stack>
             </Group>
           </Stack>
         ) : (
-          <Text size="xs" c="#98a2b3">
+          <Text size="xs" c="var(--encaja-text-faint)">
             {t("dashboard.monthFlowNoData")}
           </Text>
         )}

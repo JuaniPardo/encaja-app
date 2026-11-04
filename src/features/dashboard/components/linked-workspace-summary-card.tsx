@@ -21,16 +21,16 @@ export function LinkedWorkspaceSummaryCard({
       p={isMobile ? "xs" : "sm"}
       radius="sm"
       style={{
-        border: "1px dashed #9ec5fe",
-        backgroundColor: "#f5f9ff",
+        border: "1px dashed var(--encaja-info-border-strong)",
+        backgroundColor: "var(--encaja-info-bg)",
       }}
     >
       <Stack gap={isMobile ? 8 : "sm"}>
         <Stack gap={1}>
-          <Text size="xs" fw={800} c="#1d4ed8">
+          <Text size="xs" fw={800} c="var(--encaja-info-text)">
             {t("dashboard.linkedWorkspacesExternalSummary")}
           </Text>
-          <Text size="xs" c="#475467">
+          <Text size="xs" c="var(--encaja-text-secondary)">
             {t("dashboard.linkedWorkspacesExternalSummaryDescription")}
           </Text>
         </Stack>
@@ -45,14 +45,14 @@ export function LinkedWorkspaceSummaryCard({
               withBorder
               radius="sm"
               p={isMobile ? "xs" : "sm"}
-              bg="#ffffff"
+              bg="var(--encaja-surface)"
             >
               <Stack gap={6}>
                 <Stack gap={1}>
-                  <Text size="sm" fw={700} c="#1f2937">
+                  <Text size="sm" fw={700} c="var(--encaja-text-strong)">
                     {group.workspaceName}
                   </Text>
-                  <Text size="xs" c="#667085">
+                  <Text size="xs" c="var(--encaja-text-muted)">
                     {group.currencyCode} · {mapWorkspaceVisibilityModeLabel(group.visibilityMode, t)}
                   </Text>
                 </Stack>
@@ -60,13 +60,13 @@ export function LinkedWorkspaceSummaryCard({
                 <Stack gap={4}>
                   {group.paymentMethods.map((paymentMethod) => (
                     <Group key={paymentMethod.id} justify="space-between" wrap="nowrap" gap={8}>
-                      <Text size="sm" c="#344054" truncate>
+                      <Text size="sm" c="var(--encaja-text-primary)" truncate>
                         {paymentMethod.name}
                       </Text>
                       <Text
                         size="sm"
                         fw={700}
-                        c={paymentMethod.balance >= 0 ? "#087f5b" : "#c92a2a"}
+                        c={paymentMethod.balance >= 0 ? "var(--encaja-positive-text)" : "var(--encaja-negative-text)"}
                         style={{ whiteSpace: "nowrap" }}
                       >
                         {formatter.format(paymentMethod.balance)}
@@ -79,15 +79,15 @@ export function LinkedWorkspaceSummaryCard({
                   justify="space-between"
                   wrap="nowrap"
                   pt={4}
-                  style={{ borderTop: "1px solid #e4e7ec" }}
+                  style={{ borderTop: "1px solid var(--encaja-border)" }}
                 >
-                  <Text size="sm" fw={800} c="#1f2937">
+                  <Text size="sm" fw={800} c="var(--encaja-text-strong)">
                     {t("dashboard.totalBalance")}
                   </Text>
                   <Text
                     size="sm"
                     fw={800}
-                    c={group.totalBalance >= 0 ? "#087f5b" : "#c92a2a"}
+                    c={group.totalBalance >= 0 ? "var(--encaja-positive-text)" : "var(--encaja-negative-text)"}
                     style={{ whiteSpace: "nowrap" }}
                   >
                     {formatter.format(group.totalBalance)}
