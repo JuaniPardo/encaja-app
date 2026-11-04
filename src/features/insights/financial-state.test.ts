@@ -37,6 +37,7 @@ function buildBaseContext(overrides: Partial<InsightsContext> = {}): InsightsCon
     creditCardCurrentStatement: 250_000,
     creditCardNextMonthCommitment: 80_000,
     projectedIncomeTotal: 1_150_000,
+    projectedFixedIncome: 1_000_000,
     projectedExpenseTotal: 760_000,
     projectedExpenseVariable: 360_000,
     projectedBalance: 390_000,
@@ -116,10 +117,197 @@ describe("resolveFinancialState", () => {
 
 const CURRENCY_NEXT_TO_PERCENT = /(\$|Bs|US\$|ARS|BOB)\s?-?\d[\d.,]*\s?%/;
 
+const noCardContext: Partial<InsightsContext> = {
+  creditCardCount: 0,
+  creditCardExpenseCurrentMonth: 0,
+  creditCardExpensePreviousMonth: 0,
+  creditCardPaymentsCurrentMonth: 0,
+  creditCardPreviousMonthStatement: 0,
+  creditCardRolledDebtCurrent: 0,
+  creditCardDebtTotal: 0,
+  creditCardCurrentStatement: 0,
+  creditCardNextMonthCommitment: 0,
+};
+
+const earlyDeficitContext: Partial<InsightsContext> = {
+  ...noCardContext,
+  availableCurrent: 100,
+  incomeCurrentMonth: 0,
+  projectedIncomeTotal: 0,
+  projectedFixedIncome: 0,
+  projectedExpenseTotal: 200,
+  projectedExpenseVariable: 200,
+  projectedBalance: -200,
+  elapsedDaysCurrentMonth: 5,
+  daysInCurrentMonth: 30,
+};
+
+function resolveWithKeys(overrides: Partial<InsightsContext>) {
+  return resolveFinancialState({
+    context: buildBaseContext(overrides),
+    t,
+    currencyFormatter,
+    percentFormatter,
+  });
+}
+
+describe("resolveFinancialState with a projected deficit", () => {
+  it("caps the level at attention when there is no expected fixed income and the month is open", () => {
+    const state = resolveWithKeys(earlyDeficitContext);
+
+    expect(state.level).toBe("attention");
+    expect(state.reason).toBe("projectedDeficitWithoutFixedIncome");
+    expect(state.message).toBe("insightsV2.financialState.reasons.projectedDeficitWithoutFixedIncome");
+  });
+
+  it("keeps a projected deficit critical when fixed income is expected", () => {
+    const state = resolveWithKeys({
+      ...earlyDeficitContext,
+      projectedIncomeTotal: 1_000,
+      projectedFixedIncome: 1_000,
+      projectedExpenseTotal: 1_200,
+      projectedBalance: -200,
+    });
+
+    expect(state.level).toBe("critical");
+    expect(state.reason).toBe("projectedDeficit");
+  });
+
+  it("keeps a projected deficit critical on the last day of the month without fixed income", () => {
+    const state = resolveWithKeys({ ...earlyDeficitContext, elapsedDaysCurrentMonth: 30 });
+
+    expect(state.level).toBe("critical");
+    expect(state.reason).toBe("projectedDeficit");
+  });
+
+  it("keeps card pressure above 115% of the available money critical without fixed income", () => {
+    const state = resolveWithKeys({
+      ...earlyDeficitContext,
+      creditCardCount: 1,
+      creditCardExpenseCurrentMonth: 150,
+    });
+
+    expect(state.level).toBe("critical");
+    expect(state.reason).toBe("pressureOverAvailable");
+  });
+
+  it("prefers another attention reason over the deficit without fixed income", () => {
+    const state = resolveWithKeys({
+      ...earlyDeficitContext,
+      creditCardCount: 1,
+      creditCardExpenseCurrentMonth: 90,
+    });
+
+    expect(state.level).toBe("attention");
+    expect(state.reason).toBe("pressureOverAvailable");
+  });
+});
+
+const reasonScenarios = [
+  {
+    reason: "pressureOverAvailable",
+    level: "critical",
+    overrides: {
+      availableCurrent: 300_000,
+      creditCardExpenseCurrentMonth: 520_000,
+      creditCardNextMonthCommitment: 460_000,
+      projectedBalance: -150_000,
+    },
+  },
+  {
+    reason: "pressureOverIncome",
+    level: "critical",
+    overrides: {
+      availableCurrent: 0,
+      creditCardExpenseCurrentMonth: 600_000,
+      creditCardNextMonthCommitment: 450_000,
+    },
+  },
+  {
+    reason: "projectedDeficit",
+    level: "critical",
+    overrides: { ...noCardContext, availableCurrent: 500_000, projectedBalance: -50_000 },
+  },
+  {
+    reason: "projectedDeficitWithoutFixedIncome",
+    level: "attention",
+    overrides: earlyDeficitContext,
+  },
+  {
+    reason: "expenseNearIncome",
+    level: "attention",
+    overrides: { ...noCardContext, projectedExpenseTotal: 1_100_000, projectedBalance: 50_000 },
+  },
+  {
+    reason: "pressureWithoutAvailable",
+    level: "attention",
+    overrides: {
+      availableCurrent: 0,
+      incomeCurrentMonth: 0,
+      projectedIncomeTotal: 0,
+      projectedFixedIncome: 0,
+      projectedBalance: 0,
+    },
+  },
+  {
+    reason: "margin",
+    level: "healthy",
+    overrides: {
+      availableCurrent: 1_200_000,
+      creditCardExpenseCurrentMonth: 120_000,
+      creditCardNextMonthCommitment: 50_000,
+      projectedBalance: 420_000,
+    },
+  },
+  {
+    reason: "marginWithoutCard",
+    level: "healthy",
+    overrides: noCardContext,
+  },
+] as const;
+
+describe("resolveFinancialState reasons", () => {
+  it.each(reasonScenarios)("explains the $level level with $reason", ({ reason, level, overrides }) => {
+    const state = resolveWithKeys(overrides);
+
+    expect(state.level).toBe(level);
+    expect(state.reason).toBe(reason);
+    expect(state.message).toBe(`insightsV2.financialState.reasons.${reason}`);
+  });
+});
+
+const reasonMatrix = supportedLocales.flatMap((locale) =>
+  ["ARS", "BOB"].flatMap((currencyCode) =>
+    reasonScenarios.map((scenario) => ({ locale, currencyCode, ...scenario })),
+  ),
+);
+
+describe("resolveFinancialState reasons with the real dictionary", () => {
+  it.each(reasonMatrix)(
+    "renders the $reason reason in $locale with $currencyCode",
+    ({ locale, currencyCode, overrides }) => {
+      const intlLocale = resolveIntlLocale(locale);
+      const state = resolveFinancialState({
+        context: buildBaseContext(overrides),
+        t: (key, fallback, values) => getTranslation(locale, key, fallback, values),
+        currencyFormatter: buildSafeCurrencyFormatter(intlLocale, currencyCode, false, currencyFormatter),
+        percentFormatter: createPercentFormatter(intlLocale),
+      });
+
+      expect(state.message.length).toBeGreaterThan(0);
+      expect(state.message).not.toContain("{{");
+      expect(state.message.startsWith("insightsV2.")).toBe(false);
+      expect(state.message.toLowerCase()).not.toContain("presión futura");
+      expect(state.message.toLowerCase()).not.toContain("future pressure");
+      expect(state.message).not.toMatch(CURRENCY_NEXT_TO_PERCENT);
+    },
+  );
+});
+
 const levelScenarios = [
   {
     level: "healthy",
-    expectedRatio: "14%",
+    expectedReason: "margin",
     overrides: {
       availableCurrent: 1_200_000,
       creditCardExpenseCurrentMonth: 120_000,
@@ -129,7 +317,7 @@ const levelScenarios = [
   },
   {
     level: "stable",
-    expectedRatio: "38%",
+    expectedReason: "margin",
     overrides: {
       availableCurrent: 850_000,
       creditCardExpenseCurrentMonth: 280_000,
@@ -139,7 +327,7 @@ const levelScenarios = [
   },
   {
     level: "attention",
-    expectedRatio: "51%",
+    expectedReason: "pressureOverAvailable",
     overrides: {
       availableCurrent: 650_000,
       creditCardExpenseCurrentMonth: 360_000,
@@ -149,7 +337,7 @@ const levelScenarios = [
   },
   {
     level: "critical",
-    expectedRatio: "84%",
+    expectedReason: "pressureOverAvailable",
     overrides: {
       availableCurrent: 300_000,
       creditCardExpenseCurrentMonth: 520_000,
@@ -170,12 +358,12 @@ const financialStateMatrix = supportedLocales.flatMap((locale) =>
 describe("resolveFinancialState with the real dictionary", () => {
   it.each(financialStateMatrix)(
     "renders the $level state in $locale with $currencyCode (income: $withIncome)",
-    ({ locale, currencyCode, withIncome, level, expectedRatio, overrides }) => {
+    ({ locale, currencyCode, withIncome, level, expectedReason, overrides }) => {
       const intlLocale = resolveIntlLocale(locale);
       const state = resolveFinancialState({
         context: buildBaseContext({
           ...overrides,
-          ...(withIncome ? {} : { incomeCurrentMonth: 0, projectedIncomeTotal: 0 }),
+          ...(withIncome ? {} : { incomeCurrentMonth: 0, projectedIncomeTotal: 0, projectedFixedIncome: 0 }),
         }),
         t: (key, fallback, values) => getTranslation(locale, key, fallback, values),
         currencyFormatter: buildSafeCurrencyFormatter(intlLocale, currencyCode, false, currencyFormatter),
@@ -184,7 +372,7 @@ describe("resolveFinancialState with the real dictionary", () => {
 
       if (withIncome) {
         expect(state.level).toBe(level);
-        expect(state.message).toContain(expectedRatio);
+        expect(state.reason).toBe(expectedReason);
       }
 
       for (const text of [state.title, state.message]) {

@@ -10,6 +10,8 @@ type CreditCardModuleOptions = {
 
 export const creditCardModuleMetadataKey = "credit_card" as const;
 
+const UNPAID_WARNING_FROM_DAY = 16;
+
 function createInsight(options: Omit<Insight, "module">): Insight {
   return {
     module: "credit_card",
@@ -86,7 +88,7 @@ export function generateCreditCardInsights({
         createInsight({
           id: "credit_card_unpaid",
           kind: "unpaid",
-          severity: "alert",
+          severity: context.referenceDate.getDate() >= UNPAID_WARNING_FROM_DAY ? "warning" : "info",
           priority: 980,
           title: t("insightsV2.modules.creditCard.insights.unpaid.title"),
           message: t("insightsV2.modules.creditCard.insights.unpaid.message"),

@@ -71,6 +71,27 @@ export function resolveCategoryBehavior({
   return null;
 }
 
+type ResolvePeriodElapsedDaysOptions = {
+  year: number;
+  month: number;
+  referenceDate: Date;
+};
+
+export function resolvePeriodElapsedDays({ year, month, referenceDate }: ResolvePeriodElapsedDaysOptions) {
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const selectedPeriod = year * 100 + month;
+  const currentPeriod = referenceDate.getFullYear() * 100 + (referenceDate.getMonth() + 1);
+  let elapsedDays = 0;
+
+  if (selectedPeriod < currentPeriod) {
+    elapsedDays = daysInMonth;
+  } else if (selectedPeriod === currentPeriod) {
+    elapsedDays = Math.min(referenceDate.getDate(), daysInMonth);
+  }
+
+  return { daysInMonth, elapsedDays };
+}
+
 type BuildProjectionBehaviorSummaryOptions = {
   categories: ProjectionCategoryRow[];
   transactionRows: ProjectionTransactionRow[];
@@ -106,6 +127,8 @@ export function buildProjectionBehaviorSummary({
   let incomeVariableBudget = 0;
   let expenseFixedBudget = 0;
   let expenseVariableBudget = 0;
+  const incomeFixedCategoryIds: string[] = [];
+  const incomeFixedRealByCategoryId = new Map<string, number>();
 
   for (const category of categories) {
     const behavior = resolveCategoryBehavior({ category, systemCategoryKeyById });
@@ -113,6 +136,7 @@ export function buildProjectionBehaviorSummary({
 
     if (category.type === "income") {
       if (behavior === "fixed") {
+        incomeFixedCategoryIds.push(category.id);
         incomeFixedBudget = roundMoney(incomeFixedBudget + budgetAmount);
       } else if (behavior === "variable") {
         incomeVariableBudget = roundMoney(incomeVariableBudget + budgetAmount);
@@ -144,6 +168,8 @@ export function buildProjectionBehaviorSummary({
     if (row.type === "income" && category.type === "income") {
       if (behavior === "fixed") {
         incomeFixedReal = roundMoney(incomeFixedReal + amount);
+        const previousCategoryReal = incomeFixedRealByCategoryId.get(category.id) ?? 0;
+        incomeFixedRealByCategoryId.set(category.id, roundMoney(previousCategoryReal + amount));
       } else {
         incomeVariableReal = roundMoney(incomeVariableReal + amount);
       }
@@ -159,17 +185,11 @@ export function buildProjectionBehaviorSummary({
     }
   }
 
-  const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
-  const selectedPeriod = selectedYear * 100 + selectedMonth;
-  const currentPeriod = referenceDate.getFullYear() * 100 + (referenceDate.getMonth() + 1);
-  let elapsedDays = 0;
-
-  if (selectedPeriod < currentPeriod) {
-    elapsedDays = daysInMonth;
-  } else if (selectedPeriod === currentPeriod) {
-    elapsedDays = Math.min(referenceDate.getDate(), daysInMonth);
-  }
-
+  const { daysInMonth, elapsedDays } = resolvePeriodElapsedDays({
+    year: selectedYear,
+    month: selectedMonth,
+    referenceDate,
+  });
   const remainingDays = Math.max(daysInMonth - elapsedDays, 0);
 
   const projectVariableComponent = (variableReal: number) => {
@@ -184,6 +204,17 @@ export function buildProjectionBehaviorSummary({
   const expenseVariableProjected = projectVariableComponent(expenseVariableReal);
   const incomeProjectedTotal = roundMoney(incomeFixedReal + incomeVariableProjected);
   const expenseProjectedTotal = roundMoney(expenseFixedReal + expenseVariableProjected);
+  const isPeriodOpen = elapsedDays < daysInMonth;
+  const incomeFixedExpected = isPeriodOpen
+    ? roundMoney(
+        incomeFixedCategoryIds.reduce((sum, categoryId) => {
+          const categoryReal = incomeFixedRealByCategoryId.get(categoryId) ?? 0;
+          const categoryBudget = budgetByCategoryId.get(categoryId) ?? 0;
+          return sum + Math.max(categoryReal, categoryBudget);
+        }, 0),
+      )
+    : incomeFixedReal;
+  const expectedIncomeTotal = roundMoney(incomeFixedExpected + incomeVariableProjected);
   const incomeVariableDailyPace = elapsedDays <= 0 ? 0 : roundMoney(incomeVariableReal / elapsedDays);
   const expenseVariableDailyPace = elapsedDays <= 0 ? 0 : roundMoney(expenseVariableReal / elapsedDays);
 
@@ -210,6 +241,11 @@ export function buildProjectionBehaviorSummary({
       projectedTotal: expenseProjectedTotal,
     },
     projectedBalance: roundMoney(incomeProjectedTotal - expenseProjectedTotal),
+    expectedIncome: {
+      fixedExpected: incomeFixedExpected,
+      total: expectedIncomeTotal,
+    },
+    expectedBalance: roundMoney(expectedIncomeTotal - expenseProjectedTotal),
   };
 }
 

@@ -134,6 +134,11 @@ export type ProjectionBehaviorSummary = {
   income: ProjectionTypeBreakdown;
   expense: ProjectionTypeBreakdown;
   projectedBalance: number;
+  expectedIncome: {
+    fixedExpected: number;
+    total: number;
+  };
+  expectedBalance: number;
 };
 
 export type LinkedWorkspaceBalanceGroup = {

@@ -32,6 +32,10 @@ type TransactionRow = Pick<
   | "category_id"
 >;
 
+type BudgetPeriodIdRow = Pick<Database["public"]["Tables"]["budget_periods"]["Row"], "id">;
+
+type BudgetItemRow = Pick<Database["public"]["Tables"]["budget_items"]["Row"], "category_id" | "amount">;
+
 type LoadInsightsContextOptions = {
   supabase: SupabaseClient<Database>;
   workspaceId: string;
@@ -311,6 +315,35 @@ export async function loadInsightsContext({
     }
   }
 
+  const budgetPeriodResponse = await supabase
+    .from("budget_periods")
+    .select("id")
+    .eq("workspace_id", workspaceId)
+    .eq("year", currentYear)
+    .eq("month", currentMonth)
+    .maybeSingle();
+
+  if (budgetPeriodResponse.error) {
+    throw budgetPeriodResponse.error;
+  }
+
+  const budgetPeriod = budgetPeriodResponse.data as BudgetPeriodIdRow | null;
+  let budgetItems: BudgetItemRow[] = [];
+  if (budgetPeriod) {
+    const budgetItemsResponse = await supabase
+      .from("budget_items")
+      .select("category_id, amount")
+      .eq("budget_period_id", budgetPeriod.id);
+
+    if (budgetItemsResponse.error) {
+      throw budgetItemsResponse.error;
+    }
+
+    budgetItems = ((budgetItemsResponse.data ?? []) as BudgetItemRow[]).filter(
+      (item) => !excludedDashboardCategoryIds.has(item.category_id),
+    );
+  }
+
   const projectionSummary = buildProjectionBehaviorSummary({
     categories,
     transactionRows: currentTransactions
@@ -324,7 +357,7 @@ export async function loadInsightsContext({
         amount: row.amount,
         type: row.type,
       })),
-    budgetItems: [],
+    budgetItems,
     systemCategoryKeyById,
     selectedYear: currentYear,
     selectedMonth: currentMonth,
@@ -361,10 +394,11 @@ export async function loadInsightsContext({
     creditCardDebtTotal: roundMoney(creditCardDebtTotal),
     creditCardCurrentStatement: roundMoney(creditCardExpenseCurrentMonth),
     creditCardNextMonthCommitment: roundMoney(creditCardNextMonthCommitment),
-    projectedIncomeTotal: roundMoney(projectionSummary.income.projectedTotal),
+    projectedIncomeTotal: roundMoney(projectionSummary.expectedIncome.total),
+    projectedFixedIncome: roundMoney(projectionSummary.expectedIncome.fixedExpected),
     projectedExpenseTotal: roundMoney(projectionSummary.expense.projectedTotal),
     projectedExpenseVariable: roundMoney(projectionSummary.expense.variableProjected),
-    projectedBalance: roundMoney(projectionSummary.projectedBalance),
+    projectedBalance: roundMoney(projectionSummary.expectedBalance),
     elapsedDaysCurrentMonth: projectionSummary.elapsedDays,
     daysInCurrentMonth: projectionSummary.daysInMonth,
     relevantTransactionCountCurrentMonth,

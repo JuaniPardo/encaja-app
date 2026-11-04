@@ -58,6 +58,7 @@ export function CategoryBudgetRow({
   const hasSubcategories = subcategoryLines.length > 0;
   const amountPrefix = getCurrencyInputPrefix(currencyCode);
   const isIncome = category.type === "income";
+  const isSaving = category.type === "saving";
   const accentTextColor = transactionTypeColorShade(category.type, 7);
 
   const renderBudgetLine = ({
@@ -108,7 +109,11 @@ export function CategoryBudgetRow({
               ? isOver
                 ? t("budget.remainingStates.exceeded")
                 : t("budget.remainingStates.pending")
-              : isOver
+              : isSaving
+                ? isOver
+                  ? t("budget.remainingStates.exceeded")
+                  : t("budget.remainingStates.toSave")
+                : isOver
                 ? t("budget.remainingStates.over")
                 : t("budget.remainingStates.available");
 
@@ -171,7 +176,11 @@ export function CategoryBudgetRow({
                     c={isOverNegative ? "red.7" : accentTextColor}
                   >
                     {t(
-                      isIncome ? "budget.receivedConsumptionFeedback" : "budget.consumptionFeedback",
+                      isIncome
+                        ? "budget.receivedConsumptionFeedback"
+                        : isSaving
+                          ? "budget.savedConsumptionFeedback"
+                          : "budget.consumptionFeedback",
                       undefined,
                       { percent: consumptionPercent },
                     )}
@@ -185,10 +194,14 @@ export function CategoryBudgetRow({
                     c={isOverNegative ? "red.7" : tone === "overPositive" ? accentTextColor : "dimmed"}
                     ta="right"
                   >
-                    {t(isIncome ? "budget.receivedFeedback" : "budget.spentFeedback", undefined, {
-                      amount: currencyFormatter.format(spent),
-                      percent: consumptionPercent,
-                    })}
+                    {t(
+                      isIncome ? "budget.receivedFeedback" : isSaving ? "budget.savedFeedback" : "budget.spentFeedback",
+                      undefined,
+                      {
+                        amount: currencyFormatter.format(spent),
+                        percent: consumptionPercent,
+                      },
+                    )}
                   </Text>
 
                   {isOnTarget ? (

@@ -17,8 +17,19 @@ export type Insight = {
 
 export type FinancialStateLevel = "healthy" | "stable" | "attention" | "critical";
 
+export type FinancialStateReason =
+  | "pressureOverAvailable"
+  | "pressureOverIncome"
+  | "projectedDeficit"
+  | "projectedDeficitWithoutFixedIncome"
+  | "expenseNearIncome"
+  | "pressureWithoutAvailable"
+  | "margin"
+  | "marginWithoutCard";
+
 export type FinancialState = {
   level: FinancialStateLevel;
+  reason: FinancialStateReason;
   title: string;
   message: string;
   pressureScore: number;
@@ -81,6 +92,7 @@ export type InsightsContext = {
   creditCardCurrentStatement: number;
   creditCardNextMonthCommitment: number;
   projectedIncomeTotal: number;
+  projectedFixedIncome: number;
   projectedExpenseTotal: number;
   projectedExpenseVariable: number;
   projectedBalance: number;

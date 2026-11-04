@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { isBudgetCategoryCritical, resolveBudgetLineStatus } from "@/features/budget/line-status";
+import {
+  isBudgetCategoryAtRisk,
+  resolveBudgetLineStatus,
+  resolveMonthElapsedRatio,
+} from "@/features/budget/line-status";
 
 describe("resolveBudgetLineStatus", () => {
   it("shows an income above its budget as a positive overrun", () => {
@@ -33,8 +37,16 @@ describe("resolveBudgetLineStatus", () => {
     });
   });
 
-  it("keeps a saving above its budget as a negative overrun", () => {
-    expect(resolveBudgetLineStatus("saving", 5000, 6000).tone).toBe("overNegative");
+  it("treats a saving like an income: within below, on target at 100% and a positive overrun above", () => {
+    expect(resolveBudgetLineStatus("saving", 10000, 8000)).toMatchObject({ percent: 80, tone: "within" });
+    expect(resolveBudgetLineStatus("saving", 10000, 10000)).toMatchObject({ isOnTarget: true, tone: "within" });
+    expect(resolveBudgetLineStatus("saving", 10000, 12000)).toEqual({
+      percent: 120,
+      clampedPercent: 100,
+      isOver: true,
+      isOnTarget: false,
+      tone: "overPositive",
+    });
   });
 
   it("treats an exact match as within budget", () => {
@@ -86,22 +98,97 @@ describe("resolveBudgetLineStatus", () => {
   });
 });
 
-describe("isBudgetCategoryCritical", () => {
-  it("never flags an income as critical", () => {
-    expect(isBudgetCategoryCritical("income", 10000, 10800)).toBe(false);
-    expect(isBudgetCategoryCritical("income", 10000, 8000)).toBe(false);
+describe("isBudgetCategoryAtRisk", () => {
+  const variableExpense = { type: "expense", expenseBehavior: "variable" } as const;
+
+  it("never flags a fixed expense, even exact or exceeded", () => {
+    expect(
+      isBudgetCategoryAtRisk({
+        type: "expense",
+        expenseBehavior: "fixed",
+        budgeted: 10000,
+        actual: 10000,
+        monthElapsedRatio: 0.1,
+      }),
+    ).toBe(false);
+    expect(
+      isBudgetCategoryAtRisk({
+        type: "expense",
+        expenseBehavior: "fixed",
+        budgeted: 10000,
+        actual: 15000,
+        monthElapsedRatio: 1,
+      }),
+    ).toBe(false);
   });
 
-  it("flags an expense from 80% of its budget", () => {
-    expect(isBudgetCategoryCritical("expense", 10000, 8000)).toBe(true);
-    expect(isBudgetCategoryCritical("expense", 10000, 7900)).toBe(false);
+  it("does not flag a variable expense that follows the month pace", () => {
+    expect(
+      isBudgetCategoryAtRisk({ ...variableExpense, budgeted: 10000, actual: 8000, monthElapsedRatio: 28 / 30 }),
+    ).toBe(false);
   });
 
-  it("keeps flagging savings as today", () => {
-    expect(isBudgetCategoryCritical("saving", 10000, 8000)).toBe(true);
+  it("flags a variable expense ahead of the month pace", () => {
+    expect(
+      isBudgetCategoryAtRisk({ ...variableExpense, budgeted: 10000, actual: 8000, monthElapsedRatio: 10 / 30 }),
+    ).toBe(true);
+  });
+
+  it("flags a variable expense over its budget in a past month", () => {
+    expect(isBudgetCategoryAtRisk({ ...variableExpense, budgeted: 10000, actual: 10500, monthElapsedRatio: 1 })).toBe(
+      true,
+    );
+    expect(isBudgetCategoryAtRisk({ ...variableExpense, budgeted: 10000, actual: 9500, monthElapsedRatio: 1 })).toBe(
+      false,
+    );
+  });
+
+  it("treats an expense without behavior as variable", () => {
+    expect(
+      isBudgetCategoryAtRisk({
+        type: "expense",
+        expenseBehavior: null,
+        budgeted: 10000,
+        actual: 8000,
+        monthElapsedRatio: 10 / 30,
+      }),
+    ).toBe(true);
+  });
+
+  it.each(["saving", "income"] as const)("never flags a %s", (type) => {
+    expect(
+      isBudgetCategoryAtRisk({ type, expenseBehavior: null, budgeted: 10000, actual: 12000, monthElapsedRatio: 0.5 }),
+    ).toBe(false);
   });
 
   it("does not flag a category without budget", () => {
-    expect(isBudgetCategoryCritical("expense", 0, 5000)).toBe(false);
+    expect(isBudgetCategoryAtRisk({ ...variableExpense, budgeted: 0, actual: 50, monthElapsedRatio: 0.5 })).toBe(
+      false,
+    );
+  });
+
+  it("does not flag a variable expense exactly at the pace margin", () => {
+    expect(isBudgetCategoryAtRisk({ ...variableExpense, budgeted: 10000, actual: 6000, monthElapsedRatio: 0.5 })).toBe(
+      false,
+    );
+    expect(isBudgetCategoryAtRisk({ ...variableExpense, budgeted: 10000, actual: 6001, monthElapsedRatio: 0.5 })).toBe(
+      true,
+    );
+  });
+});
+
+describe("resolveMonthElapsedRatio", () => {
+  const referenceDate = new Date(2026, 3, 10, 12);
+
+  it("returns 1 for a past month", () => {
+    expect(resolveMonthElapsedRatio(2026, 3, referenceDate)).toBe(1);
+  });
+
+  it("returns the elapsed fraction for the current month", () => {
+    expect(resolveMonthElapsedRatio(2026, 4, referenceDate)).toBe(10 / 30);
+  });
+
+  it("returns 0 for a future month", () => {
+    expect(resolveMonthElapsedRatio(2026, 5, referenceDate)).toBe(0);
   });
 });

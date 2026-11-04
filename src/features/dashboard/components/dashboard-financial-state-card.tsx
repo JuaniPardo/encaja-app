@@ -76,9 +76,14 @@ export function DashboardFinancialStateCard({
     >
       <Stack gap={isMobile ? 7 : 9}>
         <Group justify="space-between" align="center" wrap="wrap" gap={6}>
-          <Text size="xs" fw={800} c="var(--encaja-text-primary)">
-            {t("dashboard.financialStateTitle")}
-          </Text>
+          <Group gap={6} align="baseline" wrap="nowrap">
+            <Text size="xs" fw={800} c="var(--encaja-text-primary)">
+              {t("dashboard.financialStateTitle")}
+            </Text>
+            <Text size="11px" c="var(--encaja-text-muted)">
+              {t("dashboard.todayLabel")}
+            </Text>
+          </Group>
           <Badge variant="light" color={tone.badgeColor}>
             {resolveLevelLabel(financialState.level, t)}
           </Badge>
@@ -86,6 +91,10 @@ export function DashboardFinancialStateCard({
 
         <Text size={isMobile ? "md" : "lg"} fw={800} c="var(--encaja-text-strong)" lh={1.2}>
           {resolveQuickMessage(financialState.level, t)}
+        </Text>
+
+        <Text size="xs" c="var(--encaja-text-muted)">
+          {financialState.message}
         </Text>
 
         <Group justify="space-between" align="center" wrap="wrap" gap={6}>

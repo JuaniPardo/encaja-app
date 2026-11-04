@@ -2,10 +2,11 @@ import type { InsightsResult } from "@/features/insights/types";
 
 export type DashboardFinancialStateView = "hidden" | "loading" | "error" | "ready";
 
-export type DashboardPrimarySlotView = "onboarding" | "loading" | "error" | "insight" | "empty";
+export type DashboardPrimarySlotView = "hidden" | "onboarding" | "loading" | "error" | "insight" | "empty";
 
 type ResolveDashboardInsightsViewOptions = {
   shouldShowOnboardingCta: boolean;
+  isPastPeriod: boolean;
   isLoading: boolean;
   hasError: boolean;
   result: InsightsResult | null;
@@ -13,6 +14,7 @@ type ResolveDashboardInsightsViewOptions = {
 
 export function resolveDashboardInsightsView({
   shouldShowOnboardingCta,
+  isPastPeriod,
   isLoading,
   hasError,
   result,
@@ -22,6 +24,10 @@ export function resolveDashboardInsightsView({
 } {
   if (shouldShowOnboardingCta) {
     return { financialState: "hidden", primarySlot: "onboarding" };
+  }
+
+  if (isPastPeriod) {
+    return { financialState: "hidden", primarySlot: "hidden" };
   }
 
   if (result) {
