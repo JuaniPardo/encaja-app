@@ -22,3 +22,4 @@ Los cambios anteriores a CHG-2026-11-001 no tienen registro: se rastrean con los
 | [CHG-2026-11-011](CHG-2026-11-011-consejos-lote-1.md) | 2026-11-04 | Consejos y avisos, lote 1 | En producción | v1.10.0 | No |
 | [CHG-2026-11-012](CHG-2026-11-012-consejos-lote-2.md) | 2026-11-04 | Consejos y avisos, lote 2 | En producción | v1.10.0 | No |
 | [CHG-2026-11-013](CHG-2026-11-013-errores-usuario.md) | 2026-11-04 | Mensajes de error para el usuario | En producción | v1.10.1 | No |
+| [CHG-2026-11-014](CHG-2026-11-014-consejos-lote-4.md) | 2026-11-04 | Consejos y avisos, lote 4 (motor de consejos) | Entregado | Pendiente | No |

@@ -44,9 +44,7 @@ export function generateSpendingInsights({
           id: "spending_excess_alert",
           kind: "excess_spending",
           severity: "alert",
-          priority: 940,
-          impact: 5,
-          urgency: 5,
+          priority: 960,
           title: t("insightsV2.modules.spending.insights.excessSpending.alertTitle"),
           message: t("insightsV2.modules.spending.insights.excessSpending.alertMessage", undefined, {
             ratio: formatPercentValue(projectedExpenseVsIncome, percentFormatter),
@@ -64,9 +62,7 @@ export function generateSpendingInsights({
           id: "spending_excess_warning",
           kind: "excess_spending",
           severity: "warning",
-          priority: 760,
-          impact: 4,
-          urgency: 4,
+          priority: 990,
           title: t("insightsV2.modules.spending.insights.excessSpending.warningTitle"),
           message: t("insightsV2.modules.spending.insights.excessSpending.warningMessage", undefined, {
             ratio: formatPercentValue(projectedExpenseVsIncome, percentFormatter),
@@ -87,9 +83,7 @@ export function generateSpendingInsights({
           id: "spending_excess_without_income",
           kind: "excess_spending",
           severity: "warning",
-          priority: 730,
-          impact: 4,
-          urgency: 4,
+          priority: 985,
           title: t("insightsV2.modules.spending.insights.excessSpending.noIncomeTitle"),
           message: t("insightsV2.modules.spending.insights.excessSpending.noIncomeMessage", undefined, {
             projectedExpense: currencyFormatter.format(projectedExpense),

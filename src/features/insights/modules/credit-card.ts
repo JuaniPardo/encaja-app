@@ -1,4 +1,5 @@
 import { formatPercentValue, type TranslationFn } from "@/features/insights/intl";
+import { INSIGHT_ZERO_TOLERANCE, MIN_ELAPSED_DAYS_FOR_PACE_SIGNALS } from "@/features/insights/thresholds";
 import type { Insight, InsightModuleMetadata, InsightsContext } from "@/features/insights/types";
 
 type CreditCardModuleOptions = {
@@ -11,6 +12,8 @@ type CreditCardModuleOptions = {
 export const creditCardModuleMetadataKey = "credit_card" as const;
 
 const UNPAID_WARNING_FROM_DAY = 16;
+const ACCELERATION_INFO_RATIO = 1.2;
+const ACCELERATION_WARNING_RATIO = 1.6;
 
 function createInsight(options: Omit<Insight, "module">): Insight {
   return {
@@ -38,21 +41,21 @@ export function generateCreditCardInsights({
   }
 
   const insights: Insight[] = [];
-  const tolerance = 0.005;
+  const tolerance = INSIGHT_ZERO_TOLERANCE;
 
-  const totalIncome = context.incomeCurrentMonth;
+  const expectedIncome = context.projectedIncomeTotal;
   const monthlyCardExpense = context.creditCardExpenseCurrentMonth;
-  const previousMonthCardExpense = context.creditCardExpensePreviousMonth;
+  const previousStatement = context.creditCardPreviousMonthStatement;
   const monthlyCardPayments = context.creditCardPaymentsCurrentMonth;
   const totalDebt = context.creditCardDebtTotal;
   const statementCurrent = context.creditCardCurrentStatement;
   const nextMonthCommitment = context.creditCardNextMonthCommitment;
 
-  const hasIncome = totalIncome > tolerance;
-  const hasPreviousStatementToPay = previousMonthCardExpense > tolerance;
+  const hasIncome = expectedIncome > tolerance;
+  const hasPreviousStatementToPay = previousStatement > tolerance;
 
   if (hasPreviousStatementToPay) {
-    if (monthlyCardPayments > tolerance && monthlyCardPayments + tolerance < previousMonthCardExpense) {
+    if (monthlyCardPayments > tolerance && monthlyCardPayments + tolerance < previousStatement) {
       insights.push(
         createInsight({
           id: "credit_card_rolled_debt",
@@ -65,11 +68,11 @@ export function generateCreditCardInsights({
           }),
           data: {
             monthlyCardPayments,
-            previousMonthCardExpense,
+            previousStatement,
           },
         }),
       );
-    } else if (monthlyCardPayments > tolerance && monthlyCardPayments + tolerance >= previousMonthCardExpense) {
+    } else if (monthlyCardPayments > tolerance && monthlyCardPayments + tolerance >= previousStatement) {
       insights.push(
         createInsight({
           id: "credit_card_full_payment",
@@ -94,7 +97,7 @@ export function generateCreditCardInsights({
           message: t("insightsV2.modules.creditCard.insights.unpaid.message"),
           data: {
             monthlyCardPayments,
-            previousMonthCardExpense,
+            previousStatement,
           },
         }),
       );
@@ -102,7 +105,7 @@ export function generateCreditCardInsights({
   }
 
   if (hasIncome) {
-    const expenseVsIncome = monthlyCardExpense / totalIncome;
+    const expenseVsIncome = monthlyCardExpense / expectedIncome;
     if (expenseVsIncome >= 1) {
       insights.push(
         createInsight({
@@ -137,7 +140,7 @@ export function generateCreditCardInsights({
       );
     }
 
-    const debtVsIncome = totalDebt / totalIncome;
+    const debtVsIncome = totalDebt / expectedIncome;
     if (debtVsIncome >= 1) {
       insights.push(
         createInsight({
@@ -175,7 +178,7 @@ export function generateCreditCardInsights({
 
   if (nextMonthCommitment > tolerance) {
     const formattedCommitment = currencyFormatter.format(nextMonthCommitment);
-    const nextMonthCommitmentVsIncome = hasIncome ? nextMonthCommitment / totalIncome : null;
+    const nextMonthCommitmentVsIncome = hasIncome ? nextMonthCommitment / expectedIncome : null;
 
     if (nextMonthCommitmentVsIncome !== null && nextMonthCommitmentVsIncome >= 0.5) {
       insights.push(
@@ -192,7 +195,7 @@ export function generateCreditCardInsights({
             nextMonthCommitmentVsIncome,
             statementCurrent,
             nextMonthCommitment,
-            incomeReference: totalIncome,
+            incomeReference: expectedIncome,
           },
         }),
       );
@@ -211,7 +214,7 @@ export function generateCreditCardInsights({
             nextMonthCommitmentVsIncome,
             statementCurrent,
             nextMonthCommitment,
-            incomeReference: totalIncome,
+            incomeReference: expectedIncome,
           },
         }),
       );
@@ -230,28 +233,37 @@ export function generateCreditCardInsights({
             nextMonthCommitmentVsIncome,
             statementCurrent,
             nextMonthCommitment,
-            incomeReference: totalIncome,
+            incomeReference: expectedIncome,
           },
         }),
       );
     }
   }
 
-  if (previousMonthCardExpense > tolerance && monthlyCardExpense > previousMonthCardExpense * 1.2) {
-    const ratio = monthlyCardExpense / previousMonthCardExpense;
+  const currentCardExpenseToDate = context.creditCardExpenseCurrentMonthToDate;
+  const previousCardExpenseToDate = context.creditCardExpensePreviousMonthToDate;
+  if (
+    context.elapsedDaysCurrentMonth >= MIN_ELAPSED_DAYS_FOR_PACE_SIGNALS &&
+    previousCardExpenseToDate > tolerance &&
+    currentCardExpenseToDate > previousCardExpenseToDate * ACCELERATION_INFO_RATIO
+  ) {
+    const ratio = currentCardExpenseToDate / previousCardExpenseToDate;
+    const isWarning = ratio >= ACCELERATION_WARNING_RATIO;
     insights.push(
       createInsight({
         id: "credit_card_acceleration",
         kind: "spending_acceleration",
-        severity: ratio >= 1.6 ? "warning" : "info",
-        priority: ratio >= 1.6 ? 230 : 210,
+        severity: isWarning ? "warning" : "info",
+        priority: isWarning ? 230 : 210,
         title: t("insightsV2.modules.creditCard.insights.acceleration.title"),
         message: t("insightsV2.modules.creditCard.insights.acceleration.message", undefined, {
-          previousAmount: currencyFormatter.format(previousMonthCardExpense),
-          currentAmount: currencyFormatter.format(monthlyCardExpense),
+          previousAmount: currencyFormatter.format(previousCardExpenseToDate),
+          currentAmount: currencyFormatter.format(currentCardExpenseToDate),
         }),
         data: {
           ratio,
+          currentCardExpenseToDate,
+          previousCardExpenseToDate,
         },
       }),
     );

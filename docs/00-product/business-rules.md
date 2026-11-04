@@ -270,6 +270,11 @@ Nunca cuentan:
 
 Las secciones Ingresos y Ahorro muestran solo la cantidad de categorías.
 
+El consejo de presupuesto (§13) usa exactamente este mismo criterio (`resolveBudgetCategoryRisk`), sin umbrales extra, y separa los dos casos:
+
+- excedida: lo real supera lo presupuestado
+- en riesgo: va adelante del ritmo del mes sin estar excedida
+
 ---
 
 ## 10. Categorías y comportamiento
@@ -369,6 +374,8 @@ Interpretaciones automáticas.
 - uso de tarjeta
 - baja actividad
 - bajo ahorro
+- presupuesto excedido o en riesgo
+- ritmo por debajo de lo previsto
 
 ### Reglas
 
@@ -376,6 +383,11 @@ Interpretaciones automáticas.
 - es clickeable
 - tono informativo
 - la tarjeta sin pagos del resumen anterior es informativa hasta el día 15 del mes y advertencia desde el 16; nunca es alerta
+- orden: primero por severidad (alerta > advertencia > informativo > positivo), después por prioridad descendente; ante empate, por id
+- las proporciones de tarjeta (uso, deuda y compromiso del mes siguiente) se calculan contra el ingreso esperado (§11); sin ingreso esperado no hay consejo de uso ni de deuda, y el compromiso del mes siguiente es informativo
+- el desbalance mira solo el gasto de categorías variables y aparece desde el día 10, con al menos 5 movimientos de gasto variable, al menos 2 categorías variables con gasto y la principal con 55% o más; con 75% o más es "alto"; siempre es advertencia
+- la aceleración de tarjeta compara el consumo con tarjeta de este mes y del mes anterior a la misma fecha (día de hoy, acotado a los días del mes anterior; el último día del mes compara contra el mes anterior completo), desde el día 10; más de 20% arriba es informativo y 60% o más es advertencia
+- el consejo positivo de ritmo aparece con presupuesto variable cargado, desde el día 10, con al menos 5 movimientos de gasto variable y si el gasto variable proyectado es como máximo el 90% del presupuesto variable
 
 ---
 

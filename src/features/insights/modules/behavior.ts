@@ -1,4 +1,10 @@
+import { countVariableExpenseTransactions } from "@/features/insights/context-math";
 import { formatPercentValue, type TranslationFn } from "@/features/insights/intl";
+import {
+  INSIGHT_ZERO_TOLERANCE,
+  MIN_ELAPSED_DAYS_FOR_PACE_SIGNALS,
+  MIN_VARIABLE_EXPENSE_COUNT,
+} from "@/features/insights/thresholds";
 import type { Insight, InsightModuleMetadata, InsightsContext } from "@/features/insights/types";
 
 type BehaviorModuleOptions = {
@@ -7,7 +13,9 @@ type BehaviorModuleOptions = {
   percentFormatter: Intl.NumberFormat;
 };
 
-const zeroTolerance = 0.005;
+const MIN_VARIABLE_CATEGORIES_WITH_EXPENSE = 2;
+const MODERATE_IMBALANCE_SHARE = 0.55;
+const HIGH_IMBALANCE_SHARE = 0.75;
 
 function createInsight(options: Omit<Insight, "module">): Insight {
   return {
@@ -29,67 +37,55 @@ export function generateBehaviorInsights({
   t,
   percentFormatter,
 }: BehaviorModuleOptions): Insight[] {
-  const totalExpense = context.expenseCurrentMonth;
-  if (totalExpense <= zeroTolerance || context.expenseByCategoryCurrentMonth.length === 0) {
+  if (context.elapsedDaysCurrentMonth < MIN_ELAPSED_DAYS_FOR_PACE_SIGNALS) {
     return [];
   }
 
-  const topCategory = [...context.expenseByCategoryCurrentMonth].sort((left, right) => right.amount - left.amount)[0];
-  if (!topCategory) {
+  if (countVariableExpenseTransactions(context.expenseByCategoryCurrentMonth) < MIN_VARIABLE_EXPENSE_COUNT) {
     return [];
   }
 
-  const topShare = topCategory.amount / totalExpense;
-  if (topShare < 0.55) {
+  const variableCategories = context.expenseByCategoryCurrentMonth
+    .filter((category) => category.behavior === "variable" && category.amount > INSIGHT_ZERO_TOLERANCE)
+    .sort((left, right) => right.amount - left.amount);
+  if (variableCategories.length < MIN_VARIABLE_CATEGORIES_WITH_EXPENSE) {
     return [];
   }
 
-  if (topShare >= 0.75) {
-    return [
-      createInsight({
-        id: "behavior_category_imbalance_alert",
-        kind: "category_imbalance",
-        severity: "alert",
-        priority: 820,
-        impact: 4,
-        urgency: 4,
-        title: t("insightsV2.modules.behavior.insights.categoryImbalance.alertTitle", undefined, {
-          categoryName: topCategory.categoryName,
-        }),
-        message: t("insightsV2.modules.behavior.insights.categoryImbalance.alertMessage", undefined, {
-          categoryName: topCategory.categoryName,
-          ratio: formatPercentValue(topShare, percentFormatter),
-        }),
-        data: {
-          categoryId: topCategory.categoryId,
-          topShare,
-          topAmount: topCategory.amount,
-          totalExpense,
-        },
-      }),
-    ];
+  const totalVariableExpense = variableCategories.reduce((total, category) => total + category.amount, 0);
+  const topCategory = variableCategories[0];
+  if (!topCategory || totalVariableExpense <= INSIGHT_ZERO_TOLERANCE) {
+    return [];
   }
+
+  const topShare = topCategory.amount / totalVariableExpense;
+  if (topShare < MODERATE_IMBALANCE_SHARE) {
+    return [];
+  }
+
+  const isHigh = topShare >= HIGH_IMBALANCE_SHARE;
 
   return [
     createInsight({
-      id: "behavior_category_imbalance_warning",
+      id: isHigh ? "behavior_category_imbalance_high" : "behavior_category_imbalance_moderate",
       kind: "category_imbalance",
       severity: "warning",
-      priority: 680,
-      impact: 3,
-      urgency: 3,
-      title: t("insightsV2.modules.behavior.insights.categoryImbalance.warningTitle", undefined, {
-        categoryName: topCategory.categoryName,
-      }),
-      message: t("insightsV2.modules.behavior.insights.categoryImbalance.warningMessage", undefined, {
-        categoryName: topCategory.categoryName,
+      priority: isHigh ? 700 : 680,
+      title: isHigh
+        ? t("insightsV2.modules.behavior.insights.categoryImbalance.highTitle", undefined, {
+            categoryName: topCategory.categoryName,
+          })
+        : t("insightsV2.modules.behavior.insights.categoryImbalance.moderateTitle", undefined, {
+            categoryName: topCategory.categoryName,
+          }),
+      message: t("insightsV2.modules.behavior.insights.categoryImbalance.message", undefined, {
         ratio: formatPercentValue(topShare, percentFormatter),
       }),
       data: {
         categoryId: topCategory.categoryId,
         topShare,
         topAmount: topCategory.amount,
-        totalExpense,
+        totalVariableExpense,
       },
     }),
   ];

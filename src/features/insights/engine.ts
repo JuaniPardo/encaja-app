@@ -6,9 +6,11 @@ import {
 } from "@/features/insights/modules/credit-card";
 import { generateBehaviorInsights, resolveBehaviorModuleMetadata } from "@/features/insights/modules/behavior";
 import { generateSpendingInsights, resolveSpendingModuleMetadata } from "@/features/insights/modules/spending";
+import { generateBudgetInsights, resolveBudgetModuleMetadata } from "@/features/insights/modules/budget";
 import { generateCashflowInsights, resolveCashflowModuleMetadata } from "@/features/insights/modules/cashflow";
 import { generateActivityInsights, resolveActivityModuleMetadata } from "@/features/insights/modules/activity";
 import { createPercentFormatter, type TranslationFn } from "@/features/insights/intl";
+import { INSIGHT_ZERO_TOLERANCE } from "@/features/insights/thresholds";
 import type { InsightModuleResult, InsightsContext, InsightsResult } from "@/features/insights/types";
 
 type BuildInsightsResultOptions = {
@@ -46,6 +48,13 @@ export function buildInsightsResult({
     currencyFormatter,
     percentFormatter,
   }).sort(compareInsightsByPriority);
+  const budgetMetadata = resolveBudgetModuleMetadata(t);
+  const budgetInsights = generateBudgetInsights({
+    context,
+    t,
+    currencyFormatter,
+    percentFormatter,
+  }).sort(compareInsightsByPriority);
   const behaviorMetadata = resolveBehaviorModuleMetadata(t);
   const behaviorInsights = generateBehaviorInsights({
     context,
@@ -75,6 +84,17 @@ export function buildInsightsResult({
           },
         ];
 
+  const budgetModule: InsightModuleResult[] =
+    context.variableExpenseBudgetTotal <= INSIGHT_ZERO_TOLERANCE
+      ? []
+      : [
+          {
+            module: "budget",
+            metadata: budgetMetadata,
+            insights: budgetInsights,
+          },
+        ];
+
   const modules: InsightModuleResult[] = [
     ...creditCardModule,
     {
@@ -82,6 +102,7 @@ export function buildInsightsResult({
       metadata: spendingMetadata,
       insights: spendingInsights,
     },
+    ...budgetModule,
     {
       module: "behavior",
       metadata: behaviorMetadata,
