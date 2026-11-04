@@ -69,14 +69,14 @@ export default function InsightsPage() {
         <Title order={2} component="h1">
           {t("insightsV2.title")}
         </Title>
-        <Text c="#667085" size="sm">
+        <Text c="var(--encaja-text-muted)" size="sm">
           {t("insightsV2.subtitle")}
         </Text>
       </Stack>
 
       {result.modules.length === 0 ? (
-        <Paper withBorder radius="sm" p="md" style={{ borderColor: "#d6dde7" }}>
-          <Text size="sm" c="#667085">
+        <Paper withBorder radius="sm" p="md" style={{ borderColor: "var(--encaja-border-strong)" }}>
+          <Text size="sm" c="var(--encaja-text-muted)">
             {t("insightsV2.emptyState")}
           </Text>
         </Paper>
@@ -88,17 +88,17 @@ export default function InsightsPage() {
             radius="sm"
             p="md"
             style={{
-              borderColor: "#d6dde7",
-              backgroundColor: "#ffffff",
+              borderColor: "var(--encaja-border-strong)",
+              backgroundColor: "var(--encaja-surface)",
             }}
           >
             <Stack gap="sm">
-              <Text fw={800} size="lg" c="#1f2937">
+              <Text fw={800} size="lg" c="var(--encaja-text-strong)">
                 {moduleResult.metadata.title}
               </Text>
 
               {moduleResult.insights.length === 0 ? (
-                <Text size="sm" c="#667085">
+                <Text size="sm" c="var(--encaja-text-muted)">
                   {t("insightsV2.moduleEmptyState")}
                 </Text>
               ) : (
@@ -110,8 +110,8 @@ export default function InsightsPage() {
                       radius="sm"
                       p="sm"
                       style={{
-                        borderColor: "#e4e7ec",
-                        backgroundColor: "#f8fafc",
+                        borderColor: "var(--encaja-border)",
+                        backgroundColor: "var(--encaja-surface-muted)",
                       }}
                     >
                       <Stack gap={6}>
@@ -119,10 +119,10 @@ export default function InsightsPage() {
                           <Badge color={resolveSeverityColor(insight.severity)} variant="light" w="fit-content">
                             {resolveSeverityLabel(insight.severity, t)}
                           </Badge>
-                          <Text fw={700} c="#1f2937">
+                          <Text fw={700} c="var(--encaja-text-strong)">
                             {insight.title}
                           </Text>
-                          <Text size="sm" c="#475467">
+                          <Text size="sm" c="var(--encaja-text-secondary)">
                             {insight.message}
                           </Text>
                         </Stack>
@@ -132,7 +132,7 @@ export default function InsightsPage() {
                 </Stack>
               )}
 
-              <Text size="sm" c="#667085">
+              <Text size="sm" c="var(--encaja-text-muted)">
                 {moduleResult.metadata.description}
               </Text>
             </Stack>

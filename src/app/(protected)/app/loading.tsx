@@ -22,7 +22,7 @@ export default function AppLoading() {
           style={{
             width: 28,
             height: 28,
-            border: "3px solid var(--mantine-color-gray-2)",
+            border: "3px solid var(--encaja-border-subtle)",
             borderTopColor: "var(--mantine-color-cyan-6)",
             borderRadius: "50%",
             animation: "encaja-loading-spin 0.8s linear infinite",

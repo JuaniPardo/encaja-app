@@ -74,7 +74,7 @@ export function BudgetGlobalSummary({
               minWidth: 0,
               padding: compact ? "0.1rem 0" : "0.2rem 0.35rem",
               borderRight:
-                metric.label === metrics.at(-1)?.label ? "none" : "1px solid var(--mantine-color-gray-2)",
+                metric.label === metrics.at(-1)?.label ? "none" : "1px solid var(--encaja-border-subtle)",
             }}
           >
             <Text size="10px" fw={800} c="dimmed" tt="uppercase" ta="center" style={{ letterSpacing: "0.08em" }}>

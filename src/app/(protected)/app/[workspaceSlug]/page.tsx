@@ -271,11 +271,11 @@ export default function DashboardPage() {
       radius="sm"
       p={isMobile ? "xs" : "sm"}
       style={{
-        borderColor: "#d6dde7",
-        backgroundColor: "#ffffff",
+        borderColor: "var(--encaja-border-strong)",
+        backgroundColor: "var(--encaja-surface)",
       }}
     >
-      <Text size="xs" c="#667085">
+      <Text size="xs" c="var(--encaja-text-muted)">
         {t("insightsV2.emptyState")}
       </Text>
     </Paper>
@@ -450,17 +450,17 @@ export default function DashboardPage() {
         radius="sm"
         p={isMobile ? "xs" : "sm"}
         style={{
-          borderColor: "#e5e9f0",
-          backgroundColor: "#ffffff",
+          borderColor: "var(--encaja-border-soft)",
+          backgroundColor: "var(--encaja-surface)",
         }}
       >
         <Stack gap={isMobile ? "xs" : "sm"}>
           <Group justify="space-between" align="center">
-            <Text size="xs" fw={800} c="#344054">
+            <Text size="xs" fw={800} c="var(--encaja-text-primary)">
               {t("dashboard.expenseDetailSectionTitle")}
             </Text>
             <UnstyledButton onClick={() => setIsExpenseDetailOpen((open) => !open)}>
-              <Text size="11px" fw={700} c="#3b5bdb">
+              <Text size="11px" fw={700} c="var(--encaja-link-text)">
                 {isExpenseDetailOpen ? t("dashboard.hideDetail") : t("dashboard.showDetail")}
               </Text>
             </UnstyledButton>
@@ -491,17 +491,17 @@ export default function DashboardPage() {
         radius="sm"
         p={isMobile ? "xs" : "sm"}
         style={{
-          borderColor: "#e5e9f0",
-          backgroundColor: "#ffffff",
+          borderColor: "var(--encaja-border-soft)",
+          backgroundColor: "var(--encaja-surface)",
         }}
       >
         <Stack gap={isMobile ? "xs" : "sm"}>
           <Group justify="space-between" align="center">
-            <Text size="xs" fw={800} c="#344054">
+            <Text size="xs" fw={800} c="var(--encaja-text-primary)">
               {t("dashboard.optionalFinancialMethodsSectionTitle")}
             </Text>
             <UnstyledButton onClick={() => setIsFinancialMethodsOpen((open) => !open)}>
-              <Text size="11px" fw={700} c="#3b5bdb">
+              <Text size="11px" fw={700} c="var(--encaja-link-text)">
                 {isFinancialMethodsOpen ? t("dashboard.hideDetail") : t("dashboard.showDetail")}
               </Text>
             </UnstyledButton>

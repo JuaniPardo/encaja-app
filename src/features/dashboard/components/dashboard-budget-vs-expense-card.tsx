@@ -47,21 +47,21 @@ export function DashboardBudgetVsExpenseCard({
       radius="sm"
       p={isMobile ? "8px" : "10px"}
       style={{
-        borderColor: "#e5e9f0",
-        backgroundColor: "#ffffff",
+        borderColor: "var(--encaja-border-soft)",
+        backgroundColor: "var(--encaja-surface)",
       }}
     >
       <Stack gap={7}>
         <Group justify="space-between" align="center" gap={8}>
-          <Text size="xs" fw={800} c="#344054">
+          <Text size="xs" fw={800} c="var(--encaja-text-primary)">
             {t("dashboard.budgetVsExpenseTitle")}
           </Text>
-          <Text size="11px" fw={700} c="#667085">
+          <Text size="11px" fw={700} c="var(--encaja-text-muted)">
             {t("dashboard.collapsed")}
           </Text>
         </Group>
 
-        <Text size="xs" c="#475467">
+        <Text size="xs" c="var(--encaja-text-secondary)">
           {t("dashboard.budgetSummaryLine", undefined, {
             real: compactFormatter.format(expenseReal),
             budget: compactFormatter.format(expenseBudget),
@@ -70,7 +70,7 @@ export function DashboardBudgetVsExpenseCard({
           })}
         </Text>
 
-        <Text size="11px" c="#667085" lineClamp={2}>
+        <Text size="11px" c="var(--encaja-text-muted)" lineClamp={2}>
           {t("dashboard.overBudgetSummaryLine", undefined, {
             categories: overBudgetSummary,
           })}

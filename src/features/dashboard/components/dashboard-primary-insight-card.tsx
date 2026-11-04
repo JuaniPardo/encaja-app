@@ -27,28 +27,28 @@ function resolveSeverityColor(severity: Insight["severity"]) {
 function resolveCardTone(severity: Insight["severity"]) {
   if (severity === "alert") {
     return {
-      borderColor: "#f0d2d0",
-      backgroundColor: "#fffafa",
+      borderColor: "var(--encaja-negative-border-soft)",
+      backgroundColor: "var(--encaja-negative-bg)",
       badgeVariant: "light" as const,
     };
   }
   if (severity === "warning") {
     return {
-      borderColor: "#eee3c5",
-      backgroundColor: "#fffdf6",
+      borderColor: "var(--encaja-warning-border-soft)",
+      backgroundColor: "var(--encaja-warning-bg)",
       badgeVariant: "light" as const,
     };
   }
   if (severity === "positive") {
     return {
-      borderColor: "#cde6d6",
-      backgroundColor: "#f9fffb",
+      borderColor: "var(--encaja-positive-border-soft)",
+      backgroundColor: "var(--encaja-positive-bg)",
       badgeVariant: "light" as const,
     };
   }
   return {
-    borderColor: "#dae4f6",
-    backgroundColor: "#f8fbff",
+    borderColor: "var(--encaja-info-border-soft)",
+    backgroundColor: "var(--encaja-info-bg)",
     badgeVariant: "light" as const,
   };
 }
@@ -108,7 +108,7 @@ export function DashboardPrimaryInsightCard({
       >
         <Stack gap={4}>
           <Group justify="space-between" align="center">
-            <Text size="11px" fw={700} c="#667085">
+            <Text size="11px" fw={700} c="var(--encaja-text-muted)">
               {t("insightsV2.dashboard.slotTitle")}
             </Text>
             <Badge color={resolveSeverityColor(insight.severity)} variant={tone.badgeVariant} size="xs">
@@ -116,11 +116,11 @@ export function DashboardPrimaryInsightCard({
             </Badge>
           </Group>
 
-          <Text fw={700} c="#1f2937" size="sm" lineClamp={1}>
+          <Text fw={700} c="var(--encaja-text-strong)" size="sm" lineClamp={1}>
             {insight.title}
           </Text>
 
-          <Text size="11px" c="#667085" lineClamp={1}>
+          <Text size="11px" c="var(--encaja-text-muted)" lineClamp={1}>
             {insight.message}
           </Text>
         </Stack>

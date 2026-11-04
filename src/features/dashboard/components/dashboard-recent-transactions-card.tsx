@@ -72,17 +72,17 @@ export function DashboardRecentTransactionsCard({
       radius="sm"
       p={isMobile ? "xs" : "sm"}
       style={{
-        borderColor: "#e5e9f0",
-        backgroundColor: "#ffffff",
+        borderColor: "var(--encaja-border-soft)",
+        backgroundColor: "var(--encaja-surface)",
       }}
     >
       <Stack gap={isMobile ? "xs" : "sm"}>
-        <Text size="xs" fw={800} c="#344054">
+        <Text size="xs" fw={800} c="var(--encaja-text-primary)">
           {t("dashboard.recentTransactionsTitle")}
         </Text>
 
         {recentRows.length === 0 ? (
-          <Text size="xs" c="#98a2b3">
+          <Text size="xs" c="var(--encaja-text-faint)">
             {t("dashboard.recentTransactionsNoData")}
           </Text>
         ) : (
@@ -92,7 +92,7 @@ export function DashboardRecentTransactionsCard({
               const governedDate = resolveGovernedDate(row);
               const typeLabel = typeLabels[row.type];
               const categoryName = categoryNameById.get(row.category_id) ?? t("dashboard.category");
-              const amountColor = signedAmount >= 0 ? "#087f5b" : row.type === "saving" ? "#1c7ed6" : "#c92a2a";
+              const amountColor = signedAmount >= 0 ? "var(--encaja-positive-text)" : row.type === "saving" ? "var(--mantine-color-blue-7)" : "var(--encaja-negative-text)";
 
               return (
                 <UnstyledButton
@@ -102,17 +102,17 @@ export function DashboardRecentTransactionsCard({
                   style={{
                     display: "block",
                     borderRadius: 8,
-                    border: "1px solid #eef2f6",
-                    backgroundColor: "#fcfdff",
+                    border: "1px solid var(--encaja-border-faint)",
+                    backgroundColor: "var(--encaja-surface-subtle)",
                     padding: isMobile ? "7px 8px" : "8px 10px",
                   }}
                 >
                   <Group justify="space-between" align="center" wrap="nowrap" gap={8}>
                     <Stack gap={0} style={{ minWidth: 0 }}>
-                      <Text size="xs" fw={700} c="#1f2937" lineClamp={1}>
+                      <Text size="xs" fw={700} c="var(--encaja-text-strong)" lineClamp={1}>
                         {categoryName}
                       </Text>
-                      <Text size="11px" c="#667085" lineClamp={1}>
+                      <Text size="11px" c="var(--encaja-text-muted)" lineClamp={1}>
                         {typeLabel} · {dateFormatter.format(governedDate)}
                       </Text>
                     </Stack>

@@ -64,7 +64,7 @@ export function PaymentMethodCard({
   t,
 }: PaymentMethodCardProps) {
   return (
-    <Paper withBorder radius="md" p="md" bg="#ffffff">
+    <Paper withBorder radius="md" p="md" bg="var(--encaja-surface)">
       <Stack gap="xs">
         <Group justify="space-between" align="flex-start" wrap="nowrap" gap="xs">
           <Stack gap={4} style={{ minWidth: 0, flex: 1 }}>
@@ -116,7 +116,7 @@ export function PaymentMethodCard({
           fw={900}
           size="2rem"
           lh={1}
-          c={row.displayedBalance > 0 ? "#087f5b" : row.displayedBalance < 0 ? "#c92a2a" : "#475467"}
+          c={row.displayedBalance > 0 ? "var(--encaja-positive-text)" : row.displayedBalance < 0 ? "var(--encaja-negative-text)" : "var(--encaja-text-secondary)"}
         >
           {currencyFormatter.format(row.displayedBalance)}
         </Text>

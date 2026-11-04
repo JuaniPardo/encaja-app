@@ -24,31 +24,31 @@ export function DashboardCreditCommitmentsSummaryCard({
       key: "previous",
       label: t("dashboard.previousMonthStatementLabel"),
       value: formatSignedCurrency(-financialSummary.creditCardPreviousMonthStatementTotal, compactCurrencyFormatter),
-      color: "#667085",
+      color: "var(--encaja-text-muted)",
     },
     {
       key: "payments",
       label: t("dashboard.monthPaymentsLabel"),
       value: formatSignedCurrency(financialSummary.creditCardMonthPaymentsTotal, compactCurrencyFormatter),
-      color: "#087f5b",
+      color: "var(--encaja-positive-text)",
     },
     {
       key: "consumption",
       label: t("dashboard.statementCurrentLabel"),
       value: formatSignedCurrency(-financialSummary.creditCardMonthConsumptionTotal, compactCurrencyFormatter),
-      color: "#c92a2a",
+      color: "var(--encaja-negative-text)",
     },
     {
       key: "rolled",
       label: t("dashboard.creditRolledDebtLabel"),
       value: formatSignedCurrency(-financialSummary.creditCardRolledDebtTotal, compactCurrencyFormatter),
-      color: financialSummary.creditCardRolledDebtTotal > 0 ? "#c92a2a" : "#087f5b",
+      color: financialSummary.creditCardRolledDebtTotal > 0 ? "var(--encaja-negative-text)" : "var(--encaja-positive-text)",
     },
     {
       key: "next",
       label: t("dashboard.nextMonthCommitmentLabel"),
       value: formatSignedCurrency(-financialSummary.creditCardNextMonthInstallmentsTotal, compactCurrencyFormatter),
-      color: "#b54708",
+      color: "var(--encaja-warning-text)",
     },
   ];
 
@@ -58,17 +58,17 @@ export function DashboardCreditCommitmentsSummaryCard({
       radius="sm"
       p={isMobile ? "xs" : "sm"}
       style={{
-        borderColor: "#e5e9f0",
-        backgroundColor: "#ffffff",
+        borderColor: "var(--encaja-border-soft)",
+        backgroundColor: "var(--encaja-surface)",
       }}
     >
       <Stack gap={isMobile ? "xs" : "sm"}>
         <Group justify="space-between" align="center">
-          <Text size="xs" fw={800} c="#344054">
+          <Text size="xs" fw={800} c="var(--encaja-text-primary)">
             {t("dashboard.creditCommitmentsTitle")}
           </Text>
           <UnstyledButton component={Link} href={detailHref}>
-            <Text size="11px" fw={700} c="#3b5bdb">
+            <Text size="11px" fw={700} c="var(--encaja-link-text)">
               {t("dashboard.viewDetail")}
             </Text>
           </UnstyledButton>
@@ -77,7 +77,7 @@ export function DashboardCreditCommitmentsSummaryCard({
         <Stack gap={6}>
           {rows.map((row) => (
             <Group key={row.key} justify="space-between" align="center" wrap="nowrap" gap={8}>
-              <Text size="xs" c="#667085" lineClamp={1}>
+              <Text size="xs" c="var(--encaja-text-muted)" lineClamp={1}>
                 {row.label}
               </Text>
               <Text size="xs" fw={700} c={row.color} style={{ whiteSpace: "nowrap" }}>

@@ -87,12 +87,12 @@ export function clampToPercent(value: number) {
 
 export function getDeviationColor(type: TransactionType, deviation: number) {
   if (Math.abs(deviation) < deviationTolerance) {
-    return "#64748b";
+    return "var(--encaja-text-neutral)";
   }
 
   if (type === "income") {
-    return deviation > 0 ? "#087f5b" : "#c92a2a";
+    return deviation > 0 ? "var(--encaja-positive-text)" : "var(--encaja-negative-text)";
   }
 
-  return deviation > 0 ? "#c92a2a" : "#087f5b";
+  return deviation > 0 ? "var(--encaja-negative-text)" : "var(--encaja-positive-text)";
 }

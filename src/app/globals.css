@@ -1,6 +1,155 @@
 :root {
   --encaja-bg: #f6f8f7;
   --encaja-text: #14231c;
+  --encaja-bg-glow-start: #d7efe4;
+  --encaja-bg-glow-start-fade: rgba(215, 239, 228, 0);
+  --encaja-bg-glow-end: #d6ecf4;
+  --encaja-bg-glow-end-fade: rgba(214, 236, 244, 0);
+
+  --encaja-text-strong: #1f2937;
+  --encaja-text-primary: #344054;
+  --encaja-text-slate: #334155;
+  --encaja-text-ink: #0f172a;
+  --encaja-text-secondary: #475467;
+  --encaja-text-muted: #667085;
+  --encaja-text-faint: #98a2b3;
+  --encaja-text-neutral: #64748b;
+  --encaja-text-label: var(--mantine-color-gray-7);
+
+  --encaja-border: #e4e7ec;
+  --encaja-border-soft: #e5e9f0;
+  --encaja-border-faint: #edf1f5;
+  --encaja-border-strong: #d6dde7;
+  --encaja-border-input: #d0d5dd;
+  --encaja-border-slate: #e2e8f0;
+  --encaja-border-slate-strong: #cbd5e1;
+  --encaja-border-subtle: var(--mantine-color-gray-2);
+  --encaja-border-muted: var(--mantine-color-gray-3);
+
+  --encaja-surface: #ffffff;
+  --encaja-surface-subtle: #fcfdff;
+  --encaja-surface-muted: #f8fafc;
+  --encaja-surface-slate: #f1f5f9;
+  --encaja-surface-track: #edf2f7;
+  --encaja-surface-nav: #f9fbfa;
+  --encaja-surface-header: rgba(255, 255, 255, 0.94);
+
+  --encaja-chart-grid: #dbe3ed;
+  --encaja-chart-axis: #d2dbe8;
+  --encaja-progress-fill: #64748b;
+
+  --encaja-positive-bg: #f6fdf9;
+  --encaja-positive-border: #b8e6c8;
+  --encaja-positive-border-soft: #cde6d6;
+  --encaja-negative-bg: #fffafa;
+  --encaja-negative-border: #f4c7c3;
+  --encaja-negative-border-soft: #f2d4d4;
+  --encaja-warning-bg: #fffbf3;
+  --encaja-warning-border: #f2dda4;
+  --encaja-warning-border-soft: #eee3c5;
+  --encaja-info-bg: #f6f9ff;
+  --encaja-info-border: #c6daf8;
+  --encaja-info-border-soft: #dae4f6;
+  --encaja-info-border-strong: #9ec5fe;
+  --encaja-info-text: #1d4ed8;
+  --encaja-positive-text: #087f5b;
+  --encaja-negative-text: #c92a2a;
+  --encaja-critical-text: #b42318;
+  --encaja-warning-text: #b54708;
+  --encaja-expense-text: #c2255c;
+  --encaja-link-text: #3b5bdb;
+  --encaja-info-gradient: linear-gradient(
+    135deg,
+    rgba(232, 244, 255, 0.95) 0%,
+    rgba(230, 250, 255, 0.9) 100%
+  );
+  --encaja-info-gradient-border: #a5d8ff;
+  --encaja-kpi-accent: #2b8aaf;
+
+  --encaja-tint-gray: var(--mantine-color-gray-0);
+  --encaja-tint-cyan: var(--mantine-color-cyan-0);
+  --encaja-tint-teal: var(--mantine-color-teal-0);
+  --encaja-tint-pink: var(--mantine-color-pink-0);
+  --encaja-tint-indigo: var(--mantine-color-indigo-0);
+  --encaja-tint-yellow: var(--mantine-color-yellow-0);
+  --encaja-nav-active-text: var(--mantine-color-cyan-8);
+}
+
+[data-mantine-color-scheme="dark"] {
+  --encaja-bg: var(--mantine-color-dark-8);
+  --encaja-text: var(--mantine-color-dark-0);
+  --encaja-bg-glow-start: rgba(12, 166, 120, 0.12);
+  --encaja-bg-glow-start-fade: rgba(12, 166, 120, 0);
+  --encaja-bg-glow-end: rgba(21, 170, 191, 0.1);
+  --encaja-bg-glow-end-fade: rgba(21, 170, 191, 0);
+
+  --encaja-text-strong: var(--mantine-color-gray-0);
+  --encaja-text-primary: var(--mantine-color-dark-0);
+  --encaja-text-slate: var(--mantine-color-dark-0);
+  --encaja-text-ink: var(--mantine-color-gray-0);
+  --encaja-text-secondary: var(--mantine-color-dark-1);
+  --encaja-text-muted: var(--mantine-color-dark-2);
+  --encaja-text-faint: var(--mantine-color-dark-2);
+  --encaja-text-neutral: var(--mantine-color-dark-2);
+  --encaja-text-label: var(--mantine-color-dark-1);
+
+  --encaja-border: var(--mantine-color-dark-4);
+  --encaja-border-soft: var(--mantine-color-dark-4);
+  --encaja-border-faint: var(--mantine-color-dark-5);
+  --encaja-border-strong: var(--mantine-color-dark-4);
+  --encaja-border-input: var(--mantine-color-dark-3);
+  --encaja-border-slate: var(--mantine-color-dark-4);
+  --encaja-border-slate-strong: var(--mantine-color-dark-3);
+  --encaja-border-subtle: var(--mantine-color-dark-4);
+  --encaja-border-muted: var(--mantine-color-dark-4);
+
+  --encaja-surface: var(--mantine-color-dark-7);
+  --encaja-surface-subtle: var(--mantine-color-dark-6);
+  --encaja-surface-muted: var(--mantine-color-dark-6);
+  --encaja-surface-slate: var(--mantine-color-dark-6);
+  --encaja-surface-track: var(--mantine-color-dark-5);
+  --encaja-surface-nav: var(--mantine-color-dark-7);
+  --encaja-surface-header: rgba(36, 36, 36, 0.94);
+
+  --encaja-chart-grid: var(--mantine-color-dark-5);
+  --encaja-chart-axis: var(--mantine-color-dark-4);
+  --encaja-progress-fill: var(--mantine-color-dark-1);
+
+  --encaja-positive-bg: rgba(12, 166, 120, 0.1);
+  --encaja-positive-border: rgba(12, 166, 120, 0.45);
+  --encaja-positive-border-soft: rgba(12, 166, 120, 0.3);
+  --encaja-negative-bg: rgba(224, 49, 49, 0.1);
+  --encaja-negative-border: rgba(224, 49, 49, 0.45);
+  --encaja-negative-border-soft: rgba(224, 49, 49, 0.3);
+  --encaja-warning-bg: rgba(245, 159, 0, 0.1);
+  --encaja-warning-border: rgba(245, 159, 0, 0.45);
+  --encaja-warning-border-soft: rgba(245, 159, 0, 0.3);
+  --encaja-info-bg: rgba(51, 154, 240, 0.1);
+  --encaja-info-border: rgba(51, 154, 240, 0.45);
+  --encaja-info-border-soft: rgba(51, 154, 240, 0.3);
+  --encaja-info-border-strong: rgba(51, 154, 240, 0.55);
+  --encaja-info-text: var(--mantine-color-blue-4);
+  --encaja-positive-text: var(--mantine-color-teal-4);
+  --encaja-negative-text: var(--mantine-color-red-4);
+  --encaja-critical-text: var(--mantine-color-red-5);
+  --encaja-warning-text: var(--mantine-color-orange-4);
+  --encaja-expense-text: var(--mantine-color-pink-4);
+  --encaja-link-text: var(--mantine-color-indigo-3);
+  --encaja-info-gradient: linear-gradient(
+    135deg,
+    rgba(51, 154, 240, 0.14) 0%,
+    rgba(21, 170, 191, 0.1) 100%
+  );
+  --encaja-info-gradient-border: rgba(51, 154, 240, 0.5);
+  --encaja-kpi-accent: var(--mantine-color-cyan-4);
+
+  --encaja-tint-gray: var(--mantine-color-dark-6);
+  --encaja-tint-cyan: var(--mantine-color-cyan-light);
+  --encaja-tint-teal: var(--mantine-color-teal-light);
+  --encaja-tint-pink: var(--mantine-color-pink-light);
+  --encaja-tint-indigo: var(--mantine-color-indigo-light);
+  --encaja-tint-yellow: var(--mantine-color-yellow-light);
+  --encaja-nav-active-text: var(--mantine-color-cyan-4);
 }
 
 * {
@@ -17,8 +166,8 @@ body {
 body {
   color: var(--encaja-text);
   background:
-    radial-gradient(circle at 8% 0%, #d7efe4 0%, rgba(215, 239, 228, 0) 34%),
-    radial-gradient(circle at 92% 100%, #d6ecf4 0%, rgba(214, 236, 244, 0) 30%),
+    radial-gradient(circle at 8% 0%, var(--encaja-bg-glow-start) 0%, var(--encaja-bg-glow-start-fade) 34%),
+    radial-gradient(circle at 92% 100%, var(--encaja-bg-glow-end) 0%, var(--encaja-bg-glow-end-fade) 30%),
     var(--encaja-bg);
   font-family: var(--font-sans), sans-serif;
 }
@@ -39,7 +188,7 @@ a {
 }
 
 .dashboard-clickable-row:hover {
-  background-color: #f8fafc;
+  background-color: var(--encaja-surface-muted);
 }
 
 .dashboard-clickable-item {

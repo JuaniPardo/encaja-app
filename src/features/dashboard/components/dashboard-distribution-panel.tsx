@@ -34,12 +34,12 @@ export function DashboardDistributionPanel({
       p={cardPadding}
       radius="sm"
       style={{
-        border: "1px solid #d6dde7",
-        backgroundColor: "#ffffff",
+        border: "1px solid var(--encaja-border-strong)",
+        backgroundColor: "var(--encaja-surface)",
       }}
     >
       <Stack gap={isMobile ? 6 : "xs"}>
-        <Text size="xs" fw={800} c="#344054">
+        <Text size="xs" fw={800} c="var(--encaja-text-primary)">
           {t("dashboard.monthMovementsTitle")}
         </Text>
 
@@ -55,8 +55,8 @@ export function DashboardDistributionPanel({
                 p={isMobile ? 6 : "xs"}
                 radius="sm"
                 style={{
-                  border: "1px solid #e4e7ec",
-                  backgroundColor: "#fbfcff",
+                  border: "1px solid var(--encaja-border)",
+                  backgroundColor: "var(--encaja-surface-subtle)",
                   minHeight: hasData ? donutSize + (isMobile ? 22 : 30) : isMobile ? 76 : 96,
                 }}
               >
@@ -85,10 +85,10 @@ export function DashboardDistributionPanel({
                               value: clampToPercent(slice.value),
                               color: slice.color,
                             }))
-                          : [{ value: 100, color: "#e4e7ec" }]
+                          : [{ value: 100, color: "var(--encaja-border)" }]
                       }
                       label={
-                        <Text size={isMobile ? "9px" : "10px"} c="#344054" ta="center" fw={700}>
+                        <Text size={isMobile ? "9px" : "10px"} c="var(--encaja-text-primary)" ta="center" fw={700}>
                           {compactCurrencyFormatter.format(donut.total)}
                         </Text>
                       }
@@ -108,7 +108,7 @@ export function DashboardDistributionPanel({
                       {typeLabels[type]}
                     </Text>
                     {!hasData ? (
-                      <Text size={isMobile ? "11px" : "xs"} c="#98a2b3">
+                      <Text size={isMobile ? "11px" : "xs"} c="var(--encaja-text-faint)">
                         {t("dashboard.noRealDataInPeriod")}
                       </Text>
                     ) : (
@@ -116,13 +116,13 @@ export function DashboardDistributionPanel({
                         <Group key={`${type}-${slice.label}`} justify="space-between" gap={6} wrap="nowrap">
                           <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
                             <Box h={8} w={8} style={{ borderRadius: 2, backgroundColor: slice.color }} />
-                            <Text size={isMobile ? "11px" : "xs"} c="#344054" lineClamp={1}>
+                            <Text size={isMobile ? "11px" : "xs"} c="var(--encaja-text-primary)" lineClamp={1}>
                               {slice.label}
                             </Text>
                           </Group>
                           <Text
                             size={isMobile ? "11px" : "xs"}
-                            c="#344054"
+                            c="var(--encaja-text-primary)"
                             fw={700}
                             style={{ textAlign: "right", whiteSpace: "nowrap" }}
                           >

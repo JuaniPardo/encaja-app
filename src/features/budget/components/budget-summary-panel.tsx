@@ -1,7 +1,10 @@
 import { Alert, Badge, Group, Paper, Progress, Stack, Text, Title } from "@mantine/core";
 
 import { useI18n } from "@/features/i18n/provider";
-import { transactionTypeColorShade } from "@/features/transactions/type-colors";
+import {
+  mantineColorTintCssVar,
+  transactionTypeColorShade,
+} from "@/features/transactions/type-colors";
 
 type BudgetSummaryPanelProps = {
   totals: {
@@ -64,7 +67,7 @@ export function BudgetSummaryPanel({
           </Text>
         </Stack>
 
-        <Paper withBorder radius="md" p="sm" bg={`${statusTone}.0`}>
+        <Paper withBorder radius="md" p="sm" bg={mantineColorTintCssVar[statusTone]}>
           <Stack gap={4}>
             <Text size="xs" fw={800} tt="uppercase" c="dimmed" style={{ letterSpacing: "0.08em" }}>
               {t("budget.global.balance", "Balance")}
