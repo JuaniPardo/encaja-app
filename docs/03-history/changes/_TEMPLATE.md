@@ -7,6 +7,10 @@
 | Rama | `feature/slug` |
 | Release | Pendiente |
 | Tarea relacionada | Ninguna |
+| Clasificación | Tamaño, riesgo y si es financiero |
+| Revisores por ciclo | Ciclo 0: ... |
+| Diagnóstico | Sí o no |
+| Informes | `.claude/fabrica/runs/<CHG>-<slug>/`, solo en la copia local |
 
 Estados posibles: `Entregado`, `Integrado`, `En producción`, `Revertido`.
 

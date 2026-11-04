@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Worktrees de la fábrica: cada uno se verifica desde su propia raíz.
+    ".claude/worktrees/**",
   ]),
 ]);
 
