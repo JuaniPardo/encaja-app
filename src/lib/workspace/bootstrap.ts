@@ -1,6 +1,7 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 
 import { defaultLocale, normalizeLocale, type Locale } from "@/features/i18n/config";
+import { UserFacingError } from "@/lib/errors/user-facing-error";
 import {
   BALANCE_ADJUSTMENT_SYSTEM_KEY,
   createDemoPaymentMethods,
@@ -166,21 +167,6 @@ function toWorkspaceSummaryFromRpc(row: CreateWorkspaceRpcRow): WorkspaceSummary
   };
 }
 
-function resolveErrorMessage(error: unknown, fallbackMessage: string) {
-  if (error instanceof Error && error.message.trim().length > 0) {
-    return error.message;
-  }
-
-  if (typeof error === "object" && error !== null && "message" in error) {
-    const maybeMessage = (error as { message?: unknown }).message;
-    if (typeof maybeMessage === "string" && maybeMessage.trim().length > 0) {
-      return maybeMessage;
-    }
-  }
-
-  return fallbackMessage;
-}
-
 async function ensureUserProfile(
   supabase: SupabaseClient<Database>,
   user: User,
@@ -234,7 +220,7 @@ async function createWorkspaceWithDefaults(
   if (rpcResponse.error) {
     if (isDemo && rpcResponse.error.code === "23505") {
       const messages = resolveWorkspaceBootstrapMessages(preferredLanguageHint);
-      throw new Error(messages.demoWorkspaceAlreadyExists);
+      throw new UserFacingError(messages.demoWorkspaceAlreadyExists);
     }
     throw rpcResponse.error;
   }
@@ -242,7 +228,7 @@ async function createWorkspaceWithDefaults(
   const createdRow = (rpcResponse.data ?? [])[0] as CreateWorkspaceRpcRow | undefined;
   if (!createdRow) {
     const messages = resolveWorkspaceBootstrapMessages(preferredLanguageHint);
-    throw new Error(messages.createWorkspaceFailed);
+    throw new UserFacingError(messages.createWorkspaceFailed);
   }
 
   return toWorkspaceSummaryFromRpc(createdRow);
@@ -259,7 +245,7 @@ export async function createWorkspaceForUser({
 
   const workspaceName = name.trim();
   if (workspaceName.length < 2) {
-    throw new Error(messages.workspaceNameMinLength);
+    throw new UserFacingError(messages.workspaceNameMinLength);
   }
 
   return createWorkspaceWithDefaults(supabase, workspaceName, false, preferredLanguageHint);
@@ -276,7 +262,7 @@ export async function createDemoWorkspaceForUser({
 
   const workspaceName = name.trim();
   if (workspaceName.length < 2) {
-    throw new Error(messages.workspaceNameMinLength);
+    throw new UserFacingError(messages.workspaceNameMinLength);
   }
 
   const existingDemoResponse = await supabase
@@ -291,7 +277,7 @@ export async function createDemoWorkspaceForUser({
   }
 
   if ((existingDemoResponse.data ?? []).length > 0) {
-    throw new Error(messages.demoWorkspaceAlreadyExists);
+    throw new UserFacingError(messages.demoWorkspaceAlreadyExists);
   }
 
   let createdWorkspace: WorkspaceSummary | null = null;
@@ -468,7 +454,7 @@ export async function createDemoWorkspaceForUser({
       }).catch(() => undefined);
     }
 
-    throw new Error(resolveErrorMessage(error, messages.createWorkspaceFailed));
+    throw error;
   }
 }
 
@@ -481,12 +467,12 @@ export async function deleteWorkspaceForUser({
   });
 
   if (rpcResponse.error) {
-    throw new Error(rpcResponse.error.message);
+    throw rpcResponse.error;
   }
 
   const deletedRow = (rpcResponse.data ?? [])[0] as DeleteWorkspaceRpcRow | undefined;
   if (!deletedRow) {
-    throw new Error("No pudimos eliminar el workspace.");
+    throw new Error("delete_workspace returned no rows");
   }
 
   return deletedRow;

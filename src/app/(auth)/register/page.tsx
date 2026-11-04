@@ -20,6 +20,7 @@ import { useForm } from "react-hook-form";
 import { getLocalizedAuthErrorMessage } from "@/features/auth/error-messages";
 import { createRegisterSchema, type RegisterValues } from "@/features/auth/schemas";
 import { useI18n } from "@/features/i18n/provider";
+import { getUserFacingErrorMessage } from "@/lib/errors/user-facing-error";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { bootstrapUserWorkspace } from "@/lib/workspace/bootstrap";
 
@@ -91,10 +92,7 @@ export default function RegisterPage() {
       notifications.show({
         color: "red",
         title: t("auth.register.bootstrapErrorTitle"),
-        message:
-          error instanceof Error
-            ? error.message
-            : t("auth.register.bootstrapErrorFallback"),
+        message: getUserFacingErrorMessage(error, t("auth.register.bootstrapErrorFallback"), t),
       });
       return;
     }

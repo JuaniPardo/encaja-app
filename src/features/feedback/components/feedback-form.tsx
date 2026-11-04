@@ -14,26 +14,12 @@ import {
 } from "@/features/feedback/schema";
 import { useI18n } from "@/features/i18n/provider";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
+import { getUserFacingErrorMessage } from "@/lib/errors/user-facing-error";
 import { createFeedback } from "@/lib/feedback/create-feedback";
 
 interface FeedbackFormProps {
   hideHeading?: boolean;
   onSubmitted?: () => void;
-}
-
-function getErrorMessage(error: unknown, fallbackMessage: string) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  if (typeof error === "object" && error !== null && "message" in error) {
-    const message = (error as { message?: unknown }).message;
-    if (typeof message === "string" && message.trim().length > 0) {
-      return message;
-    }
-  }
-
-  return fallbackMessage;
 }
 
 export function FeedbackForm({ hideHeading = false, onSubmitted }: FeedbackFormProps) {
@@ -98,7 +84,7 @@ export function FeedbackForm({ hideHeading = false, onSubmitted }: FeedbackFormP
       notifications.show({
         color: "red",
         title: t("settings.feedback.errorTitle"),
-        message: getErrorMessage(error, t("settings.feedback.errorFallbackMessage")),
+        message: getUserFacingErrorMessage(error, t("settings.feedback.errorFallbackMessage"), t),
       });
     }
   });

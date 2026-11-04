@@ -38,6 +38,7 @@ import { useIsMobile } from "@/features/layout/use-responsive-breakpoints";
 import { buildTransactionsDrilldownHref } from "@/features/transactions/drilldown";
 import { canManageCategories } from "@/features/workspace/permissions";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
+import { getUserFacingErrorMessage } from "@/lib/errors/user-facing-error";
 import type { CategorySource, Database, ExpenseBehavior, TransactionType } from "@/types/database";
 
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
@@ -234,7 +235,7 @@ export default function CategoriesPage() {
       notifications.show({
         color: "red",
         title: t("categories.notifications.loadError"),
-        message: categoriesResponse.error.message,
+        message: getUserFacingErrorMessage(categoriesResponse.error, t("common.errors.generic"), t),
       });
       setRows([]);
       setSubcategoryRows([]);
@@ -253,7 +254,7 @@ export default function CategoriesPage() {
       notifications.show({
         color: "red",
         title: t("categories.notifications.loadSubcategoriesError"),
-        message: subcategoriesResponse.error.message,
+        message: getUserFacingErrorMessage(subcategoriesResponse.error, t("common.errors.generic"), t),
       });
       setSubcategoryRows([]);
     } else {
@@ -484,7 +485,7 @@ export default function CategoriesPage() {
           notifications.show({
             color: "red",
             title: t("categories.notifications.saveError"),
-            message: updateResponse.error.message,
+            message: getUserFacingErrorMessage(updateResponse.error, t("common.errors.generic"), t),
           });
           return;
         }
@@ -510,7 +511,7 @@ export default function CategoriesPage() {
             title: t("categories.notifications.createError"),
             message: isDuplicatedName
               ? t("categories.notifications.duplicateSubcategoryName")
-              : insertResponse.error.message,
+              : getUserFacingErrorMessage(insertResponse.error, t("common.errors.generic"), t),
           });
           return;
         }
@@ -552,7 +553,7 @@ export default function CategoriesPage() {
         notifications.show({
           color: "red",
           title: t("categories.notifications.saveError"),
-          message: updateResponse.error.message,
+          message: getUserFacingErrorMessage(updateResponse.error, t("common.errors.generic"), t),
         });
         return;
       }
@@ -581,7 +582,7 @@ export default function CategoriesPage() {
           title: t("categories.notifications.createError"),
           message: isDuplicatedName
             ? t("categories.notifications.duplicateName")
-            : insertResponse.error.message,
+            : getUserFacingErrorMessage(insertResponse.error, t("common.errors.generic"), t),
         });
         return;
       }
@@ -625,7 +626,7 @@ export default function CategoriesPage() {
       notifications.show({
         color: "red",
         title: t("categories.notifications.toggleError"),
-        message: response.error.message,
+        message: getUserFacingErrorMessage(response.error, t("common.errors.generic"), t),
       });
       return;
     }
@@ -661,7 +662,7 @@ export default function CategoriesPage() {
       notifications.show({
         color: "red",
         title: t("categories.notifications.toggleError"),
-        message: response.error.message,
+        message: getUserFacingErrorMessage(response.error, t("common.errors.generic"), t),
       });
       return;
     }

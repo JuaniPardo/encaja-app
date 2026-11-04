@@ -59,8 +59,12 @@ function findMessageTranslationKey(errorMessage: string): string | null {
   return null;
 }
 
+export function findAuthErrorTranslationKey(error: AuthError): string | null {
+  return findCodeTranslationKey(error) ?? findMessageTranslationKey(error.message);
+}
+
 export function getLocalizedAuthErrorMessage(error: AuthError, t: Translator): string {
-  const translationKey = findCodeTranslationKey(error) ?? findMessageTranslationKey(error.message);
+  const translationKey = findAuthErrorTranslationKey(error);
   if (!translationKey) {
     return error.message;
   }

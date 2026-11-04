@@ -13,6 +13,7 @@ import {
 } from "@/features/workspace/links-schema";
 import { canManageWorkspaceLinks } from "@/features/workspace/permissions";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
+import { getUserFacingErrorMessage } from "@/lib/errors/user-facing-error";
 
 import type { WorkspaceLinkSummary, WorkspaceSettingsCurrencyRow } from "../types";
 
@@ -74,7 +75,7 @@ export function useSettingsLinks() {
       notifications.show({
         color: "red",
         title: t("workspaceSettings.notifications.loadWorkspaceCurrenciesError"),
-        message: response.error.message,
+        message: getUserFacingErrorMessage(response.error, t("common.errors.generic"), t),
       });
       return;
     }
@@ -112,7 +113,7 @@ export function useSettingsLinks() {
       notifications.show({
         color: "red",
         title: t("workspaceSettings.notifications.loadLinksError"),
-        message: response.error.message,
+        message: getUserFacingErrorMessage(response.error, t("common.errors.generic"), t),
       });
       return;
     }
@@ -235,7 +236,7 @@ export function useSettingsLinks() {
       notifications.show({
         color: "red",
         title: t("workspaceSettings.notifications.createLinkError"),
-        message: response.error.message,
+        message: getUserFacingErrorMessage(response.error, t("common.errors.generic"), t),
       });
       return;
     }
@@ -277,7 +278,7 @@ export function useSettingsLinks() {
       notifications.show({
         color: "red",
         title: t("workspaceSettings.notifications.deactivateLinkError"),
-        message: response.error.message,
+        message: getUserFacingErrorMessage(response.error, t("common.errors.generic"), t),
       });
       return;
     }

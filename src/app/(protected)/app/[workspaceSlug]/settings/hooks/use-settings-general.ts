@@ -19,6 +19,7 @@ import {
 } from "@/features/workspace/schema";
 import { canManageWorkspaceSettings } from "@/features/workspace/permissions";
 import { useWorkspace } from "@/features/workspace/workspace-provider";
+import { getUserFacingErrorMessage } from "@/lib/errors/user-facing-error";
 
 import { DEFAULT_CURRENCY_CODE, WORKSPACE_CURRENCY_CODES } from "../types";
 
@@ -184,7 +185,7 @@ export function useSettingsGeneral(options?: UseSettingsGeneralOptions) {
       notifications.show({
         color: "red",
         title: t("workspaceSettings.notifications.loadSettingsError"),
-        message: response.error.message,
+        message: getUserFacingErrorMessage(response.error, t("common.errors.generic"), t),
       });
       return;
     }
@@ -258,7 +259,7 @@ export function useSettingsGeneral(options?: UseSettingsGeneralOptions) {
         notifications.show({
           color: "red",
           title: t("workspaceSettings.notifications.updateSettingsError"),
-          message: updateResponse.error.message,
+          message: getUserFacingErrorMessage(updateResponse.error, t("common.errors.generic"), t),
         });
         return;
       }
@@ -281,7 +282,7 @@ export function useSettingsGeneral(options?: UseSettingsGeneralOptions) {
         notifications.show({
           color: "red",
           title: t("workspaceSettings.notifications.createSettingsError"),
-          message: insertResponse.error.message,
+          message: getUserFacingErrorMessage(insertResponse.error, t("common.errors.generic"), t),
         });
         return;
       }
@@ -323,7 +324,7 @@ export function useSettingsGeneral(options?: UseSettingsGeneralOptions) {
       notifications.show({
         color: "red",
         title: t("workspaceSettings.notifications.updateWorkspaceError"),
-        message: response.error.message,
+        message: getUserFacingErrorMessage(response.error, t("common.errors.generic"), t),
       });
       return;
     }
@@ -362,10 +363,11 @@ export function useSettingsGeneral(options?: UseSettingsGeneralOptions) {
       notifications.show({
         color: "red",
         title: t("workspaceSettings.notifications.createWorkspaceError"),
-        message:
-          error instanceof Error
-            ? error.message
-            : t("workspaceSettings.notifications.unexpectedCreateWorkspaceError"),
+        message: getUserFacingErrorMessage(
+          error,
+          t("workspaceSettings.notifications.unexpectedCreateWorkspaceError"),
+          t,
+        ),
       });
     }
   });
@@ -412,10 +414,11 @@ export function useSettingsGeneral(options?: UseSettingsGeneralOptions) {
       notifications.show({
         color: "red",
         title: t("workspaceSettings.notifications.createDemoWorkspaceError"),
-        message:
-          error instanceof Error
-            ? error.message
-            : t("workspaceSettings.notifications.unexpectedCreateWorkspaceError"),
+        message: getUserFacingErrorMessage(
+          error,
+          t("workspaceSettings.notifications.unexpectedCreateWorkspaceError"),
+          t,
+        ),
       });
     } finally {
       setIsCreatingDemoWorkspace(false);
