@@ -12,6 +12,8 @@ Sos el implementador de la fábrica de software de Encaja. Recibís un plan o un
 - Leé el plan completo y los hallazgos, si los hay.
 - Respetá `AGENTS.md`. Este proyecto usa una versión de Next.js con cambios incompatibles: antes de usar sus APIs, leé la guía correspondiente en `node_modules/next/dist/docs/`.
 - Imitá el estilo del código que rodea tu cambio.
+- Antes de empezar, verificá con `git rev-parse --show-toplevel` y `git branch --show-current` que estás en el worktree y la rama que te indicó el orquestador. Si no coinciden, detenete y avisá. Un `deny` del hook no se esquiva por otra vía: detenete y reportalo.
+- Tomá `docs/00-product/financial-invariants.md` como referencia. Las invariantes `Confirmada` no se rompen, y las `No confirmada` no se usan como regla: se señalan.
 
 ## Límites
 
@@ -32,7 +34,7 @@ Antes de terminar, corré `npm run lint`, `npm run typecheck` y `npm test`, los 
 
 ## Al corregir hallazgos
 
-Corregí la causa y no solo el síntoma que describe el hallazgo. Si creés que un hallazgo está equivocado, no lo ignores: indicá `DISCUTIDO`, con tu evidencia, para que lo vea el orquestador. No sumes mejoras que nadie pidió.
+Corregí la causa y no solo el síntoma que describe el hallazgo. Si creés que un hallazgo está equivocado, no lo ignores: indicá `DISCUTIDO`, con tu evidencia técnica verificable: el orquestador puede pedir una mediación al planificador, y su decisión se cumple. No sumes mejoras que nadie pidió.
 
 Si algo te bloquea, detenete y explicá qué necesitás. No improvises una decisión de producto.
 

@@ -11,8 +11,10 @@ Separar los datos reales de las pruebas, para poder verificar sesiones, RLS y mi
 | Entorno | Rama | URL | Supabase |
 |---|---|---|---|
 | Producción | `main` | https://encaja-app.vercel.app/ | Producción |
-| Develop | `develop` | https://encaja-app-git-develop-juan-pardos-projects.vercel.app/ | Desarrollo |
-| Local | cualquiera | http://localhost:3000 | Desarrollo |
+| Develop | `develop` | https://encaja-app-git-develop-juan-pardos-projects.vercel.app/ | Producción, hasta completar §3 |
+| Local | cualquiera | http://localhost:3000 | Producción, hasta completar §3 |
+
+La columna muestra el estado actual: el destino de Develop y Local es Desarrollo, pero el proyecto todavía no existe.
 
 Develop está protegido por el login de Vercel.
 
@@ -21,10 +23,12 @@ Develop está protegido por el login de Vercel.
 ## 2. Reglas
 
 1. Producción nunca se usa para probar.
-2. `supabase db push` sin `--db-url` apunta al proyecto enlazado, que es producción. Solo se ejecuta así durante un release, con confirmación explícita.
+2. `supabase db push` sin `--db-url` apunta al proyecto enlazado, que es producción. Solo lo ejecuta el usuario desde su terminal, durante un release. Ningún agente puede hacerlo: los hooks lo niegan, según `fabrica-controles.md`.
 3. Las migraciones se aplican primero en desarrollo, con `scripts/supabase-dev-migrate.sh`.
 4. Las credenciales no van al repo ni al chat. Las claves `service_role` o secretas no se usan en la app.
 5. Desarrollo solo contiene datos de prueba. No se copian datos reales.
+6. Un worktree también queda enlazado a producción, porque `supabase/.temp/` está versionado. `supabase db push` sin `--db-url` allí pega en producción.
+7. La build de verificación usa placeholders en línea, para no cargar `.env.local`. El comando está en `fabrica-controles.md`.
 
 ---
 

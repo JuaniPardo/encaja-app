@@ -51,6 +51,7 @@ Defines what the system is and how it behaves.
 - **Business Rules** → Core logic and constraints
 - **Data Model** → Structural representation of the system
 - **UI Guidelines** → Design principles and interface consistency
+- **Financial Invariants** → What money calculations must keep true, with source and status
 
 📍 Location: `docs/00-product/`
 
@@ -62,6 +63,7 @@ Defines how the system is built and maintained.
 - **Dev Workflow** → Conventions, branching, and development practices
 - **Traceability** → Tracing changes, locating bugs, and rolling back
 - **Environments** → Production and development setup, and their safety rules
+- **Factory Controls** → What the software factory hooks block, what they miss, and how to test or disable them
 
 📍 Location: `docs/01-engineering/`
 

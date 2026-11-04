@@ -35,6 +35,12 @@ feat(budget): guardar presupuesto de forma atómica
 Change-Id: CHG-2026-11-002
 ```
 
+Ejemplo de merge. El trailer va en su propio `-m`, para que quede separado del título:
+
+```bash
+git merge --no-ff feature/presupuesto-atomico -m "Merge feature/presupuesto-atomico into develop" -m "Change-Id: CHG-2026-11-002"
+```
+
 ---
 
 ## 3. Localizar un cambio o un bug

@@ -17,3 +17,4 @@ Los cambios anteriores a CHG-2026-11-001 no tienen registro: se rastrean con los
 | [CHG-2026-11-005](CHG-2026-11-005-entorno-supabase-dev.md) | 2026-11-02 | Entorno de Supabase para desarrollo | En producción | v1.7.2 | No |
 | [CHG-2026-11-006](CHG-2026-11-006-actualizar-next-dependencias.md) | 2026-11-02 | Actualizar Next y dependencias vulnerables | En producción | v1.7.2 | No |
 | [CHG-2026-11-007](CHG-2026-11-007-moneda-boliviano.md) | 2026-11-02 | Moneda boliviano (Bs) | En producción | v1.8.0 | No |
+| [CHG-2026-11-008](CHG-2026-11-008-fabrica-controles.md) | 2026-11-03 | Controles reales para la fábrica de software | Entregado | Pendiente | No |
